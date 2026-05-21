@@ -1,0 +1,40 @@
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js
+/.next
+/next/static
+/node_modules/.cache
+
+# React
+/node_modules
+/build
+/dist
+
+# Dependencies
+/package
+/package-lock.json
+/yarn.lock
+/pnpm-lock.yaml
+
+# TypeScript
+/*.tsbuildinfo
+/tsconfig.tsbuildinfo
+
+# ESLint
+/.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
