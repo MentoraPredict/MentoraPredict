@@ -1,0 +1,54 @@
+openapi: 3.0.3
+info:
+  title: Recommendation Service API
+  version: '1.0.0'
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RecommendationDto:
+      type: object
+      properties:
+        studentId:
+          type: string
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              title:
+                type: string
+              reason:
+                type: string
+security:
+  - bearerAuth: []
+paths:
+  /recommendation/student/{studentId}:
+    get:
+      summary: Get student recommendations
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationDto'
+  /recommendation/subjects:
+    get:
+      summary: Get recommendations by subject
+      responses:
+        '200':
+          description: List
