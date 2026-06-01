@@ -1,0 +1,10 @@
+{
+  "name": "@mentorapredict/ui",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "echo UI package - implement after",
+    "clean": "rm -rf dist"
+  }
+}

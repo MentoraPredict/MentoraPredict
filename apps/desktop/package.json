@@ -1,0 +1,10 @@
+{
+  "name": "@mentorapredict/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo desktop: placeholder - implement after",
+    "build": "echo desktop: placeholder - implement after",
+    "clean": "rm -rf dist"
+  }
+}

@@ -345,3 +345,70 @@ docs(readme): update project overview
 MentoraPredict aims to empower educational institutions through predictive analytics, intelligent recommendations, and proactive academic support.
 
 By transforming educational data into actionable insights, the platform seeks to improve student outcomes, strengthen retention strategies, and enable evidence-based decision-making at every level of the institution.
+
+---
+
+### Turborepo Configuration
+
+The monorepo is configured with Turborepo and pnpm workspaces.
+
+| Item | Status |
+|------|--------|
+| Turborepo initialization | ✅ Completed |
+| `turbo.json` configuration | ✅ Configured |
+| Workspaces definition | ✅ Active |
+| Global scripts | ✅ Available |
+| Apps structure | ✅ 11 apps detected |
+| Packages structure | ✅ 9 packages detected |
+
+### Available Scripts
+
+From the repository root:
+
+| Command | Description |
+|---------|-------------|
+| `pnpm install` | Install all dependencies |
+| `pnpm dev` | Start all services in development mode |
+| `pnpm build` | Build all projects |
+| `pnpm lint` | Run linting across all projects |
+| `pnpm clean` | Remove builds and caches |
+
+### Workspace Structure
+
+**Applications (11):**
+- `apps/web` - Frontend placeholder (React)
+- `apps/mobile` - Frontend placeholder (React Native)
+- `apps/desktop` - Frontend placeholder (Electron)
+- `apps/api-gateway` - API Gateway placeholder
+- `apps/auth-service` - NestJS (pending implementation)
+- `apps/user-service` - NestJS (pending implementation)
+- `apps/academic-service` - NestJS (pending implementation)
+- `apps/metrics-service` - NestJS (pending implementation)
+- `apps/prediction-service` - Python/FastAPI (pending implementation)
+- `apps/recommendation-service` - NestJS (pending implementation)
+- `apps/analytics-service` - NestJS (pending implementation)
+
+**Shared Packages (9):**
+- `packages/ui` - React UI components
+- `packages/types` - TypeScript types
+- `packages/utils` - Common utilities
+- `packages/services` - Shared services
+- `packages/hooks` - React hooks
+- `packages/config` - Global configurations
+- `packages/shared` - DTOs and interfaces
+- `packages/shared-config` - Shared configs
+- `packages/shared-types` - Shared types
+- `packages/shared-utils` - Shared utilities
+- `packages/eslint-config` - ESLint configuration
+- `packages/tsconfig` - TypeScript configuration
+
+### Validation Results
+
+| Command | Result |
+|---------|--------|
+| `pnpm install` | ✅ 17 workspaces detected |
+| `pnpm build` | ✅ Executes successfully |
+| `pnpm dev` | ✅ All services start |
+| `pnpm lint` | ✅ Executes successfully |
+
+> **Note for Windows developers:** Scripts use Unix commands (`rm -rf`). Use Git Bash or WSL for local development.
