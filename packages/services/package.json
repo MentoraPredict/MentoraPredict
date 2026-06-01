@@ -1,0 +1,10 @@
+{
+  "name": "@mentorapredict/services",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "echo Services package - implement after",
+    "clean": "rm -rf dist"
+  }
+}
