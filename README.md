@@ -173,42 +173,7 @@ Contains reusable shared code used across multiple applications and services.
 
 ---
 
-## Technology Stack
 
-### Frontend
-
-| Technology   | Version |
-| ------------ | ------- |
-| React        | 18.x    |
-| React Native | 0.73.x  |
-| Electron     | 27.x    |
-| TypeScript   | 5.x     |
-
-### Backend
-
-| Technology | Version |
-| ---------- | ------- |
-| NestJS     | 11.x    |
-| FastAPI    | 0.115.x |
-| Node.js    | 22.x    |
-| Python     | 3.12.x  |
-
-### Data & Caching
-
-| Technology | Version |
-| ---------- | ------- |
-| PostgreSQL | 15.x    |
-| MongoDB    | 6.x     |
-| Redis      | 7.x     |
-
-### Infrastructure
-
-| Technology     | Version |
-| -------------- | ------- |
-| Docker         | 28.x    |
-| Docker Compose | Latest  |
-| AWS EC2        | Managed |
-| Turborepo      | 2.x     |
 
 ### CI/CD
 
@@ -308,47 +273,6 @@ We welcome contributions from all project members.
 
 The project follows a simplified GitFlow model.
 
-Main branches:
-
-```text
-main
-qa
-```
-
-Working branches:
-
-```text
-feature/*
-bugfix/*
-hotfix/*
-chore/*
-docs/*
-```
-
-### Commit Convention
-
-The project follows Conventional Commits.
-
-Examples:
-
-```bash
-feat(auth): implement JWT authentication
-
-fix(api): resolve enrollment validation error
-
-docs(readme): update project overview
-```
-
-### Development Guidelines
-
-* Keep services independent and loosely coupled
-* Follow established coding standards
-* Create Pull Requests for all changes
-* Keep documentation updated
-* Reuse shared packages whenever possible
-
----
-
 ## Vision
 
 MentoraPredict aims to empower educational institutions through predictive analytics, intelligent recommendations, and proactive academic support.
@@ -377,7 +301,6 @@ mentorapredict/
 │   └── eslint-config/         Shared ESLint rules
 ├── infra/
 │   ├── docker/                Dockerfiles (future)
-│   └── k8s/                   Kubernetes manifests (future)
 ├── .github/workflows/         CI/CD pipeline (future)
 ├── docker-compose.yml         Local dev environment (future)
 ├── turbo.json                 Turborepo pipeline config
@@ -425,23 +348,3 @@ The **domain** layer has zero dependencies on NestJS, TypeORM, or any framework.
 - No Docker/Kubernetes configuration
 
 ---
-
-## Getting Started
-
-_Not available in Phase 0. See individual service READMEs for planned setup._
-
----
-
-## Conventional Commits Reference
-
-```
-feat(scope): description      # New feature
-fix(scope): description       # Bug fix
-chore(scope): description     # Non-functional (deps, config)
-docs(scope): description      # Documentation
-build(scope): description     # Build system / tooling
-ci(scope): description        # CI/CD changes
-refactor(scope): description  # Code restructure, no behavior change
-test(scope): description      # Test-related
-```
->>>>>>> feature/PWMP-59-Design-system-architecture-Hexagonal
