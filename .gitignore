@@ -1,3 +1,4 @@
+
 # Environment
 .env
 .env.local
@@ -38,3 +39,16 @@ Thumbs.db
 .idea
 *.swp
 *.swo
+=======
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.turbo/
+coverage/
+__pycache__/
+*.pyc
+.venv/
+>>>>>>> feature/PWMP-59-Design-system-architecture-Hexagonal

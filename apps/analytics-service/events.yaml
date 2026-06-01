@@ -1,0 +1,27 @@
+# Analytics events contract
+
+version: 1
+events:
+  - name: STUDENT_LOGIN
+    description: Emitted when a student logs in
+    payload:
+      studentId: string
+      occurredAt: datetime
+      ip: string
+  - name: COURSE_ACCESS
+    description: When a student accesses a course page
+    payload:
+      studentId: string
+      subjectId: string
+      timestamp: datetime
+      properties:
+        durationSec: integer
+        page: string
+  - name: PREDICTION_CREATED
+    description: When a prediction request is created
+    payload:
+      predictionId: string
+      studentId: string
+      subjectId: string
+      modelVersion: string
+      requestedAt: datetime
