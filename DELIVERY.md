@@ -6,7 +6,7 @@
 
 ---
 
-## 1) Contratos API (OpenAPI / Swagger)
+## 1) Contratos API ()
 
 ### 1.1 Estructura global
 - Base path: `/api/v1`
@@ -575,55 +575,9 @@ CORRELATION_HEADER=x-correlation-id
 REQUEST_HEADER=x-request-id
 ```
 
----
 
-## 7) Plan de implementacion por sprints (MVP)
 
-### Sprint 1 - Auth + User + Shared
-**Entregable minimo**
-- auth-service skeleton con contratos OpenAPI.
-- user-service skeleton con contratos OpenAPI.
-- Paquetes shared-types, shared-config, shared-utils scaffold.
-- Infra local docker-compose.yml funcionando.
 
-### Sprint 2 - Academic
-**Entregable minimo**
-- academic-service skeleton con rutas basicas.
-- DER inicial: faculties, careers, subjects, academic_periods, enrollments.
-- Documentacion de ownership.
-
-### Sprint 3 - Evaluations + Grades
-**Entregable minimo**
-- Extension de academic-service con evaluations, grades, observations.
-- Contratos de calificaciones.
-- DER actualizado.
-
-### Sprint 4 - Metrics / Analytics
-**Entregable minimo**
-- metrics-service skeleton con endpoints.
-- analytics-service skeleton con eventos y alertas.
-- Diseno de cache Redis.
-
-### Sprint 5 - Prediction / Recommendation
-**Entregable minimo**
-- prediction-service skeleton con contratos de IA.
-- recommendation-service skeleton con rutas de recomendaciones.
-- Modelo NoSQL MongoDB documentado.
-
----
-
-## 8) Checklist de validacion
-- [ ] Contratos API definidos por microservicio.
-- [ ] RBAC y headers internos documentados.
-- [ ] DER relacional con ownership por dominio.
-- [ ] Modelo NoSQL MongoDB con ejemplos JSON.
-- [ ] Diseno de cache Redis con claves y TTL.
-- [ ] Paquetes /packages/shared-* definidos como skeletons.
-- [ ] docker-compose.yml levanta PostgreSQL, MongoDB y Redis.
-- [ ] .env.example creada con variables minimas.
-- [ ] Documentacion y plan de sprints listos.
-
----
 
 ## Resumen
 Este documento es el entregable de diseno de la fase inicial. Deja el monorepo listo para arrancar la implementacion del backend siguiendo Turborepo, microservicios, arquitectura hexagonal y separacion de dominios. No contiene logica de negocio ni implementaciones concretas.
