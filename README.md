@@ -156,11 +156,11 @@ mentorapredict/
 
 ### Apps
 
-Contains deployable applications and microservices.
+Contains all deployable applications and backend services, including frontend clients, API Gateway, business microservices, and AI-driven services.
 
 ### Packages
 
-Contains reusable shared code used across multiple applications and services.
+Contains shared libraries, configurations, utilities, types, and reusable components consumed throughout the monorepo.
 
 ---
 
@@ -285,9 +285,26 @@ Frontend Applications
 6. Prediction and recommendation services generate intelligent insights.
 7. Responses are returned through the API Gateway.
 
+---
 ### Containerization
 
 All applications and services are intended to run inside Docker containers to ensure environment consistency across development and deployment stages.
+
+## Containerization Strategy
+
+MentoraPredict is designed as a containerized platform.
+
+Each application and microservice maintains its own Dockerfile, enabling independent builds, deployments, and scalability across environments.
+
+Containerization provides:
+
+- Consistent development and deployment environments
+- Service isolation
+- Simplified infrastructure provisioning
+- Scalable deployment strategies
+- Reproducible builds across the platform
+
+Detailed Docker documentation, build procedures, and deployment workflows are maintained separately from this README.
 
 ---
 
