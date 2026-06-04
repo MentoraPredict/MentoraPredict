@@ -253,6 +253,21 @@ services:
       MONGO_DB: ${MONGO_DB:-mentorapredict}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
+    
+      web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    container_name: mentorapredict-web
+    ports:
+      - "${WEB_PORT:-3007}:3007"
+    environment:
+      NODE_ENV: development
+    networks:
+      - mentorapredict-network
+    depends_on:
+      - api-gateway
+    
     networks:
       - mentorapredict-network
     depends_on:
