@@ -1,0 +1,290 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mentorapredict-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mentorapredict-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mentorapredict}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7
+    container_name: mentorapredict-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-admin123}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-mentorapredict}
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - mentorapredict-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mentorapredict-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mentorapredict-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: mentorapredict-api-gateway
+    ports:
+      - "${API_GATEWAY_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: development
+      PORT: ${API_GATEWAY_PORT:-3000}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - mentorapredict-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ..
+      dockerfile: apps/auth-service/Dockerfile
+    container_name: mentorapredict-auth-service
+    ports:
+      - "${AUTH_SERVICE_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: development
+      PORT: ${AUTH_SERVICE_PORT:-3001}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - mentorapredict-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  user-service:
+    build:
+      context: ..
+      dockerfile: apps/user-service/Dockerfile
+    container_name: mentorapredict-user-service
+    ports:
+      - "${USER_SERVICE_PORT:-3002}:3002"
+    environment:
+      NODE_ENV: development
+      PORT: ${USER_SERVICE_PORT:-3002}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - mentorapredict-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  academic-service:
+    build:
+      context: ..
+      dockerfile: apps/academic-service/Dockerfile
+    container_name: mentorapredict-academic-service
+    ports:
+      - "${ACADEMIC_SERVICE_PORT:-3003}:3003"
+    environment:
+      NODE_ENV: development
+      PORT: ${ACADEMIC_SERVICE_PORT:-3003}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+      MONGO_HOST: ${MONGO_HOST:-mongodb}
+      MONGO_PORT: ${MONGO_PORT:-27017}
+      MONGO_USER: ${MONGO_USER:-admin}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-admin123}
+      MONGO_DB: ${MONGO_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - mentorapredict-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  metrics-service:
+    build:
+      context: ..
+      dockerfile: apps/metrics-service/Dockerfile
+    container_name: mentorapredict-metrics-service
+    ports:
+      - "${METRICS_SERVICE_PORT:-3004}:3004"
+    environment:
+      NODE_ENV: development
+      PORT: ${METRICS_SERVICE_PORT:-3004}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - mentorapredict-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  analytics-service:
+    build:
+      context: ..
+      dockerfile: apps/analytics-service/Dockerfile
+    container_name: mentorapredict-analytics-service
+    ports:
+      - "${ANALYTICS_SERVICE_PORT:-3006}:3006"
+    environment:
+      NODE_ENV: development
+      PORT: ${ANALYTICS_SERVICE_PORT:-3006}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - mentorapredict-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  recommendation-service:
+    build:
+      context: ..
+      dockerfile: apps/recommendation-service/Dockerfile
+    container_name: mentorapredict-recommendation-service
+    ports:
+      - "${RECOMMENDATION_SERVICE_PORT:-3005}:3005"
+    environment:
+      NODE_ENV: development
+      PORT: ${RECOMMENDATION_SERVICE_PORT:-3005}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorapredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorapredict123}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    networks:
+      - mentorapredict-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  prediction-service:
+    build:
+      context: ..
+      dockerfile: apps/prediction-service/Dockerfile
+    container_name: mentorapredict-prediction-service
+    ports:
+      - "${PREDICTION_SERVICE_PORT:-8000}:8000"
+    environment:
+      PYTHONUNBUFFERED: 1
+      MONGO_HOST: ${MONGO_HOST:-mongodb}
+      MONGO_PORT: ${MONGO_PORT:-27017}
+      MONGO_USER: ${MONGO_USER:-admin}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-admin123}
+      MONGO_DB: ${MONGO_DB:-mentorapredict}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    
+      web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    container_name: mentorapredict-web
+    ports:
+      - "${WEB_PORT:-3007}:3007"
+    environment:
+      NODE_ENV: development
+    networks:
+      - mentorapredict-network
+    depends_on:
+      - api-gateway
+    
+    networks:
+      - mentorapredict-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  mentorapredict-network:
+    driver: bridge
+    name: mentorapredict-network
+
+volumes:
+  postgres_data:
+    name: mentorapredict-postgres-data
+  mongodb_data:
+    name: mentorapredict-mongodb-data
+  redis_data:
+    name: mentorapredict-redis-data

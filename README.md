@@ -224,22 +224,29 @@ Before working with the project, ensure the following software is installed:
 
 ## Installation & Local Development
 
-> Setup instructions will be provided once the first functional services are available.
+### Prerequisites
 
-Future documentation will include:
+- Node.js 22.x
+- pnpm 10.x
+- Docker
+- Docker Compose
+- Python 3.12.x
+
+### Quick Start
 
 ```bash
+# Install dependencies
 pnpm install
+
+# Copy environment variables
+cp .env.example .env
+
+# Start infrastructure and services
+cd docker
+docker-compose up -d
+
+# Start development mode
 pnpm dev
-```
-
-as well as instructions for:
-
-* Dependency installation
-* Local environment configuration
-* Running the monorepo
-* Docker-based development
-* Turborepo workflows
 
 ---
 
@@ -418,14 +425,3 @@ From the repository root:
 - `packages/shared-utils` - Shared utilities
 - `packages/eslint-config` - ESLint configuration
 - `packages/tsconfig` - TypeScript configuration
-
-### Validation Results
-
-| Command | Result |
-|---------|--------|
-| `pnpm install` | ✅ 17 workspaces detected |
-| `pnpm build` | ✅ Executes successfully |
-| `pnpm dev` | ✅ All services start |
-| `pnpm lint` | ✅ Executes successfully |
-
-> **Note for Windows developers:** Scripts use Unix commands (`rm -rf`). Use Git Bash or WSL for local development.
