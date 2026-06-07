@@ -6,9 +6,9 @@ This document provides a quick reference for building and running MentoraPredict
 
 Before working with Docker containers, ensure the following software is installed:
 
-* Docker
-* Docker Compose
-* Git
+- Docker
+- Docker Compose
+- Git
 
 ---
 
@@ -20,7 +20,7 @@ All images must be built from the repository root.
 
 ```bash
 docker build \
-  -f apps/auth-service/Dockerfile \
+  -f services/auth-service/Dockerfile \
   -t mentorapredict/auth-service .
 ```
 
@@ -28,7 +28,7 @@ docker build \
 
 ```bash
 docker build \
-  -f apps/user-service/Dockerfile \
+  -f services/user-service/Dockerfile \
   -t mentorapredict/user-service .
 ```
 
@@ -36,7 +36,7 @@ docker build \
 
 ```bash
 docker build \
-  -f apps/academic-service/Dockerfile \
+  -f services/academic-service/Dockerfile \
   -t mentorapredict/academic-service .
 ```
 
@@ -44,7 +44,7 @@ docker build \
 
 ```bash
 docker build \
-  -f apps/metrics-service/Dockerfile \
+  -f services/metrics-service/Dockerfile \
   -t mentorapredict/metrics-service .
 ```
 
@@ -52,7 +52,7 @@ docker build \
 
 ```bash
 docker build \
-  -f apps/recommendation-service/Dockerfile \
+  -f services/recommendation-service/Dockerfile \
   -t mentorapredict/recommendation-service .
 ```
 
@@ -60,7 +60,7 @@ docker build \
 
 ```bash
 docker build \
-  -f apps/analytics-service/Dockerfile \
+  -f services/analytics-service/Dockerfile \
   -t mentorapredict/analytics-service .
 ```
 
@@ -68,7 +68,7 @@ docker build \
 
 ```bash
 docker build \
-  -f apps/prediction-service/Dockerfile \
+  -f services/prediction-service/Dockerfile \
   -t mentorapredict/prediction-service .
 ```
 
@@ -113,10 +113,10 @@ docker inspect <container-id>
 
 Docker images must always be built from the repository root because Dockerfiles depend on monorepo-level resources such as:
 
-* turbo.json
-* pnpm-workspace.yaml
-* pnpm-lock.yaml
-* Shared packages
-* Workspace configurations
+- turbo.json
+- pnpm-workspace.yaml
+- pnpm-lock.yaml
+- Shared packages
+- Workspace configurations
 
 Building directly from individual service folders is not supported.
