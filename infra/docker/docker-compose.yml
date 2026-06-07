@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -58,7 +58,7 @@ services:
   api-gateway:
     build:
       context: ..
-      dockerfile: apps/api-gateway/Dockerfile
+      dockerfile: services/api-gateway/Dockerfile
     container_name: mentorapredict-api-gateway
     ports:
       - "${API_GATEWAY_PORT:-3000}:3000"
@@ -83,7 +83,7 @@ services:
   auth-service:
     build:
       context: ..
-      dockerfile: apps/auth-service/Dockerfile
+      dockerfile: services/auth-service/Dockerfile
     container_name: mentorapredict-auth-service
     ports:
       - "${AUTH_SERVICE_PORT:-3001}:3001"
@@ -108,7 +108,7 @@ services:
   user-service:
     build:
       context: ..
-      dockerfile: apps/user-service/Dockerfile
+      dockerfile: services/user-service/Dockerfile
     container_name: mentorapredict-user-service
     ports:
       - "${USER_SERVICE_PORT:-3002}:3002"
@@ -133,7 +133,7 @@ services:
   academic-service:
     build:
       context: ..
-      dockerfile: apps/academic-service/Dockerfile
+      dockerfile: services/academic-service/Dockerfile
     container_name: mentorapredict-academic-service
     ports:
       - "${ACADEMIC_SERVICE_PORT:-3003}:3003"
@@ -165,7 +165,7 @@ services:
   metrics-service:
     build:
       context: ..
-      dockerfile: apps/metrics-service/Dockerfile
+      dockerfile: services/metrics-service/Dockerfile
     container_name: mentorapredict-metrics-service
     ports:
       - "${METRICS_SERVICE_PORT:-3004}:3004"
@@ -190,7 +190,7 @@ services:
   analytics-service:
     build:
       context: ..
-      dockerfile: apps/analytics-service/Dockerfile
+      dockerfile: services/analytics-service/Dockerfile
     container_name: mentorapredict-analytics-service
     ports:
       - "${ANALYTICS_SERVICE_PORT:-3006}:3006"
@@ -215,7 +215,7 @@ services:
   recommendation-service:
     build:
       context: ..
-      dockerfile: apps/recommendation-service/Dockerfile
+      dockerfile: services/recommendation-service/Dockerfile
     container_name: mentorapredict-recommendation-service
     ports:
       - "${RECOMMENDATION_SERVICE_PORT:-3005}:3005"
@@ -240,7 +240,7 @@ services:
   prediction-service:
     build:
       context: ..
-      dockerfile: apps/prediction-service/Dockerfile
+      dockerfile: services/prediction-service/Dockerfile
     container_name: mentorapredict-prediction-service
     ports:
       - "${PREDICTION_SERVICE_PORT:-8000}:8000"
@@ -253,8 +253,15 @@ services:
       MONGO_DB: ${MONGO_DB:-mentorapredict}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-    
-      web:
+    networks:
+      - mentorapredict-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
     build:
       context: ..
       dockerfile: apps/web/Dockerfile
@@ -267,14 +274,6 @@ services:
       - mentorapredict-network
     depends_on:
       - api-gateway
-    
-    networks:
-      - mentorapredict-network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 networks:
   mentorapredict-network:

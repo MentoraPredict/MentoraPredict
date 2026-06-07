@@ -1,0 +1,18 @@
+{
+  "name": "@mentorapredict/analytics-service",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "dev": "nest start --watch",
+    "start": "node dist/main",
+    "lint": "eslint src/",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "@mentorapredict/shared-types": "*",
+    "@mentorapredict/shared-config": "*",
+    "@mentorapredict/shared-utils": "*"
+  },
+  "description": "analytics-service skeleton — RF-018,RF-021,RF-023–025"
+}

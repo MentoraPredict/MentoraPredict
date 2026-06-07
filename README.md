@@ -2,10 +2,9 @@
 
 ![MentoraPredict Banner](/assets/mentorapredict-banner.jpg)
 
-  AI-Powered Academic Success and Student Retention Platform
+AI-Powered Academic Success and Student Retention Platform
 
-  Predict academic risk, generate personalized recommendations, and empower educational institutions through intelligent analytics.
-
+Predict academic risk, generate personalized recommendations, and empower educational institutions through intelligent analytics.
 
 ---
 
@@ -25,11 +24,11 @@ Educational institutions generate large volumes of academic data, yet identifyin
 
 As a result, institutions face challenges such as:
 
-* High dropout rates
-* Delayed academic interventions
-* Limited visibility into student performance trends
-* Lack of personalized academic guidance
-* Difficulty measuring the effectiveness of support programs
+- High dropout rates
+- Delayed academic interventions
+- Limited visibility into student performance trends
+- Lack of personalized academic guidance
+- Difficulty measuring the effectiveness of support programs
 
 MentoraPredict addresses these challenges through predictive analytics, intelligent recommendations, and early warning capabilities.
 
@@ -39,11 +38,11 @@ MentoraPredict addresses these challenges through predictive analytics, intellig
 
 The primary objective of MentoraPredict is to provide an intelligent academic support platform capable of:
 
-* Predicting dropout risk before critical academic decline occurs
-* Generating personalized study recommendations
-* Supporting educators through actionable analytics
-* Improving institutional retention strategies
-* Enabling proactive academic intervention
+- Predicting dropout risk before critical academic decline occurs
+- Generating personalized study recommendations
+- Supporting educators through actionable analytics
+- Improving institutional retention strategies
+- Enabling proactive academic intervention
 
 ---
 
@@ -57,29 +56,31 @@ The platform is organized into three primary layers:
 
 Provides user-facing applications for different platforms:
 
-* Web Application (React)
-* Mobile Application (React Native)
-* Desktop Application (Electron)
+- Web Application (React)
+- Mobile Application (React Native)
+- Desktop Application (Electron)
 
 ### Backend Layer
 
-Business capabilities are implemented through independent microservices:
+Implements independent microservices located in the `services/` directory.
 
-* Authentication and authorization
-* Academic management
-* User management
-* Metrics and reporting
-* Recommendations
-* Predictions and analytics
+Each service is responsible for a specific domain and communicates through the API Gateway.
+
+- Authentication and authorization
+- Academic management
+- User management
+- Metrics and reporting
+- Recommendations
+- Predictions and analytics
 
 ### Intelligence & Analytics Layer
 
 Responsible for processing educational data and generating insights through:
 
-* Predictive models
-* Recommendation engines
-* Academic analytics
-* Performance indicators
+- Predictive models
+- Recommendation engines
+- Academic analytics
+- Performance indicators
 
 ### API Gateway
 
@@ -87,11 +88,11 @@ All client applications communicate through a centralized API Gateway.
 
 The API Gateway is responsible for:
 
-* Request routing
-* Authentication validation
-* Service discovery
-* Cross-cutting concerns
-* API aggregation
+- Request routing
+- Authentication validation
+- Service discovery
+- Cross-cutting concerns
+- API aggregation
 
 ---
 
@@ -129,7 +130,9 @@ mentorapredict/
 ├── apps/
 │   ├── web/
 │   ├── mobile/
-│   ├── desktop/
+│   └── desktop/
+│
+├── services/
 │   ├── api-gateway/
 │   ├── auth-service/
 │   ├── user-service/
@@ -145,7 +148,13 @@ mentorapredict/
 │   ├── utils/
 │   ├── services/
 │   ├── hooks/
-│   └── config/
+│   ├── config/
+│   ├── shared/
+│   ├── shared-config/
+│   ├── shared-types/
+│   ├── shared-utils/
+│   ├── eslint-config/
+│   └── tsconfig/
 │
 ├── docs/
 ├── assets/
@@ -156,7 +165,19 @@ mentorapredict/
 
 ### Apps
 
-Contains all deployable applications and backend services, including frontend clients, API Gateway, business microservices, and AI-driven services.
+Contains all frontend applications of the platform:
+
+- Web application (React)
+- Mobile application (React Native)
+- Desktop application (Electron)
+
+These applications consume backend services via the API Gateway.
+
+### Services
+
+Contains all backend microservices responsible for business logic, including authentication, academic processing, analytics, and AI-powered predictions.
+
+All services are accessed through the API Gateway.
 
 ### Packages
 
@@ -213,12 +234,12 @@ Contains shared libraries, configurations, utilities, types, and reusable compon
 
 Before working with the project, ensure the following software is installed:
 
-* Node.js 22.x or later
-* pnpm 10.x or npm
-* Docker
-* Docker Compose
-* Python 3.12.x
-* Git
+- Node.js 22.x or later
+- pnpm 10.x or npm
+- Docker
+- Docker Compose
+- Python 3.12.x
+- Git
 
 ---
 
@@ -234,7 +255,7 @@ Before working with the project, ensure the following software is installed:
 
 ### Quick Start
 
-```bash
+````bash
 # Install dependencies
 pnpm install
 
@@ -258,8 +279,7 @@ Environment templates will be provided through:
 
 ```text
 .env.example
-```
-
+````
 
 Sensitive information must never be committed to source control.
 
@@ -270,13 +290,13 @@ Sensitive information must never be committed to source control.
 The platform follows a gateway-centric communication model.
 
 ```text
-Frontend Applications
+ Frontend Applications (apps/)
         │
         ▼
-    API Gateway
+    API Gateway (services/)
         │
         ▼
-  Microservices Layer
+  Microservices (services/)
         │
         ▼
  Databases & Analytics
@@ -293,6 +313,7 @@ Frontend Applications
 7. Responses are returned through the API Gateway.
 
 ---
+
 ### Containerization
 
 All applications and services are intended to run inside Docker containers to ensure environment consistency across development and deployment stages.
@@ -356,11 +377,11 @@ docs(readme): update project overview
 
 ### Development Guidelines
 
-* Keep services independent and loosely coupled
-* Follow established coding standards
-* Create Pull Requests for all changes
-* Keep documentation updated
-* Reuse shared packages whenever possible
+- Keep services independent and loosely coupled
+- Follow established coding standards
+- Create Pull Requests for all changes
+- Keep documentation updated
+- Reuse shared packages whenever possible
 
 ---
 
@@ -376,43 +397,48 @@ By transforming educational data into actionable insights, the platform seeks to
 
 The monorepo is configured with Turborepo and pnpm workspaces.
 
-| Item | Status |
-|------|--------|
-| Turborepo initialization | ✅ Completed |
-| `turbo.json` configuration | ✅ Configured |
-| Workspaces definition | ✅ Active |
-| Global scripts | ✅ Available |
-| Apps structure | ✅ 11 apps detected |
-| Packages structure | ✅ 9 packages detected |
+| Item                       | Status                 |
+| -------------------------- | ---------------------- |
+| Turborepo initialization   | ✅ Completed           |
+| `turbo.json` configuration | ✅ Configured          |
+| Workspaces definition      | ✅ Active              |
+| Global scripts             | ✅ Available           |
+| Apps structure             | ✅ 11 apps detected    |
+| Packages structure         | ✅ 9 packages detected |
 
 ### Available Scripts
 
 From the repository root:
 
-| Command | Description |
-|---------|-------------|
-| `pnpm install` | Install all dependencies |
-| `pnpm dev` | Start all services in development mode |
-| `pnpm build` | Build all projects |
-| `pnpm lint` | Run linting across all projects |
-| `pnpm clean` | Remove builds and caches |
+| Command        | Description                            |
+| -------------- | -------------------------------------- |
+| `pnpm install` | Install all dependencies               |
+| `pnpm dev`     | Start all services in development mode |
+| `pnpm build`   | Build all projects                     |
+| `pnpm lint`    | Run linting across all projects        |
+| `pnpm clean`   | Remove builds and caches               |
 
 ### Workspace Structure
 
-**Applications (11):**
-- `apps/web` - Frontend placeholder (React)
-- `apps/mobile` - Frontend placeholder (React Native)
-- `apps/desktop` - Frontend placeholder (Electron)
-- `apps/api-gateway` - API Gateway placeholder
-- `apps/auth-service` - NestJS (pending implementation)
-- `apps/user-service` - NestJS (pending implementation)
-- `apps/academic-service` - NestJS (pending implementation)
-- `apps/metrics-service` - NestJS (pending implementation)
-- `apps/prediction-service` - Python/FastAPI (pending implementation)
-- `apps/recommendation-service` - NestJS (pending implementation)
-- `apps/analytics-service` - NestJS (pending implementation)
+**Applications (3 Frontend Apps):**
+
+- `apps/web` - React frontend
+- `apps/mobile` - React Native app
+- `apps/desktop` - Electron app
+
+**Backend Services (8 Microservices):**
+
+- `services/api-gateway` - API Gateway
+- `services/auth-service` - Authentication service
+- `services/user-service` - User management
+- `services/academic-service` - Academic data
+- `services/metrics-service` - Analytics metrics
+- `services/prediction-service` - AI predictions
+- `services/recommendation-service` - Recommendations
+- `services/analytics-service` - Advanced analytics
 
 **Shared Packages (9):**
+
 - `packages/ui` - React UI components
 - `packages/types` - TypeScript types
 - `packages/utils` - Common utilities
