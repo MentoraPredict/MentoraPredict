@@ -1,10 +1,11 @@
-import { BadRequestException, NotFoundException, Inject } from '@nestjs/common';
+import { BadRequestException, NotFoundException, Inject, Injectable } from '@nestjs/common';
 import { randomUUID as uuidv4 } from 'crypto';
 import { EvaluationEntity } from '../../domain/entities/evaluation.entity';
 import { IEvaluationRepository } from '../ports/output/i-evaluation.repository';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { CreateEvaluationDto } from '../dtos/create-evaluation.dto';
 
+@Injectable()
 export class CreateEvaluationUseCase {
   constructor(
     @Inject('IEvaluationRepository') private readonly evalRepo: IEvaluationRepository,

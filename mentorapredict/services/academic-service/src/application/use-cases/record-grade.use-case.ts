@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, NotFoundException, Inject } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException, Inject, Injectable } from '@nestjs/common';
 import { randomUUID as uuidv4 } from 'crypto';
 import { GradeEntity } from '../../domain/entities/grade.entity';
 import { IGradeRepository } from '../ports/output/i-grade.repository';
@@ -6,6 +6,7 @@ import { IEvaluationRepository } from '../ports/output/i-evaluation.repository';
 import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { RecordGradeDto } from '../dtos/record-grade.dto';
 
+@Injectable()
 export class RecordGradeUseCase {
   constructor(
     @Inject('IGradeRepository')      private readonly gradeRepo: IGradeRepository,

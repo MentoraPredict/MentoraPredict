@@ -1,4 +1,4 @@
-import { UnauthorizedException, Inject } from '@nestjs/common';
+import { UnauthorizedException, Inject, Injectable } from '@nestjs/common';
 import { IUserRepository } from '../ports/output/i-user.repository';
 import { ITokenGenerator } from '../ports/output/i-token.generator';
 import { ITokenCache } from '../ports/output/i-token.cache';
@@ -6,6 +6,7 @@ import { RefreshDto } from '../dtos';
 import { IRefreshUseCase } from '../ports/input/i-auth.use-cases';
 import { REDIS_TTL } from '../../shared-types-local';
 
+@Injectable()
 export class RefreshTokenUseCase implements IRefreshUseCase {
   constructor(
     @Inject('IUserRepository') private readonly userRepo: IUserRepository,

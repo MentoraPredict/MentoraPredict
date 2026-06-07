@@ -1,7 +1,8 @@
-import { Inject, UnauthorizedException } from '@nestjs/common';
+import { Inject, UnauthorizedException, Injectable } from '@nestjs/common';
 import { ITokenCache } from '../ports/output/i-token.cache';
 import { ILogoutUseCase } from '../ports/input/i-auth.use-cases';
 
+@Injectable()
 export class LogoutUserUseCase implements ILogoutUseCase {
   constructor(
     @Inject('ITokenCache') private readonly cache: ITokenCache,

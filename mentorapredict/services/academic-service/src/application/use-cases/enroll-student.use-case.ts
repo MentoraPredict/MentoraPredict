@@ -1,10 +1,11 @@
-import { ConflictException, NotFoundException, Inject } from '@nestjs/common';
+import { ConflictException, NotFoundException, Inject, Injectable } from '@nestjs/common';
 import { randomUUID as uuidv4 } from 'crypto';
 import { EnrollmentEntity } from '../../domain/entities/enrollment.entity';
 import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { EnrollStudentDto } from '../dtos/enroll-student.dto';
 
+@Injectable()
 export class EnrollStudentUseCase {
   constructor(
     @Inject('IEnrollmentRepository') private readonly enrollRepo: IEnrollmentRepository,

@@ -1,4 +1,4 @@
-import { UnauthorizedException, Inject, ForbiddenException } from '@nestjs/common';
+import { UnauthorizedException, Inject, ForbiddenException, Injectable } from '@nestjs/common';
 import { IUserRepository } from '../ports/output/i-user.repository';
 import { IPasswordHasher } from '../ports/output/i-password.hasher';
 import { ITokenGenerator } from '../ports/output/i-token.generator';
@@ -7,6 +7,7 @@ import { LoginDto } from '../dtos';
 import { ILoginUseCase } from '../ports/input/i-auth.use-cases';
 import { REDIS_TTL } from '../../shared-types-local';
 
+@Injectable()
 export class LoginUserUseCase implements ILoginUseCase {
   constructor(
     @Inject('IUserRepository')  private readonly userRepo: IUserRepository,

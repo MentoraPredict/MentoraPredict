@@ -1,4 +1,4 @@
-import { ConflictException, Inject } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { randomUUID as uuidv4 } from 'crypto';
 import { UserEntity, UserRole } from '../../domain/entities/user.entity';
 import { Email } from '../../domain/value-objects/email.vo';
@@ -11,6 +11,7 @@ import { IRegisterUseCase } from '../ports/input/i-auth.use-cases';
 export const USER_REPO  = 'IUserRepository';
 export const PWD_HASHER = 'IPasswordHasher';
 
+@Injectable()
 export class RegisterUserUseCase implements IRegisterUseCase {
   constructor(
     @Inject(USER_REPO)  private readonly userRepo: IUserRepository,
