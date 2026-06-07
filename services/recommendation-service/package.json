@@ -7,7 +7,12 @@
     "dev": "nest start --watch",
     "start": "node dist/main",
     "lint": "eslint src/",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
-  "description": "Personalized improvement plans via OpenAI API — placeholder, no logic implemented"
+  "dependencies": {
+    "@mentorapredict/shared-types": "*",
+    "@mentorapredict/shared-config": "*",
+    "@mentorapredict/shared-utils": "*"
+  },
+  "description": "recommendation-service skeleton — RF-020,RF-022"
 }

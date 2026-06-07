@@ -1,45 +1,42 @@
 # metrics-service
 
-**MentoraPredict — MVP Backend**
+**MentoraPredict MVP Backend** | Port: 3004 | Runtime: NestJS/TypeScript
+
+## Coverage
+
+RF-015–017
 
 ## Description
 
-Calculates academic average (RF-015), academic trend (RF-016), and compliance index (RF-017). Uses Redis cache for dashboard performance.
+Computes academic average, trend, and compliance index. Caches in Redis.
 
-## Architecture: Hexagonal (Ports & Adapters)
+## Hexagonal Architecture
 
 ```
 src/
-├── domain/                  # Core business rules (no framework dependencies)
-│   ├── entities/            # Domain entities
+├── domain/                  # Core business rules — zero framework dependencies
+│   ├── entities/            # Domain entities (plain TS classes / Python dataclasses)
 │   ├── value-objects/       # Immutable value types
-│   └── services/            # Domain services
-├── application/             # Use-cases and orchestration
+│   └── services/            # Domain services (pure logic)
+├── application/             # Use-cases — orchestrate domain + call ports
 │   ├── use-cases/           # One file per use-case
-│   ├── dtos/                # Input/output data shapes
-│   └── ports/               # Interfaces (input & output ports)
-└── infrastructure/          # Adapters — framework, DB, HTTP, cache
-    ├── controllers/         # NestJS REST controllers (primary adapters)
-    ├── persistence/         # TypeORM repositories (secondary adapters)
+│   ├── dtos/                # Input/output data transfer objects
+│   └── ports/
+│       ├── input/           # Primary ports — interfaces that controllers call
+│       └── output/          # Secondary ports — interfaces that adapters implement
+└── infrastructure/          # Adapters — framework, DB, HTTP, cache, external APIs
+    ├── controllers/         # REST controllers (primary adapters)
+    ├── persistence/         # TypeORM/Mongo repositories (secondary adapters)
     ├── cache/               # Redis adapter (if applicable)
-    ├── external/            # Third-party API clients
-    └── config/              # Environment & module config
+    ├── external/            # Third-party API clients (OpenAI, etc.)
+    └── config/              # Environment config & NestJS module setup
 ```
 
 ## Status
 
-> ⚠️ **Phase 0 — Structure only.**
-> No business logic, no database connections, no endpoints implemented.
-> All files are empty placeholders awaiting Sprint 1 implementation.
-
-## Tech Stack
-
-- **Runtime:** Node.js + NestJS
-- **Language:** TypeScript
-- **ORM:** TypeORM (PostgreSQL)
-- **Auth:** JWT RS256 (via shared guards)
-- **Docs:** Swagger / OpenAPI
+> ⚠️ **Skeleton only** — no business logic, no DB connections, no endpoints.
+> Implementation starts in Sprint 1.
 
 ## Getting Started
 
-_Not available in this phase._
+_Not available in this phase. See root `docker-compose.yml` for infra._

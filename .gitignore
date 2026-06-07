@@ -1,4 +1,3 @@
-
 # Environment
 .env
 .env.local
@@ -16,6 +15,11 @@
 /node_modules
 /build
 /dist
+
+# Build outputs
+dist/
+build/
+.turbo/
 
 # Dependencies
 /package
@@ -42,13 +46,20 @@ Thumbs.db
 =======
 node_modules/
 dist/
+
+# Environment
 .env
 .env.*
 !.env.example
+
+# Logs
 *.log
 .turbo/
 coverage/
 __pycache__/
 *.pyc
 .venv/
->>>>>>> feature/PWMP-59-Design-system-architecture-Hexagonal
+
+# Secrets
+keys/
+*.pem

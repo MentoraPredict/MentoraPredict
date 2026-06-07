@@ -1,0 +1,813 @@
+# ============================================================
+# MentoraPredict — OpenAPI Contracts (Design Phase)
+# Version: 1.0 | All endpoints are /api/v1
+# Auth: JWT RS256 via Bearer token
+# Internal headers: Authorization, x-correlation-id, x-request-id
+# ============================================================
+
+openapi: "3.1.0"
+info:
+  title: MentoraPredict API — Contract Design
+  version: "1.0.0"
+  description: >
+    Unified contract design for all MentoraPredict microservices.
+    Each service exposes its own Swagger at /api/docs.
+    All protected routes require: Authorization: Bearer <JWT>
+    Internal service-to-service calls also require:
+      x-correlation-id: <uuid>
+      x-request-id: <uuid>
+
+# ─────────────────────────────────────────────────────────────
+# SHARED COMPONENTS (referenced by all services)
+# ─────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  headers:
+    X-Correlation-Id:
+      description: Distributed tracing ID (propagated across services)
+      schema:
+        type: string
+        format: uuid
+    X-Request-Id:
+      description: Unique ID for this specific HTTP request
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    # ── Enums ──────────────────────────────────────────────
+    Role:
+      type: string
+      enum: [STUDENT, TEACHER, ADMIN]
+
+    RiskLevel:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+
+    ServiceStatus:
+      type: string
+      enum: [UP, DEGRADED, DOWN, STARTING, STOPPING, MAINTENANCE]
+
+    # ── Pagination ─────────────────────────────────────────
+    PaginationMeta:
+      type: object
+      properties:
+        page:        { type: integer, example: 1 }
+        limit:       { type: integer, example: 20 }
+        total:       { type: integer, example: 150 }
+        totalPages:  { type: integer, example: 8 }
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:  { type: array, items: {} }
+        meta:  { $ref: '#/components/schemas/PaginationMeta' }
+
+    # ── Standard Error ─────────────────────────────────────
+    ErrorResponse:
+      type: object
+      required: [statusCode, message, timestamp, path]
+      properties:
+        statusCode:  { type: integer, example: 400 }
+        message:     { type: string,  example: "Validation failed" }
+        errors:      { type: array, items: { type: string } }
+        timestamp:   { type: string, format: date-time }
+        path:        { type: string, example: "/api/v1/auth/login" }
+        requestId:   { type: string, format: uuid }
+
+    # ── Health Check ───────────────────────────────────────
+    HealthResponse:
+      type: object
+      properties:
+        status:    { $ref: '#/components/schemas/ServiceStatus' }
+        services:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ServiceStatus'
+        timestamp: { type: string, format: date-time }
+      example:
+        status: "UP"
+        services:
+          database: "UP"
+          redis: "UP"
+        timestamp: "2026-05-31T10:00:00Z"
+
+# ─────────────────────────────────────────────────────────────
+# 1. AUTH-SERVICE  (port 3001)
+# ─────────────────────────────────────────────────────────────
+# Covers: RF-001, RF-002, RF-003, RF-004, RF-005
+# ─────────────────────────────────────────────────────────────
+paths:
+
+  # ── Health ──────────────────────────────────────────────
+  /health:
+    get:
+      tags: [Health]
+      summary: Service health check
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/HealthResponse' } } } }
+
+  # ── Auth ────────────────────────────────────────────────
+  /api/v1/auth/register:
+    post:
+      tags: [auth-service]
+      summary: "RF-001: Register new user (default role: STUDENT)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName, email, password]
+              properties:
+                firstName: { type: string, example: "Victor" }
+                lastName:  { type: string, example: "Cañar" }
+                email:     { type: string, format: email }
+                password:  { type: string, minLength: 8 }
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:        { type: string, format: uuid }
+                  email:     { type: string }
+                  role:      { $ref: '#/components/schemas/Role' }
+                  createdAt: { type: string, format: date-time }
+        "409": { description: Email already exists }
+        "422": { description: Validation error }
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth-service]
+      summary: "RF-002.1: Login with email/password — returns JWT RS256"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:  { type: string, description: "JWT RS256, expires 15min" }
+                  refreshToken: { type: string, description: "Opaque token, expires 7d" }
+                  expiresIn:    { type: integer, example: 900 }
+                  tokenType:    { type: string, example: "Bearer" }
+        "401": { description: Invalid credentials }
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth-service]
+      summary: "RF-002.4: Renew access token using refresh token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: New access token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  expiresIn:   { type: integer, example: 900 }
+        "401": { description: Invalid or expired refresh token }
+
+  /api/v1/auth/logout:
+    post:
+      tags: [auth-service]
+      summary: "RF-003: Logout — invalidates refresh token in Redis"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "204": { description: Logged out successfully }
+        "401": { description: Unauthorized }
+
+  /api/v1/auth/forgot-password:
+    post:
+      tags: [auth-service]
+      summary: "RF-004: Request password reset email"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "202": { description: Reset email sent if account exists }
+
+  /api/v1/auth/reset-password:
+    post:
+      tags: [auth-service]
+      summary: "RF-004: Reset password with token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token:       { type: string }
+                newPassword: { type: string, minLength: 8 }
+      responses:
+        "204": { description: Password updated }
+        "400": { description: Invalid or expired token }
+
+# ─────────────────────────────────────────────────────────────
+# 2. USER-SERVICE  (port 3002)
+# ─────────────────────────────────────────────────────────────
+# Covers: RF-005, RF-014
+# ─────────────────────────────────────────────────────────────
+
+  /api/v1/users/me:
+    get:
+      tags: [user-service]
+      summary: "RF-014: Get authenticated user profile"
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:        { type: string, format: uuid }
+                  firstName: { type: string }
+                  lastName:  { type: string }
+                  email:     { type: string }
+                  role:      { $ref: '#/components/schemas/Role' }
+                  isActive:  { type: boolean }
+                  createdAt: { type: string, format: date-time }
+
+  /api/v1/users:
+    get:
+      tags: [user-service]
+      summary: "RF-014: List users (ADMIN only)"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: role
+          schema: { $ref: '#/components/schemas/Role' }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Paginated user list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedResponse' }
+        "403": { description: Forbidden — ADMIN role required }
+
+  /api/v1/users/{id}/role:
+    patch:
+      tags: [user-service]
+      summary: "RF-005: Assign role to user (ADMIN only)"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        "200": { description: Role updated }
+        "403": { description: Forbidden }
+        "404": { description: User not found }
+
+# ─────────────────────────────────────────────────────────────
+# 3. ACADEMIC-SERVICE  (port 3003)
+# ─────────────────────────────────────────────────────────────
+# Covers: RF-006 to RF-013
+# ─────────────────────────────────────────────────────────────
+
+  /api/v1/faculties:
+    get:
+      tags: [academic-service]
+      summary: "RF-006: List all faculties"
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Faculty list }
+    post:
+      tags: [academic-service]
+      summary: "RF-006: Create faculty (ADMIN only)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, code]
+              properties:
+                name: { type: string, example: "Ingeniería y Ciencias Aplicadas" }
+                code: { type: string, example: "FICA" }
+
+  /api/v1/careers:
+    get:
+      tags: [academic-service]
+      summary: "RF-007: List careers"
+      security: [{ BearerAuth: [] }]
+    post:
+      tags: [academic-service]
+      summary: "RF-007: Create career (ADMIN only)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, code, facultyId]
+              properties:
+                name:      { type: string, example: "Ingeniería en Sistemas de Información" }
+                code:      { type: string, example: "ISI" }
+                facultyId: { type: string, format: uuid }
+
+  /api/v1/academic-periods:
+    get:
+      tags: [academic-service]
+      summary: "RF-008: List academic periods"
+      security: [{ BearerAuth: [] }]
+    post:
+      tags: [academic-service]
+      summary: "RF-008: Create academic period (ADMIN only)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, startDate, endDate, careerId]
+              properties:
+                name:      { type: string, example: "2026-A" }
+                startDate: { type: string, format: date }
+                endDate:   { type: string, format: date }
+                careerId:  { type: string, format: uuid }
+                isActive:  { type: boolean, default: true }
+
+  /api/v1/subjects:
+    get:
+      tags: [academic-service]
+      summary: "RF-009: List subjects"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: periodId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: teacherId
+          schema: { type: string, format: uuid }
+    post:
+      tags: [academic-service]
+      summary: "RF-009: Create subject (ADMIN only)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, code, credits, periodId]
+              properties:
+                name:     { type: string, example: "Programación Web" }
+                code:     { type: string, example: "PW-701" }
+                credits:  { type: integer, example: 4 }
+                periodId: { type: string, format: uuid }
+
+  /api/v1/subjects/{id}/teacher:
+    put:
+      tags: [academic-service]
+      summary: "RF-011: Assign teacher to subject (ADMIN only)"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teacherId]
+              properties:
+                teacherId: { type: string, format: uuid }
+      responses:
+        "200": { description: Teacher assigned }
+
+  /api/v1/enrollments:
+    get:
+      tags: [academic-service]
+      summary: "RF-010: List enrollments (filtered by student or subject)"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: studentId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: subjectId
+          schema: { type: string, format: uuid }
+    post:
+      tags: [academic-service]
+      summary: "RF-010: Enroll student in subject (ADMIN/TEACHER)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, subjectId]
+              properties:
+                studentId: { type: string, format: uuid }
+                subjectId: { type: string, format: uuid }
+
+  /api/v1/evaluations:
+    get:
+      tags: [academic-service]
+      summary: "RF-012: List evaluations by subject"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: subjectId
+          required: true
+          schema: { type: string, format: uuid }
+    post:
+      tags: [academic-service]
+      summary: "RF-012: Create evaluation (TEACHER only)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, weight, subjectId, dueDate]
+              properties:
+                name:      { type: string, example: "Parcial 1" }
+                weight:    { type: number, minimum: 0, maximum: 100, example: 30 }
+                subjectId: { type: string, format: uuid }
+                dueDate:   { type: string, format: date }
+
+  /api/v1/grades:
+    post:
+      tags: [academic-service]
+      summary: "RF-012: Record grade for a student on an evaluation (TEACHER only)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, evaluationId, value]
+              properties:
+                studentId:    { type: string, format: uuid }
+                evaluationId: { type: string, format: uuid }
+                value:        { type: number, minimum: 0, maximum: 10 }
+      responses:
+        "201": { description: Grade recorded }
+
+  /api/v1/ingest:
+    post:
+      tags: [academic-service]
+      summary: "RF-013: Bulk ingest academic data (Excel/CSV/JSON)"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, periodId]
+              properties:
+                file:     { type: string, format: binary }
+                periodId: { type: string, format: uuid }
+                format:   { type: string, enum: [excel, csv, json] }
+      responses:
+        "202": { description: Ingestion job accepted }
+
+# ─────────────────────────────────────────────────────────────
+# 4. METRICS-SERVICE  (port 3004)
+# ─────────────────────────────────────────────────────────────
+# Covers: RF-015, RF-016, RF-017
+# ─────────────────────────────────────────────────────────────
+
+  /api/v1/metrics/students/{studentId}:
+    get:
+      tags: [metrics-service]
+      summary: "RF-015/016/017: Full academic metrics for a student"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: periodId
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Student metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studentId:       { type: string, format: uuid }
+                  periodId:        { type: string, format: uuid }
+                  average:         { type: number, example: 7.4 }
+                  trend:           { type: string, enum: [IMPROVING, STABLE, DECLINING] }
+                  complianceIndex: { type: number, minimum: 0, maximum: 100, example: 82.5 }
+                  computedAt:      { type: string, format: date-time }
+
+  /api/v1/metrics/subjects/{subjectId}:
+    get:
+      tags: [metrics-service]
+      summary: "RF-015: Subject-level metrics (TEACHER/ADMIN)"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: subjectId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Subject metrics summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subjectId:     { type: string, format: uuid }
+                  classAverage:  { type: number }
+                  passRate:      { type: number }
+                  atRiskCount:   { type: integer }
+
+# ─────────────────────────────────────────────────────────────
+# 5. ANALYTICS-SERVICE  (port 3005)
+# ─────────────────────────────────────────────────────────────
+# Covers: RF-018, RF-021, RF-023, RF-024, RF-025
+# ─────────────────────────────────────────────────────────────
+
+  /api/v1/analytics/risk/{studentId}:
+    get:
+      tags: [analytics-service]
+      summary: "RF-018: Get risk classification for a student"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Risk classification
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studentId:   { type: string, format: uuid }
+                  riskLevel:   { $ref: '#/components/schemas/RiskLevel' }
+                  score:       { type: number, minimum: 0, maximum: 100 }
+                  factors:     { type: array, items: { type: string } }
+                  classifiedAt: { type: string, format: date-time }
+
+  /api/v1/analytics/alerts:
+    get:
+      tags: [analytics-service]
+      summary: "RF-021: List early alerts"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: studentId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: subjectId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: level
+          schema: { $ref: '#/components/schemas/RiskLevel' }
+        - in: query
+          name: resolved
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedResponse' }
+
+  /api/v1/analytics/dashboard/student/{studentId}:
+    get:
+      tags: [analytics-service]
+      summary: "RF-023: Student dashboard aggregated data"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Dashboard payload (cached in Redis)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:         { type: object }
+                  currentMetrics:  { type: object }
+                  riskLevel:       { $ref: '#/components/schemas/RiskLevel' }
+                  activeAlerts:    { type: array, items: { type: object } }
+                  recommendations: { type: array, items: { type: object } }
+
+  /api/v1/analytics/dashboard/teacher/{teacherId}:
+    get:
+      tags: [analytics-service]
+      summary: "RF-024: Teacher dashboard — at-risk students per subject"
+      security: [{ BearerAuth: [] }]
+
+  /api/v1/analytics/dashboard/admin:
+    get:
+      tags: [analytics-service]
+      summary: "RF-025: Admin dashboard — institution-wide indicators"
+      security: [{ BearerAuth: [] }]
+
+# ─────────────────────────────────────────────────────────────
+# 6. PREDICTION-SERVICE  (port 3006) — Python FastAPI
+# ─────────────────────────────────────────────────────────────
+# Covers: RF-019
+# ─────────────────────────────────────────────────────────────
+
+  /api/v1/predict/risk:
+    post:
+      tags: [prediction-service]
+      summary: "RF-019: Run failure-risk prediction (logistic regression)"
+      description: "Internal service call. Uses x-api-key or internal JWT."
+      parameters:
+        - in: header
+          name: x-api-key
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-correlation-id
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [anonymousStudentId, features]
+              properties:
+                anonymousStudentId: { type: string, format: uuid, description: "Anonymized — no PII" }
+                features:
+                  type: object
+                  properties:
+                    average:         { type: number }
+                    trend:           { type: string }
+                    complianceIndex: { type: number }
+                    missedEvals:     { type: integer }
+                    attendanceRate:  { type: number }
+      responses:
+        "200":
+          description: Risk prediction result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  anonymousStudentId: { type: string, format: uuid }
+                  riskScore:          { type: number, minimum: 0, maximum: 100 }
+                  riskLevel:          { $ref: '#/components/schemas/RiskLevel' }
+                  modelName:          { type: string, example: "logistic-regression-v1" }
+                  modelVersion:       { type: string, example: "1.0.0" }
+                  confidenceScore:    { type: number, example: 0.87 }
+                  inferenceDate:      { type: string, format: date-time }
+
+# ─────────────────────────────────────────────────────────────
+# 7. RECOMMENDATION-SERVICE  (port 3007)
+# ─────────────────────────────────────────────────────────────
+# Covers: RF-020, RF-022
+# ─────────────────────────────────────────────────────────────
+
+  /api/v1/recommendations/generate:
+    post:
+      tags: [recommendation-service]
+      summary: "RF-020: Generate personalized improvement plan via OpenAI"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, context]
+              properties:
+                studentId: { type: string, format: uuid }
+                context:
+                  type: object
+                  description: "Aggregated metrics (no PII per RNF-042)"
+                  properties:
+                    riskLevel:       { $ref: '#/components/schemas/RiskLevel' }
+                    weakSubjects:    { type: array, items: { type: string } }
+                    complianceIndex: { type: number }
+                    trend:           { type: string }
+      responses:
+        "201":
+          description: Recommendation generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:          { type: string, format: uuid }
+                  studentId:   { type: string, format: uuid }
+                  plan:        { type: string, description: "NL improvement plan from GPT" }
+                  actions:     { type: array, items: { type: string } }
+                  generatedAt: { type: string, format: date-time }
+
+  /api/v1/recommendations/students/{studentId}:
+    get:
+      tags: [recommendation-service]
+      summary: "RF-020: Get recommendation history for student"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Recommendation history }
+
+  /api/v1/observations:
+    post:
+      tags: [recommendation-service]
+      summary: "RF-022: Teacher adds observation for a student"
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, subjectId, text]
+              properties:
+                studentId: { type: string, format: uuid }
+                subjectId: { type: string, format: uuid }
+                text:      { type: string, maxLength: 1000 }
+      responses:
+        "201": { description: Observation saved }

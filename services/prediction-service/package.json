@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'Use: uvicorn src.main:app --reload'",
-    "test": "echo 'Use: pytest --cov=src'"
+    "dev": "echo 'Run: uvicorn src.main:app --reload --port 3006'",
+    "test": "echo 'Run: pytest --cov=src --cov-fail-under=60'"
   },
-  "description": "AI Prediction service (Python/FastAPI) — placeholder, no logic implemented"
+  "description": "prediction-service Python/FastAPI skeleton — RF-019"
 }
