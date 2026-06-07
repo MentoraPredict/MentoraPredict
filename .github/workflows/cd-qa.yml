@@ -3,9 +3,9 @@ name: CD QA
 on:
   push:
     branches: [qa]
+  workflow_dispatch:
 
 env:
-  PNPM_VERSION: 9
   REGISTRY: docker.io
   IMAGE_TAG_PREFIX: qa
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -14,6 +14,7 @@ jobs:
   build-and-push:
     name: Build and Push Images
     runs-on: ubuntu-latest
+    environment: qa
 
     strategy:
       matrix:
@@ -33,8 +34,12 @@ jobs:
 
       - name: Validate secrets
         run: |
-          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+          if [ -z "${{ env.DOCKERHUB_USERNAME }}" ]; then
             echo "Error: DOCKERHUB_USERNAME secret not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "Error: DOCKERHUB_TOKEN secret not set"
             exit 1
           fi
 
@@ -51,7 +56,7 @@ jobs:
 
       - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - uses: docker/build-push-action@v6
@@ -62,3 +67,41 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-to-qa:
+    name: Deploy to EC2 QA
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: qa
+    if: github.ref == 'refs/heads/qa'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mkdir -p /opt/mentorapredict
+            sudo chown ubuntu:ubuntu /opt/mentorapredict
+            cd /opt/mentorapredict
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/${{ github.repository }} .
+              git checkout qa
+            else
+              git fetch origin
+              git reset --hard origin/qa
+            fi
+            cat > .env << EOF
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            EOF
+            docker compose -f docker-compose.qa.yml pull
+            docker compose -f docker-compose.qa.yml up -d --force-recreate --remove-orphans
+            docker system prune -af --filter "until=24h"
