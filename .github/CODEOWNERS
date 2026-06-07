@@ -1,17 +1,17 @@
-# Applications
-/apps/ @JuanGuevara90
+# Applications 
+/main/apps/ @JuanGuevara90
 
-# Shared packages
-/packages/ @JuanGuevara90
+# Shared packages 
+/main/packages/ @JuanGuevara90
 
-# Infrastructure
-/infra/ @JuanGuevara90
+# Infrastructure 
+/main/infra/ @JuanGuevara90
 
-# GitHub workflows and CI/CD
-/.github/ @JuanGuevara90
+# GitHub workflows and CI/CD 
+/main/.github/ @JuanGuevara90
 
-# Documentation
-/docs/ @JuanGuevara90
+# Documentation 
+/main/docs/ @JuanGuevara90
 
-# Default owner
-* @JuanGuevara90
+# Default owner 
+/main/ * @JuanGuevara90
