@@ -10,9 +10,9 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
-    "@mentorapredict/shared-types": "*",
-    "@mentorapredict/shared-config": "*",
-    "@mentorapredict/shared-utils": "*"
+    "@mentorapredict/shared-types": "workspace:*",
+    "@mentorapredict/shared-config": "workspace:*",
+    "@mentorapredict/shared-utils": "workspace:*"
   },
   "description": "recommendation-service skeleton — RF-020,RF-022"
 }

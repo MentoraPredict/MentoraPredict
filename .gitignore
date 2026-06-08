@@ -25,7 +25,6 @@ build/
 /package
 /package-lock.json
 /yarn.lock
-/pnpm-lock.yaml
 
 # TypeScript
 /*.tsbuildinfo
