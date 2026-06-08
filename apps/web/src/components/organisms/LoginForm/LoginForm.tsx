@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import { useForm } from "react-hook-form";
 
 import {
@@ -19,6 +21,7 @@ interface LoginFormData {
 }
 
 export default function LoginForm() {
+    const navigate = useNavigate();
     const {
         register,
         handleSubmit,
@@ -110,6 +113,9 @@ export default function LoginForm() {
                                 text-blue-700
                                 hover:underline
                             "
+                            onClick={() => {
+                                navigate("/forgot-password");
+                            }}
                         >
                             ¿Olvidaste tu contraseña?
                         </button>
@@ -128,6 +134,9 @@ export default function LoginForm() {
                 <Button
                     variant="outline"
                     className="w-full"
+                    onClick={() => {
+                        navigate("/register");
+                    }}
                 >
                     Crear cuenta
                 </Button>
