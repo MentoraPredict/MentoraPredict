@@ -1,0 +1,479 @@
+# ============================================================
+# MentoraPredict — Data Models Design
+# PostgreSQL · MongoDB · Redis
+# ============================================================
+
+# ─────────────────────────────────────────────────────────────
+# SECTION 1: PostgreSQL — DER (Entity Relationship Design)
+# ─────────────────────────────────────────────────────────────
+#
+# Convention:
+#   - All PKs: UUID (gen_random_uuid())
+#   - All tables: snake_case
+#   - Soft delete: is_active BOOLEAN DEFAULT true
+#   - Timestamps: created_at, updated_at (auto-managed)
+#   - Ownership: which microservice OWNS each table
+# ─────────────────────────────────────────────────────────────
+
+postgresql:
+
+  # ─── DOMAIN: auth-service ───────────────────────────────
+  tables:
+
+    users:
+      owner: auth-service
+      description: "Core identity record. Extended profile in user-service."
+      columns:
+        id:            { type: UUID, constraint: PK, default: gen_random_uuid() }
+        email:         { type: VARCHAR(255), constraint: UNIQUE NOT NULL }
+        password_hash: { type: TEXT, constraint: NOT NULL, note: "bcrypt cost≥12 per RNF-002" }
+        role:          { type: ENUM(STUDENT,TEACHER,ADMIN), default: STUDENT }
+        is_active:     { type: BOOLEAN, default: true }
+        is_verified:   { type: BOOLEAN, default: false }
+        created_at:    { type: TIMESTAMPTZ, default: NOW() }
+        updated_at:    { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - email (unique)
+
+    password_reset_tokens:
+      owner: auth-service
+      description: "One-time tokens for RF-004 password recovery."
+      columns:
+        id:         { type: UUID, constraint: PK }
+        user_id:    { type: UUID, constraint: "FK → users.id ON DELETE CASCADE" }
+        token_hash: { type: TEXT, constraint: NOT NULL }
+        expires_at: { type: TIMESTAMPTZ, constraint: NOT NULL }
+        used_at:    { type: TIMESTAMPTZ, nullable: true }
+        created_at: { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - token_hash
+        - user_id
+
+  # ─── DOMAIN: user-service ───────────────────────────────
+
+    user_profiles:
+      owner: user-service
+      description: "Extended profile data. 1:1 with users."
+      columns:
+        id:          { type: UUID, constraint: PK }
+        user_id:     { type: UUID, constraint: "FK → users.id UNIQUE ON DELETE CASCADE" }
+        first_name:  { type: VARCHAR(100), constraint: NOT NULL }
+        last_name:   { type: VARCHAR(100), constraint: NOT NULL }
+        phone:       { type: VARCHAR(20), nullable: true }
+        avatar_url:  { type: TEXT, nullable: true }
+        created_at:  { type: TIMESTAMPTZ, default: NOW() }
+        updated_at:  { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - user_id (unique)
+
+  # ─── DOMAIN: academic-service ───────────────────────────
+
+    faculties:
+      owner: academic-service
+      description: "RF-006: University faculties."
+      columns:
+        id:         { type: UUID, constraint: PK }
+        name:       { type: VARCHAR(200), constraint: NOT NULL }
+        code:       { type: VARCHAR(20), constraint: UNIQUE NOT NULL }
+        is_active:  { type: BOOLEAN, default: true }
+        created_at: { type: TIMESTAMPTZ, default: NOW() }
+        updated_at: { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - code (unique)
+
+    careers:
+      owner: academic-service
+      description: "RF-007: Academic careers (degrees) within a faculty."
+      columns:
+        id:          { type: UUID, constraint: PK }
+        faculty_id:  { type: UUID, constraint: "FK → faculties.id" }
+        name:        { type: VARCHAR(200), constraint: NOT NULL }
+        code:        { type: VARCHAR(20), constraint: UNIQUE NOT NULL }
+        is_active:   { type: BOOLEAN, default: true }
+        created_at:  { type: TIMESTAMPTZ, default: NOW() }
+        updated_at:  { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - faculty_id
+        - code (unique)
+
+    academic_periods:
+      owner: academic-service
+      description: "RF-008: Semesters / academic terms."
+      columns:
+        id:         { type: UUID, constraint: PK }
+        career_id:  { type: UUID, constraint: "FK → careers.id" }
+        name:       { type: VARCHAR(50), constraint: NOT NULL, example: "2026-A" }
+        start_date: { type: DATE, constraint: NOT NULL }
+        end_date:   { type: DATE, constraint: NOT NULL }
+        is_active:  { type: BOOLEAN, default: true }
+        created_at: { type: TIMESTAMPTZ, default: NOW() }
+        updated_at: { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - career_id
+        - is_active
+
+    subjects:
+      owner: academic-service
+      description: "RF-009: Course/subject within an academic period."
+      columns:
+        id:         { type: UUID, constraint: PK }
+        period_id:  { type: UUID, constraint: "FK → academic_periods.id" }
+        teacher_id: { type: UUID, constraint: "FK → users.id", nullable: true, note: "RF-011" }
+        name:       { type: VARCHAR(200), constraint: NOT NULL }
+        code:       { type: VARCHAR(30), constraint: NOT NULL }
+        credits:    { type: SMALLINT, constraint: NOT NULL }
+        is_active:  { type: BOOLEAN, default: true }
+        created_at: { type: TIMESTAMPTZ, default: NOW() }
+        updated_at: { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - period_id
+        - teacher_id
+        - UNIQUE(code, period_id)
+
+    enrollments:
+      owner: academic-service
+      description: "RF-010: Student enrollment in a subject."
+      columns:
+        id:          { type: UUID, constraint: PK }
+        student_id:  { type: UUID, constraint: "FK → users.id" }
+        subject_id:  { type: UUID, constraint: "FK → subjects.id" }
+        enrolled_at: { type: TIMESTAMPTZ, default: NOW() }
+        status:      { type: ENUM(ACTIVE,WITHDRAWN,COMPLETED), default: ACTIVE }
+        created_at:  { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - student_id
+        - subject_id
+        - UNIQUE(student_id, subject_id)
+
+    evaluations:
+      owner: academic-service
+      description: "RF-012: Assessments (parcials, finals, tasks) within a subject."
+      columns:
+        id:          { type: UUID, constraint: PK }
+        subject_id:  { type: UUID, constraint: "FK → subjects.id" }
+        name:        { type: VARCHAR(100), constraint: NOT NULL, example: "Parcial 1" }
+        weight:      { type: NUMERIC(5,2), constraint: NOT NULL, note: "0-100, all weights for subject must sum to 100" }
+        due_date:    { type: DATE, nullable: true }
+        is_active:   { type: BOOLEAN, default: true }
+        created_at:  { type: TIMESTAMPTZ, default: NOW() }
+        updated_at:  { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - subject_id
+
+    grades:
+      owner: academic-service
+      description: "RF-012: Grade recorded per student per evaluation. Scale 0-10."
+      columns:
+        id:             { type: UUID, constraint: PK }
+        student_id:     { type: UUID, constraint: "FK → users.id" }
+        evaluation_id:  { type: UUID, constraint: "FK → evaluations.id" }
+        value:          { type: NUMERIC(4,2), constraint: NOT NULL, note: "0.00 to 10.00" }
+        recorded_by:    { type: UUID, constraint: "FK → users.id", note: "TEACHER who entered the grade" }
+        recorded_at:    { type: TIMESTAMPTZ, default: NOW() }
+        created_at:     { type: TIMESTAMPTZ, default: NOW() }
+        updated_at:     { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - student_id
+        - evaluation_id
+        - UNIQUE(student_id, evaluation_id)
+
+  # ─── DOMAIN: analytics-service ──────────────────────────
+
+    academic_risk:
+      owner: analytics-service
+      description: "RF-018: Risk classification snapshots per student per period."
+      columns:
+        id:              { type: UUID, constraint: PK }
+        student_id:      { type: UUID, constraint: "FK → users.id" }
+        period_id:       { type: UUID, constraint: "FK → academic_periods.id" }
+        risk_level:      { type: ENUM(LOW,MEDIUM,HIGH), constraint: NOT NULL }
+        risk_score:      { type: NUMERIC(5,2), note: "0-100 from prediction-service" }
+        factors:         { type: JSONB, note: "Array of contributing factors" }
+        model_name:      { type: VARCHAR(100), note: "RNF-040 traceability" }
+        model_version:   { type: VARCHAR(20) }
+        classified_at:   { type: TIMESTAMPTZ, default: NOW() }
+        created_at:      { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - student_id
+        - period_id
+        - risk_level
+        - UNIQUE(student_id, period_id, classified_at)
+
+    alerts:
+      owner: analytics-service
+      description: "RF-021: Early warning alerts triggered when risk is MEDIUM or HIGH."
+      columns:
+        id:             { type: UUID, constraint: PK }
+        student_id:     { type: UUID, constraint: "FK → users.id" }
+        subject_id:     { type: UUID, constraint: "FK → subjects.id", nullable: true }
+        risk_level:     { type: ENUM(LOW,MEDIUM,HIGH), constraint: NOT NULL }
+        message:        { type: TEXT, constraint: NOT NULL }
+        is_resolved:    { type: BOOLEAN, default: false }
+        resolved_at:    { type: TIMESTAMPTZ, nullable: true }
+        resolved_by:    { type: UUID, nullable: true }
+        created_at:     { type: TIMESTAMPTZ, default: NOW() }
+        updated_at:     { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - student_id
+        - is_resolved
+        - risk_level
+
+  # ─── DOMAIN: recommendation-service ────────────────────
+
+    observations:
+      owner: recommendation-service
+      description: "RF-022: Teacher qualitative observations per student."
+      columns:
+        id:          { type: UUID, constraint: PK }
+        teacher_id:  { type: UUID, constraint: "FK → users.id" }
+        student_id:  { type: UUID, constraint: "FK → users.id" }
+        subject_id:  { type: UUID, constraint: "FK → subjects.id" }
+        text:        { type: TEXT, constraint: NOT NULL }
+        created_at:  { type: TIMESTAMPTZ, default: NOW() }
+        updated_at:  { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - student_id
+        - teacher_id
+        - subject_id
+
+  # ─── DOMAIN: metrics-service ─────────────────────────────
+
+    academic_metrics_snapshots:
+      owner: metrics-service
+      description: "RF-015/016/017: Computed metric snapshots (cached & persisted)."
+      columns:
+        id:               { type: UUID, constraint: PK }
+        student_id:       { type: UUID, constraint: "FK → users.id" }
+        period_id:        { type: UUID, constraint: "FK → academic_periods.id" }
+        average:          { type: NUMERIC(4,2) }
+        trend:            { type: ENUM(IMPROVING,STABLE,DECLINING) }
+        compliance_index: { type: NUMERIC(5,2), note: "0-100 %" }
+        computed_at:      { type: TIMESTAMPTZ, default: NOW() }
+      indexes:
+        - student_id
+        - period_id
+        - UNIQUE(student_id, period_id, computed_at)
+
+# ─────────────────────────────────────────────────────────────
+# DER RELATIONSHIP SUMMARY
+# ─────────────────────────────────────────────────────────────
+#
+#  users ──────────────────────────────────────────────────────
+#    │ 1:1  user_profiles
+#    │ 1:N  password_reset_tokens
+#    │ 1:N  enrollments (as student)
+#    │ 1:N  subjects    (as teacher)
+#    │ 1:N  grades      (as student / recorded_by teacher)
+#    │ 1:N  observations (as student / as teacher)
+#    │ 1:N  alerts
+#    │ 1:N  academic_risk
+#    └ 1:N  academic_metrics_snapshots
+#
+#  faculties → careers → academic_periods → subjects
+#                                              │ 1:N evaluations → grades
+#                                              └ 1:N enrollments
+# ─────────────────────────────────────────────────────────────
+
+
+# ─────────────────────────────────────────────────────────────
+# SECTION 2: MongoDB — Collections Design
+# ─────────────────────────────────────────────────────────────
+#
+# Purpose: flexible/append-only data — IA logs, GPT plans, audit
+# Database: mentorapredict_nosql
+# ─────────────────────────────────────────────────────────────
+
+mongodb:
+
+  # ── Collection: recommendation_plans ──────────────────────
+  recommendation_plans:
+    owner: recommendation-service
+    description: "RF-020: Full GPT-generated improvement plans (variable JSON schema)."
+    index:
+      - student_id
+      - created_at
+      - subject_ids
+    example_document:
+      _id: "ObjectId('665a1f...')"
+      student_id: "uuid-anon-001"           # Anonymized UUID
+      period_id:  "uuid-period-2026A"
+      risk_level: "MEDIUM"
+      context_snapshot:
+        average: 6.1
+        trend: "DECLINING"
+        compliance_index: 71.0
+        weak_subjects: ["Programación Web", "Cálculo II"]
+      plan:
+        raw_gpt_response: "Para mejorar tu rendimiento en Programación Web..."
+        actions:
+          - "Revisar módulos de JavaScript asíncrono (semana 1-2)"
+          - "Asistir a tutorías los miércoles 14:00"
+          - "Completar ejercicios prácticos de Node.js"
+        resources:
+          - { type: "video", url: "https://...", title: "Async JS" }
+      model_metadata:
+        provider: "openai"
+        model: "gpt-4o"
+        tokens_used: 847
+        prompt_version: "v1.2"
+      generated_at: "ISODate('2026-05-31T10:00:00Z')"
+      created_at:   "ISODate('2026-05-31T10:00:01Z')"
+
+  # ── Collection: prediction_logs ───────────────────────────
+  prediction_logs:
+    owner: prediction-service
+    description: "RNF-040: Full traceability of every ML inference. Audit trail."
+    index:
+      - anonymous_student_id
+      - inference_date
+      - model_name
+    example_document:
+      _id: "ObjectId('665b2a...')"
+      anonymous_student_id: "uuid-anon-001"   # RNF-042: no PII
+      period_id: "uuid-period-2026A"
+      input_features:
+        average: 5.8
+        trend: "DECLINING"
+        compliance_index: 65.0
+        missed_evals: 2
+        attendance_rate: 0.78
+      output:
+        risk_score: 72.4
+        risk_level: "HIGH"
+        probabilities:
+          LOW: 0.08
+          MEDIUM: 0.20
+          HIGH: 0.72
+      model_metadata:
+        model_name: "logistic-regression-v1"
+        model_version: "1.0.0"
+        confidence_score: 0.87
+        training_date: "2026-04-01"
+      inference_date: "ISODate('2026-05-31T10:05:00Z')"
+      correlation_id: "uuid-corr-xyz"
+
+  # ── Collection: ingestion_jobs ────────────────────────────
+  ingestion_jobs:
+    owner: academic-service
+    description: "RF-013: Track bulk data ingestion jobs (Excel/CSV/JSON uploads)."
+    index:
+      - period_id
+      - status
+      - created_at
+    example_document:
+      _id: "ObjectId('665c3b...')"
+      period_id: "uuid-period-2026A"
+      uploaded_by: "uuid-admin-001"
+      file_name: "notas_2026A.xlsx"
+      file_format: "excel"
+      status: "COMPLETED"            # PENDING | PROCESSING | COMPLETED | FAILED
+      summary:
+        total_rows: 1240
+        rows_processed: 1238
+        rows_failed: 2
+        errors:
+          - { row: 45, message: "Invalid grade value: 11.5" }
+          - { row: 203, message: "Unknown student code: SI7-999" }
+      started_at:   "ISODate('2026-05-31T09:00:00Z')"
+      completed_at: "ISODate('2026-05-31T09:00:45Z')"
+      created_at:   "ISODate('2026-05-31T09:00:00Z')"
+
+  # ── Collection: audit_logs ────────────────────────────────
+  audit_logs:
+    owner: shared (written by all services)
+    description: "Append-only audit trail for critical actions across all services."
+    index:
+      - user_id
+      - action
+      - timestamp
+      - service
+    example_document:
+      _id: "ObjectId('665d4c...')"
+      service: "academic-service"
+      action: "GRADE_RECORDED"
+      actor_id: "uuid-teacher-001"
+      target_id: "uuid-grade-xyz"
+      target_type: "Grade"
+      metadata:
+        student_id: "uuid-student-001"
+        evaluation_id: "uuid-eval-001"
+        value: 8.5
+      ip_address: "10.0.0.5"
+      correlation_id: "uuid-corr-abc"
+      timestamp: "ISODate('2026-05-31T10:10:00Z')"
+
+
+# ─────────────────────────────────────────────────────────────
+# SECTION 3: Redis — Cache Design
+# ─────────────────────────────────────────────────────────────
+#
+# Naming convention:  <service>:<entity>:<id>[:<variant>]
+# All keys are prefixed to avoid collisions across services.
+# ─────────────────────────────────────────────────────────────
+
+redis:
+
+  auth_service:
+    refresh_tokens:
+      key_pattern:  "auth:refresh:<userId>"
+      value:        "hashed_refresh_token (string)"
+      ttl:          604800   # 7 days (matches JWT refresh window)
+      purpose:      "Validates refresh tokens; deleted on logout (RF-003)"
+
+    password_reset_tokens:
+      key_pattern:  "auth:pwreset:<tokenHash>"
+      value:        "userId (string)"
+      ttl:          3600     # 1 hour
+      purpose:      "One-time password reset token (RF-004)"
+
+    rate_limit:
+      key_pattern:  "auth:ratelimit:login:<ip>"
+      value:        "attempt_count (integer)"
+      ttl:          900      # 15 min sliding window
+      purpose:      "Brute-force protection (RNF-006)"
+
+  metrics_service:
+    student_metrics:
+      key_pattern:  "metrics:student:<studentId>:<periodId>"
+      value:        "JSON { average, trend, complianceIndex, computedAt }"
+      ttl:          3600     # 1 hour — recalculated on new grade entry
+      purpose:      "Avoid recomputing metrics on every dashboard load (RF-015–017)"
+
+    subject_metrics:
+      key_pattern:  "metrics:subject:<subjectId>"
+      value:        "JSON { classAverage, passRate, atRiskCount }"
+      ttl:          1800     # 30 min
+      purpose:      "Teacher dashboard subject summary cache"
+
+  analytics_service:
+    student_dashboard:
+      key_pattern:  "dash:student:<studentId>"
+      value:        "JSON full dashboard payload"
+      ttl:          900      # 15 min — near real-time for student view
+      purpose:      "RF-023 student dashboard (cache full aggregated response)"
+
+    teacher_dashboard:
+      key_pattern:  "dash:teacher:<teacherId>"
+      value:        "JSON at-risk students list per subject"
+      ttl:          1800     # 30 min
+      purpose:      "RF-024 teacher dashboard cache"
+
+    admin_dashboard:
+      key_pattern:  "dash:admin:global"
+      value:        "JSON institution-wide KPIs"
+      ttl:          300      # 5 min — admin needs fresher data
+      purpose:      "RF-025 admin dashboard cache"
+
+    risk_classification:
+      key_pattern:  "risk:student:<studentId>:<periodId>"
+      value:        "JSON { riskLevel, riskScore, classifiedAt }"
+      ttl:          3600     # 1 hour
+      purpose:      "RF-018 cache latest risk result; invalidated on new prediction"
+
+  invalidation_strategy:
+    description: >
+      Cache invalidation events (publish via internal HTTP or future message queue):
+      - New grade recorded → invalidate metrics:student:*, dash:student:*, risk:student:*
+      - New prediction run → invalidate risk:student:*, dash:student:*, dash:teacher:*
+      - New enrollment → invalidate dash:teacher:*, dash:admin:global
+      - New alert → invalidate dash:student:*, dash:teacher:*

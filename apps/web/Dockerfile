@@ -1,4 +1,4 @@
-FROM node:18-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9 --activate
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -6,15 +6,12 @@ COPY apps/web/package.json ./apps/web/package.json
 COPY packages/ui ./packages/ui
 COPY packages/hooks ./packages/hooks
 COPY packages/services ./packages/services
-COPY packages/shared ./packages/shared
 COPY packages/shared-types ./packages/shared-types
 COPY packages/shared-utils ./packages/shared-utils
 COPY packages/shared-config ./packages/shared-config
-COPY packages/eslint-config ./packages/eslint-config
-COPY packages/tsconfig ./packages/tsconfig
 RUN pnpm install --frozen-lockfile
 
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9 --activate
 COPY --from=deps /app .

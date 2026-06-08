@@ -5,6 +5,7 @@
   "packageManager": "pnpm@9.0.0",
   "workspaces": [
     "apps/*",
+    "services/*",
     "packages/*"
   ],
   "scripts": {
@@ -13,11 +14,19 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean",
+    "infra:up": "docker compose -f docker-compose.yml up -d postgres redis mongo",
+    "infra:down": "docker compose -f docker-compose.yml down postgres redis mongo",
+    "services:up": "docker compose -f docker-compose.yml up -d",
+    "services:down": "docker compose -f docker-compose.yml down",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.0",
     "turbo": "^2.0.0",
-    "typescript": "^5.4.0",
-    "prettier": "^3.2.0"
+    "typescript": "^5.4.0"
   }
 }
