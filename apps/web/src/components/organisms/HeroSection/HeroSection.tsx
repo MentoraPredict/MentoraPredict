@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Container from "@/components/atoms/Container";
@@ -5,6 +7,8 @@ import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
 export default function HeroSection() {
+  const navigate = useNavigate();
+
   return (
     <section
       id="hero"
@@ -51,7 +55,11 @@ export default function HeroSection() {
               justify-center
             "
           >
-            <Button>
+            <Button
+              onClick={() => {
+                navigate("/login");
+              }}
+            >
               Comenzar ahora
             </Button>
           </div>
