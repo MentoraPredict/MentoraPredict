@@ -1,4 +1,4 @@
-FROM node:18-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9 --activate
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -6,14 +6,14 @@ COPY services/user-service/package.json ./services/user-service/package.json
 COPY packages/ ./packages/
 RUN pnpm install --frozen-lockfile
 
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9 --activate
 COPY --from=deps /app .
 COPY services/user-service/ ./services/user-service/
 RUN pnpm --filter @mentorapredict/user-service build
 
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
