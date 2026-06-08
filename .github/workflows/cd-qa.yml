@@ -2,7 +2,8 @@ name: CD QA
 
 on:
   push:
-    branches: [QA]
+    branches:
+      - QA
   workflow_dispatch:
 
 env:
@@ -19,40 +20,53 @@ jobs:
     strategy:
       matrix:
         include:
-          - service: api-gateway
-            path: services
+          # Implementados y desplegables
           - service: auth-service
             path: services
-          - service: user-service
-            path: services
+
           - service: academic-service
             path: services
-          - service: metrics-service
-            path: services
-          - service: analytics-service
-            path: services
-          - service: recommendation-service
-            path: services
-          - service: prediction-service
-            path: services
+
           - service: web
             path: apps
 
-    steps:
-      - uses: actions/checkout@v4
+          # Agregar cuando estén implementados y pasen CI
+          # - service: user-service
+          #   path: services
 
-      - name: Validate secrets
+          # Placeholders / En desarrollo
+          # - service: api-gateway
+          #   path: services
+
+          # - service: metrics-service
+          #   path: services
+
+          # - service: analytics-service
+          #   path: services
+
+          # - service: recommendation-service
+          #   path: services
+
+          # - service: prediction-service
+          #   path: services
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Secrets
         run: |
           if [ -z "${{ env.DOCKERHUB_USERNAME }}" ]; then
             echo "Error: DOCKERHUB_USERNAME secret not set"
             exit 1
           fi
+
           if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
             echo "Error: DOCKERHUB_TOKEN secret not set"
             exit 1
           fi
 
-      - name: Docker meta
+      - name: Docker Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -61,14 +75,17 @@ jobs:
             type=raw,value=latest
             type=sha,prefix=${{ env.IMAGE_TAG_PREFIX }}-,format=short
 
-      - uses: docker/setup-buildx-action@v3
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - uses: docker/login-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
+      - name: Build and Push Image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.path }}/${{ matrix.service }}/Dockerfile
@@ -85,7 +102,7 @@ jobs:
     if: github.ref == 'refs/heads/QA'
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Deploy to EC2 via SSH
@@ -96,9 +113,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+
             sudo mkdir -p /opt/mentorapredict
             sudo chown ubuntu:ubuntu /opt/mentorapredict
+
             cd /opt/mentorapredict
+
             if [ ! -d ".git" ]; then
               git clone https://github.com/${{ github.repository }} .
               git checkout QA
@@ -106,8 +126,10 @@ jobs:
               git fetch origin
               git reset --hard origin/QA
             fi
+
             SHORT_SHA=$(git rev-parse --short HEAD)
             IMAGE_TAG="qa-${SHORT_SHA}"
+
             cat > .env << EOF
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
@@ -120,17 +142,32 @@ jobs:
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             MONGO_DB=${{ secrets.MONGO_DB }}
             EOF
+
             export WEB_PORT=${WEB_PORT:-80}
             echo "WEB_PORT=$WEB_PORT" >> .env
+
             IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml pull
-            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+            IMAGE_TAG=$IMAGE_TAG docker compose \
+              -f docker-compose.prod.yml \
+              up -d \
+              --force-recreate \
+              --remove-orphans
+
             echo "Waiting for services to start..."
+
             for i in $(seq 1 30); do
-              if curl -sf http://localhost:${WEB_PORT:-3007} > /dev/null 2>&1; then
+              if curl -sf http://localhost:${WEB_PORT} > /dev/null 2>&1; then
                 echo "✅ Web is up"
                 break
               fi
+
               echo "⏳ Attempt $i/30..."
               sleep 5
             done
+
             docker system prune -af --filter "until=24h"
+
+      - name: Deployment Summary
+        run: |
+          echo "QA deployment completed successfully."
