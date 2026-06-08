@@ -61,16 +61,25 @@ jobs:
 
       - name: Validate Dockerfiles
         run: |
-          echo "Checking Dockerfiles in apps/"
+          echo "Checking Dockerfiles in services/ and apps/"
+          # Microservices in services/
+          for service in services/*/; do
+            service_name=$(basename "$service")
+            if [ -f "services/$service_name/Dockerfile" ]; then
+              echo "[BUILD] Building services/$service_name ..."
+              docker build -f "services/$service_name/Dockerfile" . || echo "[WARNING] Build for $service_name failed"
+            else
+              echo "[SKIP] No Dockerfile for services/$service_name"
+            fi
+          done
+          # Frontends in apps/
           for service in apps/*/; do
             service_name=$(basename "$service")
             if [ -f "apps/$service_name/Dockerfile" ]; then
-              echo "[OK] Dockerfile found for $service_name"
-              docker build -f "apps/$service_name/Dockerfile" --target builder . 2>/dev/null || \
-              docker build -f "apps/$service_name/Dockerfile" . 2>/dev/null || \
-              echo "[WARNING] Docker build for $service_name failed - may need builder stage"
+              echo "[BUILD] Building apps/$service_name ..."
+              docker build -f "apps/$service_name/Dockerfile" . || echo "[WARNING] Build for $service_name failed"
             else
-              echo "[SKIP] No Dockerfile for $service_name"
+              echo "[SKIP] No Dockerfile for apps/$service_name"
             fi
           done
 
