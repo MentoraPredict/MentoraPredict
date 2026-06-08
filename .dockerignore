@@ -11,3 +11,11 @@ coverage
 .pnpm-store
 *.log
 .DS_Store
+apps/desktop/
+apps/mobile/
+assets/
+docs/
+*.md
+!.github/
+keys/
+*.pem
