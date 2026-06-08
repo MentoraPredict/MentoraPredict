@@ -128,11 +128,11 @@ jobs:
             # =========================
             # DEPLOY SECTION (FIXED)
             # =========================
-            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml pull
-
+            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml pull auth-service academic-service web
+            
             IMAGE_TAG=$IMAGE_TAG docker compose \
               -f docker-compose.prod.yml \
-              up -d \
+              up -d auth-service academic-service web \
               --force-recreate \
               --remove-orphans
 
