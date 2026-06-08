@@ -113,6 +113,7 @@ jobs:
             SHORT_SHA=$(git rev-parse --short HEAD)
             IMAGE_TAG="main-${SHORT_SHA}"
             cat > .env << EOF
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             POSTGRES_DB=${{ secrets.POSTGRES_DB }}
@@ -123,6 +124,8 @@ jobs:
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             MONGO_DB=${{ secrets.MONGO_DB }}
             EOF
+            export WEB_PORT=${WEB_PORT:-80}
+            echo "WEB_PORT=$WEB_PORT" >> .env
             IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml pull
             IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
             echo "Waiting for services to start..."

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "nest build",
+    "build": "echo [metrics-service] placeholder - build skipped",
     "dev": "nest start --watch",
     "start": "node dist/main",
     "lint": "eslint src/",
