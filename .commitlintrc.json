@@ -11,7 +11,8 @@
       "test",
       "chore",
       "ci",
-      "build"
+      "build",
+      "hotfix"
     ]],
     "scope-enum": [2, "always", [
       "api",
@@ -26,10 +27,18 @@
       "docs",
       "deps",
       "config",
-      "infra"
+      "infra",
+      "build",
+      "lint",
+      "readme",
+      "github"
     ]],
-    "subject-case": [2, "always", "lower-case"],
-    "subject-max-length": [2, "always", 100],
-    "header-max-length": [2, "always", 100]
+    "subject-case": [0],
+    "subject-max-length": [2, "always", 120],
+    "header-max-length": [2, "always", 180],
+    "body-case": [0],
+    "subject-full-stop": [2, "never", "."],
+    "body-leading-blank": [2, "always"],
+    "footer-leading-blank": [2, "always"]
   }
 }
