@@ -4,7 +4,9 @@ type HeadingLevel =
     | "h1"
     | "h2"
     | "h3"
-    | "h4";
+    | "h4"
+    | "h5"
+    | "h6";
 
 interface HeadingProps {
     children: ReactNode;
@@ -24,6 +26,8 @@ export default function Heading({
         h2: "text-4xl font-bold",
         h3: "text-3xl font-semibold",
         h4: "text-2xl font-semibold",
+        h5: "text-xl font-medium",
+        h6: "text-lg font-medium",
     };
 
     return (

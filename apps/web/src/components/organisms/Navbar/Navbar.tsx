@@ -1,10 +1,16 @@
+import { useNavigate } from "react-router-dom";
+
 import Button from "@/components/atoms/Button";
 import Container from "@/components/atoms/Container";
 import Logo from "@/components/atoms/Logo";
 
 import NavItem from "@/components/molecules/NavItem";
 
+
+
 export default function Navbar() {
+  const navigate = useNavigate();
+
   return (
     <header className="border-b border-gray-200">
       <Container>
@@ -46,7 +52,11 @@ export default function Navbar() {
             />
           </nav>
 
-          <Button>
+          <Button
+            onClick={() => {
+              navigate("/login");
+            }}
+          >
             Iniciar sesión
           </Button>
         </div>
