@@ -1,5 +1,12 @@
-// Skeleton — Academic Period domain entity
-// Pure TypeScript class — no TypeORM decorators in domain layer
+export type PeriodType = "SEMESTER" | "QUARTER";
+
 export class AcademicPeriodEntity {
-  // TODO: define properties in Sprint 2
+  constructor(
+    public readonly id: string,
+    public name: string,
+    public startDate: Date,
+    public endDate: Date,
+    public isActive: boolean,
+    public type: PeriodType,
+  ) {}
 }
