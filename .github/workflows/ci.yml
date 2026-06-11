@@ -23,10 +23,45 @@ jobs:
           configFile: .commitlintrc.json
           helpURL: https://github.com/MentoraPredict/mentorapredict/blob/main/docs/commit-convention.md
 
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      auth-service: ${{ steps.filter.outputs.auth-service }}
+      academic-service: ${{ steps.filter.outputs.academic-service }}
+      kong: ${{ steps.filter.outputs.kong }}
+      web: ${{ steps.filter.outputs.web }}
+      infra: ${{ steps.filter.outputs.infra }}
+      packages: ${{ steps.filter.outputs.packages }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            auth-service:
+              - 'services/auth-service/**'
+            academic-service:
+              - 'services/academic-service/**'
+            web:
+              - 'apps/web/**'
+            kong:
+              - 'infra/kong/**'
+              - 'infra/keys/**'
+            infra:
+              - 'infra/docker/**'
+              - 'docker-compose*.yml'
+            packages:
+              - 'packages/**'
+
   validate:
     name: Lint, Build, and Test
     runs-on: ubuntu-latest
-    needs: commitlint
+    needs: [commitlint, detect-changes]
     if: success() || failure()
 
     steps:
@@ -59,29 +94,41 @@ jobs:
         continue-on-error: true
         id: test
 
-      - name: Validate Dockerfiles
+      - name: Validate Dockerfiles for changed services
         run: |
-          echo "Checking Dockerfiles in services/ and apps/"
-          # Microservices in services/
-          for service in services/*/; do
-            service_name=$(basename "$service")
-            if [ -f "services/$service_name/Dockerfile" ]; then
-              echo "[BUILD] Building services/$service_name ..."
-              docker build -f "services/$service_name/Dockerfile" . || echo "[WARNING] Build for $service_name failed"
-            else
-              echo "[SKIP] No Dockerfile for services/$service_name"
+          echo "Checking Dockerfiles for changed services only..."
+          PACKAGES_CHANGED="${{ needs.detect-changes.outputs.packages }}"
+
+          if [ "${{ needs.detect-changes.outputs.auth-service }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            if [ -f "services/auth-service/Dockerfile" ]; then
+              echo "[BUILD] Building services/auth-service ..."
+              docker build -f "services/auth-service/Dockerfile" . || echo "[WARNING] Build for auth-service failed"
             fi
-          done
-          # Frontends in apps/
-          for service in apps/*/; do
-            service_name=$(basename "$service")
-            if [ -f "apps/$service_name/Dockerfile" ]; then
-              echo "[BUILD] Building apps/$service_name ..."
-              docker build -f "apps/$service_name/Dockerfile" . || echo "[WARNING] Build for $service_name failed"
-            else
-              echo "[SKIP] No Dockerfile for apps/$service_name"
+          else
+            echo "[SKIP] services/auth-service not modified"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.academic-service }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            if [ -f "services/academic-service/Dockerfile" ]; then
+              echo "[BUILD] Building services/academic-service ..."
+              docker build -f "services/academic-service/Dockerfile" . || echo "[WARNING] Build for academic-service failed"
             fi
-          done
+          else
+            echo "[SKIP] services/academic-service not modified"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.web }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            if [ -f "apps/web/Dockerfile" ]; then
+              echo "[BUILD] Building apps/web ..."
+              docker build -f "apps/web/Dockerfile" . || echo "[WARNING] Build for web failed"
+            fi
+          else
+            echo "[SKIP] apps/web not modified"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.kong }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            echo "[CHECK] Kong config changed. Using official image - no build required."
+          fi
 
       - name: Validate workspace structure
         run: |
@@ -97,6 +144,19 @@ jobs:
           else
             echo "[OK] No obvious secrets found"
           fi
+
+      - name: Change Detection Summary
+        run: |
+          echo "## Change Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service/Folder | Changed |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| auth-service | ${{ needs.detect-changes.outputs.auth-service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| academic-service | ${{ needs.detect-changes.outputs.academic-service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| web | ${{ needs.detect-changes.outputs.web }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| kong | ${{ needs.detect-changes.outputs.kong }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| infra (docker) | ${{ needs.detect-changes.outputs.infra }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| packages | ${{ needs.detect-changes.outputs.packages }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: CI Status Report
         run: |

@@ -14,8 +14,8 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean",
-    "infra:up": "docker compose -f docker-compose.yml up -d postgres redis mongo",
-    "infra:down": "docker compose -f docker-compose.yml down postgres redis mongo",
+    "infra:up": "docker compose -f infra/docker/docker-compose.infra.yml up -d",
+    "infra:down": "docker compose -f infra/docker/docker-compose.infra.yml down",
     "services:up": "docker compose -f docker-compose.yml up -d",
     "services:down": "docker compose -f docker-compose.yml down",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
