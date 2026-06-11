@@ -1,5 +1,8 @@
 # MentoraPredict — Development stack (DB-less Kong + core services)
-# Usage: docker compose --env-file infra/.env.example -f docker-compose.dev.yml up -d
+# Usage:
+# 1. cp infra/.env.example infra/.env
+# 2. (optional) bash infra/kong/generate-kong-keys.sh
+# 3. docker compose --env-file infra/.env -f docker-compose.dev.yml up -d --build
 
 networks:
   mentorapredict-net:
@@ -140,11 +143,16 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
     ports:
       - "${KONG_PROXY_PORT:-8000}:8000"
       - "${KONG_ADMIN_PORT:-8001}:8001"
     volumes:
-      - ./infra/kong/kong.yml:/etc/kong/kong.yml:ro
+      - ./infra/kong/kong-template.yml:/etc/kong/kong.source.yml:ro
+      - ./infra/kong/entrypoint.sh:/entrypoint.sh:ro
+      - ./infra/keys:/secrets:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks:
       - mentorapredict-net
     depends_on:
@@ -198,9 +206,13 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+    volumes:
+      - ./infra/keys:/secrets:ro
     networks:
       - mentorapredict-net
     depends_on:
@@ -264,8 +276,12 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+    volumes:
+      - ./infra/keys:/secrets:ro
     networks:
       - mentorapredict-net
     depends_on:
@@ -303,12 +319,16 @@ services:
       MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
       MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
       RISK_HIGH_THRESHOLD: ${RISK_HIGH_THRESHOLD:-40}
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+    volumes:
+      - ./infra/keys:/secrets:ro
     networks:
       - mentorapredict-net
     depends_on:

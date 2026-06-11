@@ -36,7 +36,15 @@ consumers:
       - key: mentorapredict
         algorithm: RS256
         rsa_public_key: |
-          __JWT_PUBLIC_KEY__
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7qYmDrZFG+L65OUMlZ8R
+          Ig2x5jFozVkFSj0vcJjHp/IpNEiuNmcwK1mGBvVgTCM7GbiFzribYW/YYk8FHO9D
+          swh2szw66YaqqXlGQWDwtDp38EBZa1nWP7T2iT3+JVDpJ+0aRoDtCny5R9KSPkhN
+          lxck3Mzm5lA8fdAPPgqaB2ImLIp35eVRBMLkZLoNQDP6QBK/tWr0rhqoPpLW+epK
+          axBI63xbaqqvoxWd+BnDmarkXpMd8+WJToSj3xh4EjX30FFb5JyJgIutvWKvhNMf
+          UvJSnV4s4DvdrFH9yQz/3Ra2v/ejJ4jhAcSe3HSfyS6op778P628hDotqrY0mwLB
+          5wIDAQAB
+          -----END PUBLIC KEY-----
 
 # ─── auth-service (port 3001) ────────────────────────────────────────────────
 services:
@@ -87,17 +95,6 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
-
-  - name: health-service
-    url: http://auth-service:3001
-    routes:
-      - name: health-route
-        paths:
-          - /health
-        methods:
-          - GET
-        regex_priority: 100
-        plugins: []
 
   - name: user-service
     url: http://user-service:3002
