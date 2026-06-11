@@ -6,7 +6,9 @@ plugins:
   - name: cors
     config:
       origins:
-        - "*"
+        - http://localhost
+        - http://mentorapredictqa.programacionwebuce.net
+        - https://mentorapredictqa.programacionwebuce.net
       methods:
         - GET
         - POST
@@ -93,7 +95,7 @@ services:
     routes:
       - name: health-route
         paths:
-          - /health
+          - /api/v1/health
         methods:
           - GET
         regex_priority: 100
