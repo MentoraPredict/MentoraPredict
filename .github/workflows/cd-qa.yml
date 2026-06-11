@@ -1,7 +1,10 @@
 name: CD QA
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types:
+      - completed
     branches:
       - QA
   workflow_dispatch:
@@ -14,6 +17,7 @@ jobs:
   detect-changes:
     name: Detect Changed Services
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'QA'
     outputs:
       auth-service: ${{ steps.filter.outputs.auth-service }}
       academic-service: ${{ steps.filter.outputs.academic-service }}
@@ -23,129 +27,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
           fetch-depth: 0
 
-      - uses: dorny/paths-filter@v3
+      - name: Detect changed services
         id: filter
-        with:
-          filters: |
-            auth-service:
-              - 'services/auth-service/**'
-            academic-service:
-              - 'services/academic-service/**'
-            web:
-              - 'apps/web/**'
-            kong:
-              - 'infra/kong/**'
-              - 'infra/keys/**'
-            packages:
-              - 'packages/**'
-
-  build-and-push:
-    name: Build and Push Images
-    runs-on: ubuntu-latest
-    needs: detect-changes
-    environment: QA enviroment
-
-    strategy:
-      matrix:
-        include:
-          - service: auth-service
-            path: services/auth-service/Dockerfile
-          - service: academic-service
-            path: services/academic-service/Dockerfile
-          - service: web
-            path: apps/web/Dockerfile
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Determine if service should be built
-        id: should_build
         run: |
-          SERVICE="${{ matrix.service }}"
-          PACKAGES_CHANGED="${{ needs.detect-changes.outputs.packages }}"
+          echo "auth-service=false" >> $GITHUB_OUTPUT
+          echo "academic-service=false" >> $GITHUB_OUTPUT
+          echo "web=false" >> $GITHUB_OUTPUT
+          echo "kong=false" >> $GITHUB_OUTPUT
+          echo "packages=false" >> $GITHUB_OUTPUT
 
-          if [ "$PACKAGES_CHANGED" == "true" ]; then
-            echo "build=true" >> $GITHUB_OUTPUT
-            echo "[INFO] Packages changed, building $SERVICE"
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+
+          if [ -z "$CHANGED_FILES" ]; then
+            ROOT=$(git rev-list --max-parents=0 HEAD 2>/dev/null || echo "")
+            if [ -n "$ROOT" ]; then
+              CHANGED_FILES=$(git diff --name-only "$ROOT" HEAD 2>/dev/null || echo "")
+            fi
+          fi
+
+          if [ -z "$CHANGED_FILES" ]; then
             exit 0
           fi
 
-          if [ "$SERVICE" == "auth-service" ]; then
-            CHANGED="${{ needs.detect-changes.outputs.auth-service }}"
-          elif [ "$SERVICE" == "academic-service" ]; then
-            CHANGED="${{ needs.detect-changes.outputs.academic-service }}"
-          elif [ "$SERVICE" == "web" ]; then
-            CHANGED="${{ needs.detect-changes.outputs.web }}"
-          else
-            CHANGED="false"
-          fi
-
-          echo "build=$CHANGED" >> $GITHUB_OUTPUT
-
-          if [ "$CHANGED" == "true" ]; then
-            echo "[INFO] $SERVICE was modified, building..."
-          else
-            echo "[SKIP] $SERVICE was not modified"
-          fi
-
-      - name: Validate Secrets
-        if: steps.should_build.outputs.build == 'true'
-        run: |
-          if [ -z "${{ env.DOCKERHUB_USERNAME }}" ]; then
-            echo "Error: DOCKERHUB_USERNAME secret not set"
-            exit 1
-          fi
-
-          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
-            echo "Error: DOCKERHUB_TOKEN secret not set"
-            exit 1
-          fi
-
-      - name: Docker Metadata
-        if: steps.should_build.outputs.build == 'true'
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.service }}
-          tags: |
-            type=raw,value=qa-latest
-            type=sha,prefix=qa-,format=short
-
-      - name: Setup Docker Buildx
-        if: steps.should_build.outputs.build == 'true'
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        if: steps.should_build.outputs.build == 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and Push Image
-        if: steps.should_build.outputs.build == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.path }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          if echo "$CHANGED_FILES" | grep -q "^services/auth-service/"; then echo "auth-service=true" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -q "^services/academic-service/"; then echo "academic-service=true" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -q "^apps/web/"; then echo "web=true" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -qE "^infra/kong/|^infra/keys/"; then echo "kong=true" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -q "^packages/"; then echo "packages=true" >> $GITHUB_OUTPUT; fi
 
   deploy-to-qa:
     name: Deploy to EC2 QA
     runs-on: ubuntu-latest
-    needs: [detect-changes, build-and-push]
+    needs: [detect-changes]
     environment: QA enviroment
-    if: github.ref == 'refs/heads/QA'
-
+    if: |
+      (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'QA' && github.event.workflow_run.conclusion == 'success') ||
+      github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -156,21 +80,24 @@ jobs:
           script: |
             set -e
 
+            DEPLOY_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+            SHORT_SHA=$(echo "$DEPLOY_SHA" | cut -c1-7)
+            IMAGE_TAG="qa-${SHORT_SHA}"
+
             sudo mkdir -p /opt/mentorapredict
             sudo chown ubuntu:ubuntu /opt/mentorapredict
 
             cd /opt/mentorapredict
 
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/${{ github.repository }} .
-              git checkout QA
-            else
+            PREVIOUS_SHA=""
+            if [ -d ".git" ]; then
+              PREVIOUS_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "")
               git fetch origin
               git reset --hard origin/QA
+            else
+              git clone https://github.com/${{ github.repository }} .
+              git checkout QA
             fi
-
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            IMAGE_TAG="qa-${SHORT_SHA}"
 
             cat > .env << EOF
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
@@ -183,11 +110,16 @@ jobs:
             MONGO_USER=${{ secrets.MONGO_USER }}
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             MONGO_DB=${{ secrets.MONGO_DB }}
+            JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
             JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
             EOF
 
             export WEB_PORT=${WEB_PORT:-80}
             echo "WEB_PORT=$WEB_PORT" >> .env
+
+            echo "[KEYS] Creating certificate directories..."
+            sudo mkdir -p /opt/mentorapredict/infra/keys
+            sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
             echo "[INFRA] Ensuring databases are up..."
             IMAGE_TAG=$IMAGE_TAG docker compose \
@@ -233,14 +165,46 @@ jobs:
               done
 
               echo "Waiting for services to start..."
+              HEALTHY=false
               for i in $(seq 1 30); do
                 if curl -sf http://localhost:${WEB_PORT}/ > /dev/null 2>&1; then
                   echo "[OK] Kong is up and routing requests"
+                  HEALTHY=true
                   break
                 fi
                 echo "Attempt $i/30..."
                 sleep 5
               done
+
+              if [ "$HEALTHY" != "true" ]; then
+                echo "[ERROR] Healthcheck failed after 30 attempts"
+
+                if [ -n "$PREVIOUS_SHA" ]; then
+                  OLD_IMAGE_TAG="qa-${PREVIOUS_SHA}"
+                  echo "[ROLLBACK] Restoring services to previous version: $OLD_IMAGE_TAG"
+
+                  for service in $CHANGED_SERVICES; do
+                    echo "[ROLLBACK] Pulling $service with tag $OLD_IMAGE_TAG ..."
+                    IMAGE_TAG=$OLD_IMAGE_TAG docker compose \
+                      -f infra/docker/docker-compose.qa.yml \
+                      pull "$service"
+                  done
+
+                  for service in $CHANGED_SERVICES; do
+                    echo "[ROLLBACK] Restoring $service ..."
+                    IMAGE_TAG=$OLD_IMAGE_TAG docker compose \
+                      -f infra/docker/docker-compose.qa.yml \
+                      up -d "$service" \
+                      --force-recreate
+                  done
+
+                  echo "[ROLLBACK] Rollback complete"
+                else
+                  echo "[ROLLBACK] No previous version found. Services may be in bad state."
+                fi
+
+                exit 1
+              fi
             fi
 
             docker system prune -af --filter "until=24h"
@@ -249,13 +213,13 @@ jobs:
         run: |
           echo "## QA Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | Changed | Built | Deployed |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|---------|-------|----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| auth-service | ${{ needs.detect-changes.outputs.auth-service }} | ${{ needs.detect-changes.outputs.auth-service }} | ${{ needs.detect-changes.outputs.auth-service }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| academic-service | ${{ needs.detect-changes.outputs.academic-service }} | ${{ needs.detect-changes.outputs.academic-service }} | ${{ needs.detect-changes.outputs.academic-service }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| web | ${{ needs.detect-changes.outputs.web }} | ${{ needs.detect-changes.outputs.web }} | ${{ needs.detect-changes.outputs.web }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| kong | ${{ needs.detect-changes.outputs.kong }} | ${{ needs.detect-changes.outputs.kong }} | ${{ needs.detect-changes.outputs.kong }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| packages | ${{ needs.detect-changes.outputs.packages }} | - | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Changed | Deployed |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| auth-service | ${{ needs.detect-changes.outputs.auth-service }} | ${{ needs.detect-changes.outputs.auth-service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| academic-service | ${{ needs.detect-changes.outputs.academic-service }} | ${{ needs.detect-changes.outputs.academic-service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| web | ${{ needs.detect-changes.outputs.web }} | ${{ needs.detect-changes.outputs.web }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| kong | ${{ needs.detect-changes.outputs.kong }} | ${{ needs.detect-changes.outputs.kong }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| packages | ${{ needs.detect-changes.outputs.packages }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Infrastructure (postgres, mongo, redis): Always running" >> $GITHUB_STEP_SUMMARY
           echo "API Gateway: Kong on port 80 (routes /api/auth, /api/academic, and / to web)" >> $GITHUB_STEP_SUMMARY
