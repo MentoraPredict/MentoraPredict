@@ -62,3 +62,6 @@ __pycache__/
 # Secrets
 keys/
 *.pem
+
+#Kong
+kong.yml

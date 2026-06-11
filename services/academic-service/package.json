@@ -4,7 +4,7 @@
   "private": true,
   "description": "Academic data: faculties, subjects, enrollments, evaluations, grades — placeholder, no logic implemented",
   "scripts": {
-    "build": "nest build",
+    "build": "pnpm exec nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
     "lint": "eslint src/",

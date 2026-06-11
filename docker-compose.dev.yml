@@ -1,5 +1,5 @@
 # MentoraPredict — Development stack (DB-less Kong + core services)
-# Usage: docker compose -f docker-compose.dev.yml up -d
+# Usage: docker compose --env-file infra/.env.example -f docker-compose.dev.yml up -d
 
 networks:
   mentorapredict-net:
@@ -140,14 +140,11 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
     ports:
       - "${KONG_PROXY_PORT:-8000}:8000"
       - "${KONG_ADMIN_PORT:-8001}:8001"
     volumes:
-      - ./infra/kong/kong.yml:/etc/kong/kong.source.yml:ro
-      - ./infra/kong/entrypoint.sh:/entrypoint.sh:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+      - ./infra/kong/kong.yml:/etc/kong/kong.yml:ro
     networks:
       - mentorapredict-net
     depends_on:
@@ -323,3 +320,18 @@ services:
         condition: service_healthy
       academic-service:
         condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: mp_web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3007}:80"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+    networks:
+      - mentorapredict-net
+    depends_on:
+      - kong

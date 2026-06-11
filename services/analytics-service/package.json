@@ -4,7 +4,7 @@
   "private": true,
   "description": "Analytics: averages, trends, compliance, risk, alerts — RF-015 to RF-021",
   "scripts": {
-    "build": "nest build",
+    "build": "pnpm exec nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
     "lint": "eslint src/",
