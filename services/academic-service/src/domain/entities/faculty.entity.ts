@@ -1,5 +1,9 @@
-// Skeleton — Faculty domain entity
-// Pure TypeScript class — no TypeORM decorators in domain layer
 export class FacultyEntity {
-  // TODO: define properties in Sprint 2
+  constructor(
+    public readonly id: string,
+    public name: string,
+    public code: string,
+    public description: string,
+    public readonly createdAt: Date,
+  ) {}
 }

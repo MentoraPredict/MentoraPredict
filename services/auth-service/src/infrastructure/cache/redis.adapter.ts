@@ -1,13 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { ITokenCache } from '../../application/ports/output/i-token.cache';
-import { RedisClient } from './redis.client';
+import { Injectable } from "@nestjs/common";
+import { ITokenCache } from "../../application/ports/output/i-token.cache";
+import { ICachePort } from "../../application/ports/output/i-cache.port";
+import { RedisClient } from "./redis.client";
 
 @Injectable()
-export class RedisAdapter implements ITokenCache {
+export class RedisAdapter implements ITokenCache, ICachePort {
   constructor(private readonly redis: RedisClient) {}
 
-  async setRefreshToken(userId: string, token: string, ttl: number): Promise<void> {
-    await this.redis.instance.set(`auth:refresh:${userId}`, token, 'EX', ttl);
+  async setRefreshToken(
+    userId: string,
+    token: string,
+    ttl: number,
+  ): Promise<void> {
+    await this.redis.instance.set(`auth:refresh:${userId}`, token, "EX", ttl);
   }
 
   async getRefreshToken(userId: string): Promise<string | null> {
@@ -18,8 +23,12 @@ export class RedisAdapter implements ITokenCache {
     await this.redis.instance.del(`auth:refresh:${userId}`);
   }
 
-  async setResetToken(hash: string, userId: string, ttl: number): Promise<void> {
-    await this.redis.instance.set(`auth:pwreset:${hash}`, userId, 'EX', ttl);
+  async setResetToken(
+    hash: string,
+    userId: string,
+    ttl: number,
+  ): Promise<void> {
+    await this.redis.instance.set(`auth:pwreset:${hash}`, userId, "EX", ttl);
   }
 
   async getResetToken(hash: string): Promise<string | null> {

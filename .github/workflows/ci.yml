@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: [QA]
   pull_request:
     branches: [QA, main]
   pull_request_target:
@@ -8,6 +10,8 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  REGISTRY: docker.io
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
 jobs:
   commitlint:
@@ -23,10 +27,45 @@ jobs:
           configFile: .commitlintrc.json
           helpURL: https://github.com/MentoraPredict/mentorapredict/blob/main/docs/commit-convention.md
 
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      auth-service: ${{ steps.filter.outputs.auth-service }}
+      academic-service: ${{ steps.filter.outputs.academic-service }}
+      kong: ${{ steps.filter.outputs.kong }}
+      web: ${{ steps.filter.outputs.web }}
+      infra: ${{ steps.filter.outputs.infra }}
+      packages: ${{ steps.filter.outputs.packages }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            auth-service:
+              - 'services/auth-service/**'
+            academic-service:
+              - 'services/academic-service/**'
+            web:
+              - 'apps/web/**'
+            kong:
+              - 'infra/kong/**'
+              - 'infra/keys/**'
+            infra:
+              - 'infra/docker/**'
+              - 'docker-compose*.yml'
+            packages:
+              - 'packages/**'
+
   validate:
     name: Lint, Build, and Test
     runs-on: ubuntu-latest
-    needs: commitlint
+    needs: [commitlint, detect-changes]
     if: success() || failure()
 
     steps:
@@ -44,12 +83,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Lint all packages
+      - name: Lint
         run: pnpm lint
         continue-on-error: true
         id: lint
 
-      - name: Build all packages
+      - name: Build
         run: pnpm build
         continue-on-error: true
         id: build
@@ -59,29 +98,45 @@ jobs:
         continue-on-error: true
         id: test
 
-      - name: Validate Dockerfiles
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true
+
+      - name: Validate Dockerfiles for changed services
         run: |
-          echo "Checking Dockerfiles in services/ and apps/"
-          # Microservices in services/
-          for service in services/*/; do
-            service_name=$(basename "$service")
-            if [ -f "services/$service_name/Dockerfile" ]; then
-              echo "[BUILD] Building services/$service_name ..."
-              docker build -f "services/$service_name/Dockerfile" . || echo "[WARNING] Build for $service_name failed"
-            else
-              echo "[SKIP] No Dockerfile for services/$service_name"
+          echo "Checking Dockerfiles for changed services only..."
+          PACKAGES_CHANGED="${{ needs.detect-changes.outputs.packages }}"
+
+          if [ "${{ needs.detect-changes.outputs.auth-service }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            if [ -f "services/auth-service/Dockerfile" ]; then
+              echo "[BUILD] Building services/auth-service ..."
+              docker build -f "services/auth-service/Dockerfile" .
             fi
-          done
-          # Frontends in apps/
-          for service in apps/*/; do
-            service_name=$(basename "$service")
-            if [ -f "apps/$service_name/Dockerfile" ]; then
-              echo "[BUILD] Building apps/$service_name ..."
-              docker build -f "apps/$service_name/Dockerfile" . || echo "[WARNING] Build for $service_name failed"
-            else
-              echo "[SKIP] No Dockerfile for apps/$service_name"
+          else
+            echo "[SKIP] services/auth-service not modified"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.academic-service }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            if [ -f "services/academic-service/Dockerfile" ]; then
+              echo "[BUILD] Building services/academic-service ..."
+              docker build -f "services/academic-service/Dockerfile" .
             fi
-          done
+          else
+            echo "[SKIP] services/academic-service not modified"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.web }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            if [ -f "apps/web/Dockerfile" ]; then
+              echo "[BUILD] Building apps/web ..."
+              docker build -f "apps/web/Dockerfile" .
+            fi
+          else
+            echo "[SKIP] apps/web not modified"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.kong }}" == "true" ] || [ "$PACKAGES_CHANGED" == "true" ]; then
+            echo "[CHECK] Kong config changed. Using official image - no build required."
+          fi
 
       - name: Validate workspace structure
         run: |
@@ -89,14 +144,18 @@ jobs:
           pnpm list --depth=0 || exit 1
           echo "[OK] Workspace structure is valid"
 
-      - name: Check for exposed secrets
+      - name: Change Detection Summary
         run: |
-          echo "Scanning for potential secrets in code..."
-          if grep -r --include="*.js" --include="*.ts" --include="*.json" "password\|secret\|token\|key" --exclude-dir=node_modules --exclude="*.lock" . 2>/dev/null; then
-            echo "[WARNING] Potential secrets found in code. Please review the files listed above."
-          else
-            echo "[OK] No obvious secrets found"
-          fi
+          echo "## Change Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service/Folder | Changed |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| auth-service | ${{ needs.detect-changes.outputs.auth-service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| academic-service | ${{ needs.detect-changes.outputs.academic-service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| web | ${{ needs.detect-changes.outputs.web }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| kong | ${{ needs.detect-changes.outputs.kong }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| infra (docker) | ${{ needs.detect-changes.outputs.infra }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| packages | ${{ needs.detect-changes.outputs.packages }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: CI Status Report
         run: |
@@ -109,7 +168,7 @@ jobs:
           echo "| Build | ${{ steps.build.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | ${{ steps.test.outcome }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dockerfiles | CHECKED |" >> $GITHUB_STEP_SUMMARY
-          echo "| Secrets Check | COMPLETED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gitleaks | COMPLETED |" >> $GITHUB_STEP_SUMMARY
 
       - name: Fail CI if critical checks fail
         if: steps.lint.outcome == 'failure' && steps.build.outcome == 'failure'
@@ -117,3 +176,119 @@ jobs:
           echo "[ERROR] Critical checks failed: lint and build both failed."
           echo "Please fix lint and build errors before merging this pull request."
           exit 1
+
+  build-and-push:
+    name: Build and Push Docker Images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/QA'
+    runs-on: ubuntu-latest
+    needs: [detect-changes, validate]
+    environment: QA enviroment
+
+    strategy:
+      matrix:
+        include:
+          - service: auth-service
+            path: services/auth-service/Dockerfile
+          - service: academic-service
+            path: services/academic-service/Dockerfile
+          - service: web
+            path: apps/web/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine if service should be built
+        id: should_build
+        run: |
+          SERVICE="${{ matrix.service }}"
+          PACKAGES_CHANGED="${{ needs.detect-changes.outputs.packages }}"
+
+          if [ "$PACKAGES_CHANGED" == "true" ]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+            echo "[INFO] Packages changed, building $SERVICE"
+            exit 0
+          fi
+
+          if [ "$SERVICE" == "auth-service" ]; then
+            CHANGED="${{ needs.detect-changes.outputs.auth-service }}"
+          elif [ "$SERVICE" == "academic-service" ]; then
+            CHANGED="${{ needs.detect-changes.outputs.academic-service }}"
+          elif [ "$SERVICE" == "web" ]; then
+            CHANGED="${{ needs.detect-changes.outputs.web }}"
+          else
+            CHANGED="false"
+          fi
+
+          echo "build=$CHANGED" >> $GITHUB_OUTPUT
+
+          if [ "$CHANGED" == "true" ]; then
+            echo "[INFO] $SERVICE was modified, building..."
+          else
+            echo "[SKIP] $SERVICE was not modified"
+          fi
+
+      - name: Validate Secrets
+        if: steps.should_build.outputs.build == 'true'
+        run: |
+          if [ -z "${{ env.DOCKERHUB_USERNAME }}" ]; then
+            echo "Error: DOCKERHUB_USERNAME secret not set"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "Error: DOCKERHUB_TOKEN secret not set"
+            exit 1
+          fi
+
+      - name: Docker Metadata
+        if: steps.should_build.outputs.build == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.service }}
+          tags: |
+            type=raw,value=qa-latest
+            type=sha,prefix=qa-,format=short
+
+      - name: Setup Docker Buildx
+        if: steps.should_build.outputs.build == 'true'
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Login to Docker Hub
+        if: steps.should_build.outputs.build == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Image
+        if: steps.should_build.outputs.build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.path }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Get first tag for Trivy
+        if: steps.should_build.outputs.build == 'true'
+        id: trivy_tag
+        run: |
+          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | cut -d',' -f1)
+          echo "image=$FIRST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Run Trivy vulnerability scanner
+        if: steps.should_build.outputs.build == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.trivy_tag.outputs.image }}
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
