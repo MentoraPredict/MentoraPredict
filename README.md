@@ -259,12 +259,17 @@ Before working with the project, ensure the following software is installed:
 # Install dependencies
 pnpm install
 
-# Copy environment variables
+# Copy root environment variables for local development
 cp .env.example .env
 
+# Copy infrastructure environment variables for Docker
+cp infra/.env.example infra/.env
+
+# Optional: generate Kong declarative config locally if you want to pre-fill the public key
+bash infra/kong/generate-kong-keys.sh
+
 # Start infrastructure and services
-cd docker
-docker-compose up -d
+docker compose --env-file infra/.env -f docker-compose.dev.yml up -d --build
 
 # Start development mode
 pnpm dev

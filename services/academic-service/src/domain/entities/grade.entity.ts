@@ -2,12 +2,13 @@ export class GradeEntity {
   constructor(
     public readonly id: string,
     public readonly studentId: string,
-    public readonly evaluationId: string,
+    public readonly subjectId: string,
     public value: number,
-    public readonly recordedBy: string,
-    public readonly recordedAt: Date,
+    public readonly registeredBy: string,
+    public readonly registeredAt: Date,
     public readonly createdAt: Date,
     public updatedAt: Date,
+    public evaluationId: string | null = null,
   ) {
     this.assertValidValue(value);
   }
