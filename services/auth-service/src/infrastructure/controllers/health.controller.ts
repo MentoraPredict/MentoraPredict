@@ -32,12 +32,16 @@ export class HealthController {
     try {
       await this.db.query("SELECT 1");
       postgres = true;
-    } catch {}
+    } catch {
+      postgres = false;
+    }
 
     try {
       const pong = await this.redis.instance.ping();
       redis = pong === "PONG";
-    } catch {}
+    } catch {
+      redis = false;
+    }
 
     return {
       status: resolveStatus(postgres, redis),

@@ -313,8 +313,8 @@ curl -X POST http://localhost:3001/api/v1/auth/login \
 
 # Respuesta:
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+  "accessToken": "<access-token-example>",
+  "refreshToken": "<refresh-token-example>",
   "expiresIn": 900,
   "tokenType": "Bearer"
 }

@@ -2,7 +2,7 @@ import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { LoginUserUseCase } from '../login-user.use-case';
 import { IUserRepository } from '../../ports/output/i-user.repository';
 import { IPasswordHasher } from '../../ports/output/i-password.hasher';
-import { ITokenGenerator, TokenPair } from '../../ports/output/i-token.generator';
+import { ITokenGenerator } from '../../ports/output/i-token.generator';
 import { ITokenCache } from '../../ports/output/i-token.cache';
 import { UserEntity, UserRole } from '../../../domain/entities/user.entity';
 

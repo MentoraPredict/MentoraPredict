@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  Get,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -90,7 +89,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "RF-003: Logout — invalidates refresh token" })
   async logout(@Body() dto: RefreshDto, @Req() req: Request) {
-    const userId = (req as any).user.sub;
+    const userId = (req as unknown as { user: { sub: string } }).user.sub;
     await this.logoutUC.execute(userId, dto.refreshToken);
   }
 }

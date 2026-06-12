@@ -98,8 +98,8 @@ Content-Type: application/json
 **Response 200 (OK):**
 ```json
 {
-  "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "accessToken": "<access-token-example>",
+  "refreshToken": "<refresh-token-example>",
   "expiresIn": 900,
   "user": {
     "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -158,15 +158,15 @@ Content-Type: application/json
 **Request Body:**
 ```json
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "refreshToken": "<refresh-token-example>"
 }
 ```
 
 **Response 200 (OK):**
 ```json
 {
-  "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "accessToken": "<access-token-example>",
+  "refreshToken": "<refresh-token-example>",
   "expiresIn": 900
 }
 ```
@@ -200,7 +200,7 @@ Content-Type: application/json
 **Request Body:**
 ```json
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "refreshToken": "<refresh-token-example>"
 }
 ```
 
@@ -489,10 +489,8 @@ curl http://localhost:3003/health
 ### JWT Token Structure
 
 **Access Token (RS256 - 15 minutos):**
-```
-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.
-eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InZpY3RvckB1Y2UuZWR1LmVjIiwicm9sZSI6IlNUVURFTlQiLCJpYXQiOjE3MTc3Njc0MDAsImV4cCI6MTcxNzc2ODMwMH0.
-<signature>
+```text
+<header>.<payload>.<signature>
 ```
 
 **Headers en Requests:**
