@@ -80,7 +80,7 @@ jobs:
             {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
           ]}'
 
-          echo "matrix=$(echo "$MATRIX" | jq -c '.')" >> $GITHUB_OUTPUT
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
       - name: DEBUG MATRIX FINAL
         run: |
