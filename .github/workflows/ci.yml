@@ -172,10 +172,10 @@ jobs:
           echo "| ${{ matrix.service }} | ${{ matrix.changed }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Validate Dockerfile
-          if: matrix.type == 'docker'
-          run: |
-            echo "[BUILD] Validating ${{ matrix.service }}"
-            docker build -f ${{ matrix.dockerfile }} .
+        if: matrix.type == 'docker'
+        run: |
+          echo "[BUILD] Validating ${{ matrix.service }}"
+          docker build -f ${{ matrix.dockerfile }} .
 
   build-and-push:
     name: Build and Push Docker Images
