@@ -74,12 +74,12 @@ jobs:
           cat <<EOF > matrix.json
           {
             "include": [
-              {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
-              {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
-              {"service":"user-service","dockerfile":"services/user-service/Dockerfile","changed":"true"},
-              {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
-              {"service":"api-gateway","dockerfile":"infra/kong/Dockerfile","changed":"true"},
-              {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
+              {"service":"auth-service","type":"docker","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
+              {"service":"academic-service","type":"docker","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
+              {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"},
+              {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
+              {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"},
+              {"service":"kong","type":"compose","changed":"true"}
             ]
           }
           EOF
@@ -172,12 +172,10 @@ jobs:
           echo "| ${{ matrix.service }} | ${{ matrix.changed }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Validate Dockerfile
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
-        run: |
-          echo "[BUILD] Validating ${{ matrix.service }}"
-          docker build \
-            -f ${{ matrix.dockerfile }} \
-            .
+          if: matrix.type == 'docker'
+          run: |
+            echo "[BUILD] Validating ${{ matrix.service }}"
+            docker build -f ${{ matrix.dockerfile }} .
 
   build-and-push:
     name: Build and Push Docker Images
@@ -225,7 +223,7 @@ jobs:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Metadata
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: matrix.type == 'docker'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -235,7 +233,7 @@ jobs:
             type=sha,prefix=qa-,format=short
 
       - name: Setup Docker Buildx
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: matrix.type == 'docker'
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
@@ -244,14 +242,14 @@ jobs:
             network=host
 
       - name: Login to Docker Hub
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: matrix.type == 'docker'
         uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Run Trivy filesystem scanner
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: matrix.type == 'docker'
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
@@ -261,7 +259,7 @@ jobs:
           severity: HIGH,CRITICAL
 
       - name: Build and Push Image
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: matrix.type == 'docker'
         uses: docker/build-push-action@v6
         with:
           context: .
