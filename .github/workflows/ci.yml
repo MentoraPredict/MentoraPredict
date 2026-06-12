@@ -196,7 +196,6 @@ jobs:
     needs:
       - detect-changes
       - validate
-      - docker-validate
     environment: QA enviroment
 
     strategy:
