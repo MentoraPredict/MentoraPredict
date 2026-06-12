@@ -16,7 +16,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const message = typeof body === 'string'
       ? body
-      : (body as any).message || exception.message;
+      : (body as Record<string, unknown>).message as string || exception.message;
 
     this.logger.warn(`${status} ${req.method} ${req.url} — ${JSON.stringify(message)}`);
 
@@ -25,7 +25,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message,
       timestamp: new Date().toISOString(),
       path: req.url,
-      requestId: (req as any).correlationId,
+      requestId: (req as unknown as { correlationId?: string }).correlationId ?? '',
     });
   }
 }

@@ -5,8 +5,6 @@ on:
     workflows: [CI]
     types:
       - completed
-    branches:
-      - QA
   workflow_dispatch:
 
 env:
@@ -17,7 +15,9 @@ jobs:
   detect-changes:
     name: Detect Changed Services
     runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'QA'
+    if: |
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') ||
+      github.event_name == 'workflow_dispatch'
     outputs:
       auth-service: ${{ steps.filter.outputs.auth-service }}
       academic-service: ${{ steps.filter.outputs.academic-service }}
@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - name: Detect changed services
@@ -68,12 +68,12 @@ jobs:
     needs: [detect-changes]
     environment: QA enviroment
     if: |
-      (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'QA' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') ||
       github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
