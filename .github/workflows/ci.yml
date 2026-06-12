@@ -71,16 +71,20 @@ jobs:
       - name: Generate Matrix
         id: generate-matrix
         run: |
-          MATRIX='{"include":[
-            {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
-            {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
-            {"service":"user-service","dockerfile":"services/user-service/Dockerfile","changed":"true"},
-            {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
-            {"service":"api-gateway","dockerfile":"infra/kong/Dockerfile","changed":"true"},
-            {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
-          ]}'
+          cat <<EOF > matrix.json
+          {
+            "include": [
+              {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
+              {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
+              {"service":"user-service","dockerfile":"services/user-service/Dockerfile","changed":"true"},
+              {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
+              {"service":"api-gateway","dockerfile":"infra/kong/Dockerfile","changed":"true"},
+              {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
+            ]
+          }
+          EOF
 
-          echo "matrix=$(echo "$MATRIX" | jq -c .)" >> $GITHUB_OUTPUT
+          echo "matrix=$(cat matrix.json | jq -c .)" >> $GITHUB_OUTPUT
 
       - name: DEBUG MATRIX FINAL
         run: |
