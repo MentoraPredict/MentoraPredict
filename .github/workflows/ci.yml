@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
+      docker_matrix: ${{ steps.generate-matrix.outputs.docker_matrix }}
       packages: ${{ steps.filter.outputs.packages }}
 
     steps:
@@ -84,9 +85,11 @@ jobs:
           }
           EOF
 
-          echo "matrix<<EOF" >> $GITHUB_OUTPUT
-          jq -c . matrix.json >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          matrix=$(jq -c . matrix.json)
+          docker_matrix=$(jq -c '{include: [.include[] | select(.type=="docker")]}' matrix.json)
+
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "docker_matrix=$docker_matrix" >> $GITHUB_OUTPUT
 
   validate:
     name: Lint, Build, and Test
@@ -160,7 +163,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.matrix).include }}
+        include: ${{ fromJson(needs.detect-changes.outputs.docker_matrix).include }}
     steps:
       - uses: actions/checkout@v4
 
@@ -195,7 +198,8 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include }}
+      matrix:
+        include: ${{ fromJson(needs.detect-changes.outputs.docker_matrix || '{"include":[]}').include }}
     steps:
       - uses: actions/checkout@v4
 
