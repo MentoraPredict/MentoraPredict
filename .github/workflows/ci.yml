@@ -122,7 +122,7 @@ jobs:
           pnpm test || { echo "❌ TESTS FAILED"; exit 1; }
 
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v1
         continue-on-error: true
 
       - name: Validate workspace structure
