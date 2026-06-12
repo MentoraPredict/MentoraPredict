@@ -69,34 +69,24 @@ jobs:
               - 'packages/**'
 
       - name: Generate Matrix
-        id: generate-matrix
-        run: |
-          cat <<EOF > matrix.json
-          {
-            "include": [
-              {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
-              {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
-              {"service":"user-service","dockerfile":"services/user-service/Dockerfile","changed":"true"},
-              {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
-              {"service":"api-gateway","dockerfile":"infra/kong/Dockerfile","changed":"true"},
-              {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
-            ]
-          }
-          EOF
+          id: generate-matrix
+          run: |
+            cat <<EOF > matrix.json
+            {
+              "include": [
+                {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
+                {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
+                {"service":"user-service","dockerfile":"services/user-service/Dockerfile","changed":"true"},
+                {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
+                {"service":"api-gateway","dockerfile":"infra/kong/Dockerfile","changed":"true"},
+                {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
+              ]
+            }
+            EOF
 
-          matrix=$(jq -c . matrix.json)
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
-
-      - name: DEBUG MATRIX FINAL
-        run: |
-          echo "RAW FILE:"
-          cat matrix.json
-
-          echo "OUTPUT:"
-          echo "${{ steps.generate-matrix.outputs.matrix }}"
-
-          echo "VALIDATION:"
-          echo "${{ steps.generate-matrix.outputs.matrix }}" | jq .
+            echo "matrix<<EOF" >> $GITHUB_OUTPUT
+            jq -c . matrix.json >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
 
   validate:
     name: Lint, Build, and Test
