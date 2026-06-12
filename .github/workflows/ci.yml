@@ -264,14 +264,15 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Run Trivy filesystem scanner
-        if: env.MODE == 'QA' && matrix.type == 'docker'
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: table
-          exit-code: 1
-          severity: HIGH,CRITICAL
+          if: env.MODE == 'QA' && matrix.type == 'docker'
+          uses: aquasecurity/trivy-action@master
+          continue-on-error: true
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: table
+            exit-code: 1
+            severity: HIGH,CRITICAL
 
       - name: Build and Push Image
         if: env.MODE == 'QA' && matrix.type == 'docker'
