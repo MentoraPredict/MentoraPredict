@@ -82,9 +82,12 @@ jobs:
 
           echo "matrix=$(echo "$MATRIX" | jq -c '.')" >> $GITHUB_OUTPUT
 
-      - name: Debug Matrix
+      - name: DEBUG MATRIX FINAL
         run: |
-          echo '${{ steps.generate-matrix.outputs.matrix }}'
+          echo "RAW MATRIX:"
+          echo "${{ steps.generate-matrix.outputs.matrix }}"
+          echo "LENGTH CHECK:"
+          echo "${{ steps.generate-matrix.outputs.matrix }}" | jq '.include | length'
 
   validate:
     name: Lint, Build, and Test
@@ -108,18 +111,18 @@ jobs:
 
       - name: Lint
         run: |
-          echo "🔍 Running lint..."
-          pnpm lint || { echo "❌ LINT FAILED"; exit 1; }
+          echo "LINT_STATUS=PASSED" >> $GITHUB_ENV
+          pnpm lint || { echo "LINT_STATUS=FAILED" >> $GITHUB_ENV; exit 1; }
 
       - name: Build
         run: |
-          echo "🏗️ Running build..."
-          pnpm build || { echo "❌ BUILD FAILED"; exit 1; }
+          echo "BUILD_STATUS=PASSED" >> $GITHUB_ENV
+          pnpm build || { echo "BUILD_STATUS=FAILED" >> $GITHUB_ENV; exit 1; }
 
       - name: Run tests
         run: |
-          echo "🧪 Running tests..."
-          pnpm test || { echo "❌ TESTS FAILED"; exit 1; }
+          echo "TEST_STATUS=PASSED" >> $GITHUB_ENV
+          pnpm test || { echo "TEST_STATUS=FAILED" >> $GITHUB_ENV; exit 1; }
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v1
@@ -142,15 +145,15 @@ jobs:
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Commit Convention | PASSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ${{ steps.lint.outcome }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ steps.build.outcome }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ steps.test.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ env.LINT_STATUS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ env.BUILD_STATUS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ env.TEST_STATUS }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dockerfiles | CHECKED |" >> $GITHUB_STEP_SUMMARY
           echo "| Gitleaks | COMPLETED |" >> $GITHUB_STEP_SUMMARY
 
   docker-validate:
     name: Validate Dockerfiles
-    if: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include.length > 0 }}
+    if: needs.detect-changes.outputs.matrix != ''
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -158,7 +161,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include }}
+        include: ${{ fromJson(needs.detect-changes.outputs.matrix).include }}
     steps:
       - uses: actions/checkout@v4
 
