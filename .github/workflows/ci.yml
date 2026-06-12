@@ -86,10 +86,17 @@ jobs:
           EOF
 
           matrix=$(jq -c . matrix.json)
-          docker_matrix=$(jq -c '{include: [.include[] | select(.type=="docker")]}' matrix.json)
+          docker_matrix=$(jq -c '.include |= map(select(.type=="docker"))' matrix.json)
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "docker_matrix=$docker_matrix" >> $GITHUB_OUTPUT
+
+      - name: Debug outputs
+        run: |
+          echo "MATRIX:"
+          echo '${{ steps.generate-matrix.outputs.matrix }}'
+          echo "DOCKER_MATRIX:"
+          echo '${{ steps.generate-matrix.outputs.docker_matrix }}'
 
   validate:
     name: Lint, Build, and Test
