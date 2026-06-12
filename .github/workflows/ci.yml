@@ -7,11 +7,17 @@ on:
     branches: [QA, main]
   pull_request_target:
     types: [opened, synchronize, reopened]
-
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: "Force build all services"
+        required: false
+        default: "false"
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REGISTRY: docker.io
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  FORCE_ALL: ${{ github.event.inputs.force_all || 'false' }}
 
 jobs:
   commitlint:
@@ -65,49 +71,61 @@ jobs:
       - name: Generate Matrix
         id: generate-matrix
         run: |
-          MATRIX=$(jq -nc \
-            --arg auth "${{ steps.filter.outputs.auth-service }}" \
-            --arg academic "${{ steps.filter.outputs.academic-service }}" \
-            --arg user "${{ steps.filter.outputs.user-service }}" \
-            --arg analytics "${{ steps.filter.outputs.analytics-service }}" \
-            --arg kong "${{ steps.filter.outputs.kong }}" \
-            --arg web "${{ steps.filter.outputs.web }}" '
-            {
-              include:[
-                {
-                  service:"auth-service",
-                  dockerfile:"services/auth-service/Dockerfile",
-                  changed:$auth
-                },
-                {
-                  service:"academic-service",
-                  dockerfile:"services/academic-service/Dockerfile",
-                  changed:$academic
-                },
-                {
-                  service:"user-service",
-                  dockerfile:"services/user-service/Dockerfile",
-                  changed:$user
-                },
-                {
-                  service:"analytics-service",
-                  dockerfile:"services/analytics-service/Dockerfile",
-                  changed:$analytics
-                },
-                {
-                  service:"api-gateway",
-                  dockerfile:"infra/kong/Dockerfile",
-                  changed:$kong
-                },
-                {
-                  service:"web",
-                  dockerfile:"apps/web/Dockerfile",
-                  changed:$web
-                }
-              ]
-            }')
+          FORCE_ALL="${{ github.event.inputs.force_all || 'false' }}"
 
-          echo "matrix=$(echo "$MATRIX" | jq -c .)" >> $GITHUB_OUTPUT
+          if [ "$FORCE_ALL" = "true" ]; then
+            MATRIX='{"include":[
+              {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
+              {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
+              {"service":"user-service","dockerfile":"services/user-service/Dockerfile","changed":"true"},
+              {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
+              {"service":"api-gateway","dockerfile":"infra/kong/Dockerfile","changed":"true"},
+              {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
+            ]}'
+          else
+            MATRIX=$(jq -nc \
+              --arg auth "${{ steps.filter.outputs.auth-service }}" \
+              --arg academic "${{ steps.filter.outputs.academic-service }}" \
+              --arg user "${{ steps.filter.outputs.user-service }}" \
+              --arg analytics "${{ steps.filter.outputs.analytics-service }}" \
+              --arg kong "${{ steps.filter.outputs.kong }}" \
+              --arg web "${{ steps.filter.outputs.web }}" '
+              {
+                include:[
+                  {
+                    service:"auth-service",
+                    dockerfile:"services/auth-service/Dockerfile",
+                    changed:$auth
+                  },
+                  {
+                    service:"academic-service",
+                    dockerfile:"services/academic-service/Dockerfile",
+                    changed:$academic
+                  },
+                  {
+                    service:"user-service",
+                    dockerfile:"services/user-service/Dockerfile",
+                    changed:$user
+                  },
+                  {
+                    service:"analytics-service",
+                    dockerfile:"services/analytics-service/Dockerfile",
+                    changed:$analytics
+                  },
+                  {
+                    service:"api-gateway",
+                    dockerfile:"infra/kong/Dockerfile",
+                    changed:$kong
+                  },
+                  {
+                    service:"web",
+                    dockerfile:"apps/web/Dockerfile",
+                    changed:$web
+                  }
+                ]
+              }')
+          fi
+          echo "matrix=$(echo "${MATRIX:-{\"include\":[]}}" | jq -c '.')" >> $GITHUB_OUTPUT
 
       - name: Debug Matrix
         run: |
@@ -181,17 +199,15 @@ jobs:
 
   docker-validate:
     name: Validate Dockerfiles
+    if: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include.length > 0 }}
     runs-on: ubuntu-latest
-
     needs:
       - detect-changes
       - validate
-
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.matrix).include }}
-
+        include: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include }}
     steps:
       - uses: actions/checkout@v4
 
@@ -213,10 +229,12 @@ jobs:
   build-and-push:
     name: Build and Push Docker Images
     if: >
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/QA' &&
-      needs.detect-changes.outputs.matrix != '' &&
-      needs.detect-changes.outputs.matrix != '{"include":[]}'
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/QA' &&
+        fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include.length > 0
+      )
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -227,8 +245,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.matrix).include }}
-
+        include: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include }}
     steps:
       - uses: actions/checkout@v4
 
@@ -241,17 +258,19 @@ jobs:
           echo "| ${{ matrix.service }} | ${{ matrix.changed }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Validate Secrets
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
         run: |
-          if [ -z "${{ env.DOCKERHUB_USERNAME }}" ]; then
-            echo "Error: DOCKERHUB_USERNAME secret not set"
+          if [ -z "${DOCKERHUB_USERNAME}" ]; then
+            echo "Error: DOCKERHUB_USERNAME missing"
             exit 1
           fi
 
-          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
-            echo "Error: DOCKERHUB_TOKEN secret not set"
+          if [ -z "${DOCKERHUB_TOKEN}" ]; then
+            echo "Error: DOCKERHUB_TOKEN missing"
             exit 1
           fi
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Metadata
         if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
