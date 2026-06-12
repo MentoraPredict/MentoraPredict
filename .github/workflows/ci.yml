@@ -88,10 +88,14 @@ jobs:
 
       - name: DEBUG MATRIX FINAL
         run: |
-          echo "RAW MATRIX:"
+          echo "RAW FILE:"
+          cat matrix.json
+
+          echo "OUTPUT:"
           echo "${{ steps.generate-matrix.outputs.matrix }}"
-          echo "LENGTH CHECK:"
-          echo "${{ steps.generate-matrix.outputs.matrix }}" | jq '.include | length'
+
+          echo "VALIDATION:"
+          echo "${{ steps.generate-matrix.outputs.matrix }}" | jq .
 
   validate:
     name: Lint, Build, and Test
