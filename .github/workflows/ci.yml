@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
+      docker_matrix: ${{ steps.generate-matrix.outputs.docker_matrix }}
       packages: ${{ steps.filter.outputs.packages }}
 
     steps:
@@ -71,65 +72,31 @@ jobs:
       - name: Generate Matrix
         id: generate-matrix
         run: |
-          FORCE_ALL="${{ github.event.inputs.force_all || 'false' }}"
+          cat <<EOF > matrix.json
+          {
+            "include": [
+              {"service":"auth-service","type":"docker","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
+              {"service":"academic-service","type":"docker","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
+              {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"},
+              {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
+              {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"},
+              {"service":"kong","type":"compose","changed":"true"}
+            ]
+          }
+          EOF
 
-          if [ "$FORCE_ALL" = "true" ]; then
-            MATRIX='{"include":[
-              {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
-              {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
-              {"service":"user-service","dockerfile":"services/user-service/Dockerfile","changed":"true"},
-              {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
-              {"service":"api-gateway","dockerfile":"infra/kong/Dockerfile","changed":"true"},
-              {"service":"web","dockerfile":"apps/web/Dockerfile","changed":"true"}
-            ]}'
-          else
-            MATRIX=$(jq -nc \
-              --arg auth "${{ steps.filter.outputs.auth-service }}" \
-              --arg academic "${{ steps.filter.outputs.academic-service }}" \
-              --arg user "${{ steps.filter.outputs.user-service }}" \
-              --arg analytics "${{ steps.filter.outputs.analytics-service }}" \
-              --arg kong "${{ steps.filter.outputs.kong }}" \
-              --arg web "${{ steps.filter.outputs.web }}" '
-              {
-                include:[
-                  {
-                    service:"auth-service",
-                    dockerfile:"services/auth-service/Dockerfile",
-                    changed:$auth
-                  },
-                  {
-                    service:"academic-service",
-                    dockerfile:"services/academic-service/Dockerfile",
-                    changed:$academic
-                  },
-                  {
-                    service:"user-service",
-                    dockerfile:"services/user-service/Dockerfile",
-                    changed:$user
-                  },
-                  {
-                    service:"analytics-service",
-                    dockerfile:"services/analytics-service/Dockerfile",
-                    changed:$analytics
-                  },
-                  {
-                    service:"api-gateway",
-                    dockerfile:"infra/kong/Dockerfile",
-                    changed:$kong
-                  },
-                  {
-                    service:"web",
-                    dockerfile:"apps/web/Dockerfile",
-                    changed:$web
-                  }
-                ]
-              }')
-          fi
-          echo "matrix=$(echo "${MATRIX:-{\"include\":[]}}" | jq -c '.')" >> $GITHUB_OUTPUT
+          matrix=$(jq -c . matrix.json)
+          docker_matrix=$(jq -c '.include |= map(select(.type=="docker"))' matrix.json)
 
-      - name: Debug Matrix
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "docker_matrix=$docker_matrix" >> $GITHUB_OUTPUT
+
+      - name: Debug outputs
         run: |
+          echo "MATRIX:"
           echo '${{ steps.generate-matrix.outputs.matrix }}'
+          echo "DOCKER_MATRIX:"
+          echo '${{ steps.generate-matrix.outputs.docker_matrix }}'
 
   validate:
     name: Lint, Build, and Test
@@ -152,19 +119,22 @@ jobs:
         run: pnpm install
 
       - name: Lint
-        run: pnpm lint
-        id: lint
+        run: |
+          echo "LINT_STATUS=PASSED" >> $GITHUB_ENV
+          pnpm lint || { echo "LINT_STATUS=FAILED" >> $GITHUB_ENV; exit 1; }
 
       - name: Build
-        run: pnpm build
-        id: build
+        run: |
+          echo "BUILD_STATUS=PASSED" >> $GITHUB_ENV
+          pnpm build || { echo "BUILD_STATUS=FAILED" >> $GITHUB_ENV; exit 1; }
 
       - name: Run tests
-        run: pnpm test
-        id: test
+        run: |
+          echo "TEST_STATUS=PASSED" >> $GITHUB_ENV
+          pnpm test || { echo "TEST_STATUS=FAILED" >> $GITHUB_ENV; exit 1; }
 
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v1
         continue-on-error: true
 
       - name: Validate workspace structure
@@ -184,22 +154,15 @@ jobs:
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Commit Convention | PASSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ${{ steps.lint.outcome }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ steps.build.outcome }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ steps.test.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ env.LINT_STATUS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ env.BUILD_STATUS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ env.TEST_STATUS }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dockerfiles | CHECKED |" >> $GITHUB_STEP_SUMMARY
           echo "| Gitleaks | COMPLETED |" >> $GITHUB_STEP_SUMMARY
 
-      - name: Fail CI if critical checks fail
-        if: steps.lint.outcome == 'failure' || steps.build.outcome == 'failure'
-        run: |
-          echo "[ERROR] Lint or Build failed."
-          echo "Please fix lint and build errors before merging this pull request."
-          exit 1
-
   docker-validate:
     name: Validate Dockerfiles
-    if: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include.length > 0 }}
+    if: needs.detect-changes.outputs.matrix != ''
     runs-on: ubuntu-latest
     needs:
       - detect-changes
@@ -207,7 +170,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include }}
+        include: ${{ fromJson(needs.detect-changes.outputs.docker_matrix).include }}
     steps:
       - uses: actions/checkout@v4
 
@@ -219,61 +182,67 @@ jobs:
           echo "| ${{ matrix.service }} | ${{ matrix.changed }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Validate Dockerfile
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: matrix.type == 'docker'
         run: |
           echo "[BUILD] Validating ${{ matrix.service }}"
-          docker build \
-            -f ${{ matrix.dockerfile }} \
-            .
+          docker build -f ${{ matrix.dockerfile }} .
 
   build-and-push:
     name: Build and Push Docker Images
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (
-        github.event_name == 'push' &&
-        github.ref == 'refs/heads/QA' &&
-        fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include.length > 0
-      )
     runs-on: ubuntu-latest
     needs:
       - detect-changes
       - validate
       - docker-validate
-    environment: QA enviroment
+
+    if: >
+      needs.detect-changes.outputs.docker_matrix != '' &&
+      (github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/QA'))
 
     strategy:
       fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.matrix || '{"include":[]}').include }}
+      matrix: ${{ fromJson(needs.detect-changes.outputs.docker_matrix) }}
+
     steps:
       - uses: actions/checkout@v4
 
+      # DETECTA MODO UNA SOLA VEZ
+      - name: Set mode
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "MODE=PR" >> $GITHUB_ENV
+          else
+            echo "MODE=QA" >> $GITHUB_ENV
+          fi
+
+      # DEBUG CONSISTENTE
+      - name: Debug matrix
+        run: |
+          echo "service: ${{ matrix.service }}"
+          echo "type: ${{ matrix.type }}"
+          echo "mode: $MODE"
+
+      # SUMMARY SIEMPRE
       - name: Build Summary
         run: |
           echo "## Docker Build Status" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | Changed |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ${{ matrix.service }} | ${{ matrix.changed }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Mode |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ${{ matrix.service }} | $MODE |" >> $GITHUB_STEP_SUMMARY
 
+      # VALIDACIÓN SIEMPRE
       - name: Validate Secrets
         run: |
-          if [ -z "${DOCKERHUB_USERNAME}" ]; then
-            echo "Error: DOCKERHUB_USERNAME missing"
-            exit 1
-          fi
-
-          if [ -z "${DOCKERHUB_TOKEN}" ]; then
-            echo "Error: DOCKERHUB_TOKEN missing"
-            exit 1
-          fi
+          test -n "${DOCKERHUB_USERNAME}"
+          test -n "${DOCKERHUB_TOKEN}"
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # METADATA SOLO EN QA
       - name: Docker Metadata
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: env.MODE == 'QA' && matrix.type == 'docker'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -282,24 +251,20 @@ jobs:
             type=raw,value=qa-latest
             type=sha,prefix=qa-,format=short
 
+      # BUILD SOLO EN QA
       - name: Setup Docker Buildx
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: env.MODE == 'QA' && matrix.type == 'docker'
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-          driver-opts: |
-            image=moby/buildkit:latest
-            network=host
 
       - name: Login to Docker Hub
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: env.MODE == 'QA' && matrix.type == 'docker'
         uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Run Trivy filesystem scanner
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: env.MODE == 'QA' && matrix.type == 'docker'
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
@@ -309,7 +274,7 @@ jobs:
           severity: HIGH,CRITICAL
 
       - name: Build and Push Image
-        if: matrix.changed == 'true' || needs.detect-changes.outputs.packages == 'true'
+        if: env.MODE == 'QA' && matrix.type == 'docker'
         uses: docker/build-push-action@v6
         with:
           context: .
