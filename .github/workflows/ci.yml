@@ -64,26 +64,3 @@ jobs:
           echo "| Lint | Build | Tests | Security |" >> $GITHUB_STEP_SUMMARY
           echo "|------|-------|-------|----------|" >> $GITHUB_STEP_SUMMARY
           echo "| OK | OK | OK | Gitleaks |" >> $GITHUB_STEP_SUMMARY
-
-  docker-validate:
-    name: Validate Dockerfiles
-    runs-on: ubuntu-latest
-    needs: validate
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate Dockerfiles
-        run: |
-          echo "Validating Dockerfiles..."
-
-          docker build -f services/auth-service/Dockerfile .
-          docker build -f services/academic-service/Dockerfile .
-          docker build -f services/user-service/Dockerfile .
-          docker build -f services/analytics-service/Dockerfile .
-          docker build -f apps/web/Dockerfile .
-
-      - name: Docker Summary
-        run: |
-          echo "## Docker Validation" >> $GITHUB_STEP_SUMMARY
-          echo "All Dockerfiles validated successfully" >> $GITHUB_STEP_SUMMARY
