@@ -157,7 +157,6 @@ jobs:
     name: Deploy to EC2 QA
     runs-on: ubuntu-latest
     needs: build-and-push
-    timeout-minutes: 10
     environment: QA enviroment
     steps:
       - uses: actions/checkout@v4
