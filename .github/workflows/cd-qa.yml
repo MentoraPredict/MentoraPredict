@@ -216,18 +216,18 @@ jobs:
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
             echo "[INFRA] Starting infrastructure"
-            IMAGE_TAG=$IMAGE_TAG docker compose -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis
+            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis
 
             echo "[KONG] Starting API Gateway"
-            IMAGE_TAG=$IMAGE_TAG docker compose -f infra/docker/docker-compose.qa.yml pull kong
-            IMAGE_TAG=$IMAGE_TAG docker compose -f infra/docker/docker-compose.qa.yml up -d kong --force-recreate
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull kong
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d kong --force-recreate
 
             echo "[APP] Deploying all services"
 
-            IMAGE_TAG=$IMAGE_TAG docker compose -f infra/docker/docker-compose.qa.yml pull
-            IMAGE_TAG=$IMAGE_TAG docker compose -f infra/docker/docker-compose.qa.yml up -d --force-recreate
-            docker system prune -af --filter "until=24h"
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate
 
+            docker system prune -af --filter "until=24h"
             echo "[OK] Deployment completed"
 
       - name: Deployment Summary
