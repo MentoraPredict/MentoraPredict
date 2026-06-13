@@ -28,13 +28,6 @@ services:
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks:
       - mentorapredict-net
-    depends_on:
-      auth-service:
-        condition: service_healthy
-      academic-service:
-        condition: service_healthy
-      analytics-service:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
@@ -84,11 +77,6 @@ services:
       - mentorapredict-net
     volumes:
       - ../keys:/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   user-service:
     image: ${DOCKERHUB_USERNAME}/user-service:${IMAGE_TAG:-qa-latest}
@@ -110,11 +98,6 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   academic-service:
     image: ${DOCKERHUB_USERNAME}/academic-service:${IMAGE_TAG:-qa-latest}
@@ -146,15 +129,6 @@ services:
       - mentorapredict-net
     volumes:
       - ../keys:/secrets:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
 
   analytics-service:
     image: ${DOCKERHUB_USERNAME}/analytics-service:${IMAGE_TAG:-qa-latest}
@@ -188,15 +162,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      academic-service:
-        condition: service_started
 
   web:
     image: ${DOCKERHUB_USERNAME}/web:${IMAGE_TAG:-qa-latest}
