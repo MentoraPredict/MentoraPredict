@@ -1,6 +1,8 @@
 name: CD QA
 
 on:
+  push:
+    branches: [QA]
   workflow_run:
     workflows: [CI]
     types:
@@ -18,16 +20,25 @@ jobs:
     environment: QA enviroment
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
       (
         github.event_name == 'workflow_run' &&
-        github.event.workflow_run != null &&
-        github.event.workflow_run.head_branch == 'QA' &&
-        github.event.workflow_run.conclusion == 'success'
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'QA'
       )
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: QA
+
+      - name: Resolve deploy SHA
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "value=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -38,27 +49,21 @@ jobs:
           script: |
             set -e
 
-            DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
-            if [ -z "$DEPLOY_SHA" ]; then
-              DEPLOY_SHA="${{ github.sha }}"
-            fi
+            DEPLOY_SHA="${{ steps.sha.outputs.value }}"
             SHORT_SHA=$(echo "$DEPLOY_SHA" | cut -c1-7)
             IMAGE_TAG="qa-${SHORT_SHA}"
 
             sudo mkdir -p /opt/mentorapredict
             sudo chown ubuntu:ubuntu /opt/mentorapredict
-
             cd /opt/mentorapredict
 
-            if [ -d ".git" ]; then
-              git fetch origin
-              git reset --hard origin/QA
-            else
+            if [ ! -d ".git" ]; then
               git clone https://github.com/${{ github.repository }} .
-              git checkout QA
             fi
 
-            echo "[ENV] Creating .env"
+            git fetch origin
+            git reset --hard origin/QA
+
             cat > .env << EOF
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
@@ -73,27 +78,22 @@ jobs:
             JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
             JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
             EOF
-
             echo "WEB_PORT=${WEB_PORT:-80}" >> .env
 
-            echo "[KEYS] Creating certificate directories..."
             sudo mkdir -p /opt/mentorapredict/infra/keys
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
-            echo "[INFRA] Starting infrastructure"
             IMAGE_TAG=$IMAGE_TAG docker compose \
               -f infra/docker/docker-compose.infra.yml \
               up -d postgres mongo redis
 
-            echo "[KONG] Starting API Gateway"
             IMAGE_TAG=$IMAGE_TAG docker compose \
               -f infra/docker/docker-compose.qa.yml \
               pull kong
+
             IMAGE_TAG=$IMAGE_TAG docker compose \
               -f infra/docker/docker-compose.qa.yml \
               up -d kong --force-recreate
-
-            echo "[APP] Deploying all services"
 
             IMAGE_TAG=$IMAGE_TAG docker compose \
               -f infra/docker/docker-compose.qa.yml \
@@ -103,10 +103,10 @@ jobs:
               -f infra/docker/docker-compose.qa.yml \
               up -d --force-recreate
 
-            echo "[OK] Deployment completed"
+            docker system prune -af --filter "until=24h"
 
       - name: Deployment Summary
         run: |
           echo "## QA Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Deploy SHA: ${{ github.event.workflow_run.head_sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Strategy: Full deploy from registry (QA)" >> $GITHUB_STEP_SUMMARY
+          echo "- Deploy SHA: ${{ steps.sha.outputs.value }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Image tag: qa-$(echo ${{ steps.sha.outputs.value }} | cut -c1-7)" >> $GITHUB_STEP_SUMMARY
