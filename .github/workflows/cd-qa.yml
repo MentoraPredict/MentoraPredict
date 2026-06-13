@@ -211,6 +211,8 @@ jobs:
 
             echo "WEB_PORT=${WEB_PORT:-80}" >> .env
 
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+
             echo "[KEYS] Creating certificate directories..."
             sudo mkdir -p /opt/mentorapredict/infra/keys
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
