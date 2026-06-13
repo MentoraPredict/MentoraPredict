@@ -77,7 +77,7 @@ jobs:
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 22
     needs: detect-changes
     if: >
       needs.detect-changes.outputs.docker_matrix != '' &&
@@ -157,7 +157,7 @@ jobs:
     name: Deploy to EC2 QA
     runs-on: ubuntu-latest
     needs: build-and-push
-    timeout-minutes: 15
+    timeout-minutes: 10
     environment: QA enviroment
     steps:
       - uses: actions/checkout@v4
@@ -205,9 +205,10 @@ jobs:
             MONGO_USER=${{ secrets.MONGO_USER }}
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             MONGO_DB=${{ secrets.MONGO_DB }}
-            JWT_PRIVATE_KEY=${{ secrets.JWT_PRIVATE_KEY }}
-            JWT_PUBLIC_KEY=${{ secrets.JWT_PUBLIC_KEY }}
             EOF
+
+            echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
+            echo "JWT_PUBLIC_KEY=$(printf '%s' '${{ secrets.JWT_PUBLIC_KEY }}' | base64 -w0)" >> .env
 
             echo "WEB_PORT=${WEB_PORT:-80}" >> .env
 
