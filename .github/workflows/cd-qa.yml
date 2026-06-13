@@ -16,11 +16,14 @@ jobs:
     name: Deploy to EC2 QA
     runs-on: ubuntu-latest
     environment: QA enviroment
-    if: |
-      (github.event_name == 'workflow_run' && 
-      github.event.workflow_run.head_branch == 'QA' &&
-      github.event.workflow_run.conclusion == 'success') ||
-      github.event_name == 'workflow_dispatch'
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run != null &&
+        github.event.workflow_run.head_branch == 'QA' &&
+        github.event.workflow_run.conclusion == 'success'
+      )
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +38,10 @@ jobs:
           script: |
             set -e
 
-            DEPLOY_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+            DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
+            if [ -z "$DEPLOY_SHA" ]; then
+              DEPLOY_SHA="${{ github.sha }}"
+            fi
             SHORT_SHA=$(echo "$DEPLOY_SHA" | cut -c1-7)
             IMAGE_TAG="qa-${SHORT_SHA}"
 
@@ -85,7 +91,7 @@ jobs:
               pull kong
             IMAGE_TAG=$IMAGE_TAG docker compose \
               -f infra/docker/docker-compose.qa.yml \
-              up -d kong
+              up -d kong --force-recreate
 
             echo "[APP] Deploying all services"
 
