@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { RefreshTokenUseCase } from '../refresh-token.use-case';
 import { IUserRepository } from '../../ports/output/i-user.repository';
-import { ITokenGenerator, TokenPair } from '../../ports/output/i-token.generator';
+import { ITokenGenerator } from '../../ports/output/i-token.generator';
 import { ITokenCache } from '../../ports/output/i-token.cache';
 import { UserEntity, UserRole } from '../../../domain/entities/user.entity';
 

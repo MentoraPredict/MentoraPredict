@@ -1,5 +1,9 @@
-// Skeleton — Career domain entity
-// Pure TypeScript class — no TypeORM decorators in domain layer
 export class CareerEntity {
-  // TODO: define properties in Sprint 2
+  constructor(
+    public readonly id: string,
+    public name: string,
+    public code: string,
+    public readonly facultyId: string,
+    public durationSemesters: number,
+  ) {}
 }

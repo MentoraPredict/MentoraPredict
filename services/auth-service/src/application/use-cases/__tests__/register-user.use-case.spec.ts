@@ -30,7 +30,6 @@ describe('RegisterUserUseCase', () => {
   it('registers a new user and returns id, email, role', async () => {
     repo.findByEmail.mockResolvedValue(null);
     hasher.hash.mockResolvedValue('hashed_pw');
-    const now = new Date();
     repo.save.mockImplementation(async (u) => u);
 
     const result = await useCase.execute({

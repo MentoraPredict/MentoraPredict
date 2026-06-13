@@ -243,8 +243,8 @@ POST /api/v1/auth/login
 ┌─────────────────────────────────────────┐
 │ Retornar                                │
 │ {                                       │
-│   "accessToken": "eyJhbGc...",         │
-│   "refreshToken": "eyJhbGc...",        │
+│   "accessToken": "<access-token-example>",         │
+│   "refreshToken": "<refresh-token-example>",        │
 │   "expiresIn": 900,  // segundos       │
 │   "tokenType": "Bearer"                │
 │ }                                       │
@@ -256,7 +256,7 @@ POST /api/v1/auth/login
 ```
 POST /api/v1/auth/refresh
 {
-  "refreshToken": "eyJhbGc..."
+  "refreshToken": "<refresh-token-example>"
 }
 
 ┌──────────────────────────────────────────┐
@@ -287,7 +287,7 @@ POST /api/v1/auth/refresh
 ┌──────────────────────────────────────────┐
 │ Retornar                                 │
 │ {                                        │
-│   "accessToken": "eyJhbGc...",          │
+│   "accessToken": "<access-token-example>",          │
 │   "expiresIn": 900                      │
 │ }                                        │
 └──────────────────────────────────────────┘

@@ -35,7 +35,7 @@ touch tsconfig.json
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "nest build",
+    "build": "pnpm exec nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
     "test": "jest --passWithNoTests"
@@ -95,7 +95,7 @@ touch tsconfig.json
 
 ```typescript
 // application/ports/output/i-nuevo.repository.ts
-import { NuevoEntity } from '../../../domain/entities/nuevo.entity';
+import { NuevoEntity } from "../../../domain/entities/nuevo.entity";
 
 export interface INuevoRepository {
   findById(id: string): Promise<NuevoEntity | null>;
@@ -107,16 +107,14 @@ export interface INuevoRepository {
 
 ```typescript
 // application/use-cases/crear-nuevo.use-case.ts
-import { Injectable, Inject } from '@nestjs/common';
-import { INuevoRepository } from '../ports/output/i-nuevo.repository';
-import { CrearNuevoDto } from '../dtos/crear-nuevo.dto';
-import { NuevoEntity } from '../../domain/entities/nuevo.entity';
+import { Injectable, Inject } from "@nestjs/common";
+import { INuevoRepository } from "../ports/output/i-nuevo.repository";
+import { CrearNuevoDto } from "../dtos/crear-nuevo.dto";
+import { NuevoEntity } from "../../domain/entities/nuevo.entity";
 
 @Injectable()
 export class CrearNuevoUseCase {
-  constructor(
-    @Inject('INuevoRepository') private repo: INuevoRepository,
-  ) {}
+  constructor(@Inject("INuevoRepository") private repo: INuevoRepository) {}
 
   async execute(dto: CrearNuevoDto): Promise<NuevoEntity> {
     // Lógica de negocio
@@ -130,14 +128,16 @@ export class CrearNuevoUseCase {
 
 ```typescript
 // application/dtos/crear-nuevo.dto.ts
-import { IsString, IsUUID } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsUUID } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class CrearNuevoDto {
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   id!: string;
 
-  @ApiProperty() @IsString()
+  @ApiProperty()
+  @IsString()
   name!: string;
 }
 ```
@@ -146,12 +146,12 @@ export class CrearNuevoDto {
 
 ```typescript
 // infrastructure/persistence/nuevo.repository.ts
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { INuevoRepository } from '../../application/ports/output/i-nuevo.repository';
-import { NuevoEntity } from '../../domain/entities/nuevo.entity';
-import { NuevoOrmEntity } from './nuevo.orm-entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { INuevoRepository } from "../../application/ports/output/i-nuevo.repository";
+import { NuevoEntity } from "../../domain/entities/nuevo.entity";
+import { NuevoOrmEntity } from "./nuevo.orm-entity";
 
 @Injectable()
 export class NuevoRepository implements INuevoRepository {
@@ -176,7 +176,9 @@ export class NuevoRepository implements INuevoRepository {
   }
 
   private toORM(domain: NuevoEntity): NuevoOrmEntity {
-    return { /*...*/ };
+    return {
+      /*...*/
+    };
   }
 }
 ```
@@ -185,11 +187,11 @@ export class NuevoRepository implements INuevoRepository {
 
 ```typescript
 // infrastructure/persistence/nuevo.orm-entity.ts
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn } from "typeorm";
 
-@Entity('nuevos')
+@Entity("nuevos")
 export class NuevoOrmEntity {
-  @PrimaryColumn('uuid') id!: string;
+  @PrimaryColumn("uuid") id!: string;
   @Column() name!: string;
   @CreateDateColumn() createdAt!: Date;
 }
@@ -212,18 +214,18 @@ export class NuevoEntity {
 
 ```typescript
 // infrastructure/controllers/nuevo.controller.ts
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { CrearNuevoUseCase } from '../../application/use-cases/crear-nuevo.use-case';
-import { CrearNuevoDto } from '../../application/dtos/crear-nuevo.dto';
+import { Controller, Post, Body } from "@nestjs/common";
+import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { CrearNuevoUseCase } from "../../application/use-cases/crear-nuevo.use-case";
+import { CrearNuevoDto } from "../../application/dtos/crear-nuevo.dto";
 
-@ApiTags('nuevo')
-@Controller('api/v1/nuevo')
+@ApiTags("nuevo")
+@Controller("api/v1/nuevo")
 export class NuevoController {
   constructor(private readonly crearNuevoUC: CrearNuevoUseCase) {}
 
   @Post()
-  @ApiOperation({ summary: 'Crear nuevo' })
+  @ApiOperation({ summary: "Crear nuevo" })
   async crear(@Body() dto: CrearNuevoDto) {
     return this.crearNuevoUC.execute(dto);
   }
@@ -235,12 +237,10 @@ export class NuevoController {
 ```typescript
 // app.module.ts
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([NuevoOrmEntity]),
-  ],
+  imports: [TypeOrmModule.forFeature([NuevoOrmEntity])],
   controllers: [NuevoController],
   providers: [
-    { provide: 'INuevoRepository', useClass: NuevoRepository },
+    { provide: "INuevoRepository", useClass: NuevoRepository },
     CrearNuevoUseCase,
   ],
 })
@@ -255,25 +255,25 @@ export class AppModule {}
 
 ```typescript
 // Entidades de dominio
-export class UserEntity { }
+export class UserEntity {}
 
 // Value Objects
-export class Email { }
+export class Email {}
 
 // ORM Entities
-export class UserOrmEntity { }
+export class UserOrmEntity {}
 
 // Interfaces / Puertos
-export interface IUserRepository { }
+export interface IUserRepository {}
 
 // Use Cases
-export class RegisterUserUseCase { }
+export class RegisterUserUseCase {}
 
 // DTOs
-export class RegisterDto { }
+export class RegisterDto {}
 
 // Adaptadores
-export class BcryptAdapter implements IPasswordHasher { }
+export class BcryptAdapter implements IPasswordHasher {}
 ```
 
 ### Estructura de Carpetas
@@ -293,9 +293,7 @@ service/src
 // ✅ Correcto
 @Injectable()
 export class MyUseCase {
-  constructor(
-    @Inject('IMyRepository') private repo: IMyRepository,
-  ) {}
+  constructor(@Inject("IMyRepository") private repo: IMyRepository) {}
 }
 
 // ❌ Incorrecto
@@ -312,7 +310,7 @@ export class MyUseCase {
 
 ```typescript
 // application/use-cases/__tests__/mi-use-case.spec.ts
-describe('MiUseCase', () => {
+describe("MiUseCase", () => {
   let useCase: MiUseCase;
   let repo: IMyRepository;
 
@@ -321,9 +319,11 @@ describe('MiUseCase', () => {
     useCase = new MiUseCase(repo);
   });
 
-  it('debe hacer algo', async () => {
+  it("debe hacer algo", async () => {
     // Arrange
-    const input = { /* ... */ };
+    const input = {
+      /* ... */
+    };
 
     // Act
     const result = await useCase.execute(input);

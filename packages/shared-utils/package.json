@@ -2,10 +2,17 @@
   "name": "@mentorapredict/shared-utils",
   "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@mentorapredict/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "lint": "eslint src/",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   }
 }

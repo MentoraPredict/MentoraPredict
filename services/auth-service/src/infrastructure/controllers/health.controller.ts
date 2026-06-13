@@ -1,11 +1,19 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { RedisClient } from '../cache/redis.client';
+import { Controller, Get, HttpCode, HttpStatus } from "@nestjs/common";
+import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { InjectDataSource } from "@nestjs/typeorm";
+import { DataSource } from "typeorm";
+import { RedisClient } from "../cache/redis.client";
 
-@ApiTags('health')
-@Controller('health')
+type HealthStatus = "UP" | "degraded" | "DOWN";
+
+function resolveStatus(postgres: boolean, redis: boolean): HealthStatus {
+  if (postgres && redis) return "UP";
+  if (!postgres && !redis) return "DOWN";
+  return "degraded";
+}
+
+@ApiTags("health")
+@Controller("health")
 export class HealthController {
   constructor(
     @InjectDataSource() private readonly db: DataSource,
@@ -13,22 +21,32 @@ export class HealthController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Service health check — DB + Redis' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Service health check — PostgreSQL + Redis connectivity",
+  })
   async health() {
-    const dbOk = this.db.isInitialized;
-    let redisOk = false;
+    let postgres = false;
+    let redis = false;
+
     try {
-      await this.redis.instance.ping();
-      redisOk = true;
-    } catch {}
+      await this.db.query("SELECT 1");
+      postgres = true;
+    } catch {
+      postgres = false;
+    }
+
+    try {
+      const pong = await this.redis.instance.ping();
+      redis = pong === "PONG";
+    } catch {
+      redis = false;
+    }
 
     return {
-      status: dbOk && redisOk ? 'UP' : 'DEGRADED',
-      services: {
-        database: dbOk    ? 'UP' : 'DOWN',
-        redis:    redisOk ? 'UP' : 'DOWN',
-      },
-      timestamp: new Date().toISOString(),
+      status: resolveStatus(postgres, redis),
+      postgres,
+      redis,
     };
   }
 }
