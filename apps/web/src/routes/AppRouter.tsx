@@ -1,38 +1,63 @@
-import {
-    BrowserRouter,
-    Routes,
-    Route,
-} from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import LandingPage from "@/pages/LandingPage";
-import LoginPage from "@/pages/LoginPage";
-import RegisterPage from "@/pages/RegisterPage";
-import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import LandingPage from "@/pages/public/LandingPage";
+import LoginPage from "@/pages/auth/LoginPage";
+import RegisterPage from "@/pages/auth/RegisterPage";
+import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
+import StudentDashboardPage from "@/pages/student/StudentDashboardPage";
+import TeacherDashboardPage from "@/pages/teacher/TeacherDashboardPage";
+import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import ProtectedRoute from "./ProtectedRoute";
+import PublicOnlyRoute from "./PublicOnlyRoute";
+import RoleRedirect from "./RoleRedirect";
+import { APP_PATHS } from "./paths";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function AppRouter() {
-    return (
-        <BrowserRouter>
-            <Routes>
-                <Route
-                    path="/"
-                    element={<LandingPage />}
-                />
+  useEffect(() => {
+    void useAuthStore.getState().hydrateSession();
+  }, []);
 
-                <Route
-                    path="/login"
-                    element={<LoginPage />}
-                />
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path={APP_PATHS.public.landing} element={<LandingPage />} />
 
-                <Route
-                    path="/register"
-                    element={<RegisterPage />}
-                />
+        <Route element={<PublicOnlyRoute />}>
+          <Route path={APP_PATHS.public.login} element={<LoginPage />} />
+          <Route path={APP_PATHS.public.register} element={<RegisterPage />} />
+          <Route
+            path={APP_PATHS.public.forgotPassword}
+            element={<ForgotPasswordPage />}
+          />
+        </Route>
 
-                <Route
-                    path="/forgot-password"
-                    element={<ForgotPasswordPage />}
-                />
-            </Routes>
-        </BrowserRouter>
-    );
+        <Route path={APP_PATHS.shared.redirect} element={<RoleRedirect />} />
+
+        <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
+          <Route
+            path={APP_PATHS.student.dashboard}
+            element={<StudentDashboardPage />}
+          />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
+          <Route
+            path={APP_PATHS.teacher.dashboard}
+            element={<TeacherDashboardPage />}
+          />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+          <Route
+            path={APP_PATHS.admin.dashboard}
+            element={<AdminDashboardPage />}
+          />
+        </Route>
+
+        <Route path="*" element={<Navigate to={APP_PATHS.public.landing} replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }

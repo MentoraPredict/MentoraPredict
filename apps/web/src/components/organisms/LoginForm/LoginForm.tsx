@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
+import axios from "axios";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -14,6 +16,8 @@ import {
     FormField,
     PasswordField,
 } from "@/components/molecules";
+import { APP_PATHS } from "@/routes/paths";
+import { useAuthStore } from "@/store/auth.store";
 
 interface LoginFormData {
     email: string;
@@ -22,16 +26,50 @@ interface LoginFormData {
 
 export default function LoginForm() {
     const navigate = useNavigate();
+    const login = useAuthStore(
+        (state) => state.login
+    );
+    const [serverError, setServerError] =
+        useState<string>();
+    const [isSubmittingLogin, setIsSubmittingLogin] =
+        useState(false);
     const {
         register,
         handleSubmit,
         formState: { errors },
     } = useForm<LoginFormData>();
 
-    const onSubmit = (
+    const onSubmit = async (
         data: LoginFormData
     ) => {
-        console.log(data);
+        setServerError(undefined);
+        setIsSubmittingLogin(true);
+
+        try {
+            await login(data);
+            navigate(APP_PATHS.shared.redirect, {
+                replace: true,
+            });
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const message =
+                    error.response?.data?.message;
+
+                setServerError(
+                    Array.isArray(message)
+                        ? message.join(". ")
+                        : message ??
+                              "No se pudo iniciar sesion"
+                );
+                return;
+            }
+
+            setServerError(
+                "No se pudo iniciar sesion"
+            );
+        } finally {
+            setIsSubmittingLogin(false);
+        }
     };
 
     return (
@@ -124,9 +162,15 @@ export default function LoginForm() {
                     <Button
                         type="submit"
                         className="w-full"
+                        disabled={isSubmittingLogin}
                     >
                         Iniciar sesión
                     </Button>
+                    {serverError ? (
+                        <Text className="text-sm text-red-500">
+                            {serverError}
+                        </Text>
+                    ) : null}
                 </form>
 
                 <Divider />
