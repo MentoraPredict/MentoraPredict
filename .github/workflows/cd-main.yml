@@ -79,7 +79,7 @@ jobs:
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 12
     needs: detect-changes
     if: >
       needs.detect-changes.outputs.docker_matrix != '' &&
