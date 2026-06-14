@@ -1,49 +1,34 @@
 import api from "./api";
-
-export interface LoginRequest {
-    email: string;
-    password: string;
-}
-
-export interface AuthResponse {
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-    tokenType: "Bearer";
-}
-
-const ACCESS_TOKEN_KEY = "accessToken";
-const REFRESH_TOKEN_KEY = "refreshToken";
+import { endpoints } from "./api/endpoints";
+import type {
+    AuthTokens,
+    LoginCredentials,
+    RefreshTokenPayload,
+} from "@/types/auth/auth.types";
 
 export async function login(
-    credentials: LoginRequest
-): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>(
-        "/v1/auth/login",
+    credentials: LoginCredentials
+): Promise<AuthTokens> {
+    const response = await api.post<AuthTokens>(
+        endpoints.auth.login,
         credentials
-    );
-
-    localStorage.setItem(
-        ACCESS_TOKEN_KEY,
-        response.data.accessToken
-    );
-    localStorage.setItem(
-        REFRESH_TOKEN_KEY,
-        response.data.refreshToken
     );
 
     return response.data;
 }
 
-export function logout() {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+export async function refresh(
+    payload: RefreshTokenPayload
+): Promise<Pick<AuthTokens, "accessToken" | "expiresIn">> {
+    const response = await api.post<
+        Pick<AuthTokens, "accessToken" | "expiresIn">
+    >(endpoints.auth.refresh, payload);
+
+    return response.data;
 }
 
-export function getAccessToken() {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
-}
-
-export function getRefreshToken() {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+export async function logout(
+    payload: RefreshTokenPayload
+): Promise<void> {
+    await api.post(endpoints.auth.logout, payload);
 }

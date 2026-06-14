@@ -16,7 +16,8 @@ import {
     FormField,
     PasswordField,
 } from "@/components/molecules";
-import { login } from "@/services/auth.service";
+import { APP_PATHS } from "@/routes/paths";
+import { useAuthStore } from "@/store/auth.store";
 
 interface LoginFormData {
     email: string;
@@ -25,6 +26,9 @@ interface LoginFormData {
 
 export default function LoginForm() {
     const navigate = useNavigate();
+    const login = useAuthStore(
+        (state) => state.login
+    );
     const [serverError, setServerError] =
         useState<string>();
     const [isSubmittingLogin, setIsSubmittingLogin] =
@@ -43,7 +47,9 @@ export default function LoginForm() {
 
         try {
             await login(data);
-            navigate("/");
+            navigate(APP_PATHS.shared.redirect, {
+                replace: true,
+            });
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 const message =
