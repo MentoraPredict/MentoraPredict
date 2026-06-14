@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
+    "axios": "^1.17.0",
     "framer-motion": "^12.40.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
