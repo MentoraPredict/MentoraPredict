@@ -25,7 +25,7 @@ jobs:
   validate:
     name: Lint, Build, and Test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +41,18 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Cache turbo build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/*/.turbo
+            services/*/.turbo
+            packages/*/.turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
 
       - name: Lint
         run: pnpm lint

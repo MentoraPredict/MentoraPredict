@@ -77,7 +77,7 @@ jobs:
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 12
     needs: detect-changes
     if: >
       needs.detect-changes.outputs.docker_matrix != '' &&
@@ -158,6 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     environment: QA enviroment
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -173,6 +174,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
 
@@ -204,14 +206,19 @@ jobs:
             MONGO_USER=${{ secrets.MONGO_USER }}
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             MONGO_DB=${{ secrets.MONGO_DB }}
+            KONG_PROXY_PORT=${{ secrets.KONG_PROXY_PORT }}
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
             echo "JWT_PUBLIC_KEY=$(printf '%s' '${{ secrets.JWT_PUBLIC_KEY }}' | base64 -w0)" >> .env
 
-            echo "WEB_PORT=${WEB_PORT:-80}" >> .env
+            echo "WEB_PORT=80" >> .env
 
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+
+            echo "[CLEAN] Removing existing application containers"
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml down --remove-orphans 2>/dev/null || true
+            echo "[CLEAN] Cleanup completed"
 
             echo "[KEYS] Creating certificate directories..."
             sudo mkdir -p /opt/mentorapredict/infra/keys
@@ -230,7 +237,11 @@ jobs:
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate
 
             docker system prune -af --filter "until=24h"
+
             echo "[OK] Deployment completed"
+            echo ""
+            echo "[STATUS] Final services status:"
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml ps
 
       - name: Deployment Summary
         run: |
