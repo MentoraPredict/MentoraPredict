@@ -1,0 +1,10 @@
+{
+  "name": "@mentorapredict/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo mobile: placeholder - implement after",
+    "build": "echo mobile: placeholder - implement after",
+    "clean": "rm -rf dist"
+  }
+}
