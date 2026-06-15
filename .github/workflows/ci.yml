@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [QA, main]
+    types: [opened, synchronize, reopened]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  commitlint:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlintrc.json
+          helpURL: https://github.com/MentoraPredict/mentorapredict/blob/main/docs/commit-convention.md
+
+  validate:
+    name: Lint, Build, and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v1
+        continue-on-error: true
+
+      - name: Validate workspace structure
+        run: pnpm list --depth=0
+
+      - name: CI Status Report
+        run: |
+          echo "## CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | Build | Tests | Security |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|-------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| OK | OK | OK | Gitleaks |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,62 @@
+networks:
+  mentorapredict-net:
+    driver: bridge
+
+services:
+  auth-service:
+    image: ${DOCKERHUB_USERNAME}/auth-service:${IMAGE_TAG:-latest}
+    container_name: mp_auth_service
+    restart: always
+    ports:
+      - "${AUTH_SERVICE_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: production
+      PORT: ${AUTH_SERVICE_PORT:-3001}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    networks:
+      - mentorapredict-net
+
+  academic-service:
+    image: ${DOCKERHUB_USERNAME}/academic-service:${IMAGE_TAG:-latest}
+    container_name: mp_academic_service
+    restart: always
+    ports:
+      - "${ACADEMIC_SERVICE_PORT:-3003}:3003"
+    environment:
+      NODE_ENV: production
+      PORT: ${ACADEMIC_SERVICE_PORT:-3003}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MONGO_HOST: ${MONGO_HOST:-mongo}
+      MONGO_PORT: 27017
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks:
+      - mentorapredict-net
+
+  web:
+    image: ${DOCKERHUB_USERNAME}/web:${IMAGE_TAG:-latest}
+    container_name: mp_web
+    restart: always
+    ports:
+      - "${WEB_PORT:-80}:80"
+    environment:
+      NODE_ENV: production
+    networks:
+      - mentorapredict-net
