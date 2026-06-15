@@ -1,0 +1,63 @@
+openapi: 3.0.3
+info:
+  title: Prediction Service API
+  version: '1.0.0'
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PredictionRequest:
+      type: object
+      required: [studentId, subjectId, context]
+      properties:
+        studentId:
+          type: string
+        subjectId:
+          type: string
+        context:
+          type: object
+    PredictionResponse:
+      type: object
+      properties:
+        studentId:
+          type: string
+        subjectId:
+          type: string
+        probabilityPass:
+          type: number
+        predictedGrade:
+          type: number
+        modelVersion:
+          type: string
+security:
+  - bearerAuth: []
+paths:
+  /prediction/predict:
+    post:
+      summary: Request prediction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictionRequest'
+      responses:
+        '200':
+          description: Prediction result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionResponse'
+  /prediction/models:
+    get:
+      summary: List models
+      responses:
+        '200':
+          description: Models list

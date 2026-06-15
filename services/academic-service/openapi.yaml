@@ -1,0 +1,92 @@
+openapi: 3.0.3
+info:
+  title: Academic Service API
+  version: '1.0.0'
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SubjectDto:
+      type: object
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        careerId:
+          type: string
+    EnrollmentRequest:
+      type: object
+      required: [studentId, subjectId, periodId]
+      properties:
+        studentId:
+          type: string
+        subjectId:
+          type: string
+        periodId:
+          type: string
+    EvaluationDto:
+      type: object
+      properties:
+        id:
+          type: string
+        subjectId:
+          type: string
+        teacherId:
+          type: string
+        periodId:
+          type: string
+        title:
+          type: string
+        weight:
+          type: number
+security:
+  - bearerAuth: []
+paths:
+  /academic/subjects:
+    get:
+      summary: List subjects
+      responses:
+        '200':
+          description: Subjects list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDto'
+  /academic/enrollments:
+    post:
+      summary: Create enrollment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentRequest'
+      responses:
+        '201':
+          description: Created
+  /academic/evaluations:
+    post:
+      summary: Create evaluation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationDto'
+      responses:
+        '201':
+          description: Created

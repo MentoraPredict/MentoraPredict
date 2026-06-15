@@ -1,0 +1,368 @@
+# ============================================================
+# MentoraPredict — Shared Packages Design
+# /packages/shared-types | shared-config | shared-utils
+# ============================================================
+#
+# GOLDEN RULE (RNF-034):
+#   Shared packages contain ZERO business logic.
+#   They only hold: types, enums, DTOs, pure helpers, config.
+#   Any logic that affects a business decision stays inside
+#   the microservice that owns that domain.
+# ============================================================
+
+
+# ─────────────────────────────────────────────────────────────
+# PACKAGE 1: @mentorapredict/shared-types
+# ─────────────────────────────────────────────────────────────
+# Contains: enums, DTO shapes, interfaces used across services
+# Does NOT contain: validators, business rules, service calls
+# ─────────────────────────────────────────────────────────────
+
+shared-types:
+  package_json:
+    name: "@mentorapredict/shared-types"
+    version: "0.1.0"
+    main: "src/index.ts"
+
+  file_structure:
+    src/
+      enums/:
+        role.enum.ts: |
+          export enum Role {
+            STUDENT = 'STUDENT',
+            TEACHER = 'TEACHER',
+            ADMIN   = 'ADMIN',
+          }
+
+        risk-level.enum.ts: |
+          export enum RiskLevel {
+            LOW    = 'LOW',
+            MEDIUM = 'MEDIUM',
+            HIGH   = 'HIGH',
+          }
+
+        trend.enum.ts: |
+          export enum AcademicTrend {
+            IMPROVING = 'IMPROVING',
+            STABLE    = 'STABLE',
+            DECLINING = 'DECLINING',
+          }
+
+        enrollment-status.enum.ts: |
+          export enum EnrollmentStatus {
+            ACTIVE    = 'ACTIVE',
+            WITHDRAWN = 'WITHDRAWN',
+            COMPLETED = 'COMPLETED',
+          }
+
+        service-status.enum.ts: |
+          export enum ServiceStatus {
+            UP          = 'UP',
+            DEGRADED    = 'DEGRADED',
+            DOWN        = 'DOWN',
+            STARTING    = 'STARTING',
+            STOPPING    = 'STOPPING',
+            MAINTENANCE = 'MAINTENANCE',
+          }
+
+        ingestion-format.enum.ts: |
+          export enum IngestionFormat {
+            EXCEL = 'excel',
+            CSV   = 'csv',
+            JSON  = 'json',
+          }
+
+      interfaces/:
+        paginated-response.interface.ts: |
+          export interface PaginationMeta {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+          }
+          export interface PaginatedResponse<T> {
+            data: T[];
+            meta: PaginationMeta;
+          }
+
+        api-response.interface.ts: |
+          export interface ApiResponse<T = unknown> {
+            data: T;
+            message?: string;
+            timestamp: string;
+          }
+
+        error-response.interface.ts: |
+          export interface ErrorResponse {
+            statusCode: number;
+            message: string;
+            errors?: string[];
+            timestamp: string;
+            path: string;
+            requestId?: string;
+          }
+
+        health-check.interface.ts: |
+          import { ServiceStatus } from '../enums/service-status.enum';
+          export interface HealthCheckResponse {
+            status: ServiceStatus;
+            services: Record<string, ServiceStatus>;
+            timestamp: string;
+          }
+
+        jwt-payload.interface.ts: |
+          import { Role } from '../enums/role.enum';
+          // Shape of the decoded JWT payload (read-only, no logic)
+          export interface JwtPayload {
+            sub: string;     // userId (UUID)
+            email: string;
+            role: Role;
+            iat: number;
+            exp: number;
+            iss: string;
+            aud: string;
+          }
+
+        internal-request.interface.ts: |
+          // Headers required for service-to-service calls (RNF-038)
+          export interface InternalRequestHeaders {
+            authorization: string;       // Bearer <JWT>
+            'x-correlation-id': string;  // UUID — distributed tracing
+            'x-request-id': string;      // UUID — per-request tracking
+          }
+
+      dtos/:
+        pagination-query.dto.ts: |
+          // Reusable query DTO — import in any service
+          export class PaginationQueryDto {
+            page?: number;   // default 1
+            limit?: number;  // default 20, max 25 (RNF-035)
+          }
+
+        base-entity.dto.ts: |
+          export class BaseEntityDto {
+            id: string;        // UUID
+            createdAt: string; // ISO date-time
+            updatedAt: string;
+          }
+
+      constants/:
+        api.constants.ts: |
+          export const API_VERSION = 'v1';
+          export const API_PREFIX  = 'api';
+          export const FULL_PREFIX = `${API_PREFIX}/${API_VERSION}`;
+          export const DEFAULT_PAGE_SIZE  = 20;
+          export const MAX_PAGE_SIZE      = 25;
+
+        redis-keys.constants.ts: |
+          // Centralized key patterns — used to build Redis keys consistently
+          export const REDIS_KEYS = {
+            AUTH: {
+              REFRESH_TOKEN:  (userId: string)  => `auth:refresh:${userId}`,
+              PW_RESET:       (tokenHash: string) => `auth:pwreset:${tokenHash}`,
+              RATE_LIMIT_LOGIN: (ip: string)    => `auth:ratelimit:login:${ip}`,
+            },
+            METRICS: {
+              STUDENT: (studentId: string, periodId: string) =>
+                `metrics:student:${studentId}:${periodId}`,
+              SUBJECT: (subjectId: string) => `metrics:subject:${subjectId}`,
+            },
+            DASHBOARD: {
+              STUDENT: (studentId: string) => `dash:student:${studentId}`,
+              TEACHER: (teacherId: string) => `dash:teacher:${teacherId}`,
+              ADMIN:   () => `dash:admin:global`,
+            },
+            RISK: {
+              STUDENT: (studentId: string, periodId: string) =>
+                `risk:student:${studentId}:${periodId}`,
+            },
+          } as const;
+
+      index.ts: |
+        // Single barrel export — import everything from '@mentorapredict/shared-types'
+        export * from './enums/role.enum';
+        export * from './enums/risk-level.enum';
+        export * from './enums/trend.enum';
+        export * from './enums/enrollment-status.enum';
+        export * from './enums/service-status.enum';
+        export * from './enums/ingestion-format.enum';
+        export * from './interfaces/paginated-response.interface';
+        export * from './interfaces/api-response.interface';
+        export * from './interfaces/error-response.interface';
+        export * from './interfaces/health-check.interface';
+        export * from './interfaces/jwt-payload.interface';
+        export * from './interfaces/internal-request.interface';
+        export * from './dtos/pagination-query.dto';
+        export * from './dtos/base-entity.dto';
+        export * from './constants/api.constants';
+        export * from './constants/redis-keys.constants';
+
+  what_NOT_to_add:
+    - "Business validation logic (e.g. 'grade must be < 10') → stays in academic-service"
+    - "Risk calculation formulas → stays in prediction-service"
+    - "JWT signing/verification logic → stays in auth-service"
+    - "Database queries or repositories → never shared"
+    - "NestJS decorators or framework-specific code"
+    - "OpenAI prompt templates → stays in recommendation-service"
+
+
+# ─────────────────────────────────────────────────────────────
+# PACKAGE 2: @mentorapredict/shared-config
+# ─────────────────────────────────────────────────────────────
+# Contains: env variable schemas, configuration interfaces
+# Does NOT contain: secrets, connection logic, service-specific config
+# ─────────────────────────────────────────────────────────────
+
+shared-config:
+  package_json:
+    name: "@mentorapredict/shared-config"
+    version: "0.1.0"
+
+  file_structure:
+    src/
+      interfaces/:
+        database-config.interface.ts: |
+          export interface PostgresConfig {
+            host: string;
+            port: number;
+            username: string;
+            password: string;
+            database: string;
+          }
+          export interface MongoConfig {
+            url: string;
+            database: string;
+          }
+          export interface RedisConfig {
+            host: string;
+            port: number;
+            password: string;
+            ttlDefault: number;
+          }
+
+        jwt-config.interface.ts: |
+          export interface JwtConfig {
+            privateKeyPath: string;
+            publicKeyPath: string;
+            accessExpiresIn: number;
+            refreshExpiresIn: number;
+            issuer: string;
+            audience: string;
+          }
+
+        service-config.interface.ts: |
+          export interface ServiceUrls {
+            authService: string;
+            userService: string;
+            academicService: string;
+            metricsService: string;
+            analyticsService: string;
+            predictionService: string;
+            recommendationService: string;
+          }
+
+      env-validation/:
+        common-env.schema.ts: |
+          // Zod schema for common env validation (used in each service)
+          // Actual validation happens per-service in their config/ layer
+          // This file exports the SHAPE only
+          export const CommonEnvShape = {
+            NODE_ENV:   ['development', 'test', 'production'],
+            API_PORT:   'number',
+            LOG_LEVEL:  ['debug', 'info', 'warn', 'error'],
+          };
+
+      index.ts: |
+        export * from './interfaces/database-config.interface';
+        export * from './interfaces/jwt-config.interface';
+        export * from './interfaces/service-config.interface';
+        export * from './env-validation/common-env.schema';
+
+  what_NOT_to_add:
+    - "Actual config loading code (readFileSync, process.env) → each service"
+    - "Service-specific settings (e.g. prediction model name) → stays in prediction-service"
+    - "Secrets or credentials in any form"
+
+
+# ─────────────────────────────────────────────────────────────
+# PACKAGE 3: @mentorapredict/shared-utils
+# ─────────────────────────────────────────────────────────────
+# Contains: PURE functions only — input in, output out, no side effects
+# Does NOT contain: any logic that requires a service, DB, or HTTP call
+# ─────────────────────────────────────────────────────────────
+
+shared-utils:
+  package_json:
+    name: "@mentorapredict/shared-utils"
+    version: "0.1.0"
+
+  file_structure:
+    src/
+      pagination/:
+        pagination.util.ts: |
+          // Pure pagination math — no DB dependency
+          export function buildPaginationMeta(
+            page: number, limit: number, total: number
+          ) {
+            return {
+              page,
+              limit,
+              total,
+              totalPages: Math.ceil(total / limit),
+            };
+          }
+          export function normalizePage(page?: number)  { return Math.max(1, page ?? 1); }
+          export function normalizeLimit(limit?: number) { return Math.min(limit ?? 20, 25); }
+
+      date/:
+        date.util.ts: |
+          // Pure date helpers
+          export function toISOString(date: Date): string { return date.toISOString(); }
+          export function isExpired(expiresAt: Date): boolean { return new Date() > expiresAt; }
+
+      correlation/:
+        correlation.util.ts: |
+          import { randomUUID } from 'crypto';
+          // Generates correlation/request IDs for distributed tracing (RNF-038)
+          export function generateCorrelationId(): string { return randomUUID(); }
+          export function generateRequestId(): string     { return randomUUID(); }
+
+      anonymization/:
+        anonymize.util.ts: |
+          // RNF-042: Helpers to strip PII before sending to prediction/analytics
+          // NOTE: These strip fields from objects. They do NOT decide what is PII
+          //       (that decision is in the calling service's use-case).
+          export function stripPiiFields<T extends Record<string, unknown>>(
+            obj: T,
+            piiFields: string[]
+          ): Omit<T, string> {
+            const result = { ...obj };
+            for (const field of piiFields) delete result[field];
+            return result;
+          }
+
+      response/:
+        api-response.util.ts: |
+          // Wraps data in the standard ApiResponse shape
+          export function buildApiResponse<T>(data: T, message?: string) {
+            return { data, message, timestamp: new Date().toISOString() };
+          }
+          export function buildErrorResponse(
+            statusCode: number, message: string, path: string, requestId?: string
+          ) {
+            return { statusCode, message, timestamp: new Date().toISOString(), path, requestId };
+          }
+
+      index.ts: |
+        export * from './pagination/pagination.util';
+        export * from './date/date.util';
+        export * from './correlation/correlation.util';
+        export * from './anonymization/anonymize.util';
+        export * from './response/api-response.util';
+
+  what_NOT_to_add:
+    - "HTTP client calls (axios, fetch) → each service's infrastructure/external layer"
+    - "NestJS Injectable services or providers"
+    - "bcrypt, JWT sign/verify → auth-service only"
+    - "Business rules disguised as utils (e.g. 'calculateRisk') → domain services"
+    - "Database helpers or TypeORM utilities"

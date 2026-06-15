@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: Metrics Service API
+  version: '1.0.0'
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    MetricsOverviewDto:
+      type: object
+      properties:
+        activeStudents:
+          type: integer
+        averageGrade:
+          type: number
+        atRiskCount:
+          type: integer
+    MetricPointDto:
+      type: object
+      properties:
+        period:
+          type: string
+        value:
+          type: number
+security:
+  - bearerAuth: []
+paths:
+  /metrics/overview:
+    get:
+      summary: Metrics overview
+      responses:
+        '200':
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsOverviewDto'
+  /metrics/users/{userId}:
+    get:
+      summary: Metrics for user
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricPointDto'
+  /metrics/subjects/{subjectId}:
+    get:
+      summary: Metrics for subject
+      parameters:
+        - in: path
+          name: subjectId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subject metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricPointDto'
