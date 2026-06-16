@@ -23,10 +23,15 @@ async function bootstrap() {
     .setDescription("User profiles — RF-014")
     .setVersion("1.0")
     .addBearerAuth()
-    .addServer(`http://localhost:${port}`)
+    .addServer("http://localhost:8000", "Local")
+    .addServer("https://mentorapredictqa.programacionwebuce.net", "QA")
+    .addServer(
+      "https://mentorapredictprod.programacionwebuce.net",
+      "Production",
+    )
     .build();
   SwaggerModule.setup(
-    "api/docs",
+    "api/docs/users",
     app,
     SwaggerModule.createDocument(app, config),
   );

@@ -25,16 +25,21 @@ async function bootstrap() {
     )
     .setVersion("1.0")
     .addBearerAuth()
-    .addServer(`http://localhost:${port}`)
+    .addServer("http://localhost:8000", "Local")
+    .addServer("https://mentorapredictqa.programacionwebuce.net", "QA")
+    .addServer(
+      "https://mentorapredictprod.programacionwebuce.net",
+      "Production",
+    )
     .build();
   SwaggerModule.setup(
-    "api/docs",
+    "api/docs/academic",
     app,
     SwaggerModule.createDocument(app, config),
   );
 
   await app.listen(port);
   logger.log(`academic-service running on http://localhost:${port}`);
-  logger.log(`Swagger: http://localhost:${port}/api/docs`);
+  logger.log(`Swagger: http://localhost:${port}/api/docs/academic`);
 }
 bootstrap();

@@ -87,17 +87,6 @@ services:
               limit_by: ip
               fault_tolerant: true
 
-  - name: health-service
-    url: http://auth-service:3001
-    routes:
-      - name: health-route
-        paths:
-          - /health
-        methods:
-          - GET
-        regex_priority: 100
-        plugins: []
-
   - name: user-service
     url: http://user-service:3002
     routes:
@@ -173,6 +162,42 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
+
+  - name: auth-swagger-service
+    url: http://auth-service:3001
+    routes:
+      - name: auth-swagger
+        paths:
+          - /api/docs/auth
+        strip_path: false
+        regex_priority: 300
+
+  - name: user-swagger-service
+    url: http://user-service:3002
+    routes:
+      - name: user-swagger
+        paths:
+          - /api/docs/users
+        strip_path: false
+        regex_priority: 300
+
+  - name: academic-swagger-service
+    url: http://academic-service:3003
+    routes:
+      - name: academic-swagger
+        paths:
+          - /api/docs/academic
+        strip_path: false
+        regex_priority: 300
+
+  - name: analytics-swagger-service
+    url: http://analytics-service:3004
+    routes:
+      - name: analytics-swagger
+        paths:
+          - /api/docs/analytics
+        strip_path: false
+        regex_priority: 300
 
   - name: web
     url: http://web:80

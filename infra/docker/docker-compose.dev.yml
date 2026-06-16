@@ -1,8 +1,8 @@
 # MentoraPredict — Development stack (DB-less Kong + core services)
 # Usage:
-# 1. cp infra/.env.example infra/.env
+# 1. cp ../.env.example ../.env
 # 2. (optional) bash infra/kong/generate-kong-keys.sh
-# 3. docker compose --env-file infra/.env -f docker-compose.dev.yml up -d --build
+# 3. docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env.example up -d --build
 
 networks:
   mentorapredict-net:
@@ -149,9 +149,9 @@ services:
       - "${KONG_PROXY_PORT:-8000}:8000"
       - "${KONG_ADMIN_PORT:-8001}:8001"
     volumes:
-      - ./infra/kong/kong-template.yml:/etc/kong/kong.source.yml:ro
-      - ./infra/kong/entrypoint.sh:/entrypoint.sh:ro
-      - ./infra/keys:/secrets:ro
+      - ../kong/kong-template.yml:/etc/kong/kong-template.yml:ro
+      - ../kong/entrypoint.sh:/entrypoint.sh:ro
+      - ../keys:/secrets:ro
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks:
       - mentorapredict-net
@@ -188,7 +188,7 @@ services:
 
   auth-service:
     build:
-      context: .
+      context: ../..
       dockerfile: services/auth-service/Dockerfile
     container_name: mp_dev_auth_service
     restart: unless-stopped
@@ -212,7 +212,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
     volumes:
-      - ./infra/keys:/secrets:ro
+      - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
     depends_on:
@@ -223,7 +223,7 @@ services:
 
   user-service:
     build:
-      context: .
+      context: ../..
       dockerfile: services/user-service/Dockerfile
     container_name: mp_dev_user_service
     restart: unless-stopped
@@ -251,7 +251,7 @@ services:
 
   academic-service:
     build:
-      context: .
+      context: ../..
       dockerfile: services/academic-service/Dockerfile
     container_name: mp_dev_academic_service
     restart: unless-stopped
@@ -281,7 +281,7 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
     volumes:
-      - ./infra/keys:/secrets:ro
+      - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
     depends_on:
@@ -296,7 +296,7 @@ services:
 
   analytics-service:
     build:
-      context: .
+      context: ../..
       dockerfile: services/analytics-service/Dockerfile
     container_name: mp_dev_analytics_service
     restart: unless-stopped
@@ -328,7 +328,7 @@ services:
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
     volumes:
-      - ./infra/keys:/secrets:ro
+      - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
     depends_on:
@@ -343,12 +343,12 @@ services:
 
   web:
     build:
-      context: .
+      context: ../..
       dockerfile: apps/web/Dockerfile
     container_name: mp_web
     restart: unless-stopped
-    ports:
-      - "${WEB_PORT:-3007}:80"
+    expose:
+      - "80"
     environment:
       NODE_ENV: ${NODE_ENV:-development}
     networks:
