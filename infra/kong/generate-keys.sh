@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
-mkdir -p infra/keys
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KEYS_DIR="${SCRIPT_DIR}/../keys"
 
-if [ ! -f infra/keys/private.pem ] || [ ! -f infra/keys/public.pem ]; then
+mkdir -p "$KEYS_DIR"
+
+if [ ! -f "$KEYS_DIR/private.pem" ] || [ ! -f "$KEYS_DIR/public.pem" ]; then
     echo "Generando claves RSA..."
 
-    openssl genrsa -out infra/keys/private.pem 2048
-    openssl rsa -in infra/keys/private.pem -pubout -out infra/keys/public.pem
+    openssl genrsa -out "$KEYS_DIR/private.pem" 2048
+    openssl rsa -in "$KEYS_DIR/private.pem" -pubout -out "$KEYS_DIR/public.pem"
 
     echo "Claves generadas."
 else
