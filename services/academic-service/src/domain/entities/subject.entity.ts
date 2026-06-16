@@ -2,6 +2,7 @@ export class SubjectEntity {
   constructor(
     public readonly id: string,
     public name: string,
+    public description: string,
     public code: string,
     public credits: number,
     public readonly careerId: string,

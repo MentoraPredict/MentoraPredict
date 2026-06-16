@@ -45,6 +45,7 @@ services:
       - name: auth-login
         paths:
           - /api/v1/auth/login
+        strip_path: false
         methods:
           - POST
         regex_priority: 200
@@ -58,6 +59,7 @@ services:
       - name: auth-logout
         paths:
           - /api/v1/auth/logout
+        strip_path: false
         methods:
           - POST
         regex_priority: 150
@@ -76,6 +78,10 @@ services:
       - name: auth-routes
         paths:
           - /api/v1/auth
+        strip_path: false
+        methods:
+          - POST
+          - OPTIONS
         regex_priority: 100
         plugins:
           - name: rate-limiting
@@ -91,6 +97,7 @@ services:
       - name: health-route
         paths:
           - /health
+        strip_path: false
         methods:
           - GET
         regex_priority: 100
@@ -102,6 +109,7 @@ services:
       - name: user-routes
         paths:
           - /api/v1/users
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
@@ -122,6 +130,7 @@ services:
       - name: academic-routes
         paths:
           - /api/v1/academic
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
@@ -142,6 +151,7 @@ services:
       - name: analytics-routes
         paths:
           - /api/v1/analytics
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
@@ -158,6 +168,7 @@ services:
       - name: analytics-alerts
         paths:
           - /alerts
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt

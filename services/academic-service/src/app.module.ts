@@ -25,6 +25,8 @@ import {
 } from "./infrastructure/persistence/teacher-observation.schema";
 
 import { SubjectRepository } from "./infrastructure/persistence/subject.repository";
+import { FacultyRepository } from "./infrastructure/persistence/faculty.repository";
+import { CareerRepository } from "./infrastructure/persistence/career.repository";
 import { EvaluationRepository } from "./infrastructure/persistence/evaluation.repository";
 import { EnrollmentRepository } from "./infrastructure/persistence/enrollment.repository";
 import { GradeRepository } from "./infrastructure/persistence/grade.repository";
@@ -36,6 +38,7 @@ import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.ad
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
+import { JwtAuthGuard } from "./infrastructure/guards/jwt-auth.guard";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 
 import { RecordGradeUseCase } from "./application/use-cases/record-grade.use-case";
@@ -49,6 +52,39 @@ import { GetStudentGradesUseCase } from "./application/use-cases/get-student-gra
 import { GetStudentEnrollmentsUseCase } from "./application/use-cases/get-student-enrollments.use-case";
 import { CreateObservationUseCase } from "./application/use-cases/create-observation.use-case";
 import { GetObservationsByStudentUseCase } from "./application/use-cases/get-observations-by-student.use-case";
+
+// Faculty use-cases
+import { CreateFacultyUseCase } from "./application/use-cases/create-faculty.use-case";
+import { GetFacultyUseCase } from "./application/use-cases/get-faculty.use-case";
+import { ListFacultiesUseCase } from "./application/use-cases/list-faculties.use-case";
+import { UpdateFacultyUseCase } from "./application/use-cases/update-faculty.use-case";
+import { ChangeFacultyStatusUseCase } from "./application/use-cases/change-faculty-status.use-case";
+import { DeleteFacultyUseCase } from "./application/use-cases/delete-faculty.use-case";
+
+// Academic Period use-cases
+import { CreateAcademicPeriodUseCase } from "./application/use-cases/create-academic-period.use-case";
+import { GetAcademicPeriodUseCase } from "./application/use-cases/get-academic-period.use-case";
+import { ListAcademicPeriodsUseCase } from "./application/use-cases/list-academic-periods.use-case";
+import { GetActivePeriodUseCase } from "./application/use-cases/get-active-period.use-case";
+import { UpdateAcademicPeriodUseCase } from "./application/use-cases/update-academic-period.use-case";
+import { ChangeAcademicPeriodStatusUseCase } from "./application/use-cases/change-academic-period-status.use-case";
+import { DeleteAcademicPeriodUseCase } from "./application/use-cases/delete-academic-period.use-case";
+
+// Career use-cases
+import { CreateCareerUseCase } from "./application/use-cases/create-career.use-case";
+import { GetCareerUseCase } from "./application/use-cases/get-career.use-case";
+import { ListCareersUseCase } from "./application/use-cases/list-careers.use-case";
+import { UpdateCareerUseCase } from "./application/use-cases/update-career.use-case";
+import { ChangeCareerStatusUseCase } from "./application/use-cases/change-career-status.use-case";
+import { DeleteCareerUseCase } from "./application/use-cases/delete-career.use-case";
+
+// Subject use-cases
+import { CreateSubjectUseCase } from "./application/use-cases/create-subject.use-case";
+import { GetSubjectUseCase } from "./application/use-cases/get-subject.use-case";
+import { ListSubjectsUseCase } from "./application/use-cases/list-subjects.use-case";
+import { UpdateSubjectUseCase } from "./application/use-cases/update-subject.use-case";
+import { ChangeSubjectStatusUseCase } from "./application/use-cases/change-subject-status.use-case";
+import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use-case";
 
 @Module({
   imports: [
@@ -128,6 +164,9 @@ import { GetObservationsByStudentUseCase } from "./application/use-cases/get-obs
     RedisClient,
     InternalServiceGuard,
     TeacherRoleGuard,
+    JwtAuthGuard,
+    { provide: "IFacultyRepository", useClass: FacultyRepository },
+    { provide: "ICareerRepository", useClass: CareerRepository },
     { provide: "ISubjectRepository", useClass: SubjectRepository },
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
     { provide: "IEnrollmentRepository", useClass: EnrollmentRepository },
@@ -157,6 +196,35 @@ import { GetObservationsByStudentUseCase } from "./application/use-cases/get-obs
     GetStudentEnrollmentsUseCase,
     CreateObservationUseCase,
     GetObservationsByStudentUseCase,
+    // Faculty use-cases
+    CreateFacultyUseCase,
+    GetFacultyUseCase,
+    ListFacultiesUseCase,
+    UpdateFacultyUseCase,
+    ChangeFacultyStatusUseCase,
+    DeleteFacultyUseCase,
+    // Academic Period use-cases
+    CreateAcademicPeriodUseCase,
+    GetAcademicPeriodUseCase,
+    ListAcademicPeriodsUseCase,
+    GetActivePeriodUseCase,
+    UpdateAcademicPeriodUseCase,
+    ChangeAcademicPeriodStatusUseCase,
+    DeleteAcademicPeriodUseCase,
+    // Career use-cases
+    CreateCareerUseCase,
+    GetCareerUseCase,
+    ListCareersUseCase,
+    UpdateCareerUseCase,
+    ChangeCareerStatusUseCase,
+    DeleteCareerUseCase,
+    // Subject use-cases
+    CreateSubjectUseCase,
+    GetSubjectUseCase,
+    ListSubjectsUseCase,
+    UpdateSubjectUseCase,
+    ChangeSubjectStatusUseCase,
+    DeleteSubjectUseCase,
   ],
 })
 export class AppModule {}

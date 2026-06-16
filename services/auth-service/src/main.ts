@@ -23,15 +23,22 @@ async function bootstrap() {
   app.useGlobalInterceptors(new CorrelationInterceptor());
 
   // CORS
-  app.enableCors({ origin: process.env.CORS_ORIGINS?.split(",") ?? "*" });
+  app.enableCors({
+    origin: process.env.CORS_ORIGINS?.split(",") ?? true,
+    credentials: true,
+  });
 
   // Swagger (RNF-039)
+  const swaggerServer =
+    process.env.SWAGGER_SERVER_URL ??
+    "https://mentorapredictqa.programacionwebuce.net";
+
   const config = new DocumentBuilder()
     .setTitle("MentoraPredict — auth-service")
     .setDescription("Authentication, JWT RS256, RBAC — RF-001 to RF-005")
     .setVersion("1.0")
     .addBearerAuth()
-    .addServer(`http://localhost:${port}`)
+    .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(
     "api/docs",

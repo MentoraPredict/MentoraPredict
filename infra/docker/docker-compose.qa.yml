@@ -25,7 +25,7 @@ services:
       - ../kong/kong-template.yml:/etc/kong/kong.source.yml:ro
       - ../kong/entrypoint.sh:/entrypoint.sh:ro
       - ../keys:/secrets:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     networks:
       - mentorapredict-net
     healthcheck:

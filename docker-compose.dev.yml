@@ -152,7 +152,7 @@ services:
       - ./infra/kong/kong-template.yml:/etc/kong/kong.source.yml:ro
       - ./infra/kong/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/keys:/secrets:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     networks:
       - mentorapredict-net
     depends_on:

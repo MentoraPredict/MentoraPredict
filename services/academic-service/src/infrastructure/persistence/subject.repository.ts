@@ -21,7 +21,40 @@ export class SubjectRepository implements ISubjectRepository {
     const list = await this.repo.find({
       where: { academicPeriodId: periodId },
     });
-    return list.map(this.toDomain);
+    return list.map((o) => this.toDomain(o));
+  }
+
+  async findAll(filters?: { careerId?: string; periodId?: string }): Promise<SubjectEntity[]> {
+    const qb = this.repo.createQueryBuilder("s");
+    if (filters?.careerId) {
+      qb.andWhere("s.careerId = :careerId", { careerId: filters.careerId });
+    }
+    if (filters?.periodId) {
+      qb.andWhere("s.academicPeriodId = :periodId", { periodId: filters.periodId });
+    }
+    const list = await qb.getMany();
+    return list.map((o) => this.toDomain(o));
+  }
+
+  async findByCode(code: string): Promise<SubjectEntity | null> {
+    const o = await this.repo.findOne({ where: { code } });
+    return o ? this.toDomain(o) : null;
+  }
+
+  async findByNameAndPeriod(name: string, periodId: string): Promise<SubjectEntity | null> {
+    const o = await this.repo.findOne({
+      where: { name, academicPeriodId: periodId },
+    });
+    return o ? this.toDomain(o) : null;
+  }
+
+  async hasAcademicRecords(subjectId: string): Promise<boolean> {
+    const count = await this.repo.manager
+      .getRepository("enrollments")
+      .createQueryBuilder("e")
+      .where("e.subject_id = :subjectId", { subjectId })
+      .getCount();
+    return count > 0;
   }
 
   async save(s: SubjectEntity): Promise<SubjectEntity> {
@@ -34,10 +67,15 @@ export class SubjectRepository implements ISubjectRepository {
     return s;
   }
 
+  async delete(id: string): Promise<void> {
+    await this.repo.delete(id);
+  }
+
   private toDomain = (o: SubjectOrmEntity): SubjectEntity =>
     new SubjectEntity(
       o.id,
       o.name,
+      o.description,
       o.code,
       o.credits,
       o.careerId,
@@ -53,6 +91,7 @@ export class SubjectRepository implements ISubjectRepository {
     const o = new SubjectOrmEntity();
     o.id = d.id;
     o.name = d.name;
+    o.description = d.description;
     o.code = d.code;
     o.credits = d.credits;
     o.careerId = d.careerId;

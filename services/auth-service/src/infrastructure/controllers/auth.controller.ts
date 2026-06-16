@@ -69,10 +69,11 @@ export class AuthController {
   }
 
   @Post("forgot-password")
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "RF-004: Request password reset email" })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    await this.forgotPasswordUC.execute(dto);
+    const result = await this.forgotPasswordUC.execute(dto);
+    return result || { message: "If the email is registered, you will receive a reset link shortly" };
   }
 
   @Post("reset-password")

@@ -8,10 +8,10 @@ import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.e
 import { EnrollmentEntity } from '../../../domain/entities/enrollment.entity';
 
 const period = new AcademicPeriodEntity(
-  'period-1', '2025-1', new Date(), new Date(), true, 'SEMESTER',
+  'period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'ACTIVE', 'SEMESTER', new Date(), new Date(),
 );
 const subject = new SubjectEntity(
-  'subj-1', 'Math', 'MAT101', 3, 'career-1', 'period-1', 30,
+  'subj-1', 'Math', '', 'MAT101', 3, 'career-1', 'period-1', 30,
   null, true, new Date(), new Date(),
 );
 
@@ -26,13 +26,26 @@ const mockEnrollRepo = (): jest.Mocked<IEnrollmentRepository> => ({
 const mockSubjectRepo = (): jest.Mocked<ISubjectRepository> => ({
   findById: jest.fn(),
   findByAcademicPeriodId: jest.fn(),
+  findAll: jest.fn(),
+  findByCode: jest.fn(),
+  findByNameAndPeriod: jest.fn(),
+  hasAcademicRecords: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),
+  delete: jest.fn(),
 });
 
 const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
   findById: jest.fn(),
   findActive: jest.fn(),
+  findAll: jest.fn(),
+  findByCode: jest.fn(),
+  findByName: jest.fn(),
+  countActive: jest.fn(),
+  save: jest.fn(),
+  update: jest.fn(),
+  hasRecords: jest.fn(),
+  delete: jest.fn(),
 });
 
 describe('EnrollStudentUseCase', () => {
@@ -72,7 +85,7 @@ describe('EnrollStudentUseCase', () => {
   it('throws when period is not active', async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(
-      new AcademicPeriodEntity('period-1', '2025-1', new Date(), new Date(), false, 'SEMESTER'),
+      new AcademicPeriodEntity('period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'PLANNED', 'SEMESTER', new Date(), new Date()),
     );
     await expect(
       useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }),

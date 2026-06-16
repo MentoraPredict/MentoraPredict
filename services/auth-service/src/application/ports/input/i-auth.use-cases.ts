@@ -10,7 +10,7 @@ export interface ILogoutUseCase {
   execute(userId: string, refreshToken: string): Promise<void>;
 }
 export interface IRefreshUseCase {
-  execute(dto: RefreshDto): Promise<{ accessToken: string; expiresIn: number }>;
+  execute(dto: RefreshDto): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }>;
 }
 export interface IResetPasswordUseCase {
   execute(dto: ResetPasswordDto): Promise<void>;
