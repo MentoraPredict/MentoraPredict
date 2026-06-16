@@ -73,6 +73,7 @@ services:
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
     volumes:
@@ -96,6 +97,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
 
@@ -122,6 +124,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
@@ -153,6 +156,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}

@@ -6,6 +6,10 @@ plugins:
     config:
       origins:
         - http://localhost
+        - http://localhost:3000
+        - http://localhost:3001
+        - http://localhost:5173
+        - http://localhost:8000
         - http://mentorapredictqa.programacionwebuce.net
         - https://mentorapredictqa.programacionwebuce.net
       methods:
@@ -80,6 +84,7 @@ services:
           - /api/v1/auth
         strip_path: false
         methods:
+          - GET
           - POST
           - OPTIONS
         regex_priority: 100

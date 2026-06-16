@@ -22,6 +22,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
 
@@ -47,6 +48,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
 

@@ -41,13 +41,13 @@ async function bootstrap() {
     .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(
-    "api/docs",
+    "api/v1/auth/docs",
     app,
     SwaggerModule.createDocument(app, config),
   );
 
   await app.listen(port);
   logger.log(`auth-service running on http://localhost:${port}`);
-  logger.log(`Swagger: http://localhost:${port}/api/docs`);
+  logger.log(`Swagger: http://localhost:${port}/api/v1/auth/docs`);
 }
 bootstrap();
