@@ -28,11 +28,11 @@ export default function AuthHero() {
                         as="h1"
                         className="text-white"
                     >
-                        Plataforma Inteligente para Predicción de Riesgo Académico
+                        Plataforma Inteligente para PredicciÃ³n de Riesgo AcadÃ©mico
                     </Heading>
 
                     <Text className="text-blue-100">
-                        Analiza patrones académicos,
+                        Analiza patrones acadÃ©micos,
                         detecta riesgos tempranos
                         y mejora la toma de decisiones.
                     </Text>
@@ -40,7 +40,7 @@ export default function AuthHero() {
             </div>
 
             <Badge>
-                Conexión segura
+                ConexiÃ³n segura
             </Badge>
         </section>
     );

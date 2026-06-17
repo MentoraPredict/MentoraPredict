@@ -1,5 +1,5 @@
 import AuthTemplate from "@/components/templates/AuthTemplate";
-import LoginForm from "@/components/organisms/LoginForm";
+import LoginForm from "@/features/auth/components/LoginForm";
 
 export default function App() {
     return (

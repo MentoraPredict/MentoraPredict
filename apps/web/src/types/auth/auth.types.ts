@@ -5,11 +5,27 @@ export interface LoginCredentials {
     password: string;
 }
 
+export interface RegisterCredentials {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+}
+
 export interface AuthTokens {
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
     tokenType: "Bearer";
+}
+
+export interface RegisterResponse {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: AuthSessionUser["role"];
+    createdAt: string;
 }
 
 export interface RefreshTokenPayload {

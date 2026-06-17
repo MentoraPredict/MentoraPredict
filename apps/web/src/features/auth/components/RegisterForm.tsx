@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import { Button, Heading, Text } from "@/components/atoms";
 
 import { FormField, PasswordField } from "@/components/molecules";
+import { APP_PATHS } from "@/routes/paths";
+import { register as registerRequest } from "@/services/auth.service";
+import type { RegisterCredentials } from "@/types/auth/auth.types";
 
 interface RegisterFormData {
-  nombres: string;
+    nombres: string;
   apellidos: string;
   correo: string;
   password: string;
@@ -15,6 +20,9 @@ interface RegisterFormData {
 
 export default function RegisterForm() {
   const navigate = useNavigate();
+  const [serverError, setServerError] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
@@ -25,8 +33,43 @@ export default function RegisterForm() {
 
   const password = watch("password");
 
-  const onSubmit = (data: RegisterFormData) => {
-    console.log(data);
+  const onSubmit = async (data: RegisterFormData) => {
+    setServerError(undefined);
+    setSuccessMessage(undefined);
+    setIsSubmitting(true);
+
+    const payload: RegisterCredentials = {
+      firstName: data.nombres,
+      lastName: data.apellidos,
+      email: data.correo,
+      password: data.password,
+    };
+
+    try {
+      await registerRequest(payload);
+      setSuccessMessage(
+        "Cuenta creada correctamente. Ahora puedes iniciar sesiÃ³n."
+      );
+
+      setTimeout(() => {
+        navigate(APP_PATHS.public.login, {
+          replace: true,
+        });
+      }, 1200);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+        setServerError(
+          Array.isArray(message)
+            ? message.join(". ")
+            : message ?? "No se pudo registrar la cuenta"
+        );
+      } else {
+        setServerError("No se pudo registrar la cuenta");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -115,15 +158,23 @@ export default function RegisterForm() {
             })}
           />
 
-          <Button type="submit" className="w-full">
-            Registrarse
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Registrando..." : "Registrarse"}
           </Button>
+
+          {serverError ? (
+            <Text className="text-sm text-red-500">{serverError}</Text>
+          ) : null}
+
+          {successMessage ? (
+            <Text className="text-sm text-green-700">{successMessage}</Text>
+          ) : null}
 
           <Button
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate(APP_PATHS.public.login)}
           >
             Ya tengo cuenta
           </Button>

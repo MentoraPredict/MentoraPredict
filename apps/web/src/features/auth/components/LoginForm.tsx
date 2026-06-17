@@ -58,8 +58,7 @@ export default function LoginForm() {
                 setServerError(
                     Array.isArray(message)
                         ? message.join(". ")
-                        : message ??
-                              "No se pudo iniciar sesion"
+                        : message ?? "No se pudo iniciar sesion"
                 );
                 return;
             }
@@ -94,7 +93,7 @@ export default function LoginForm() {
                     </Heading>
 
                     <Text>
-                        Inicia sesión para continuar
+                        Inicia sesiÃ³n para continuar
                     </Text>
                 </div>
 
@@ -123,7 +122,7 @@ export default function LoginForm() {
 
                     <PasswordField
                         id="password"
-                        label="Contraseña"
+                        label="ContraseÃ±a"
                         placeholder="********"
                         error={
                             errors.password
@@ -133,7 +132,7 @@ export default function LoginForm() {
                             "password",
                             {
                                 required:
-                                    "La contraseña es obligatoria",
+                                    "La contraseÃ±a es obligatoria",
                             }
                         )}
                     />
@@ -155,7 +154,7 @@ export default function LoginForm() {
                                 navigate("/forgot-password");
                             }}
                         >
-                            ¿Olvidaste tu contraseña?
+                            Â¿Olvidaste tu contraseÃ±a?
                         </button>
                     </div>
 
@@ -164,7 +163,7 @@ export default function LoginForm() {
                         className="w-full"
                         disabled={isSubmittingLogin}
                     >
-                        Iniciar sesión
+                        Iniciar sesiÃ³n
                     </Button>
                     {serverError ? (
                         <Text className="text-sm text-red-500">

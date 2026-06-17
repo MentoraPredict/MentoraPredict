@@ -3,6 +3,8 @@ import { endpoints } from "./api/endpoints";
 import type {
     AuthTokens,
     LoginCredentials,
+    RegisterCredentials,
+    RegisterResponse,
     RefreshTokenPayload,
 } from "@/types/auth/auth.types";
 
@@ -31,4 +33,15 @@ export async function logout(
     payload: RefreshTokenPayload
 ): Promise<void> {
     await api.post(endpoints.auth.logout, payload);
+}
+
+export async function register(
+    credentials: RegisterCredentials
+): Promise<RegisterResponse> {
+    const response = await api.post<RegisterResponse>(
+        endpoints.auth.register,
+        credentials
+    );
+
+    return response.data;
 }

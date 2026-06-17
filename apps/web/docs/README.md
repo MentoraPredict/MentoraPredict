@@ -115,7 +115,11 @@ Componentes como `CourseRiskPanel`, `StudentGradesTable` o `TeacherCourseSummary
 
 `features/` representa dominios reales de negocio, no vistas.
 
-Estructura recomendada:
+Esta carpeta existe para aislar logica de negocio por dominio y evitar que las pantallas se conviertan en contenedores de todo.
+
+En el codigo actual, el primer dominio ya materializado es `features/auth`, con sus componentes de autenticacion movidos fuera de `components/organisms`.
+
+Dominios definidos para MentoraPredict:
 
 ```txt
 features/
@@ -140,7 +144,7 @@ StudentDashboardPage
 -> students
 ```
 
-Cada feature puede crecer con esta estructura:
+Cada feature puede crecer con esta estructura canonica:
 
 ```txt
 features/courses/
@@ -150,6 +154,16 @@ features/courses/
 ├── services/
 └── types/
 ```
+
+La idea es esta:
+
+- `components/`: piezas visuales del dominio.
+- `hooks/`: comportamiento reutilizable del dominio.
+- `mappers/`: transformacion entre API y UI.
+- `services/`: llamadas HTTP del dominio.
+- `types/`: contratos TypeScript del dominio.
+
+Si una pieza describe cursos, estudiantes, analitica o recomendaciones, no debe ir en `components/` globales. Debe vivir dentro de su feature correspondiente.
 
 ## Pages
 

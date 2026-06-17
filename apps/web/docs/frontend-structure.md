@@ -106,6 +106,23 @@ This folder is the right home for future pieces like:
 
 Even if a piece looks visual, if it belongs to a business concept, it should live here instead of `components/`.
 
+### Canonical feature shape
+
+When a feature grows, this is the recommended internal structure:
+
+```txt
+features/courses/
+├── components/
+├── hooks/
+├── mappers/
+├── services/
+└── types/
+```
+
+Use the same pattern for `auth`, `analytics`, `recommendations`, `students`, `teachers`, and `admin`.
+
+That keeps the domain self-contained and makes it easier to move, test, or scale without mixing it with generic UI.
+
 ## `pages/`
 
 This is the route-level screen layer.

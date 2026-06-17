@@ -1,8 +1,6 @@
 import { ReactNode } from "react";
 
-import {
-    AuthHero,
-} from "@/components/organisms";
+import { AuthHero } from "@/features/auth/components";
 
 interface AuthTemplateProps {
     children: ReactNode;

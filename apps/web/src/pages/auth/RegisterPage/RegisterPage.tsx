@@ -1,5 +1,5 @@
 import AuthTemplate from "@/components/templates/AuthTemplate";
-import RegisterForm from "@/components/organisms/RegisterForm";
+import RegisterForm from "@/features/auth/components/RegisterForm";
 
 export default function RegisterPage() {
   return (

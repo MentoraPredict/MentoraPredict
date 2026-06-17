@@ -1,5 +1,5 @@
 import AuthTemplate from "@/components/templates/AuthTemplate";
-import { ForgotPasswordForm } from "@/components/organisms";
+import { ForgotPasswordForm } from "@/features/auth/components";
 
 export default function ForgotPasswordPage() {
   return (
