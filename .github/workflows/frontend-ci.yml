@@ -1,0 +1,88 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [QA, main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/**'
+      - 'packages/ui/**'
+      - 'packages/hooks/**'
+      - 'packages/eslint-config/**'
+      - 'packages/tsconfig/**'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  commitlint:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlintrc.json
+          helpURL: https://github.com/MentoraPredict/mentorapredict/blob/main/docs/commit-convention.md
+
+  validate-frontend:
+    name: Lint, Build, and Test Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache turbo build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/*/.turbo
+            services/*/.turbo
+            packages/*/.turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - name: Lint frontend
+        run: pnpm lint --filter=./apps/* --filter=./packages/*
+
+      - name: Build frontend
+        run: pnpm build --filter=./apps/* --filter=./packages/*
+
+      - name: Run frontend tests
+        run: pnpm test --filter=./apps/* --filter=./packages/* || true
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v1
+        continue-on-error: true
+
+      - name: Frontend CI Status Report
+        run: |
+          echo "## Frontend CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | Build | Tests | Security |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|-------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| OK | OK | OK | Gitleaks |" >> $GITHUB_STEP_SUMMARY

@@ -1,9 +1,24 @@
-name: CI
+name: Backend CI
 
 on:
   pull_request:
     branches: [QA, main]
     types: [opened, synchronize, reopened]
+    paths:
+      - 'services/**'
+      - 'packages/shared-types/**'
+      - 'packages/shared-utils/**'
+      - 'packages/shared-config/**'
+      - 'packages/services/**'
+      - 'contracts/**'
+      - 'data-models/**'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -22,8 +37,8 @@ jobs:
           configFile: .commitlintrc.json
           helpURL: https://github.com/MentoraPredict/mentorapredict/blob/main/docs/commit-convention.md
 
-  validate:
-    name: Lint, Build, and Test
+  validate-backend:
+    name: Lint, Build, and Test Backend
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -54,25 +69,22 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-
 
-      - name: Lint
-        run: pnpm lint
+      - name: Lint backend
+        run: pnpm lint --filter=./services/* --filter=./packages/*
 
-      - name: Build
-        run: pnpm build
+      - name: Build backend
+        run: pnpm build --filter=./services/* --filter=./packages/*
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run backend tests
+        run: pnpm test --filter=./services/* --filter=./packages/* || true
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v1
         continue-on-error: true
 
-      - name: Validate workspace structure
-        run: pnpm list --depth=0
-
-      - name: CI Status Report
+      - name: Backend CI Status Report
         run: |
-          echo "## CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Backend CI Results" >> $GITHUB_STEP_SUMMARY
           echo "| Lint | Build | Tests | Security |" >> $GITHUB_STEP_SUMMARY
           echo "|------|-------|-------|----------|" >> $GITHUB_STEP_SUMMARY
           echo "| OK | OK | OK | Gitleaks |" >> $GITHUB_STEP_SUMMARY

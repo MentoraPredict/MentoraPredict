@@ -65,3 +65,6 @@ keys/
 
 #Kong
 kong.yml
+
+# DevOps context (local only, not committed)
+CONTEXT_DEVOPS.md

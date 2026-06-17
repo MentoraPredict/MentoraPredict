@@ -1,10 +1,14 @@
-name: CD Main
+name: Deploy to Production
 
 on:
   push:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
+
+concurrency:
+  group: cd-main-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: docker.io
@@ -17,7 +21,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       docker_matrix: ${{ steps.generate-matrix.outputs.docker_matrix }}
-      packages: ${{ steps.filter.outputs.packages }}
+      services_summary: ${{ steps.generate-matrix.outputs.services_summary }}
 
     steps:
       - uses: actions/checkout@v4
@@ -47,27 +51,69 @@ jobs:
             packages:
               - 'packages/**'
 
-      - name: Generate Matrix
+      - name: Verify CI status
+        run: |
+          FAILED_CI=$(curl -s -H "Authorization: token ${{ github.token }}" \
+            https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs \
+            | jq -r '.check_runs[] | select(.name | contains("CI")) | select(.conclusion != "success") | .name')
+          if [ -n "$FAILED_CI" ]; then
+            echo "CI checks failed: $FAILED_CI"
+            exit 1
+          fi
+          echo "All CI checks passed"
+
+      - name: Generate dynamic matrix
         id: generate-matrix
         run: |
-          cat <<EOF > matrix.json
-          {
-            "include": [
-              {"service":"auth-service","type":"docker","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
-              {"service":"academic-service","type":"docker","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
-              {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"},
-              {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
-              {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"},
-              {"service":"kong","type":"compose","changed":"true"}
-            ]
+          CHANGED_SERVICES=()
+
+          add_service() {
+            local name=$1
+            local type=$2
+            local dockerfile=$3
+            local changed=$4
+            if [ "$changed" = "true" ]; then
+              CHANGED_SERVICES+=("{\"service\":\"$name\",\"type\":\"$type\",\"dockerfile\":\"$dockerfile\",\"changed\":\"true\"}")
+            fi
           }
-          EOF
 
-          matrix=$(jq -c . matrix.json)
-          docker_matrix=$(jq -c '.include |= map(select(.type=="docker"))' matrix.json)
+          add_service "auth-service" "docker" "services/auth-service/Dockerfile" "${{ steps.filter.outputs.auth-service }}"
+          add_service "academic-service" "docker" "services/academic-service/Dockerfile" "${{ steps.filter.outputs.academic-service }}"
+          add_service "user-service" "docker" "services/user-service/Dockerfile" "${{ steps.filter.outputs.user-service }}"
+          add_service "analytics-service" "docker" "services/analytics-service/Dockerfile" "${{ steps.filter.outputs.analytics-service }}"
+          add_service "web" "docker" "apps/web/Dockerfile" "${{ steps.filter.outputs.web }}"
 
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
-          echo "docker_matrix=$docker_matrix" >> $GITHUB_OUTPUT
+          PACKAGES_CHANGED="${{ steps.filter.outputs.packages }}"
+          if [ "$PACKAGES_CHANGED" = "true" ]; then
+            CHANGED_SERVICES=()
+            add_service "auth-service" "docker" "services/auth-service/Dockerfile" "true"
+            add_service "academic-service" "docker" "services/academic-service/Dockerfile" "true"
+            add_service "user-service" "docker" "services/user-service/Dockerfile" "true"
+            add_service "analytics-service" "docker" "services/analytics-service/Dockerfile" "true"
+            add_service "web" "docker" "apps/web/Dockerfile" "true"
+          fi
+
+          KONG_CHANGED="${{ steps.filter.outputs.kong }}"
+          if [ "$KONG_CHANGED" = "true" ]; then
+            CHANGED_SERVICES+=("{\"service\":\"kong\",\"type\":\"compose\",\"dockerfile\":\"\",\"changed\":\"true\"}")
+          fi
+
+          INCLUDE_JSON=$(IFS=,; echo "[${CHANGED_SERVICES[*]}]")
+          if [ "$INCLUDE_JSON" = "[]" ] || [ -z "$INCLUDE_JSON" ]; then
+            INCLUDE_JSON='[]'
+          fi
+
+          MATRIX_JSON=$(jq -n --argjson include "$INCLUDE_JSON" '{include: $include}')
+          DOCKER_MATRIX=$(echo "$MATRIX_JSON" | jq -c '.include |= map(select(.type=="docker"))')
+
+          CHANGED_NAMES=$(echo "$MATRIX_JSON" | jq -r '[.include[].service] | join(", ")')
+          if [ -z "$CHANGED_NAMES" ]; then
+            CHANGED_NAMES="none"
+          fi
+
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo "docker_matrix=$DOCKER_MATRIX" >> $GITHUB_OUTPUT
+          echo "services_summary=$CHANGED_NAMES" >> $GITHUB_OUTPUT
 
       - name: Debug outputs
         run: |
@@ -75,6 +121,8 @@ jobs:
           echo '${{ steps.generate-matrix.outputs.matrix }}'
           echo "DOCKER_MATRIX:"
           echo '${{ steps.generate-matrix.outputs.docker_matrix }}'
+          echo "SERVICES:"
+          echo '${{ steps.generate-matrix.outputs.services_summary }}'
 
   build-and-push:
     name: Build and Push Docker Images
@@ -82,11 +130,13 @@ jobs:
     timeout-minutes: 12
     needs: detect-changes
     if: >
+      needs.detect-changes.outputs.docker_matrix != '[]' &&
       needs.detect-changes.outputs.docker_matrix != '' &&
       github.ref == 'refs/heads/main'
 
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix: ${{ fromJson(needs.detect-changes.outputs.docker_matrix) }}
 
     steps:
@@ -249,4 +299,5 @@ jobs:
         run: |
           echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Deploy SHA: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Strategy: Full deploy from registry (Production)" >> $GITHUB_STEP_SUMMARY
+          echo "- Strategy: Dynamic deploy from registry (Production)" >> $GITHUB_STEP_SUMMARY
+          echo "- Changed services: ${{ needs.detect-changes.outputs.services_summary }}" >> $GITHUB_STEP_SUMMARY
