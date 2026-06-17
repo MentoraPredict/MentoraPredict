@@ -22,10 +22,10 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
     volumes:
-      - ../kong/kong-template.yml:/etc/kong/kong.source.yml:ro
+      - ../kong/kong-template.yml:/etc/kong/kong-template.yml:ro
       - ../kong/entrypoint.sh:/entrypoint.sh:ro
       - ../keys:/secrets:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     networks:
       - mentorapredict-net
     healthcheck:
@@ -73,6 +73,7 @@ services:
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
     volumes:
@@ -96,6 +97,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
 
@@ -122,6 +124,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
@@ -153,6 +156,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}

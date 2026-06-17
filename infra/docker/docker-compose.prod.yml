@@ -1,0 +1,181 @@
+networks:
+  mentorapredict-net:
+    name: mp_network
+    external: true
+
+services:
+  kong:
+    image: kong:3.6
+    container_name: mp_kong
+    restart: always
+    ports:
+      - "${KONG_PROXY_PORT:-8000}:8000"
+      - "${KONG_ADMIN_PORT:-8001}:8001"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
+    volumes:
+      - ../kong/kong-template.yml:/etc/kong/kong-template.yml:ro
+      - ../kong/entrypoint.sh:/entrypoint.sh:ro
+      - ../keys:/secrets:ro
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    networks:
+      - mentorapredict-net
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  konga:
+    image: pantsel/konga:0.14.9
+    container_name: mp_konga
+    restart: unless-stopped
+    profiles: ["tools"]
+    environment:
+      NODE_ENV: development
+      DB_ADAPTER: localDiskDb
+      KONGA_HOOK_TIMEOUT: 120000
+    ports:
+      - "${KONGA_PORT:-1337}:1337"
+    networks:
+      - mentorapredict-net
+    depends_on:
+      kong:
+        condition: service_healthy
+
+  auth-service:
+    image: ${DOCKERHUB_USERNAME}/auth-service:${IMAGE_TAG:-main-latest}
+    container_name: mp_auth_service
+    restart: always
+    expose:
+      - 3001
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictprod.programacionwebuce.net}
+    networks:
+      - mentorapredict-net
+    volumes:
+      - ../keys:/secrets:ro
+
+  user-service:
+    image: ${DOCKERHUB_USERNAME}/user-service:${IMAGE_TAG:-main-latest}
+    container_name: mp_user_service
+    restart: always
+    expose:
+      - 3002
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictprod.programacionwebuce.net}
+    networks:
+      - mentorapredict-net
+
+  academic-service:
+    image: ${DOCKERHUB_USERNAME}/academic-service:${IMAGE_TAG:-main-latest}
+    container_name: mp_academic_service
+    restart: always
+    expose:
+      - 3003
+    environment:
+      NODE_ENV: production
+      PORT: 3003
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MONGO_HOST: ${MONGO_HOST:-mongo}
+      MONGO_PORT: 27017
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictprod.programacionwebuce.net}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+    networks:
+      - mentorapredict-net
+    volumes:
+      - ../keys:/secrets:ro
+
+  analytics-service:
+    image: ${DOCKERHUB_USERNAME}/analytics-service:${IMAGE_TAG:-main-latest}
+    container_name: mp_analytics_service
+    restart: always
+    expose:
+      - 3004
+    environment:
+      NODE_ENV: production
+      PORT: 3004
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MONGO_HOST: ${MONGO_HOST:-mongo}
+      MONGO_PORT: 27017
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictprod.programacionwebuce.net}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      RISK_HIGH_THRESHOLD: ${RISK_HIGH_THRESHOLD:-40}
+      RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
+    volumes:
+      - ../keys:/secrets:ro
+    networks:
+      - mentorapredict-net
+
+  web:
+    image: ${DOCKERHUB_USERNAME}/web:${IMAGE_TAG:-main-latest}
+    container_name: mp_web
+    restart: always
+    expose:
+      - 80
+    environment:
+      NODE_ENV: production
+    networks:
+      - mentorapredict-net
+    depends_on:
+      - kong

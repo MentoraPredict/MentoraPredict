@@ -10,6 +10,7 @@ import {
 export class SubjectOrmEntity {
   @PrimaryColumn("uuid") id!: string;
   @Column({ length: 200 }) name!: string;
+  @Column({ type: 'text', default: '' }) description!: string;
   @Column({ length: 20, unique: true }) code!: string;
   @Column() credits!: number;
   @Column({ name: "career_id", type: "uuid" }) careerId!: string;

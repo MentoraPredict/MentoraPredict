@@ -41,7 +41,6 @@ jobs:
               - 'infra/keys/**'
             infra:
               - 'infra/docker/**'
-              - 'docker-compose*.yml'
             packages:
               - 'packages/**'
 

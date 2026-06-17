@@ -1,14 +1,19 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
-RUN corepack enable
+ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
+    NPM_CONFIG_FETCH_TIMEOUT=300000 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=30000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=300000 \
+    PNPM_HOME="/root/.pnpm"
+RUN npm install -g pnpm@11.0.0
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY services ./services
 COPY packages ./packages
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 FROM node:22-alpine AS builder
 WORKDIR /app
-RUN corepack enable
+RUN npm install -g pnpm@11.0.0
 COPY --from=deps /app .
 RUN pnpm --filter @mentorapredict/auth-service build
 
