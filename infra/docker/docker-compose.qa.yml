@@ -22,7 +22,7 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
     volumes:
-      - ../kong/kong-template.yml:/etc/kong/kong.source.yml:ro
+      - ../kong/kong-template.yml:/etc/kong/kong-template.yml:ro
       - ../kong/entrypoint.sh:/entrypoint.sh:ro
       - ../keys:/secrets:ro
     entrypoint: ["/bin/bash", "/entrypoint.sh"]
