@@ -3,7 +3,7 @@ name: CD Main
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ["v*"]
   workflow_dispatch:
 
 env:
@@ -43,7 +43,6 @@ jobs:
               - 'infra/keys/**'
             infra:
               - 'infra/docker/**'
-              - 'docker-compose*.yml'
             packages:
               - 'packages/**'
 
@@ -220,7 +219,7 @@ jobs:
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
 
             echo "[CLEAN] Removing existing application containers"
-            docker compose --env-file .env -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
             echo "[CLEAN] Cleanup completed"
 
             echo "[KEYS] Creating certificate directories..."
@@ -231,19 +230,19 @@ jobs:
             docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis
 
             echo "[KONG] Starting API Gateway"
-            docker compose --env-file .env -f docker-compose.prod.yml pull kong
-            docker compose --env-file .env -f docker-compose.prod.yml up -d kong --force-recreate
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml pull kong
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml up -d kong --force-recreate
 
             echo "[APP] Deploying all services"
-            docker compose --env-file .env -f docker-compose.prod.yml pull
-            docker compose --env-file .env -f docker-compose.prod.yml up -d --force-recreate
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml pull
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml up -d --force-recreate
 
             docker system prune -af --filter "until=24h"
 
             echo "[OK] Deployment completed"
             echo ""
             echo "[STATUS] Final services status:"
-            docker compose --env-file .env -f docker-compose.prod.yml ps
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml ps
 
       - name: Deployment Summary
         run: |
