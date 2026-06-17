@@ -1,4 +1,4 @@
-name: CD QA
+name: Deploy to QA
 
 on:
   push:
