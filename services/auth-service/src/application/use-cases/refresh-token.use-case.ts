@@ -30,6 +30,6 @@ export class RefreshTokenUseCase implements IRefreshUseCase {
     const tokens = this.tokenGen.generatePair(user.id, user.email, user.role);
     await this.cache.setRefreshToken(user.id, tokens.refreshToken, REDIS_TTL.REFRESH_TOKEN);
 
-    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, expiresIn: tokens.expiresIn };
   }
 }

@@ -152,7 +152,7 @@ services:
       - ../kong/kong-template.yml:/etc/kong/kong-template.yml:ro
       - ../kong/entrypoint.sh:/entrypoint.sh:ro
       - ../keys:/secrets:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     networks:
       - mentorapredict-net
     depends_on:
@@ -211,6 +211,7 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -241,6 +242,7 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
     networks:
       - mentorapredict-net
     depends_on:
@@ -279,6 +281,7 @@ services:
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
     volumes:
       - ../keys:/secrets:ro
@@ -327,6 +330,7 @@ services:
       RISK_HIGH_THRESHOLD: ${RISK_HIGH_THRESHOLD:-40}
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
     volumes:
       - ../keys:/secrets:ro
     networks:

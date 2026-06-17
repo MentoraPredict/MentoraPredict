@@ -9,6 +9,7 @@ const makeSubject = (active = true) =>
   new SubjectEntity(
     "subj-1",
     "Prog Web",
+    "",
     "PW-701",
     4,
     "career-1",
@@ -29,8 +30,13 @@ const mockEvalRepo = (): jest.Mocked<IEvaluationRepository> => ({
 const mockSubjectRepo = (): jest.Mocked<ISubjectRepository> => ({
   findById: jest.fn(),
   findByAcademicPeriodId: jest.fn(),
+  findAll: jest.fn(),
+  findByCode: jest.fn(),
+  findByNameAndPeriod: jest.fn(),
+  hasAcademicRecords: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),
+  delete: jest.fn(),
 });
 
 describe("CreateEvaluationUseCase", () => {

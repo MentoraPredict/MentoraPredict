@@ -1,58 +1,20 @@
 #!/bin/sh
-set -eu
+set -e
 
-TEMPLATE="/etc/kong/kong-template.yml"
-OUTPUT="/etc/kong/kong.yml"
-TMP_PEM="/tmp/jwt_public.pem"
-
-echo "[kong-entrypoint] Generating kong.yml from template..."
-
-# -------------------------
-# Load JWT key
-# -------------------------
-if [ -z "${JWT_PUBLIC_KEY:-}" ]; then
-  if [ -n "${JWT_PUBLIC_KEY_PATH:-}" ] && [ -f "${JWT_PUBLIC_KEY_PATH}" ]; then
-    JWT_PUBLIC_KEY="$(cat "${JWT_PUBLIC_KEY_PATH}")"
-  fi
+# Load JWT public key
+if [ -f "/secrets/public.pem" ]; then
+    # Read and indent the public key
+    cat /secrets/public.pem | sed 's/^/          /' > /tmp/indented_key.pem
+    
+    # Replace placeholder in template
+    sed '/^[[:space:]]*__JWT_PUBLIC_KEY__/r /tmp/indented_key.pem' /etc/kong/kong-template.yml | sed '/^[[:space:]]*__JWT_PUBLIC_KEY__/d' > /etc/kong/kong.yml
+else
+    echo "WARNING: /secrets/public.pem not found. JWT verification might fail."
+    cp /etc/kong/kong-template.yml /etc/kong/kong.yml
 fi
 
-if [ -z "${JWT_PUBLIC_KEY:-}" ]; then
-  echo "[kong-entrypoint] ERROR: JWT_PUBLIC_KEY is required"
-  exit 1
-fi
+# Start Kong and keep the container alive while Kong runs in the background
+kong start
 
-# -------------------------
-# Decode PEM if needed
-# -------------------------
-case "$JWT_PUBLIC_KEY" in
-  *"BEGIN PUBLIC KEY"*|*"BEGIN RSA PUBLIC KEY"*)
-    printf '%s\n' "$JWT_PUBLIC_KEY" | tr -d '\r' > "$TMP_PEM"
-    ;;
-  *)
-    printf '%s' "$JWT_PUBLIC_KEY" | base64 -d | tr -d '\r' > "$TMP_PEM"
-    ;;
-esac
-
-# -------------------------
-# Inject key into template → kong.yml
-# -------------------------
-awk -v pemfile="$TMP_PEM" '
-  {
-    if ($0 ~ /__JWT_PUBLIC_KEY__/) {
-      match($0, /^[[:space:]]*/)
-      indent = substr($0, RSTART, RLENGTH)
-      while ((getline line < pemfile) > 0)
-        print indent line
-      close(pemfile)
-      next
-    }
-    print
-  }
-' "$TEMPLATE" > "$OUTPUT"
-
-echo "[kong-entrypoint] kong.yml generated at $OUTPUT"
-
-# -------------------------
-# START KONG
-# -------------------------
-exec /docker-entrypoint.sh kong start
+echo 'Kong start exited with status:' $? && echo 'Keeping container alive.'
+sleep infinity

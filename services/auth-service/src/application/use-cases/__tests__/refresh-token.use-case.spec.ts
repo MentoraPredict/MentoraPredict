@@ -38,6 +38,7 @@ describe('RefreshTokenUseCase', () => {
     const result = await useCase.execute({ refreshToken: 'valid-rt' });
 
     expect(result.accessToken).toBe('new-at');
+    expect(result.refreshToken).toBe('new-rt');
     expect(result.expiresIn).toBe(900);
     expect(cache.setRefreshToken).toHaveBeenCalledWith('uid-1', 'new-rt', expect.any(Number));
   });

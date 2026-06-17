@@ -6,6 +6,10 @@ plugins:
     config:
       origins:
         - http://localhost
+        - http://localhost:3000
+        - http://localhost:3001
+        - http://localhost:5173
+        - http://localhost:8000
         - http://mentorapredictqa.programacionwebuce.net
         - https://mentorapredictqa.programacionwebuce.net
       methods:
@@ -59,6 +63,7 @@ services:
       - name: auth-logout
         paths:
           - /api/v1/auth/logout
+        strip_path: false
         methods:
           - POST
         regex_priority: 150
@@ -78,6 +83,10 @@ services:
         paths:
           - /api/v1/auth
         strip_path: false
+        methods:
+          - GET
+          - POST
+          - OPTIONS
         regex_priority: 100
         plugins:
           - name: rate-limiting
@@ -87,12 +96,25 @@ services:
               limit_by: ip
               fault_tolerant: true
 
+  - name: health-service
+    url: http://auth-service:3001
+    routes:
+      - name: health-route
+        paths:
+          - /health
+        strip_path: false
+        methods:
+          - GET
+        regex_priority: 100
+        plugins: []
+
   - name: user-service
     url: http://user-service:3002
     routes:
       - name: user-routes
         paths:
           - /api/v1/users
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
@@ -113,6 +135,7 @@ services:
       - name: academic-routes
         paths:
           - /api/v1/academic
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
@@ -133,6 +156,7 @@ services:
       - name: analytics-routes
         paths:
           - /api/v1/analytics
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
@@ -149,6 +173,7 @@ services:
       - name: analytics-alerts
         paths:
           - /alerts
+        strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
@@ -162,42 +187,6 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
-
-  - name: auth-swagger-service
-    url: http://auth-service:3001
-    routes:
-      - name: auth-swagger
-        paths:
-          - /api/docs/auth
-        strip_path: false
-        regex_priority: 300
-
-  - name: user-swagger-service
-    url: http://user-service:3002
-    routes:
-      - name: user-swagger
-        paths:
-          - /api/docs/users
-        strip_path: false
-        regex_priority: 300
-
-  - name: academic-swagger-service
-    url: http://academic-service:3003
-    routes:
-      - name: academic-swagger
-        paths:
-          - /api/docs/academic
-        strip_path: false
-        regex_priority: 300
-
-  - name: analytics-swagger-service
-    url: http://analytics-service:3004
-    routes:
-      - name: analytics-swagger
-        paths:
-          - /api/docs/analytics
-        strip_path: false
-        regex_priority: 300
 
   - name: web
     url: http://web:80

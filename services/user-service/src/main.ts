@@ -16,22 +16,24 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.enableCors({ origin: process.env.CORS_ORIGINS?.split(",") ?? "*" });
+  app.enableCors({
+    origin: process.env.CORS_ORIGINS?.split(",") ?? true,
+    credentials: true,
+  });
+
+  const swaggerServer =
+    process.env.SWAGGER_SERVER_URL ??
+    "https://mentorapredictqa.programacionwebuce.net";
 
   const config = new DocumentBuilder()
     .setTitle("MentoraPredict — user-service")
     .setDescription("User profiles — RF-014")
     .setVersion("1.0")
     .addBearerAuth()
-    .addServer("http://localhost:8000", "Local")
-    .addServer("https://mentorapredictqa.programacionwebuce.net", "QA")
-    .addServer(
-      "https://mentorapredictprod.programacionwebuce.net",
-      "Production",
-    )
+    .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(
-    "api/docs/users",
+    "api/v1/users/docs",
     app,
     SwaggerModule.createDocument(app, config),
   );

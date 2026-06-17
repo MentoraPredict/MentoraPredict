@@ -15,12 +15,16 @@ export class ForgotPasswordUseCase {
     @Inject('IEmailPort')      private readonly email: IEmailPort,
   ) {}
 
-  async execute(dto: ForgotPasswordDto): Promise<void> {
+  async execute(dto: ForgotPasswordDto): Promise<{ token?: string } | void> {
     const user = await this.userRepo.findByEmail(dto.email.toLowerCase());
     if (!user) return;
 
     const token = randomUUID();
     await this.cache.setResetToken(token, user.id, RESET_TTL_SECONDS);
     await this.email.sendPasswordReset(user.email, token);
+
+    if (process.env.NODE_ENV !== 'production') {
+      return { token };
+    }
   }
 }

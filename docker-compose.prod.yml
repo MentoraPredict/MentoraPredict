@@ -22,7 +22,7 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
     volumes:
-      - ./infra/kong/kong-template.yml:/etc/kong/kong.source.yml:ro
+      - ./infra/kong/kong-template.yml:/etc/kong/kong-template.yml:ro
       - ./infra/kong/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/keys:/secrets:ro
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
@@ -79,6 +79,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
 
@@ -104,45 +105,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
-    networks:
-      - mentorapredict-net
-    volumes:
-      - ./infra/keys:/secrets:ro
-
-  analytics-service:
-    image: ${DOCKERHUB_USERNAME}/analytics-service:${IMAGE_TAG:-main-latest}
-    container_name: mp_analytics_service
-    restart: always
-    expose:
-      - 3004
-    environment:
-      NODE_ENV: production
-      PORT: 3004
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      MONGO_HOST: ${MONGO_HOST:-mongo}
-      MONGO_PORT: 27017
-      MONGO_USER: ${MONGO_USER}
-      MONGO_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_DB: ${MONGO_DB}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
-      RISK_HIGH_THRESHOLD: ${RISK_HIGH_THRESHOLD:-40}
-      RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
-    volumes:
-      - ./infra/keys:/secrets:ro
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
 
