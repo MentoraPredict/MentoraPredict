@@ -149,7 +149,7 @@ services:
       - "${KONG_PROXY_PORT:-8000}:8000"
       - "${KONG_ADMIN_PORT:-8001}:8001"
     volumes:
-      - ./infra/kong/kong-template.yml:/etc/kong/kong.source.yml:ro
+      - ./infra/kong/kong-template.yml:/etc/kong/kong-template.yml:ro
       - ./infra/kong/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/keys:/secrets:ro
     entrypoint: ["/bin/bash", "/entrypoint.sh"]
