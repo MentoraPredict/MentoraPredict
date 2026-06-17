@@ -18,12 +18,15 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: actions/github-script@v6
         id: release
         with:
           script: |
             const { execSync } = require('child_process');
+
+            const headSha = context.payload.workflow_run.head_sha;
 
             const lastTag = (() => {
               try {
@@ -60,19 +63,35 @@ jobs:
 
             const newVersion = `v${major}.${minor}.${patch}`;
 
+            try {
+              await github.rest.git.getRef({
+                ...repo,
+                ref: `tags/${newVersion}`
+              });
+              core.setFailed(`Tag ${newVersion} already exists. Aborting to prevent duplicate.`);
+              return;
+            } catch (err) {
+              if (err.status !== 404) {
+                throw err;
+              }
+            }
+
             await github.rest.git.createRef({
               ...repo,
               ref: `refs/tags/${newVersion}`,
-              sha: context.sha
+              sha: headSha
             });
+
+            const shortSha = headSha.substring(0, 7);
 
             await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
               name: `Release ${newVersion}`,
+              body: `## Release ${newVersion}\n\nDeployed commit: \`${shortSha}\` (\`${headSha}\`)\n\nThis release was automatically generated from a successful production deployment.`,
               generate_release_notes: true,
               draft: false,
               prerelease: false
             });
 
-            return newVersion;
+            core.setOutput('new_version', newVersion);
