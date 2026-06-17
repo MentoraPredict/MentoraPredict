@@ -1,53 +1,53 @@
 # MentoraPredict Web - Business Domain
 
-Este documento describe el negocio que debe modelar `apps/web`.
+This document describes the business that `apps/web` must model.
 
-No es un documento de carpetas, rutas ni componentes. Es la referencia para entender que representa MentoraPredict, quienes usan la plataforma, cual es la entidad principal y como deberian fluir las pantallas por rol.
+It is not a document about folders, routes, or components. It is the reference for understanding what MentoraPredict represents, who uses the platform, what the main entity is, and how screens should flow by role.
 
-La razon de este documento es simple:
-
-```txt
-Si el frontend no entiende el negocio, termina organizandose por pantallas sueltas.
-Si entiende el negocio, puede crecer por dominios claros.
-```
-
-## Que Es MentoraPredict
-
-MentoraPredict es una plataforma academica orientada a detectar riesgo estudiantil mediante datos academicos, metricas, alertas y recomendaciones.
-
-El objetivo del producto es ayudar a:
-
-- estudiantes a entender su rendimiento y recibir recomendaciones;
-- docentes a dar seguimiento a cursos y estudiantes;
-- administradores a gestionar usuarios, cursos y carga de datos.
-
-## Modelo Mental Principal
-
-El frontend no debe girar alrededor de formularios, dashboards ni carpetas tecnicas.
-
-El modelo principal del producto es:
+The reason for this document is simple:
 
 ```txt
-Usuario
--> Cursos
--> Curso
--> Resumen
--> Rendimiento
--> Riesgo
--> Recomendaciones
+If the frontend does not understand the business, it ends up being organized around isolated screens.
+If it understands the business, it can grow through clear domains.
 ```
 
-La entidad que organiza la experiencia es:
+## What Is MentoraPredict
+
+MentoraPredict is an academic platform focused on detecting student risk through academic data, metrics, alerts, and recommendations.
+
+The goal of the product is to help:
+
+- students understand their performance and receive recommendations;
+- teachers monitor courses and students;
+- administrators manage users, courses, and data ingestion.
+
+## Main Mental Model
+
+The frontend should not revolve around forms, dashboards, or technical folders.
+
+The main product model is:
+
+```txt
+User
+-> Courses
+-> Course
+-> Summary
+-> Performance
+-> Risk
+-> Recommendations
+```
+
+The entity that organizes the experience is:
 
 ```txt
 Course
 ```
 
-Aunque el backend use nombres como `subjects`, el frontend debe hablar de `courses`, porque ese es el lenguaje natural para estudiantes y docentes.
+Although the backend may use names such as `subjects`, the frontend should use `courses`, because that is the natural language for students and teachers.
 
 ## Roles
 
-MentoraPredict trabaja con tres roles principales:
+MentoraPredict works with three main roles:
 
 ```txt
 STUDENT
@@ -55,41 +55,41 @@ TEACHER
 ADMIN
 ```
 
-El rol no es solo una etiqueta de UI. El rol define:
+The role is not just a UI label. The role defines:
 
-- a que rutas puede entrar el usuario;
-- que dashboard inicial ve despues del login;
-- que entidades puede consultar;
-- que acciones puede ejecutar;
-- que lenguaje debe mostrar la interfaz.
+- which routes the user can access;
+- which initial dashboard they see after login;
+- which entities they can consult;
+- which actions they can execute;
+- which language the interface should display.
 
 ## Student
 
-`Student` representa al estudiante que consulta su informacion academica.
+`Student` represents the student who consults their academic information.
 
-Su objetivo principal es entender:
+Their main objective is to understand:
 
-- en que cursos esta inscrito;
-- como va su rendimiento;
-- si tiene riesgo academico;
-- que acciones puede tomar para mejorar;
-- que datos personales o academicos se estan usando.
+- which courses they are enrolled in;
+- how their performance is progressing;
+- whether they have academic risk;
+- what actions they can take to improve;
+- what personal or academic data is being used.
 
-### Flujo Principal Del Estudiante
+### Main Student Flow
 
 ```txt
 Dashboard
 ->
-Curso
+Course
 ->
-Resumen
+Summary
 ->
-Rendimiento
+Performance
 ->
-Mis Datos
+My Data
 ```
 
-Version con rutas esperadas:
+Version with expected routes:
 
 ```txt
 /student/dashboard
@@ -100,86 +100,86 @@ Version con rutas esperadas:
 -> /student/profile
 ```
 
-### Dashboard Del Estudiante
+### Student Dashboard
 
-El dashboard del estudiante debe responder rapidamente:
+The student dashboard should quickly answer:
 
-- cuales son sus cursos activos;
-- cual es su estado academico general;
-- donde hay riesgo;
-- que recomendaciones recientes existen;
-- que actividad requiere atencion.
+- which active courses they have;
+- what their overall academic status is;
+- where risk exists;
+- what recent recommendations are available;
+- which activity requires attention.
 
-No debe ser una pagina decorativa. Debe ser un resumen accionable.
+It should not be a decorative page. It should be an actionable summary.
 
-### Curso Para Estudiante
+### Course For Student
 
-Para un estudiante, un curso es el centro de consulta.
+For a student, a course is the center of consultation.
 
-Un curso puede mostrar:
+A course can display:
 
-- informacion general;
-- docente;
-- progreso;
-- evaluaciones;
-- calificaciones;
-- asistencia o participacion si aplica;
-- metricas;
-- riesgo;
-- recomendaciones.
+- general information;
+- teacher;
+- progress;
+- evaluations;
+- grades;
+- attendance or participation if applicable;
+- metrics;
+- risk;
+- recommendations.
 
-### Rendimiento
+### Performance
 
-`Rendimiento` agrupa los datos que explican como va el estudiante.
+`Performance` groups the data that explains how the student is progressing.
 
-Puede incluir:
+It may include:
 
-- notas;
-- evaluaciones;
-- tendencia de desempeno;
-- comparacion con objetivos;
-- alertas;
-- indicadores de riesgo.
+- grades;
+- evaluations;
+- performance trend;
+- comparison against objectives;
+- alerts;
+- risk indicators.
 
-### Mis Datos
+### My Data
 
-`Mis Datos` debe permitir que el estudiante entienda su informacion personal y academica dentro de la plataforma.
+`My Data` should allow the student to understand their personal and academic information within the platform.
 
-Puede incluir:
+It may include:
 
-- perfil;
-- datos academicos base;
-- cursos inscritos;
-- historial relevante;
-- configuracion de cuenta.
+- profile;
+- base academic data;
+- enrolled courses;
+- relevant history;
+- account settings.
 
 ## Teacher
 
-`Teacher` representa al docente que da seguimiento a cursos y estudiantes.
+`Teacher` represents the teacher who monitors courses and students.
 
-Su objetivo principal es:
+Their main objective is to:
 
-- revisar sus cursos;
-- identificar estudiantes en riesgo;
-- analizar rendimiento del grupo;
-- consultar detalle de estudiantes;
-- cargar o validar datos academicos cuando corresponda.
+- review their courses;
+- identify at-risk students;
+- analyze group performance;
+- consult student details;
+- upload or validate academic data when appropriate.
 
-### Flujo Principal Del Docente
+### Main Teacher Flow
 
 ```txt
 Dashboard
 ->
-Curso
+Course
 ->
 Analytics
 ->
-Estudiantes
+Students
 ->
-Carga de Datos
+Data Ingestion
 ```
 
-Version con rutas esperadas:
+Version with expected routes:
 
 ```txt
 /teacher/dashboard
@@ -190,96 +190,96 @@ Version con rutas esperadas:
 -> /teacher/data-ingestion
 ```
 
-### Dashboard Del Docente
+### Teacher Dashboard
 
-El dashboard del docente debe responder:
+The teacher dashboard should answer:
 
-- que cursos tiene asignados;
-- que cursos tienen mas riesgo;
-- cuantos estudiantes requieren seguimiento;
-- que alertas recientes existen;
-- que carga o actualizacion de datos esta pendiente.
+- which courses are assigned to them;
+- which courses have the highest risk;
+- how many students require follow-up;
+- what recent alerts exist;
+- what data uploads or updates are pending.
 
-### Curso Para Docente
+### Course For Teacher
 
-Para un docente, un curso no es solo informacion descriptiva.
+For a teacher, a course is not only descriptive information.
 
-Es una unidad de seguimiento academico.
+It is an academic monitoring unit.
 
-Un curso puede mostrar:
+A course can display:
 
-- resumen del curso;
-- estudiantes inscritos;
-- distribucion de rendimiento;
-- alertas por estudiante;
-- metricas de riesgo;
-- recomendaciones agregadas;
-- acciones de seguimiento.
+- course summary;
+- enrolled students;
+- performance distribution;
+- student alerts;
+- risk metrics;
+- aggregated recommendations;
+- follow-up actions.
 
 ### Analytics
 
-`Analytics` agrupa visualizaciones e indicadores para tomar decisiones.
+`Analytics` groups visualizations and indicators for decision-making.
 
-Puede incluir:
+It may include:
 
-- estudiantes en riesgo;
-- tendencia del curso;
-- rendimiento por evaluacion;
-- distribucion de calificaciones;
-- comparaciones entre periodos;
-- alertas academicas.
+- at-risk students;
+- course trend;
+- performance by evaluation;
+- grade distribution;
+- comparisons between periods;
+- academic alerts.
 
-### Estudiantes
+### Students
 
-La vista de estudiantes debe permitir:
+The students view should allow:
 
-- listar estudiantes por curso;
-- filtrar por riesgo o rendimiento;
-- abrir detalle de estudiante;
-- consultar alertas;
-- revisar recomendaciones o acciones sugeridas.
+- listing students by course;
+- filtering by risk or performance;
+- opening student details;
+- consulting alerts;
+- reviewing recommendations or suggested actions.
 
-### Carga De Datos
+### Data Ingestion
 
-La carga de datos es parte del flujo docente si el docente participa en la actualizacion de informacion academica.
+Data ingestion is part of the teacher workflow if the teacher participates in updating academic information.
 
-Puede incluir:
+It may include:
 
-- subir calificaciones;
-- cargar asistencia;
-- validar archivos;
-- revisar errores de ingestion;
-- confirmar datos antes de procesarlos.
+- uploading grades;
+- uploading attendance;
+- validating files;
+- reviewing ingestion errors;
+- confirming data before processing.
 
-Si esta responsabilidad queda solo para administradores, esta vista debe moverse al flujo `Admin`.
+If this responsibility belongs only to administrators, this view should be moved to the `Admin` flow.
 
 ## Admin
 
-`Admin` representa al usuario encargado de configuracion y administracion de la plataforma.
+`Admin` represents the user responsible for platform configuration and administration.
 
-Su objetivo principal es:
+Their main objective is to:
 
-- administrar usuarios;
-- gestionar cursos;
-- controlar carga de datos;
-- revisar estado general del sistema;
-- mantener configuraciones y permisos.
+- manage users;
+- manage courses;
+- control data ingestion;
+- review the overall system status;
+- maintain configurations and permissions.
 
-### Flujo Principal Del Admin
+### Main Admin Flow
 
 ```txt
 Dashboard
 ->
-Usuarios
+Users
 ->
-Cursos
+Courses
 ->
-Carga de Datos
+Data Ingestion
 ->
-Configuracion
+Settings
 ```
 
-Version con rutas esperadas:
+Version with expected routes:
 
 ```txt
 /admin/dashboard
@@ -289,53 +289,53 @@ Version con rutas esperadas:
 -> /admin/settings
 ```
 
-### Dashboard Del Admin
+### Admin Dashboard
 
-El dashboard del admin debe responder:
+The admin dashboard should answer:
 
-- cuantos usuarios existen por rol;
-- cuantos cursos estan activos;
-- si existen errores de carga de datos;
-- si hay procesos pendientes;
-- cual es el estado general de la plataforma.
+- how many users exist per role;
+- how many courses are active;
+- whether data ingestion errors exist;
+- whether there are pending processes;
+- what the overall platform status is.
 
-### Usuarios
+### Users
 
-La administracion de usuarios puede incluir:
+User administration may include:
 
-- crear usuarios;
-- editar informacion;
-- asignar roles;
-- activar o desactivar cuentas;
-- revisar estado de acceso.
+- creating users;
+- editing information;
+- assigning roles;
+- activating or deactivating accounts;
+- reviewing access status.
 
-### Cursos
+### Courses
 
-La gestion de cursos puede incluir:
+Course management may include:
 
-- crear cursos;
-- editar cursos;
-- asignar docentes;
-- asociar estudiantes;
-- revisar estado academico del curso.
+- creating courses;
+- editing courses;
+- assigning teachers;
+- associating students;
+- reviewing the academic status of the course.
 
-### Carga De Datos
+### Data Ingestion
 
-Para admin, la carga de datos es una responsabilidad operativa.
+For admin, data ingestion is an operational responsibility.
 
-Puede incluir:
+It may include:
 
-- importar archivos institucionales;
-- revisar validaciones;
-- corregir errores;
-- relanzar procesos;
-- consultar historial de cargas.
+- importing institutional files;
+- reviewing validations;
+- correcting errors;
+- relaunching processes;
+- consulting ingestion history.
 
-## Entidad Principal: Course
+## Main Entity: Course
 
-`Course` es la entidad principal de la experiencia.
+`Course` is the main entity of the experience.
 
-Esto no significa que todo sea un curso. Significa que muchas experiencias importantes se entienden mejor desde un curso:
+This does not mean everything is a course. It means many important experiences are better understood from a course:
 
 ```txt
 Course
@@ -347,56 +347,56 @@ Course
 -> Recommendations
 ```
 
-### Por Que Course Y No Subject
+### Why Course And Not Subject
 
-El backend puede usar `Subject`, `Materia` u otro nombre tecnico.
+The backend may use `Subject`, `Materia`, or another technical name.
 
-El frontend debe usar:
+The frontend should use:
 
 ```txt
 Course
 ```
 
-Motivo:
+Reason:
 
-- es mas claro para UI;
-- coincide con la experiencia del usuario;
-- evita filtrar lenguaje interno del backend;
-- mantiene estable el lenguaje del producto aunque cambien microservicios.
+- it is clearer for the UI;
+- it matches the user experience;
+- it avoids exposing backend internal language;
+- it keeps product language stable even if microservices change.
 
-Regla:
+Rule:
 
 ```txt
 Backend language can be mapped.
 Frontend language must be user-centered.
 ```
 
-## Entidades Del Dominio
+## Domain Entities
 
-Estas son las entidades principales que el frontend debe reconocer.
+These are the main entities that the frontend should recognize.
 
-| Entidad | Significado En El Producto |
-| --- | --- |
-| `User` | Persona autenticada en la plataforma. |
-| `Role` | Politica de acceso y navegacion. |
-| `Student` | Usuario que consulta su rendimiento academico. |
-| `Teacher` | Usuario que da seguimiento a cursos y estudiantes. |
-| `Admin` | Usuario que administra plataforma, usuarios, cursos y datos. |
-| `Course` | Unidad academica principal de la experiencia. |
-| `Enrollment` | Relacion entre estudiante y curso. |
-| `Evaluation` | Actividad evaluada dentro de un curso. |
-| `Grade` | Resultado academico asociado a una evaluacion. |
-| `Metric` | Indicador calculado a partir de datos academicos. |
-| `Risk` | Senal de posible problema academico. |
-| `Alert` | Evento que requiere atencion. |
-| `Recommendation` | Accion sugerida para mejorar o intervenir. |
-| `Observation` | Comentario o registro cualitativo asociado al seguimiento. |
+| Entity           | Meaning In The Product                                   |
+| ---------------- | -------------------------------------------------------- |
+| `User`           | Authenticated person on the platform.                    |
+| `Role`           | Access and navigation policy.                            |
+| `Student`        | User who consults their academic performance.            |
+| `Teacher`        | User who monitors courses and students.                  |
+| `Admin`          | User who manages the platform, users, courses, and data. |
+| `Course`         | Main academic unit of the experience.                    |
+| `Enrollment`     | Relationship between a student and a course.             |
+| `Evaluation`     | Assessed activity within a course.                       |
+| `Grade`          | Academic result associated with an evaluation.           |
+| `Metric`         | Indicator calculated from academic data.                 |
+| `Risk`           | Signal of a potential academic issue.                    |
+| `Alert`          | Event that requires attention.                           |
+| `Recommendation` | Suggested action to improve or intervene.                |
+| `Observation`    | Comment or qualitative record associated with follow-up. |
 
-## Dominios Frontend
+## Frontend Domains
 
-El frontend debe crecer por dominios, no por vistas.
+The frontend should grow by domains, not by views.
 
-Dominios recomendados:
+Recommended domains:
 
 ```txt
 features/auth
@@ -410,84 +410,84 @@ features/admin
 
 ### Auth
 
-Responsable de:
+Responsible for:
 
 - login;
 - logout;
-- recuperacion de contrasena;
-- sesion;
-- usuario autenticado;
-- rol.
+- password recovery;
+- session;
+- authenticated user;
+- role.
 
 ### Courses
 
-Responsable de:
+Responsible for:
 
-- cursos;
-- detalle de curso;
-- estudiantes por curso si el contexto principal es el curso;
-- evaluaciones;
-- progreso;
-- resumen academico.
+- courses;
+- course details;
+- students by course if the main context is the course;
+- evaluations;
+- progress;
+- academic summary.
 
 ### Analytics
 
-Responsable de:
+Responsible for:
 
-- metricas;
-- graficos;
-- riesgo;
-- tendencias;
-- indicadores agregados.
+- metrics;
+- charts;
+- risk;
+- trends;
+- aggregated indicators.
 
 ### Recommendations
 
-Responsable de:
+Responsible for:
 
-- recomendaciones generadas;
-- acciones sugeridas;
-- observaciones;
-- historial de recomendaciones.
+- generated recommendations;
+- suggested actions;
+- observations;
+- recommendation history.
 
 ### Students
 
-Responsable de:
+Responsible for:
 
-- perfil academico del estudiante;
-- datos del estudiante;
-- detalle individual;
-- seguimiento individual cuando el foco sea la persona.
+- student academic profile;
+- student data;
+- individual details;
+- individual follow-up when the focus is the person.
 
 ### Teachers
 
-Responsable de:
+Responsible for:
 
-- informacion propia del docente;
-- cursos asignados desde perspectiva docente;
-- seguimiento docente;
-- acciones del docente.
+- teacher-specific information;
+- assigned courses from the teacher perspective;
+- teacher follow-up;
+- teacher actions.
 
 ### Admin
 
-Responsable de:
+Responsible for:
 
-- administracion de usuarios;
-- administracion de cursos;
-- configuracion;
-- carga de datos;
-- operaciones internas.
+- user administration;
+- course administration;
+- configuration;
+- data ingestion;
+- internal operations.
 
-## Dashboard No Es Un Dominio
+## Dashboard Is Not A Domain
 
-No crear:
+Do not create:
 
 ```txt
 features/dashboard
 ```
 
-Un dashboard es una vista compuesta, no un dominio.
+A dashboard is a composed view, not a domain.
 
-Ejemplo correcto:
+Correct example:
 
 ```txt
 StudentDashboardPage
@@ -497,7 +497,7 @@ StudentDashboardPage
 -> features/students
 ```
 
-Ejemplo docente:
+Example teacher:
 
 ```txt
 TeacherDashboardPage
@@ -507,7 +507,7 @@ TeacherDashboardPage
 -> features/teachers
 ```
 
-Ejemplo admin:
+Example admin:
 
 ```txt
 AdminDashboardPage
@@ -517,9 +517,9 @@ AdminDashboardPage
 -> features/teachers
 ```
 
-## Navegacion Por Rol
+## Navigation By Role
 
-Despues del login, cada rol debe entrar a su espacio inicial.
+After login, each role must enter its initial area.
 
 ```txt
 STUDENT -> /student/dashboard
@@ -527,20 +527,20 @@ TEACHER -> /teacher/dashboard
 ADMIN   -> /admin/dashboard
 ```
 
-La navegacion por rol debe depender del usuario autenticado y su rol.
+Role-based navigation must depend on the authenticated user and their role.
 
-No debe depender de:
+It must not depend on:
 
-- texto del formulario;
-- rutas hardcodeadas dentro de componentes visuales;
-- decodificacion manual del JWT en cada pantalla;
-- checks duplicados dentro de pages.
+- form text;
+- hardcoded routes inside visual components;
+- manual JWT decoding on each screen;
+- duplicated checks inside pages.
 
-## Lenguaje De Producto
+## Product Language
 
-El frontend debe usar nombres claros para la experiencia de usuario.
+The frontend should use clear names for the user experience.
 
-Preferir:
+Prefer:
 
 ```txt
 Course
@@ -552,7 +552,7 @@ Performance
 Dashboard
 ```
 
-Evitar exponer al usuario nombres internos si no son claros:
+Avoid exposing internal names to the user if they are not clear:
 
 ```txt
 Subject
@@ -562,23 +562,23 @@ PredictionPayload
 RawMetric
 ```
 
-Los nombres tecnicos pueden existir en services, mappers o tipos de API, pero la UI debe hablar en lenguaje de producto.
+Technical names may exist in services, mappers, or API types, but the UI should speak the language of the product.
 
-## Reglas De Negocio Para El Frontend
+## Business Rules For The Frontend
 
-- `Course` es la entidad principal de navegacion academica.
-- `Role` define acceso, redireccion y menus.
-- `Dashboard` es una composicion de dominios, no un dominio propio.
-- `Risk` debe presentarse como senal accionable, no solo como numero.
-- `Recommendation` debe conectar el dato con una accion sugerida.
-- `Student` debe poder entender su rendimiento sin ver detalles operativos internos.
-- `Teacher` debe poder pasar de curso a estudiantes y analytics rapidamente.
-- `Admin` debe concentrarse en gestion, configuracion y datos.
-- El frontend debe mapear lenguaje backend a lenguaje de usuario.
+- `Course` is the main entity for academic navigation.
+- `Role` defines access, redirection, and menus.
+- `Dashboard` is a composition of domains, not a domain itself.
+- `Risk` should be presented as an actionable signal, not just a number.
+- `Recommendation` should connect data with a suggested action.
+- `Student` should be able to understand their performance without seeing internal operational details.
+- `Teacher` should be able to move from courses to students and analytics quickly.
+- `Admin` should focus on management, configuration, and data.
+- The frontend must map backend language to user language.
 
-## Relacion Con Rutas
+## Relationship With Routes
 
-Las rutas deben reflejar el negocio:
+Routes should reflect the business:
 
 ```txt
 /student/*
@@ -586,7 +586,7 @@ Las rutas deben reflejar el negocio:
 /admin/*
 ```
 
-Dentro de cada area, `Course` debe aparecer como entidad de navegacion central:
+Within each area, `Course` should appear as the central navigation entity:
 
 ```txt
 /student/courses/:courseId
@@ -594,13 +594,13 @@ Dentro de cada area, `Course` debe aparecer como entidad de navegacion central:
 /admin/courses
 ```
 
-La ruta no debe exponer detalles internos del backend si existe un nombre mas claro para el usuario.
+The route should not expose internal backend details if there is a clearer name for the user.
 
-## Relacion Con Componentes
+## Relationship With Components
 
-Los componentes de negocio deben vivir en `features/`.
+Business components should live in `features/`.
 
-Ejemplos:
+Examples:
 
 ```txt
 CourseCard -> features/courses/components
@@ -610,7 +610,7 @@ AdminUsersTable -> features/admin/components
 RecommendationList -> features/recommendations/components
 ```
 
-No deben vivir en:
+They should not live in:
 
 ```txt
 components/atoms
@@ -618,34 +618,34 @@ components/molecules
 components/organisms
 ```
 
-`components/` es para UI generica. `features/` es para negocio.
+`components/` is for generic UI. `features/` is for business.
 
-## Estado Actual Del Proyecto
+## Current Project State
 
-Actualmente `apps/web` implementa principalmente:
+Currently `apps/web` mainly implements:
 
-- landing publica;
+- public landing page;
 - login;
-- registro;
-- recuperacion de contrasena;
-- estructura base de Atomic Design;
-- router publico inicial.
+- registration;
+- password recovery;
+- Atomic Design base structure;
+- initial public router.
 
-Las areas `student`, `teacher` y `admin` todavia estan como arquitectura esperada, no como pantallas completas implementadas.
+The `student`, `teacher`, and `admin` areas are still part of the expected architecture, not fully implemented screens.
 
-Este documento define la direccion de negocio para construir esas areas sin improvisar nombres, flujos o dominios.
+This document defines the business direction for building those areas without improvising names, flows, or domains.
 
-## Resumen
+## Summary
 
-MentoraPredict debe crecer alrededor de esta idea:
+MentoraPredict should grow around this idea:
 
 ```txt
-Rol define acceso.
-Course organiza la experiencia academica.
-Analytics explica el rendimiento.
-Risk detecta problemas.
-Recommendation sugiere acciones.
-Dashboard compone todo segun el rol.
+Role defines access.
+Course organizes the academic experience.
+Analytics explains performance.
+Risk detects problems.
+Recommendation suggests actions.
+Dashboard composes everything according to the role.
 ```
 
-Con este modelo, el frontend puede crecer sin confundir vistas con dominios ni componentes visuales con negocio real.
+With this model, the frontend can grow without confusing views with domains or visual components with real business logic.

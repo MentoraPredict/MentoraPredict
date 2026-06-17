@@ -1,10 +1,10 @@
 # MentoraPredict Web - Design System
 
-Este documento define como se usa Atomic Design en `apps/web` y que reglas debe seguir el equipo al crear componentes reutilizables.
+This document defines how Atomic Design is used in `apps/web` and which rules the team must follow when creating reusable components.
 
-El sistema visual vive en:
+The visual system lives in:
 
-```txt
+```txt id="gxny5v"
 src/components/
 |-- atoms/
 |-- molecules/
@@ -12,21 +12,21 @@ src/components/
 `-- templates/
 ```
 
-La regla principal es:
+The main rule is:
 
-```txt
-components = sistema visual reutilizable
-features = componentes y logica de negocio
-pages = pantallas completas conectadas al router
+```txt id="2em0xw"
+components = reusable visual system
+features = business components and logic
+pages = complete screens connected to the router
 ```
 
-Atomic Design no debe convertirse en una carpeta para todo lo visual. Si un componente representa una entidad del negocio, debe vivir en `features/`, aunque tenga apariencia de card, table, panel o section.
+Atomic Design must not become a folder for everything visual. If a component represents a business entity, it must live in `features/`, even if it looks like a card, table, panel, or section.
 
-## Estado Actual
+## Current State
 
-El proyecto ya tiene una base de Atomic Design implementada.
+The project already has an Atomic Design foundation implemented.
 
-```txt
+```txt id="w4l6mn"
 src/components/
 |-- atoms/
 |   |-- Badge/
@@ -66,13 +66,13 @@ src/components/
     `-- LandingTemplate/
 ```
 
-Esta estructura es correcta para la primera etapa del proyecto: landing, autenticacion y componentes visuales compartidos.
+This structure is correct for the first stage of the project: landing page, authentication, and shared visual components.
 
 ## Atoms
 
-Los atoms son las piezas visuales mas pequenas del sistema. Deben ser genericos, reutilizables y sin conocimiento del negocio.
+Atoms are the smallest visual pieces of the system. They must be generic, reusable, and have no business knowledge.
 
-Ejemplos actuales:
+Current examples:
 
 - `Button`
 - `IconButton`
@@ -85,11 +85,11 @@ Ejemplos actuales:
 - `Logo`
 - `Container`
 
-Un atom puede recibir props visuales o HTML basicas, pero no debe saber nada sobre cursos, estudiantes, docentes, riesgos, recomendaciones o roles.
+An atom may receive visual or basic HTML props, but it should not know anything about courses, students, teachers, risks, recommendations, or roles.
 
-### Si Es Atom
+### If It Is An Atom
 
-```txt
+```txt id="kx35h0"
 Button
 Input
 Label
@@ -98,11 +98,11 @@ Heading
 Text
 ```
 
-Porque son primitivas visuales reutilizables en cualquier parte de la app.
+Because they are reusable visual primitives that can be used anywhere in the application.
 
-### No Es Atom
+### It Is Not An Atom
 
-```txt
+```txt id="mxh7ah"
 CourseCard
 StudentRiskBadge
 TeacherCourseStatus
@@ -110,35 +110,35 @@ RecommendationScore
 AdminUserBadge
 ```
 
-Aunque algunos parezcan pequenos, tienen significado de negocio. Deben vivir dentro de `features/`.
+Even though some may appear small, they have business meaning. They must live inside `features/`.
 
-Ejemplo:
+Example:
 
-```txt
-CourseCard NO es un atom.
-CourseCard pertenece a features/courses.
+```txt id="v5zh0m"
+CourseCard is NOT an atom.
+CourseCard belongs to features/courses.
 ```
 
 ## Molecules
 
-Las molecules combinan atoms para resolver una necesidad pequena y reutilizable de interfaz.
+Molecules combine atoms to solve a small and reusable interface need.
 
-Ejemplos actuales:
+Current examples:
 
-- `FormField`: combina `Label`, `Input` y `ErrorMessage`.
-- `PasswordField`: combina `Label`, `Input`, `IconButton` y `ErrorMessage`.
-- `Divider`: separador visual reutilizable.
-- `NavItem`: item simple de navegacion.
-- `SocialLink`: link social reutilizable.
-- `AuthFooter`: bloque pequeno usado en pantallas de auth.
-- `FeatureCard`: card generica para secciones informativas de la landing.
-- `StatCard`: card generica de estadisticas de la landing.
+- `FormField`: combines `Label`, `Input`, and `ErrorMessage`.
+- `PasswordField`: combines `Label`, `Input`, `IconButton`, and `ErrorMessage`.
+- `Divider`: reusable visual separator.
+- `NavItem`: simple navigation item.
+- `SocialLink`: reusable social link.
+- `AuthFooter`: small block used on authentication screens.
+- `FeatureCard`: generic card for landing page informational sections.
+- `StatCard`: generic statistics card for the landing page.
 
-Una molecule puede tener estado local de UI si ese estado no es negocio. Por ejemplo, `PasswordField` maneja `showPassword`, que es comportamiento visual local.
+A molecule may have local UI state if that state is not business-related. For example, `PasswordField` manages `showPassword`, which is local visual behavior.
 
-### Si Es Molecule
+### If It Is A Molecule
 
-```txt
+```txt id="8qut5m"
 FormField
 PasswordField
 NavItem
@@ -146,11 +146,11 @@ Divider
 SocialLink
 ```
 
-Porque combinan atoms y siguen siendo reutilizables fuera de un dominio especifico.
+Because they combine atoms and remain reusable outside a specific domain.
 
-### No Es Molecule
+### It Is Not A Molecule
 
-```txt
+```txt id="g9ktny"
 CourseCard
 CourseProgressCard
 StudentGradeRow
@@ -159,20 +159,20 @@ TeacherStudentItem
 RecommendationItem
 ```
 
-Estos componentes no son genericos. Representan datos y lenguaje del producto.
+These components are not generic. They represent product data and language.
 
-Ejemplo:
+Example:
 
-```txt
-CourseCard NO es un molecule.
-CourseCard pertenece a features/courses.
+```txt id="9vc7rm"
+CourseCard is NOT a molecule.
+CourseCard belongs to features/courses.
 ```
 
 ## Organisms
 
-Los organisms son bloques grandes de interfaz construidos con atoms y molecules. Pueden formar secciones completas de una pagina o formularios complejos.
+Organisms are large interface blocks built with atoms and molecules. They can form complete page sections or complex forms.
 
-Ejemplos actuales:
+Current examples:
 
 - `Navbar`
 - `Footer`
@@ -184,17 +184,17 @@ Ejemplos actuales:
 - `RegisterForm`
 - `ForgotPasswordForm`
 
-En el estado actual, los formularios de auth viven en `components/organisms` porque todavia no existe `features/auth`. A medida que crezca la aplicacion, los formularios con logica de autenticacion pueden moverse a:
+In the current state, authentication forms live in `components/organisms` because `features/auth` does not yet exist. As the application grows, forms with authentication logic can move to:
 
-```txt
+```txt id="fxol1k"
 src/features/auth/components/
 ```
 
-Esto aplica especialmente cuando el formulario empieza a depender del auth store, servicios de usuario, manejo avanzado de errores o reglas de negocio.
+This applies especially when the form starts depending on the auth store, user services, advanced error handling, or business rules.
 
-### Si Es Organism
+### If It Is An Organism
 
-```txt
+```txt id="2mvz8o"
 Navbar
 Footer
 HeroSection
@@ -203,11 +203,11 @@ RegisterForm
 StatsSection
 ```
 
-Porque son bloques visuales grandes y reutilizables dentro de una pagina.
+Because they are large visual blocks reusable within a page.
 
-### No Es Organism Generico
+### It Is Not A Generic Organism
 
-```txt
+```txt id="6x6t42"
 StudentRiskPanel
 TeacherCourseSummary
 AdminUsersTable
@@ -215,11 +215,11 @@ CourseEvaluationsSection
 RecommendationTimeline
 ```
 
-Aunque sean secciones grandes, pertenecen a dominios del producto. Deben vivir en `features/`.
+Although they are large sections, they belong to product domains. They must live in `features/`.
 
-Ubicacion correcta:
+Correct location:
 
-```txt
+```txt id="w7j2ar"
 features/analytics/components/StudentRiskPanel
 features/teachers/components/TeacherCourseSummary
 features/admin/components/AdminUsersTable
@@ -229,180 +229,180 @@ features/recommendations/components/RecommendationTimeline
 
 ## Templates
 
-Los templates definen estructura de layout. No deberian contener reglas de negocio, llamadas HTTP ni decisiones de sesion.
+Templates define layout structure. They should not contain business rules, HTTP calls, or session decisions.
 
-Ejemplos actuales:
+Current examples:
 
-- `AuthTemplate`: define la estructura de pantallas de autenticacion con una zona visual y contenido.
-- `LandingTemplate`: compone `Navbar`, `HeroSection`, `StatsSection`, `FeaturesSection` y `Footer`.
+- `AuthTemplate`: defines the structure of authentication screens with a visual area and content.
+- `LandingTemplate`: composes `Navbar`, `HeroSection`, `StatsSection`, `FeaturesSection`, and `Footer`.
 
-Los templates pueden recibir `children` o componer organisms, pero deben mantenerse como estructura visual.
+Templates may receive `children` or compose organisms, but they should remain visual structure only.
 
-### Si Es Template
+### If It Is A Template
 
-```txt
+```txt id="0l2n8r"
 AuthTemplate
 LandingTemplate
 DashboardTemplate
 SettingsTemplate
 ```
 
-Porque organizan regiones de una pantalla.
+Because they organize regions of a screen.
 
-### No Es Template
+### It Is Not A Template
 
-```txt
+```txt id="pjyeb5"
 StudentDashboardPage
 TeacherCoursesPage
 AdminUsersPage
 ```
 
-Estas son paginas conectadas a rutas. Deben vivir en `pages/`.
+These are route-connected pages. They must live in `pages/`.
 
-## Diferencia Entre Components Y Features
+## Difference Between Components And Features
 
-La diferencia mas importante del proyecto es esta:
+The most important distinction in the project is this:
 
-```txt
-components/ no conoce el negocio
-features/ si conoce el negocio
+```txt id="bkg8f0"
+components/ does not know the business
+features/ does know the business
 ```
 
-`components/` puede saber que existe un boton, una etiqueta, un input, una card generica o una seccion visual.
+`components/` can know that a button, label, input, generic card, or visual section exists.
 
-`features/` puede saber que existe un curso, un estudiante, un docente, un riesgo academico, una recomendacion o una alerta.
+`features/` can know that a course, student, teacher, academic risk, recommendation, or alert exists.
 
-## Ejemplo Obligatorio: CourseCard
+## Mandatory Example: CourseCard
 
-`CourseCard` no debe vivir en Atomic Design.
+`CourseCard` must not live in Atomic Design.
 
-No es atom:
+It is not an atom:
 
-```txt
-CourseCard NO es un atom porque no es una primitiva visual.
+```txt id="msw0hf"
+CourseCard is NOT an atom because it is not a visual primitive.
 ```
 
-No es molecule:
+It is not a molecule:
 
-```txt
-CourseCard NO es un molecule porque representa una entidad de negocio.
+```txt id="4y7jlwm"
+CourseCard is NOT a molecule because it represents a business entity.
 ```
 
-No deberia vivir en:
+It should not live in:
 
-```txt
+```txt id="l0vz1q"
 src/components/atoms/CourseCard
 src/components/molecules/CourseCard
 src/components/organisms/CourseCard
 ```
 
-Debe vivir en:
+It must live in:
 
 ```txt
 src/features/courses/components/CourseCard
 ```
 
-Motivo:
+Reason:
 
 ```txt
-CourseCard habla de cursos, progreso, docente, riesgo, metricas o estado academico.
-Eso pertenece al dominio courses, no al sistema visual generico.
+CourseCard talks about courses, progress, teachers, risk, metrics, or academic status.
+That belongs to the courses domain, not to the generic visual system.
 ```
 
-Si se necesita una card generica, se puede crear:
+If a generic card is needed, you can create:
 
 ```txt
 src/components/molecules/Card
 ```
 
-Y luego usarla dentro de:
+And then use it inside:
 
 ```txt
 src/features/courses/components/CourseCard
 ```
 
-## Reglas De Clasificacion
+## Classification Rules
 
-Antes de crear un componente, responder estas preguntas:
+Before creating a component, answer these questions:
 
-| Pregunta | Si la respuesta es si | Ubicacion |
-| --- | --- | --- |
-| Es una primitiva visual generica? | Si | `components/atoms` |
-| Combina pocas primitivas genericas? | Si | `components/molecules` |
-| Es un bloque visual grande reutilizable? | Si | `components/organisms` |
-| Define layout de una pantalla? | Si | `components/templates` |
-| Representa un curso, estudiante, docente, riesgo o recomendacion? | Si | `features/*/components` |
-| Es una pantalla conectada a una ruta? | Si | `pages/` |
-| Tiene llamadas HTTP o reglas de dominio? | Si | `features/` o `services/`, no `components/` |
+| Question                                                               | If the answer is yes | Location                                      |
+| ---------------------------------------------------------------------- | -------------------- | --------------------------------------------- |
+| Is it a generic visual primitive?                                      | Yes                  | `components/atoms`                            |
+| Does it combine a few generic primitives?                              | Yes                  | `components/molecules`                        |
+| Is it a large reusable visual block?                                   | Yes                  | `components/organisms`                        |
+| Does it define a screen layout?                                        | Yes                  | `components/templates`                        |
+| Does it represent a course, student, teacher, risk, or recommendation? | Yes                  | `features/*/components`                       |
+| Is it a route-connected screen?                                        | Yes                  | `pages/`                                      |
+| Does it contain HTTP calls or domain rules?                            | Yes                  | `features/` or `services/`, not `components/` |
 
-## Reglas Para Atoms
+## Rules For Atoms
 
-- Deben ser pequenos y reutilizables.
-- No deben importar servicios.
-- No deben importar store global.
-- No deben usar `useNavigate`.
-- No deben depender de rutas.
-- No deben conocer roles.
-- No deben contener nombres de entidades de negocio.
-- Pueden usar Tailwind y tokens globales.
-- Pueden exponer variantes visuales como `primary`, `outline`, `danger` si aplica.
+- They must be small and reusable.
+- They must not import services.
+- They must not import the global store.
+- They must not use `useNavigate`.
+- They must not depend on routes.
+- They must not know about roles.
+- They must not contain business entity names.
+- They may use Tailwind and global tokens.
+- They may expose visual variants such as `primary`, `outline`, `danger` if applicable.
 
-Ejemplo correcto:
+Correct example:
 
 ```txt
 Button variant="outline"
 ```
 
-Ejemplo incorrecto:
+Incorrect example:
 
 ```txt
 Button variant="student-risk"
 ```
 
-La variante `student-risk` mezcla UI generica con negocio.
+The `student-risk` variant mixes generic UI with business logic.
 
-## Reglas Para Molecules
+## Rules For Molecules
 
-- Deben combinar atoms.
-- Deben resolver un patron pequeno de UI.
-- Pueden tener estado local visual.
-- No deben llamar APIs.
-- No deben decidir redireccion por rol.
-- No deben cargar datos de backend.
-- No deben representar entidades completas del dominio.
+- They must combine atoms.
+- They must solve a small UI pattern.
+- They may have local visual state.
+- They must not call APIs.
+- They must not decide role-based redirection.
+- They must not load backend data.
+- They must not represent complete domain entities.
 
-Ejemplo correcto:
+Correct example:
 
 ```txt
 FormField = Label + Input + ErrorMessage
 ```
 
-Ejemplo incorrecto:
+Incorrect example:
 
 ```txt
-CourseFormField = campo especifico de cursos dentro de components/molecules
+CourseFormField = course-specific field inside components/molecules
 ```
 
-Si el campo solo existe para cursos, debe estar en `features/courses`.
+If the field only exists for courses, it should be in `features/courses`.
 
-## Reglas Para Organisms
+## Rules For Organisms
 
-- Pueden componer atoms, molecules y otros organisms pequenos.
-- Pueden representar secciones completas de UI.
-- Deben seguir siendo reutilizables o pertenecer a una pagina publica/base.
-- No deben mezclar demasiada logica de negocio.
-- No deben hacer llamadas HTTP directamente salvo casos temporales muy controlados.
-- Si empiezan a depender de un dominio, deben moverse a `features/`.
+- They may compose atoms, molecules, and other small organisms.
+- They may represent complete UI sections.
+- They should remain reusable or belong to a public/base page.
+- They should not mix too much business logic.
+- They should not make direct HTTP calls except for very controlled temporary cases.
+- If they start depending on a domain, they should be moved to `features/`.
 
-Ejemplo aceptable actual:
+Current acceptable example:
 
 ```txt
-LoginForm en components/organisms
+LoginForm in components/organisms
 ```
 
-Motivo: el proyecto todavia no tiene `features/auth`.
+Reason: the project does not yet have `features/auth`.
 
-Evolucion recomendada:
+Recommended evolution:
 
 ```txt
 features/auth/components/LoginForm
@@ -410,41 +410,41 @@ features/auth/components/RegisterForm
 features/auth/components/ForgotPasswordForm
 ```
 
-Cuando el flujo de auth crezca, esa ubicacion sera mas clara.
+When the authentication flow grows, that location will be clearer.
 
-## Reglas Para Templates
+## Rules For Templates
 
-- Deben definir estructura de layout.
-- Pueden recibir `children`.
-- Pueden componer organisms.
-- No deben llamar servicios.
-- No deben guardar estado de negocio.
-- No deben contener validaciones de formularios.
-- No deben decidir autorizacion.
+- They must define layout structure.
+- They may receive `children`.
+- They may compose organisms.
+- They must not call services.
+- They must not store business state.
+- They must not contain form validations.
+- They must not make authorization decisions.
 
-Ejemplo correcto:
-
-```txt
-AuthTemplate = layout para paginas de autenticacion
-```
-
-Ejemplo incorrecto:
+Correct example:
 
 ```txt
-AuthTemplate llama login() o decide RoleRedirect
+AuthTemplate = layout for authentication pages
 ```
 
-## Relacion Con Pages
+Incorrect example:
 
-Las paginas viven en:
+```txt
+AuthTemplate calls login() or decides RoleRedirect
+```
+
+## Relationship With Pages
+
+Pages live in:
 
 ```txt
 src/pages/
 ```
 
-Una page debe componer templates, organisms y features.
+A page should compose templates, organisms, and features.
 
-Ejemplos actuales:
+Current examples:
 
 ```txt
 pages/LandingPage
@@ -453,9 +453,9 @@ pages/auth/RegisterPage
 pages/auth/ForgotPasswordPage
 ```
 
-Una page puede decidir que template usar, pero no deberia convertirse en una carpeta de componentes internos gigantes.
+A page may decide which template to use, but it should not become a folder of huge internal components.
 
-Ejemplo esperado:
+Expected example:
 
 ```txt
 LoginPage
@@ -463,7 +463,7 @@ LoginPage
 -> LoginForm
 ```
 
-Cuando existan dashboards:
+When dashboards exist:
 
 ```txt
 StudentDashboardPage
@@ -473,9 +473,9 @@ StudentDashboardPage
 -> features/recommendations/components/RecommendationList
 ```
 
-## Relacion Con Styles
+## Relationship With Styles
 
-Los tokens globales viven en:
+Global tokens live in:
 
 ```txt
 src/styles/
@@ -486,20 +486,20 @@ src/styles/
 `-- globals.css
 ```
 
-Los componentes deben reutilizar estos tokens mediante TailwindCSS v4 y las clases globales disponibles.
+Components should reuse these tokens through TailwindCSS v4 and the available global classes.
 
-Reglas:
+Rules:
 
-- No duplicar paletas de color en cada componente.
-- No crear estilos globales para un componente especifico.
-- No hardcodear estilos de negocio en atoms.
-- Mantener variantes visuales consistentes.
+- Do not duplicate color palettes in every component.
+- Do not create global styles for a specific component.
+- Do not hardcode business-specific styles in atoms.
+- Keep visual variants consistent.
 
-## Imports Recomendados
+## Recommended Imports
 
-Los componentes se exportan desde `index.ts` dentro de cada nivel.
+Components are exported from `index.ts` files within each level.
 
-Ejemplo:
+Example:
 
 ```ts
 import { Button, Heading, Text } from "@/components/atoms";
@@ -507,26 +507,26 @@ import { FormField, PasswordField } from "@/components/molecules";
 import { Navbar } from "@/components/organisms";
 ```
 
-Evitar imports profundos cuando ya exista un barrel export claro.
+Avoid deep imports when a clear barrel export already exists.
 
-Aceptable cuando el barrel aun no exporta el componente:
+Acceptable when the barrel does not yet export the component:
 
 ```ts
 import HeroSection from "@/components/organisms/HeroSection";
 ```
 
-## Reglas De Crecimiento
+## Growth Rules
 
-- Mantener `components/` libre de entidades de negocio.
-- Crear componentes genericos solo cuando se vayan a reutilizar.
-- No meter dashboards especificos dentro de `components/organisms`.
-- No crear atoms grandes.
-- No crear molecules que ya representan un dominio.
-- No crear templates que hagan trabajo de pages.
-- No usar Atomic Design como excusa para separar todo en archivos pequenos sin beneficio.
-- Si el nombre incluye `Course`, `Student`, `Teacher`, `Admin`, `Risk`, `Recommendation`, `Grade` o `Alert`, probablemente pertenece a `features/`.
+- Keep `components/` free of business entities.
+- Create generic components only when they will be reused.
+- Do not place domain-specific dashboards inside `components/organisms`.
+- Do not create large atoms.
+- Do not create molecules that already represent a domain.
+- Do not create templates that do the work of pages.
+- Do not use Atomic Design as an excuse to split everything into small files without benefit.
+- If the name includes `Course`, `Student`, `Teacher`, `Admin`, `Risk`, `Recommendation`, `Grade`, or `Alert`, it probably belongs in `features/`.
 
-## Guia Rapida
+## Quick Guide
 
 ```txt
 Button -> components/atoms
@@ -544,19 +544,19 @@ AdminUsersTable -> features/admin/components
 RecommendationList -> features/recommendations/components
 ```
 
-## Resumen
+## Summary
 
-Atomic Design en MentoraPredict debe usarse como sistema visual reutilizable, no como organizador de negocio.
+Atomic Design in MentoraPredict should be used as a reusable visual system, not as a business organization mechanism.
 
-La separacion correcta es:
+The correct separation is:
 
 ```txt
-Atoms = primitivas visuales
-Molecules = combinaciones pequenas
-Organisms = bloques grandes reutilizables
-Templates = estructura de layout
-Features = componentes con significado de negocio
-Pages = pantallas conectadas al router
+Atoms = visual primitives
+Molecules = small combinations
+Organisms = large reusable blocks
+Templates = layout structure
+Features = components with business meaning
+Pages = router-connected screens
 ```
 
-Con esta regla, el frontend puede crecer hacia cursos, dashboards, analitica, riesgo y recomendaciones sin contaminar el design system con componentes especificos del dominio.
+With this rule, the frontend can grow toward courses, dashboards, analytics, risk, and recommendations without contaminating the design system with domain-specific components.

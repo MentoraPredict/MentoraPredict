@@ -1,12 +1,12 @@
-# MentoraPredict Web - Arquitectura Frontend
+# MentoraPredict Web - Frontend Architecture
 
-Este documento resume la arquitectura frontend acordada para `apps/web` hasta este momento. Su objetivo es servir como guia de referencia para entender como debe crecer el frontend sin mezclar responsabilidades, manteniendo una base escalable para dashboards, roles, cursos, analitica e integraciones futuras con IA.
+This document summarizes the frontend architecture agreed upon for `apps/web` up to this point. Its purpose is to serve as a reference guide for understanding how the frontend should grow without mixing responsibilities, while maintaining a scalable foundation for dashboards, roles, courses, analytics, and future AI integrations.
 
-## Contexto Del Proyecto
+## Project Context
 
-MentoraPredict es una aplicacion academica orientada a predecir riesgo estudiantil mediante datos academicos, metricas, alertas y recomendaciones generadas con IA.
+MentoraPredict is an academic application focused on predicting student risk through academic data, metrics, alerts, and AI-generated recommendations.
 
-El frontend esta construido con:
+The frontend is built with:
 
 - React 19
 - TypeScript
@@ -20,41 +20,41 @@ El frontend esta construido con:
 - Recharts
 - React Icons
 
-El proyecto vive dentro de un monorepo y consume microservicios a traves de Kong/API Gateway.
+The project lives inside a monorepo and consumes microservices through Kong/API Gateway.
 
-## Principio Arquitectonico
+## Architectural Principle
 
-La arquitectura frontend no debe girar alrededor de carpetas tecnicas ni alrededor del usuario como entidad principal.
+The frontend architecture should not revolve around technical folders or around the user as the main entity.
 
-El modelo mental principal del producto es:
+The primary mental model of the product is:
 
-```txt
-Usuario
--> Cursos
--> Curso
--> Modulos / Evaluaciones / Metricas / Riesgo / Recomendaciones
+```txt id="w7lq4f"
+User
+-> Courses
+-> Course
+-> Modules / Evaluations / Metrics / Risk / Recommendations
 ```
 
-Aunque el backend use entidades como `subjects`, el frontend debe exponer el concepto como `courses`, porque ese es el lenguaje mas claro para la experiencia de usuario.
+Although the backend uses entities such as `subjects`, the frontend should expose the concept as `courses`, because that is the clearest language for the user experience.
 
-## Separacion De Responsabilidades
+## Separation Of Responsibilities
 
-La arquitectura se organiza bajo esta regla:
+The architecture is organized under this rule:
 
-```txt
-components = sistema visual reutilizable
-features = dominios de negocio
-pages = composicion de vistas
-routes = navegacion y autorizacion
-services = comunicacion con microservicios
-store = estado global minimo
-types = contratos TypeScript
-hooks = utilidades reutilizables
+```txt id="gzjlwm"
+components = reusable visual system
+features = business domains
+pages = view composition
+routes = navigation and authorization
+services = communication with microservices
+store = minimal global state
+types = TypeScript contracts
+hooks = reusable utilities
 ```
 
-## Estructura Recomendada
+## Recommended Structure
 
-```txt
+```txt id="fssxwn"
 src/
 ├── assets/
 ├── components/
@@ -93,13 +93,13 @@ src/
 
 ## Atomic Design
 
-El proyecto mantiene Atomic Design en `components/`.
+The project maintains Atomic Design in `components/`.
 
-Esta carpeta debe contener componentes reutilizables y sin logica de negocio fuerte.
+This folder should contain reusable components without strong business logic.
 
-Ejemplos correctos:
+Correct examples:
 
-```txt
+```txt id="y5ynzv"
 components/atoms/Button
 components/atoms/Input
 components/atoms/Badge
@@ -109,19 +109,19 @@ components/organisms/Navbar
 components/templates/AuthTemplate
 ```
 
-Componentes como `CourseRiskPanel`, `StudentGradesTable` o `TeacherCourseSummary` no deberian vivir en `components/`, porque pertenecen a un dominio. Esos componentes deben estar dentro de `features/`.
+Components such as `CourseRiskPanel`, `StudentGradesTable`, or `TeacherCourseSummary` should not live in `components/`, because they belong to a domain. Those components must be inside `features/`.
 
 ## Features
 
-`features/` representa dominios reales de negocio, no vistas.
+`features/` represents real business domains, not views.
 
-Esta carpeta existe para aislar logica de negocio por dominio y evitar que las pantallas se conviertan en contenedores de todo.
+This folder exists to isolate business logic by domain and prevent screens from becoming containers for everything.
 
-En el codigo actual, el primer dominio ya materializado es `features/auth`, con sus componentes de autenticacion movidos fuera de `components/organisms`.
+In the current codebase, the first domain already materialized is `features/auth`, with its authentication components moved out of `components/organisms`.
 
-Dominios definidos para MentoraPredict:
+Defined domains for MentoraPredict:
 
-```txt
+```txt id="jlwmna"
 features/
 ├── auth/
 ├── courses/
@@ -132,11 +132,11 @@ features/
 └── admin/
 ```
 
-No se crea un feature llamado `dashboard`, porque dashboard es una vista compuesta, no un dominio. Los dashboards se construyen combinando features reales.
+A feature called `dashboard` is not created because a dashboard is a composed view, not a domain. Dashboards are built by combining real features.
 
-Ejemplo:
+Example:
 
-```txt
+```txt id="0yyhmy"
 StudentDashboardPage
 -> courses
 -> analytics
@@ -144,9 +144,9 @@ StudentDashboardPage
 -> students
 ```
 
-Cada feature puede crecer con esta estructura canonica:
+Each feature can grow with this canonical structure:
 
-```txt
+```txt id="h8oz0r"
 features/courses/
 ├── components/
 ├── hooks/
@@ -155,23 +155,23 @@ features/courses/
 └── types/
 ```
 
-La idea es esta:
+The idea is:
 
-- `components/`: piezas visuales del dominio.
-- `hooks/`: comportamiento reutilizable del dominio.
-- `mappers/`: transformacion entre API y UI.
-- `services/`: llamadas HTTP del dominio.
-- `types/`: contratos TypeScript del dominio.
+- `components/`: visual pieces of the domain.
+- `hooks/`: reusable domain behavior.
+- `mappers/`: transformation between API and UI.
+- `services/`: domain HTTP calls.
+- `types/`: domain TypeScript contracts.
 
-Si una pieza describe cursos, estudiantes, analitica o recomendaciones, no debe ir en `components/` globales. Debe vivir dentro de su feature correspondiente.
+If a piece describes courses, students, analytics, or recommendations, it should not go into global `components/`. It must live inside its corresponding feature.
 
 ## Pages
 
-`pages/` representa pantallas completas conectadas al router.
+`pages/` represents complete screens connected to the router.
 
-Estructura recomendada:
+Recommended structure:
 
-```txt
+```txt id="a5wx3m"
 pages/
 ├── public/
 │   └── LandingPage/
@@ -195,15 +195,15 @@ pages/
     └── DataIngestionPage/
 ```
 
-Las paginas deben componer features y templates. No deberian contener demasiada logica de negocio ni llamadas HTTP directas.
+Pages should compose features and templates. They should not contain too much business logic or direct HTTP calls.
 
 ## Routes
 
-`routes/` centraliza navegacion, proteccion de rutas y redireccion por rol.
+`routes/` centralizes navigation, route protection, and role-based redirection.
 
-Estructura recomendada:
+Recommended structure:
 
-```txt
+```txt id="9c9m3j"
 routes/
 ├── AppRouter.tsx
 ├── paths.ts
@@ -213,17 +213,17 @@ routes/
 └── RoleRedirect.tsx
 ```
 
-Responsabilidades:
+Responsibilities:
 
-- `paths.ts`: rutas frontend centralizadas.
-- `routeConfig.ts`: configuracion declarativa de rutas.
-- `ProtectedRoute.tsx`: exige sesion activa.
-- `PublicOnlyRoute.tsx`: evita que un usuario autenticado vuelva a pantallas como login.
-- `RoleRedirect.tsx`: redirige segun el rol del usuario.
+- `paths.ts`: centralized frontend routes.
+- `routeConfig.ts`: declarative route configuration.
+- `ProtectedRoute.tsx`: requires an active session.
+- `PublicOnlyRoute.tsx`: prevents an authenticated user from returning to screens such as login.
+- `RoleRedirect.tsx`: redirects according to the user's role.
 
-Redireccion esperada:
+Expected redirection:
 
-```txt
+```txt id="1a9e5i"
 STUDENT -> /student/dashboard
 TEACHER -> /teacher/dashboard
 ADMIN   -> /admin/dashboard
@@ -231,11 +231,11 @@ ADMIN   -> /admin/dashboard
 
 ## Services
 
-`services/` contiene comunicacion con microservicios y configuracion HTTP.
+`services/` contains communication with microservices and HTTP configuration.
 
-Estructura recomendada:
+Recommended structure:
 
-```txt
+```txt id="y7kb5y"
 services/
 ├── api/
 │   ├── axiosClient.ts
@@ -262,17 +262,17 @@ services/
     └── observations.service.ts
 ```
 
-Las URLs no deben estar hardcodeadas dentro de formularios o componentes.
+URLs must not be hardcoded inside forms or components.
 
-Debe existir un archivo central:
+A central file should exist:
 
-```txt
+```txt id="94rmio"
 services/api/endpoints.ts
 ```
 
-Ejemplo conceptual:
+Conceptual example:
 
-```txt
+```txt id="rk0j0r"
 AUTH.LOGIN
 AUTH.REGISTER
 USERS.ME
@@ -281,75 +281,75 @@ ANALYTICS.STUDENT_DASHBOARD
 RECOMMENDATIONS.BY_STUDENT
 ```
 
-Aunque el backend exponga `/subjects`, el frontend debe trabajar con `courses.service.ts` y mapear internamente hacia el endpoint correspondiente.
+Even if the backend exposes `/subjects`, the frontend should work with `courses.service.ts` and internally map to the corresponding endpoint.
 
-## Auth Y Sesion
+## Auth And Session
 
-La fuente de verdad de la sesion debe ser Zustand:
+The source of truth for the session must be Zustand:
 
-```txt
+```txt id="5guk6t"
 store/auth.store.ts
 ```
 
-Regla importante:
+Important rule:
 
-```txt
-AuthStore = fuente de verdad
+```txt id="c0j25o"
+AuthStore = source of truth
 ```
 
-`tokenStorage` puede existir, pero solo como detalle interno usado por el store o por el cliente Axios. No debe ser usado directamente desde componentes o paginas.
+`tokenStorage` may exist, but only as an internal detail used by the store or the Axios client. It should not be used directly from components or pages.
 
-Flujo recomendado:
+Recommended flow:
 
-```txt
+```txt id="9dmdv8"
 LoginForm
 -> auth.service.login()
--> guardar tokens
+-> store tokens
 -> users.service.me()
--> auth.store guarda user y role
--> RoleRedirect navega segun rol
+-> auth.store stores user and role
+-> RoleRedirect navigates according to role
 ```
 
-El JWT debe tratarse como mecanismo de autenticacion, no como fuente de datos de usuario.
+JWT should be treated as an authentication mechanism, not as a source of user data.
 
-La informacion de usuario, rol, permisos y estado debe venir desde:
+User information, role, permissions, and status should come from:
 
-```txt
+```txt id="m9lv9n"
 /api/v1/users/me
 ```
 
 ## Store
 
-Zustand debe usarse para estado global real.
+Zustand should be used for real global state.
 
-Estructura recomendada:
+Recommended structure:
 
-```txt
+```txt id="sjhx0n"
 store/
 ├── auth.store.ts
 ├── app.store.ts
 └── index.ts
 ```
 
-`auth.store.ts` debe manejar:
+`auth.store.ts` should manage:
 
 - tokens
-- usuario autenticado
-- rol
-- estado de sesion
+- authenticated user
+- role
+- session state
 - login
 - logout
-- hidratacion de sesion
+- session hydration
 
-No se recomienda guardar todas las listas de cursos, dashboards o metricas globalmente desde el inicio. Esos datos pueden vivir en hooks de feature o estado local hasta que el volumen justifique otro patron.
+It is not recommended to globally store all course lists, dashboards, or metrics from the beginning. Those data can live in feature hooks or local state until the volume justifies another pattern.
 
 ## Types
 
-Los tipos deben crecer en carpetas, no en archivos planos.
+Types should grow in folders, not in flat files.
 
-Estructura recomendada:
+Recommended structure:
 
-```txt
+```txt id="t4yzpd"
 types/
 ├── auth/
 │   ├── auth.types.ts
@@ -380,13 +380,13 @@ types/
     └── index.ts
 ```
 
-Esto permite mantener TypeScript estricto sin convertir `types/` en una carpeta inmanejable.
+This makes it possible to maintain strict TypeScript without turning `types/` into an unmanageable folder.
 
 ## Hooks
 
-`hooks/` debe contener hooks globales reutilizables:
+`hooks/` should contain reusable global hooks:
 
-```txt
+```txt id="ewlv4e"
 hooks/
 ├── useAuth.ts
 ├── useRole.ts
@@ -396,9 +396,9 @@ hooks/
 └── useDisclosure.ts
 ```
 
-Hooks de dominio deben vivir dentro de su feature:
+Domain hooks should live inside their feature:
 
-```txt
+```txt id="zdxkbe"
 features/courses/hooks/useCourses.ts
 features/analytics/hooks/useStudentRisk.ts
 features/recommendations/hooks/useRecommendations.ts
@@ -406,26 +406,26 @@ features/recommendations/hooks/useRecommendations.ts
 
 ## Config
 
-Se recomienda agregar:
+It is recommended to add:
 
-```txt
+```txt id="tdb1kk"
 config/
 ├── env.ts
 ├── roles.ts
 └── navigation.ts
 ```
 
-Responsabilidades:
+Responsibilities:
 
-- `env.ts`: acceso tipado a variables `VITE_*`.
-- `roles.ts`: definicion de roles y permisos.
-- `navigation.ts`: menu y navegacion por rol.
+- `env.ts`: typed access to `VITE_*` variables.
+- `roles.ts`: role and permission definitions.
+- `navigation.ts`: role-based menu and navigation.
 
-## Estilos Y Design System
+## Styles And Design System
 
-La estructura actual de estilos es:
+The current styles structure is:
 
-```txt
+```txt id="g6cvgx"
 styles/
 ├── globals.css
 ├── colors.css
@@ -434,45 +434,45 @@ styles/
 └── theme.css
 ```
 
-Responsabilidad recomendada:
+Recommended responsibilities:
 
-- `colors.css`: tokens de color.
-- `typography.css`: familia, pesos, escalas y line-height.
-- `spacing.css`: espacios, radios, sombras y containers.
-- `theme.css`: integracion de tokens con TailwindCSS v4.
-- `globals.css`: imports y estilos base globales.
+- `colors.css`: color tokens.
+- `typography.css`: families, weights, scales, and line-height.
+- `spacing.css`: spacing, radii, shadows, and containers.
+- `theme.css`: integration of tokens with TailwindCSS v4.
+- `globals.css`: imports and global base styles.
 
-## Reglas De Crecimiento
+## Growth Rules
 
-- No llamar servicios HTTP desde atoms, molecules u organisms genericos.
-- No hardcodear endpoints dentro de componentes.
-- No usar el JWT como modelo de usuario.
-- No duplicar la sesion entre Zustand, localStorage y helpers.
-- No crear features para vistas; crear features para dominios.
-- No mezclar lenguaje backend con lenguaje UX cuando no coincidan.
-- Usar `Course` en frontend aunque el backend use `Subject`.
-- Mantener dashboards como pages que componen features.
-- Mantener los tipos cerca del contrato, pero el lenguaje cerca del usuario.
+- Do not call HTTP services from generic atoms, molecules, or organisms.
+- Do not hardcode endpoints inside components.
+- Do not use JWT as the user model.
+- Do not duplicate the session between Zustand, localStorage, and helpers.
+- Do not create features for views; create features for domains.
+- Do not mix backend language with UX language when they do not match.
+- Use `Course` in the frontend even if the backend uses `Subject`.
+- Keep dashboards as pages that compose features.
+- Keep types close to the contract, but keep language close to the user.
 
-## Resumen
+## Summary
 
-La arquitectura final busca que MentoraPredict Web sea:
+The final architecture aims for MentoraPredict Web to be:
 
-- clara para el equipo frontend,
-- escalable a nuevos roles,
-- preparada para dashboards complejos,
-- compatible con microservicios,
-- mantenible bajo TypeScript estricto,
-- alineada con Atomic Design,
-- lista para futuras funcionalidades de IA.
+- clear for the frontend team,
+- scalable to new roles,
+- prepared for complex dashboards,
+- compatible with microservices,
+- maintainable under strict TypeScript,
+- aligned with Atomic Design,
+- ready for future AI features.
 
-La idea central es simple:
+The central idea is simple:
 
-```txt
-Curso como entidad principal
-Rol como politica de acceso
-Microservicios como detalle de infraestructura
-Atomic Design como sistema visual
-Features como modulos de negocio
-Pages como composicion de vistas
+```txt id="twtg9r"
+Course as the main entity
+Role as the access policy
+Microservices as an infrastructure detail
+Atomic Design as the visual system
+Features as business modules
+Pages as view composition
 ```

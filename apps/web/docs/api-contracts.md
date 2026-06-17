@@ -1,14 +1,14 @@
 # MentoraPredict Web - API Contracts
 
-Este documento resume los contratos API que debe consumir `apps/web` desde el frontend.
+This document summarizes the API contracts that `apps/web` must consume from the frontend.
 
-La fuente principal revisada es:
+The main source reviewed is:
 
 ```txt
 contracts/openapi-contracts.yaml
 ```
 
-Tambien se revisaron los `openapi.yaml` y controladores existentes en:
+The existing `openapi.yaml` files and controllers were also reviewed in:
 
 ```txt
 services/auth-service
@@ -18,17 +18,17 @@ services/analytics-service
 services/recommendation-service
 ```
 
-## Regla Para El Frontend
+## Frontend Rule
 
-El frontend no debe llamar URLs hardcodeadas desde componentes, formularios o paginas.
+The frontend must not call hardcoded URLs from components, forms, or pages.
 
-Las rutas deben centralizarse en:
+Routes must be centralized in:
 
 ```txt
 src/services/api/endpoints.ts
 ```
 
-Y consumirse desde servicios:
+And consumed from services:
 
 ```txt
 src/services/auth/auth.service.ts
@@ -38,57 +38,57 @@ src/services/analytics/risk.service.ts
 src/services/recommendations/recommendations.service.ts
 ```
 
-Estado actual en `apps/web`:
+Current status in `apps/web`:
 
 ```txt
 src/services/api.ts
 src/services/auth.service.ts
 ```
 
-Actualmente `auth.service.ts` consume:
+Currently `auth.service.ts` consumes:
 
 ```txt
 POST /v1/auth/login
 ```
 
-El contrato central del monorepo documenta rutas con:
+The central monorepo contract documents routes with:
 
 ```txt
 /api/v1/...
 ```
 
-Como el frontend usa `VITE_API_BASE_URL` con valor por defecto `/api`, es razonable que desde el cliente se consuma `/v1/...` y el gateway resuelva `/api/v1/...`.
+Since the frontend uses `VITE_API_BASE_URL` with a default value of `/api`, it is reasonable that the client consumes `/v1/...` and the gateway resolves `/api/v1/...`.
 
 ## Base URL
 
-El cliente Axios actual usa:
+The current Axios client uses:
 
 ```ts
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 ```
 
-Por eso, si `VITE_API_BASE_URL=/api`, una llamada como:
+Therefore, if `VITE_API_BASE_URL=/api`, a call such as:
 
 ```txt
 /v1/auth/login
 ```
 
-termina apuntando a:
+ends up pointing to:
 
 ```txt
 /api/v1/auth/login
 ```
 
-Regla recomendada:
+Recommended rule:
 
 ```txt
-En endpoints.ts usar paths relativos al gateway frontend:
+Use paths relative to the frontend gateway in endpoints.ts:
 /v1/auth/login
 /v1/users/me
 /v1/analytics/dashboard/student/:studentId
 ```
 
-Y documentar el contrato backend completo como:
+And document the complete backend contract as:
 
 ```txt
 /api/v1/auth/login
@@ -98,31 +98,31 @@ Y documentar el contrato backend completo como:
 
 ## Headers
 
-Las rutas privadas deben enviar:
+Private routes must send:
 
 ```txt
 Authorization: Bearer <accessToken>
 Content-Type: application/json
 ```
 
-Para carga de archivos:
+For file uploads:
 
 ```txt
 Authorization: Bearer <accessToken>
 Content-Type: multipart/form-data
 ```
 
-El interceptor actual de Axios ya adjunta el token desde `localStorage`:
+The current Axios interceptor already attaches the token from `localStorage`:
 
 ```ts
 config.headers.Authorization = `Bearer ${token}`;
 ```
 
-Cuando exista `auth.store.ts`, el token debe seguir siendo gestionado de forma centralizada, no desde componentes.
+When `auth.store.ts` exists, the token must continue to be managed centrally, not from components.
 
 ## Roles
 
-Roles esperados:
+Expected roles:
 
 ```txt
 STUDENT
@@ -130,30 +130,30 @@ TEACHER
 ADMIN
 ```
 
-El rol debe venir del usuario autenticado, idealmente desde:
+The role must come from the authenticated user, ideally from:
 
 ```txt
 GET /api/v1/users/me
 ```
 
-No desde checks duplicados ni desde componentes visuales.
+Not from duplicated checks or visual components.
 
 ## Auth Service
 
-Responsable de:
+Responsible for:
 
-- registro;
+- registration;
 - login;
 - refresh token;
 - logout;
-- recuperacion de contrasena;
-- reset de contrasena.
+- password recovery;
+- password reset.
 
 ### POST /api/v1/auth/register
 
-Registra un usuario nuevo. El contrato central indica rol por defecto `STUDENT`.
+Registers a new user. The central contract indicates the default role is `STUDENT`.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/auth/register
@@ -181,16 +181,16 @@ Response `201`:
 }
 ```
 
-Errores esperados:
+Expected errors:
 
-- `409`: email ya existe.
-- `422`: error de validacion.
+- `409`: email already exists.
+- `422`: validation error.
 
 ### POST /api/v1/auth/login
 
-Inicia sesion con email y contrasena.
+Starts a session with email and password.
 
-Frontend path actual:
+Current frontend path:
 
 ```txt
 POST /v1/auth/login
@@ -205,7 +205,7 @@ Request:
 }
 ```
 
-Response actual documentada en contrato central:
+Current response documented in the central contract:
 
 ```json
 {
@@ -216,7 +216,7 @@ Response actual documentada en contrato central:
 }
 ```
 
-Response recomendada para el frontend:
+Recommended response for the frontend:
 
 ```json
 {
@@ -236,33 +236,33 @@ Response recomendada para el frontend:
 }
 ```
 
-Nota importante:
+Important note:
 
 ```txt
-El contrato actual de login no incluye user ni role en la respuesta.
-Por eso el flujo recomendado es login -> guardar tokens -> GET /users/me.
+The current login contract does not include user or role in the response.
+Therefore, the recommended flow is login -> save tokens -> GET /users/me.
 ```
 
-Flujo frontend recomendado:
+Recommended frontend flow:
 
 ```txt
 POST /v1/auth/login
--> guardar accessToken y refreshToken
+-> save accessToken and refreshToken
 -> GET /v1/users/me
--> auth.store guarda user y role
--> RoleRedirect envia al dashboard correcto
+-> auth.store saves user and role
+-> RoleRedirect sends the user to the correct dashboard
 ```
 
-Errores esperados:
+Expected errors:
 
-- `401`: credenciales invalidas.
-- `403`: demasiados intentos o cuenta bloqueada, segun implementacion.
+- `401`: invalid credentials.
+- `403`: too many attempts or account blocked, depending on implementation.
 
 ### POST /api/v1/auth/refresh
 
-Renueva el access token usando refresh token.
+Renews the access token using a refresh token.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/auth/refresh
@@ -285,15 +285,15 @@ Response `200`:
 }
 ```
 
-Errores esperados:
+Expected errors:
 
-- `401`: refresh token invalido o expirado.
+- `401`: invalid or expired refresh token.
 
 ### POST /api/v1/auth/logout
 
-Cierra sesion e invalida el refresh token.
+Closes the session and invalidates the refresh token.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/auth/logout
@@ -321,9 +321,9 @@ Response:
 
 ### POST /api/v1/auth/forgot-password
 
-Solicita recuperacion de contrasena.
+Requests password recovery.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/auth/forgot-password
@@ -337,29 +337,29 @@ Request:
 }
 ```
 
-Response esperada segun contrato central:
+Expected response according to the central contract:
 
 ```txt
 202 Accepted
 ```
 
-Estado del controlador actual:
+Current controller status:
 
 ```txt
 204 No Content
 ```
 
-Nota:
+Note:
 
 ```txt
-Hay diferencia entre contrato central y controlador actual. El frontend debe tratar ambos como exito sin depender de body.
+There is a difference between the central contract and the current controller. The frontend should treat both as success without depending on a response body.
 ```
 
 ### POST /api/v1/auth/reset-password
 
-Restablece contrasena con token.
+Resets the password using a token.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/auth/reset-password
@@ -380,24 +380,24 @@ Response:
 204 No Content
 ```
 
-Errores esperados:
+Expected errors:
 
-- `400`: token invalido o expirado.
+- `400`: invalid or expired token.
 
 ## User Service
 
-Responsable de:
+Responsible for:
 
-- perfil autenticado;
-- usuarios;
+- authenticated profile;
+- users;
 - roles;
-- estado de cuenta.
+- account status.
 
 ### GET /api/v1/users/me
 
-Obtiene el usuario autenticado.
+Retrieves the authenticated user.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/users/me
@@ -409,7 +409,7 @@ Headers:
 Authorization: Bearer <accessToken>
 ```
 
-Response esperada:
+Expected response:
 
 ```json
 {
@@ -423,17 +423,17 @@ Response esperada:
 }
 ```
 
-Uso en frontend:
+Frontend usage:
 
 ```txt
-Fuente de verdad para user y role.
+Source of truth for user and role.
 ```
 
 ### GET /api/v1/users
 
-Lista usuarios. Debe ser usado por `ADMIN`.
+Lists users. Must be used by `ADMIN`.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/users?role=STUDENT&page=1&limit=20
@@ -442,10 +442,10 @@ GET /v1/users?role=STUDENT&page=1&limit=20
 Query params:
 
 - `role`: `STUDENT`, `TEACHER`, `ADMIN`.
-- `page`: pagina.
-- `limit`: limite por pagina.
+- `page`: page number.
+- `limit`: page size.
 
-Response esperada:
+Expected response:
 
 ```json
 {
@@ -465,16 +465,16 @@ Response esperada:
 }
 ```
 
-Errores esperados:
+Expected errors:
 
-- `401`: no autenticado.
-- `403`: requiere rol `ADMIN`.
+- `401`: not authenticated.
+- `403`: requires `ADMIN` role.
 
 ### PATCH /api/v1/users/{id}/role
 
-Actualiza el rol de un usuario. Debe ser usado por `ADMIN`.
+Updates a user's role. Must be used by `ADMIN`.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 PATCH /v1/users/:id/role
@@ -494,63 +494,63 @@ Response:
 200 OK
 ```
 
-Errores esperados:
+Expected errors:
 
-- `403`: no autorizado.
-- `404`: usuario no encontrado.
+- `403`: not authorized.
+- `404`: user not found.
 
-### Nota De Estado Actual
+### Current State Note
 
-El contrato central documenta `/api/v1/users/me` y `/api/v1/users/{id}/role`.
+The central contract documents `/api/v1/users/me` and `/api/v1/users/{id}/role`.
 
-El controlador actual de `user-service` expone rutas base como:
+The current `user-service` controller exposes base routes such as:
 
 ```txt
 /users
 /users/:id
 ```
 
-No se observa un `setGlobalPrefix("api/v1")` en `main.ts`. Antes de integrar completamente el frontend, conviene alinear user-service con el contrato central o configurar Kong para normalizar la ruta.
+A `setGlobalPrefix("api/v1")` is not observed in `main.ts`. Before fully integrating the frontend, it is advisable to align `user-service` with the central contract or configure Kong to normalize the route.
 
 ## Academic Service
 
-Responsable de:
+Responsible for:
 
-- facultades;
-- carreras;
-- periodos academicos;
-- cursos/materias;
-- matriculas;
-- evaluaciones;
-- calificaciones;
-- carga de datos.
+- faculties;
+- careers;
+- academic periods;
+- courses/subjects;
+- enrollments;
+- evaluations;
+- grades;
+- data ingestion.
 
-Regla de lenguaje frontend:
+Frontend language rule:
 
 ```txt
 Backend: subject
 Frontend: course
 ```
 
-Aunque el contrato backend diga `subjects`, el frontend debe exponer `courses`.
+Although the backend contract says `subjects`, the frontend should expose `courses`.
 
 ### GET /api/v1/faculties
 
-Lista facultades.
+Lists faculties.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/faculties
 ```
 
-Response esperada:
+Expected response:
 
 ```json
 [
   {
     "id": "faculty-uuid",
-    "name": "Ingenieria y Ciencias Aplicadas",
+    "name": "Engineering and Applied Sciences",
     "code": "FICA"
   }
 ]
@@ -558,22 +558,22 @@ Response esperada:
 
 ### POST /api/v1/faculties
 
-Crea facultad. Debe ser usado por `ADMIN`.
+Creates a faculty. Must be used by `ADMIN`.
 
 Request:
 
 ```json
 {
-  "name": "Ingenieria y Ciencias Aplicadas",
+  "name": "Engineering and Applied Sciences",
   "code": "FICA"
 }
 ```
 
 ### GET /api/v1/careers
 
-Lista carreras.
+Lists careers.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/careers
@@ -581,13 +581,13 @@ GET /v1/careers
 
 ### POST /api/v1/careers
 
-Crea carrera. Debe ser usado por `ADMIN`.
+Creates a career. Must be used by `ADMIN`.
 
 Request:
 
 ```json
 {
-  "name": "Ingenieria en Sistemas de Informacion",
+  "name": "Information Systems Engineering",
   "code": "ISI",
   "facultyId": "faculty-uuid"
 }
@@ -595,9 +595,9 @@ Request:
 
 ### GET /api/v1/academic-periods
 
-Lista periodos academicos.
+Lists academic periods.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/academic-periods
@@ -605,7 +605,7 @@ GET /v1/academic-periods
 
 ### POST /api/v1/academic-periods
 
-Crea periodo academico. Debe ser usado por `ADMIN`.
+Creates an academic period. Must be used by `ADMIN`.
 
 Request:
 
@@ -621,27 +621,27 @@ Request:
 
 ### GET /api/v1/subjects
 
-Lista materias/cursos.
+Lists subjects/courses.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/subjects?periodId=period-uuid&teacherId=teacher-uuid
 ```
 
-Nombre recomendado dentro del frontend:
+Recommended name within the frontend:
 
 ```txt
 courses.service.ts -> listCourses()
 ```
 
-Response esperada:
+Expected response:
 
 ```json
 [
   {
     "id": "subject-uuid",
-    "name": "Programacion Web",
+    "name": "Web Programming",
     "code": "PW-701",
     "credits": 4,
     "periodId": "period-uuid",
@@ -650,7 +650,7 @@ Response esperada:
 ]
 ```
 
-Mapper recomendado:
+Recommended mapper:
 
 ```txt
 SubjectDto -> Course
@@ -660,13 +660,13 @@ subject.name -> course.name
 
 ### POST /api/v1/subjects
 
-Crea materia/curso. Debe ser usado por `ADMIN`.
+Creates a subject/course. Must be used by `ADMIN`.
 
 Request:
 
 ```json
 {
-  "name": "Programacion Web",
+  "name": "Web Programming",
   "code": "PW-701",
   "credits": 4,
   "periodId": "period-uuid"
@@ -675,7 +675,7 @@ Request:
 
 ### PUT /api/v1/subjects/{id}/teacher
 
-Asigna docente a una materia/curso. Debe ser usado por `ADMIN`.
+Assigns a teacher to a subject/course. Must be used by `ADMIN`.
 
 Request:
 
@@ -687,16 +687,16 @@ Request:
 
 ### GET /api/v1/enrollments
 
-Lista matriculas por estudiante o por materia.
+Lists enrollments by student or by subject.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/enrollments?studentId=student-uuid
 GET /v1/enrollments?subjectId=subject-uuid
 ```
 
-Nombre frontend recomendado:
+Recommended frontend name:
 
 ```txt
 enrollments.service.ts
@@ -704,7 +704,7 @@ enrollments.service.ts
 
 ### POST /api/v1/enrollments
 
-Matricula estudiante en materia/curso.
+Enrolls a student in a subject/course.
 
 Request:
 
@@ -717,9 +717,9 @@ Request:
 
 ### GET /api/v1/evaluations
 
-Lista evaluaciones por materia/curso.
+Lists evaluations by subject/course.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/evaluations?subjectId=subject-uuid
@@ -727,13 +727,13 @@ GET /v1/evaluations?subjectId=subject-uuid
 
 ### POST /api/v1/evaluations
 
-Crea evaluacion. Debe ser usado por `TEACHER`.
+Creates an evaluation. Must be used by `TEACHER`.
 
 Request:
 
 ```json
 {
-  "name": "Parcial 1",
+  "name": "Midterm 1",
   "weight": 30,
   "subjectId": "subject-uuid",
   "dueDate": "2026-07-15"
@@ -742,7 +742,7 @@ Request:
 
 ### POST /api/v1/grades
 
-Registra calificacion de estudiante.
+Records a student's grade.
 
 Request:
 
@@ -756,9 +756,9 @@ Request:
 
 ### POST /api/v1/ingest
 
-Carga masiva de datos academicos.
+Bulk upload of academic data.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/ingest
@@ -784,9 +784,9 @@ Response:
 202 Accepted
 ```
 
-### Nota De Estado Actual
+### Current State Note
 
-El contrato central usa:
+The central contract uses:
 
 ```txt
 /api/v1/subjects
@@ -796,7 +796,7 @@ El contrato central usa:
 /api/v1/ingest
 ```
 
-El controlador actual de `academic-service` usa:
+The current `academic-service` controller uses:
 
 ```txt
 /api/v1/academic/enrollments
@@ -805,28 +805,28 @@ El controlador actual de `academic-service` usa:
 /api/v1/academic/import/grades
 ```
 
-Antes de conectar pantallas reales, se debe alinear el gateway o el contrato. Para el frontend, lo importante es ocultar esta diferencia detras de `academic` services y mappers.
+Before connecting real screens, the gateway or the contract should be aligned. For the frontend, the important thing is to hide this difference behind `academic` services and mappers.
 
 ## Analytics Service
 
-Responsable de:
+Responsible for:
 
-- riesgo academico;
-- alertas;
-- dashboards agregados;
-- metricas calculadas para visualizacion.
+- academic risk;
+- alerts;
+- aggregated dashboards;
+- calculated metrics for visualization.
 
 ### GET /api/v1/analytics/risk/{studentId}
 
-Obtiene clasificacion de riesgo para estudiante.
+Retrieves risk classification for a student.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/analytics/risk/:studentId
 ```
 
-Response esperada:
+Expected response:
 
 ```json
 {
@@ -840,9 +840,9 @@ Response esperada:
 
 ### GET /api/v1/analytics/alerts
 
-Lista alertas tempranas.
+Lists early alerts.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/analytics/alerts?studentId=student-uuid&subjectId=subject-uuid&level=HIGH&resolved=false
@@ -852,10 +852,10 @@ Query params:
 
 - `studentId`
 - `subjectId`
-- `level`: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` segun implementacion final.
+- `level`: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` according to the final implementation.
 - `resolved`: boolean.
 
-Response esperada:
+Expected response:
 
 ```json
 {
@@ -878,15 +878,15 @@ Response esperada:
 
 ### GET /api/v1/analytics/dashboard/student/{studentId}
 
-Obtiene payload agregado del dashboard del estudiante.
+Retrieves the aggregated payload for the student dashboard.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/analytics/dashboard/student/:studentId
 ```
 
-Response esperada:
+Expected response:
 
 ```json
 {
@@ -900,15 +900,15 @@ Response esperada:
 
 ### GET /api/v1/analytics/dashboard/teacher/{teacherId}
 
-Obtiene dashboard del docente.
+Retrieves the teacher dashboard.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/analytics/dashboard/teacher/:teacherId
 ```
 
-Response conceptual:
+Conceptual response:
 
 ```json
 {
@@ -922,15 +922,15 @@ Response conceptual:
 
 ### GET /api/v1/analytics/dashboard/admin
 
-Obtiene dashboard administrativo.
+Retrieves the administrative dashboard.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/analytics/dashboard/admin
 ```
 
-Response conceptual:
+Conceptual response:
 
 ```json
 {
@@ -947,9 +947,9 @@ Response conceptual:
 }
 ```
 
-### Nota De Estado Actual
+### Current State Note
 
-El controlador actual de `analytics-service` tambien expone operaciones de calculo:
+The current `analytics-service` controller also exposes calculation operations:
 
 ```txt
 POST /api/v1/analytics/average/:studentId/:periodId
@@ -959,29 +959,29 @@ POST /api/v1/analytics/risk
 POST /api/v1/analytics/alerts/:studentId
 ```
 
-Estas rutas parecen mas internas o de calculo. Para dashboards frontend, preferir endpoints agregados `GET /dashboard/...` cuando esten disponibles.
+These routes appear to be more internal or calculation-oriented. For frontend dashboards, prefer aggregated `GET /dashboard/...` endpoints when they are available.
 
 ## Recommendation Service
 
-Responsable de:
+Responsible for:
 
-- generar recomendaciones;
-- consultar historial de recomendaciones;
-- registrar observaciones docentes.
+- generating recommendations;
+- consulting recommendation history;
+- recording teacher observations.
 
-Estado actual:
+Current state:
 
 ```txt
-recommendation-service esta como skeleton y no tiene controladores funcionales completos.
+recommendation-service is currently a skeleton and does not have fully functional controllers.
 ```
 
-El contrato central define las rutas esperadas.
+The central contract defines the expected routes.
 
 ### POST /api/v1/recommendations/generate
 
-Genera plan personalizado de mejora.
+Generates a personalized improvement plan.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/recommendations/generate
@@ -994,7 +994,7 @@ Request:
   "studentId": "student-uuid",
   "context": {
     "riskLevel": "HIGH",
-    "weakSubjects": ["Programacion Web", "Calculo II"],
+    "weakSubjects": ["Web Programming", "Calculus II"],
     "complianceIndex": 62.5,
     "trend": "DECLINING"
   }
@@ -1007,10 +1007,10 @@ Response `201`:
 {
   "id": "recommendation-uuid",
   "studentId": "student-uuid",
-  "plan": "Plan de mejora personalizado",
+  "plan": "Personalized improvement plan",
   "actions": [
-    "Revisar actividades pendientes",
-    "Agendar tutoria con el docente"
+    "Review pending activities",
+    "Schedule tutoring with the teacher"
   ],
   "generatedAt": "2026-06-14T00:00:00.000Z"
 }
@@ -1018,15 +1018,15 @@ Response `201`:
 
 ### GET /api/v1/recommendations/students/{studentId}
 
-Obtiene historial de recomendaciones de un estudiante.
+Retrieves the recommendation history of a student.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 GET /v1/recommendations/students/:studentId
 ```
 
-Response esperada:
+Expected response:
 
 ```json
 [
@@ -1034,7 +1034,7 @@ Response esperada:
     "id": "recommendation-uuid",
     "studentId": "student-uuid",
     "riskLevel": "HIGH",
-    "plan": "Plan de mejora personalizado",
+    "plan": "Personalized improvement plan",
     "actions": [],
     "generatedAt": "2026-06-14T00:00:00.000Z"
   }
@@ -1043,9 +1043,9 @@ Response esperada:
 
 ### POST /api/v1/observations
 
-Registra observacion de docente para un estudiante.
+Records a teacher observation for a student.
 
-Frontend path recomendado:
+Recommended frontend path:
 
 ```txt
 POST /v1/observations
@@ -1057,7 +1057,7 @@ Request:
 {
   "studentId": "student-uuid",
   "subjectId": "subject-uuid",
-  "text": "El estudiante requiere seguimiento en entregas semanales."
+  "text": "The student requires follow-up on weekly assignments."
 }
 ```
 
@@ -1067,9 +1067,9 @@ Response:
 201 Created
 ```
 
-## Endpoints Recomendados Para apps/web
+## Recommended Endpoints For apps/web
 
-Ejemplo de `endpoints.ts`:
+Example `endpoints.ts`:
 
 ```ts
 export const ENDPOINTS = {
@@ -1115,11 +1115,11 @@ export const ENDPOINTS = {
 } as const;
 ```
 
-## Mappers Recomendados
+## Recommended Mappers
 
-El frontend debe mapear contratos backend a lenguaje del producto.
+The frontend should map backend contracts to product language.
 
-Ejemplos:
+Examples:
 
 ```txt
 SubjectDto -> Course
@@ -1129,22 +1129,22 @@ riskLevel -> risk.level
 score -> risk.score
 ```
 
-Esto mantiene la UI alineada con `business-domain.md`.
+This keeps the UI aligned with `business-domain.md`.
 
-## Reglas
+## Rules
 
-- No usar endpoints hardcodeados dentro de componentes.
-- No leer ni escribir tokens directamente desde pages.
-- No usar JWT como fuente de datos del usuario.
-- Usar `GET /users/me` para obtener `user` y `role`.
-- Centralizar rutas API en `endpoints.ts`.
-- Crear servicios por dominio frontend, no por pantalla.
-- Mapear `subjects` del backend a `courses` en frontend.
-- Tratar diferencias entre contrato y controlador desde services/gateway, no desde UI.
+- Do not use hardcoded endpoints inside components.
+- Do not read or write tokens directly from pages.
+- Do not use JWT as the source of user data.
+- Use `GET /users/me` to obtain `user` and `role`.
+- Centralize API routes in `endpoints.ts`.
+- Create services by frontend domain, not by screen.
+- Map backend `subjects` to frontend `courses`.
+- Handle differences between contract and controller through services/gateway, not through the UI.
 
-## Resumen
+## Summary
 
-Los contratos clave para `apps/web` son:
+The key contracts for `apps/web` are:
 
 ```txt
 Auth Service
@@ -1163,9 +1163,9 @@ Recommendation Service
 -> generated plans, recommendation history, observations
 ```
 
-El frontend debe consumirlos mediante servicios centralizados y mantener el lenguaje de producto:
+The frontend should consume them through centralized services and maintain the product language:
 
 ```txt
-Course en UI.
-Subject solo como detalle de contrato backend.
+Course in the UI.
+Subject only as a backend contract detail.
 ```

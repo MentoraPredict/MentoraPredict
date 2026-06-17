@@ -1,34 +1,34 @@
 # MentoraPredict Web - Routing
 
-Este documento describe las rutas frontend de `apps/web`, su estado actual en el codigo y la estructura esperada para rutas publicas, privadas y redireccion por rol.
+This document describes the frontend routes of `apps/web`, their current state in the codebase, and the expected structure for public routes, private routes, and role-based redirection.
 
-La configuracion de rutas vive en:
+The route configuration lives in:
 
-```txt
+```txt id="bqj4ur"
 src/routes/AppRouter.tsx
 ```
 
-Actualmente el proyecto usa:
+The project currently uses:
 
 - `BrowserRouter`
 - `Routes`
 - `Route`
-- `useNavigate` para navegacion programatica desde formularios y secciones publicas
+- `useNavigate` for programmatic navigation from forms and public sections
 
-## Estado Actual
+## Current State
 
-El router implementado actualmente es simple y solo declara pantallas publicas:
+The router currently implemented is simple and only declares public screens:
 
-```txt
+```txt id="c4e7rh"
 /
 /login
 /register
 /forgot-password
 ```
 
-Codigo actual:
+Current code:
 
-```tsx
+```tsx id="r4gbr6"
 <BrowserRouter>
   <Routes>
     <Route path="/" element={<LandingPage />} />
@@ -39,9 +39,9 @@ Codigo actual:
 </BrowserRouter>
 ```
 
-Todavia no existen en `src/routes` los archivos:
+The following files do not yet exist in `src/routes`:
 
-```txt
+```txt id="2psjmb"
 ProtectedRoute.tsx
 PublicOnlyRoute.tsx
 RoleRedirect.tsx
@@ -49,75 +49,75 @@ paths.ts
 routeConfig.ts
 ```
 
-Estos archivos si forman parte de la arquitectura recomendada en la documentacion del proyecto y deberian agregarse cuando se implementen dashboards, sesion global y control por roles.
+These files are part of the recommended architecture described in the project documentation and should be added when dashboards, global session management, and role-based access control are implemented.
 
-## Rutas Publicas
+## Public Routes
 
-Las rutas publicas son accesibles sin sesion iniciada.
+Public routes are accessible without an active session.
 
-| Ruta | Pagina | Estado | Descripcion |
-| --- | --- | --- | --- |
-| `/` | `LandingPage` | Implementada | Pagina inicial publica de MentoraPredict. |
-| `/login` | `LoginPage` | Implementada | Pantalla de inicio de sesion. |
-| `/register` | `RegisterPage` | Implementada | Pantalla de registro de usuario. |
-| `/forgot-password` | `ForgotPasswordPage` | Implementada | Pantalla para solicitar recuperacion de contrasena. |
+| Route              | Page                 | Status      | Description                              |
+| ------------------ | -------------------- | ----------- | ---------------------------------------- |
+| `/`                | `LandingPage`        | Implemented | MentoraPredict public landing page.      |
+| `/login`           | `LoginPage`          | Implemented | Login screen.                            |
+| `/register`        | `RegisterPage`       | Implemented | User registration screen.                |
+| `/forgot-password` | `ForgotPasswordPage` | Implemented | Screen for requesting password recovery. |
 
-### Navegacion Publica Actual
+### Current Public Navigation
 
-La navegacion publica aparece en estos componentes:
+Public navigation appears in these components:
 
-- `HeroSection`: navega hacia `/login`.
-- `Navbar`: navega hacia `/login`.
-- `LoginForm`: navega hacia `/register`, `/forgot-password` y, despues de login exitoso, hacia `/`.
-- `RegisterForm`: navega hacia `/login`.
-- `ForgotPasswordForm`: navega hacia `/login`.
+- `HeroSection`: navigates to `/login`.
+- `Navbar`: navigates to `/login`.
+- `LoginForm`: navigates to `/register`, `/forgot-password`, and after a successful login, to `/`.
+- `RegisterForm`: navigates to `/login`.
+- `ForgotPasswordForm`: navigates to `/login`.
 
-## Rutas Publicas Solo Para Invitados
+## Public Routes For Guests Only
 
-Estas rutas son publicas en el estado actual, pero cuando exista sesion global deberian estar envueltas por `PublicOnlyRoute`:
+These routes are public in the current state, but once global session management exists, they should be wrapped by `PublicOnlyRoute`:
 
-```txt
+```txt id="v94xtd"
 /login
 /register
 /forgot-password
 ```
 
-La razon es que un usuario autenticado no deberia volver a pantallas de autenticacion. Si ya tiene sesion activa, debe ser enviado a su area correspondiente mediante `RoleRedirect`.
+The reason is that an authenticated user should not return to authentication screens. If an active session already exists, the user should be sent to the appropriate area through `RoleRedirect`.
 
-Flujo esperado:
+Expected flow:
 
-```txt
-Usuario autenticado abre /login
--> PublicOnlyRoute detecta sesion activa
--> RoleRedirect decide destino por rol
--> /student/dashboard, /teacher/dashboard o /admin/dashboard
+```txt id="o9g8l8"
+Authenticated user opens /login
+-> PublicOnlyRoute detects active session
+-> RoleRedirect determines destination based on role
+-> /student/dashboard, /teacher/dashboard, or /admin/dashboard
 ```
 
-## Rutas Privadas
+## Private Routes
 
-Las rutas privadas aun no estan implementadas en `AppRouter.tsx`, pero la arquitectura del proyecto ya define tres areas principales por rol:
+Private routes are not yet implemented in `AppRouter.tsx`, but the project architecture already defines three main role-based areas:
 
-```txt
+```txt id="rrny2v"
 /student/*
 /teacher/*
 /admin/*
 ```
 
-Estas rutas deben estar protegidas por `ProtectedRoute`.
+These routes must be protected by `ProtectedRoute`.
 
-| Patron | Rol esperado | Estado | Descripcion |
-| --- | --- | --- | --- |
-| `/student/*` | `STUDENT` | Pendiente | Area del estudiante: dashboard, cursos, metricas, riesgo y recomendaciones. |
-| `/teacher/*` | `TEACHER` | Pendiente | Area del docente: dashboard, cursos, estudiantes, analitica y seguimiento. |
-| `/admin/*` | `ADMIN` | Pendiente | Area administrativa: usuarios, cursos, ingestion de datos y configuracion. |
+| Pattern      | Expected Role | Status  | Description                                                             |
+| ------------ | ------------- | ------- | ----------------------------------------------------------------------- |
+| `/student/*` | `STUDENT`     | Pending | Student area: dashboard, courses, metrics, risk, and recommendations.   |
+| `/teacher/*` | `TEACHER`     | Pending | Teacher area: dashboard, courses, students, analytics, and monitoring.  |
+| `/admin/*`   | `ADMIN`       | Pending | Administrative area: users, courses, data ingestion, and configuration. |
 
-## Rutas Privadas Recomendadas
+## Recommended Private Routes
 
-Cuando se implementen las paginas internas, se recomienda declarar como minimo estas rutas:
+When internal pages are implemented, it is recommended to declare at least these routes:
 
 ### Student
 
-```txt
+```txt id="56ivkx"
 /student/dashboard
 /student/courses
 /student/courses/:courseId
@@ -125,16 +125,16 @@ Cuando se implementen las paginas internas, se recomienda declarar como minimo e
 /student/profile
 ```
 
-Responsabilidad esperada:
+Expected responsibilities:
 
-- Ver resumen academico del estudiante.
-- Consultar cursos inscritos.
-- Revisar detalle de curso, evaluaciones y metricas.
-- Ver riesgo academico y recomendaciones.
+- View the student's academic summary.
+- Consult enrolled courses.
+- Review course details, evaluations, and metrics.
+- View academic risk and recommendations.
 
 ### Teacher
 
-```txt
+```txt id="g0r7gl"
 /teacher/dashboard
 /teacher/courses
 /teacher/courses/:courseId
@@ -142,16 +142,16 @@ Responsabilidad esperada:
 /teacher/students
 ```
 
-Responsabilidad esperada:
+Expected responsibilities:
 
-- Ver resumen de cursos asignados.
-- Consultar estudiantes por curso.
-- Revisar metricas, alertas y riesgo academico.
-- Dar seguimiento a estudiantes.
+- View a summary of assigned courses.
+- Consult students by course.
+- Review metrics, alerts, and academic risk.
+- Monitor student progress.
 
 ### Admin
 
-```txt
+```txt id="jtm7fa"
 /admin/dashboard
 /admin/users
 /admin/courses
@@ -159,57 +159,57 @@ Responsabilidad esperada:
 /admin/settings
 ```
 
-Responsabilidad esperada:
+Expected responsibilities:
 
-- Administrar usuarios.
-- Gestionar cursos.
-- Gestionar carga o ingestion de datos.
-- Revisar estado general de la plataforma.
+- Manage users.
+- Manage courses.
+- Manage data loading or ingestion.
+- Review the overall platform status.
 
-## Redireccion Por Rol
+## Role-Based Redirection
 
-La redireccion esperada despues de login debe depender del rol del usuario autenticado:
+The expected redirection after login must depend on the authenticated user's role:
 
-```txt
+```txt id="jmu5s0"
 STUDENT -> /student/dashboard
 TEACHER -> /teacher/dashboard
 ADMIN   -> /admin/dashboard
 ```
 
-En el estado actual, `LoginForm` ejecuta:
+In the current state, `LoginForm` executes:
 
-```tsx
+```tsx id="zfy3l0"
 await login(data);
 navigate("/");
 ```
 
-Esto significa que, por ahora, despues de iniciar sesion el usuario vuelve a la landing page. Cuando exista `RoleRedirect`, ese `navigate("/")` deberia reemplazarse por una redireccion basada en el rol cargado en el auth store.
+This means that, for now, after logging in, the user returns to the landing page. Once `RoleRedirect` exists, that `navigate("/")` should be replaced by a role-based redirection using the role loaded into the auth store.
 
-Flujo recomendado:
+Recommended flow:
 
-```txt
+```txt id="qqh2i8"
 LoginForm
 -> auth.service.login()
--> guardar tokens
+-> store tokens
 -> users.service.me()
--> auth.store guarda user y role
--> RoleRedirect envia al dashboard correcto
+-> auth.store stores user and role
+-> RoleRedirect sends the user to the correct dashboard
 ```
 
 ## ProtectedRoute
 
-`ProtectedRoute` debe bloquear el acceso a rutas privadas cuando no exista una sesion activa.
+`ProtectedRoute` must block access to private routes when there is no active session.
 
-Responsabilidad:
+Responsibilities:
 
-- Leer el estado de autenticacion desde el auth store.
-- Permitir renderizar la ruta privada si el usuario esta autenticado.
-- Redirigir a `/login` si no hay sesion.
-- Opcionalmente validar roles permitidos para la ruta.
+- Read the authentication state from the auth store.
+- Allow rendering the private route if the user is authenticated.
+- Redirect to `/login` if there is no session.
+- Optionally validate roles allowed for the route.
 
-Uso esperado:
+Expected usage:
 
-```tsx
+```tsx id="7vk7dd"
 <Route
   path="/student/*"
   element={
@@ -220,43 +220,43 @@ Uso esperado:
 />
 ```
 
-Comportamiento esperado:
+Expected behavior:
 
-```txt
-Usuario sin sesion abre /student/dashboard
--> ProtectedRoute detecta que no esta autenticado
--> redirige a /login
+```txt id="5wztcv"
+User without a session opens /student/dashboard
+-> ProtectedRoute detects that the user is not authenticated
+-> redirects to /login
 ```
 
-Si se implementa validacion por rol:
+If role validation is implemented:
 
-```txt
-Usuario STUDENT abre /admin/users
--> ProtectedRoute detecta rol no permitido
--> redirige a su dashboard o a una pagina 403
+```txt id="gk96vw"
+STUDENT user opens /admin/users
+-> ProtectedRoute detects an unauthorized role
+-> redirects to their dashboard or to a 403 page
 ```
 
 ## PublicOnlyRoute
 
-`PublicOnlyRoute` debe evitar que un usuario autenticado vuelva a pantallas pensadas solo para invitados.
+`PublicOnlyRoute` must prevent an authenticated user from returning to screens intended only for guests.
 
-Rutas candidatas:
+Candidate routes:
 
-```txt
+```txt id="9iudl0"
 /login
 /register
 /forgot-password
 ```
 
-Responsabilidad:
+Responsibilities:
 
-- Permitir acceso si no hay sesion.
-- Redirigir si ya hay sesion activa.
-- Delegar el destino a `RoleRedirect` o a una funcion de rutas por rol.
+- Allow access if there is no session.
+- Redirect if an active session already exists.
+- Delegate the destination to `RoleRedirect` or a role-based routing function.
 
-Uso esperado:
+Expected usage:
 
-```tsx
+```tsx id="2zy9wf"
 <Route
   path="/login"
   element={
@@ -267,37 +267,37 @@ Uso esperado:
 />
 ```
 
-Comportamiento esperado:
+Expected behavior:
 
-```txt
-Usuario autenticado abre /login
--> PublicOnlyRoute detecta sesion activa
--> RoleRedirect calcula destino
--> usuario termina en su dashboard
+```txt id="5mdrfd"
+Authenticated user opens /login
+-> PublicOnlyRoute detects active session
+-> RoleRedirect calculates destination
+-> user ends up on their dashboard
 ```
 
 ## RoleRedirect
 
-`RoleRedirect` debe centralizar la decision de destino segun rol.
+`RoleRedirect` must centralize the destination decision based on role.
 
-Responsabilidad:
+Responsibilities:
 
-- Leer el rol del usuario autenticado desde el auth store.
-- Convertir el rol en una ruta inicial.
-- Redirigir a la pantalla correcta.
-- Evitar que formularios o paginas dupliquen reglas de navegacion por rol.
+- Read the authenticated user's role from the auth store.
+- Convert the role into an initial route.
+- Redirect to the correct screen.
+- Prevent forms or pages from duplicating role-based navigation rules.
 
-Tabla esperada:
+Expected mapping:
 
-| Rol | Destino |
-| --- | --- |
+| Role      | Destination          |
+| --------- | -------------------- |
 | `STUDENT` | `/student/dashboard` |
 | `TEACHER` | `/teacher/dashboard` |
-| `ADMIN` | `/admin/dashboard` |
+| `ADMIN`   | `/admin/dashboard`   |
 
-Uso esperado:
+Expected usage:
 
-```tsx
+```tsx id="0n9j3o"
 <Route
   path="/redirect"
   element={
@@ -308,13 +308,13 @@ Uso esperado:
 />
 ```
 
-Tambien puede usarse internamente dentro de `PublicOnlyRoute` cuando un usuario autenticado intenta abrir una ruta publica solo para invitados.
+It can also be used internally within `PublicOnlyRoute` when an authenticated user attempts to open a public guest-only route.
 
-## Estructura Recomendada De Routes
+## Recommended Routes Structure
 
-Para que el router escale sin llenar `AppRouter.tsx` de reglas repetidas, se recomienda esta estructura:
+To allow the router to scale without filling `AppRouter.tsx` with repeated rules, the following structure is recommended:
 
-```txt
+```txt id="amjyf9"
 src/routes/
 |-- AppRouter.tsx
 |-- paths.ts
@@ -324,18 +324,18 @@ src/routes/
 `-- RoleRedirect.tsx
 ```
 
-Responsabilidades:
+Responsibilities:
 
-- `AppRouter.tsx`: conecta `BrowserRouter`, `Routes` y la configuracion principal.
-- `paths.ts`: centraliza constantes de rutas.
-- `routeConfig.ts`: agrupa declarativamente rutas publicas, privadas y por rol.
-- `ProtectedRoute.tsx`: protege rutas que requieren sesion.
-- `PublicOnlyRoute.tsx`: protege rutas de invitado contra usuarios ya autenticados.
-- `RoleRedirect.tsx`: resuelve el destino inicial del usuario autenticado.
+- `AppRouter.tsx`: connects `BrowserRouter`, `Routes`, and the main configuration.
+- `paths.ts`: centralizes route constants.
+- `routeConfig.ts`: declaratively groups public, private, and role-based routes.
+- `ProtectedRoute.tsx`: protects routes that require a session.
+- `PublicOnlyRoute.tsx`: protects guest routes from already authenticated users.
+- `RoleRedirect.tsx`: resolves the authenticated user's initial destination.
 
-## Ejemplo De Paths
+## Paths Example
 
-```ts
+```ts id="8qvy34"
 export const paths = {
   public: {
     home: "/",
@@ -358,30 +358,30 @@ export const paths = {
 } as const;
 ```
 
-Centralizar rutas evita strings duplicados como `navigate("/login")` dispersos por componentes.
+Centralizing routes prevents duplicated strings such as `navigate("/login")` scattered across components.
 
-## Reglas Del Proyecto
+## Project Rules
 
-- Las rutas publicas actuales son `/`, `/login`, `/register` y `/forgot-password`.
-- Las rutas privadas deben agruparse por rol: `/student/*`, `/teacher/*`, `/admin/*`.
-- La sesion debe venir del auth store, no de checks manuales dentro de paginas.
-- El rol debe venir del usuario autenticado, idealmente cargado desde `/api/v1/users/me`.
-- Los formularios no deberian decidir dashboards por rol.
-- `RoleRedirect` debe ser el punto unico para enviar a cada usuario a su area.
-- `ProtectedRoute` y `PublicOnlyRoute` deben mantenerse separados porque resuelven problemas diferentes.
+- The current public routes are `/`, `/login`, `/register`, and `/forgot-password`.
+- Private routes must be grouped by role: `/student/*`, `/teacher/*`, `/admin/*`.
+- The session must come from the auth store, not from manual checks inside pages.
+- The role must come from the authenticated user, ideally loaded from `/api/v1/users/me`.
+- Forms should not decide role-based dashboards.
+- `RoleRedirect` must be the single point responsible for sending each user to their area.
+- `ProtectedRoute` and `PublicOnlyRoute` must remain separate because they solve different problems.
 
-## Resumen
+## Summary
 
-El routing actual de `apps/web` cubre la experiencia publica inicial y autenticacion basica. La siguiente etapa arquitectonica es introducir rutas privadas por rol y guards reutilizables:
+The current routing of `apps/web` covers the initial public experience and basic authentication. The next architectural step is to introduce role-based private routes and reusable guards:
 
-```txt
+```txt id="1gnujy"
 Public routes
--> PublicOnlyRoute para auth pages
+-> PublicOnlyRoute for auth pages
 -> Login
 -> Auth Store
 -> RoleRedirect
 -> ProtectedRoute
--> /student/*, /teacher/* o /admin/*
+-> /student/*, /teacher/*, or /admin/*
 ```
 
-Con esa separacion, MentoraPredict puede crecer hacia dashboards por rol sin duplicar reglas de sesion ni mezclar autorizacion dentro de componentes visuales.
+With this separation, MentoraPredict can grow toward role-based dashboards without duplicating session rules or mixing authorization logic inside visual components.

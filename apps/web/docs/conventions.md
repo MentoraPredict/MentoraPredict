@@ -1,27 +1,27 @@
 # MentoraPredict Web - Conventions
 
-Este documento define convenciones de trabajo para `apps/web`.
+This document defines working conventions for `apps/web`.
 
-Su objetivo es evitar discusiones futuras sobre nombres, imports, formularios, estado global y servicios.
+Its objective is to avoid future discussions about naming, imports, forms, global state, and services.
 
-Regla base:
+Base rule:
 
 ```txt
-Dominio != Vista
-components = UI reutilizable
-features = negocio
-pages = vistas conectadas al router
-services = comunicacion con backend
-store = estado global minimo
+Domain != View
+components = reusable UI
+features = business logic
+pages = router-connected views
+services = backend communication
+store = minimal global state
 ```
 
 ## Naming
 
-### Componentes
+### Components
 
-Los componentes React deben usar `PascalCase`.
+React components must use `PascalCase`.
 
-Correcto:
+Correct:
 
 ```txt
 Button
@@ -33,7 +33,7 @@ CourseCard
 StudentRiskPanel
 ```
 
-Incorrecto:
+Incorrect:
 
 ```txt
 button
@@ -42,17 +42,17 @@ auth-template
 student_dashboard_page
 ```
 
-Regla:
+Rule:
 
 ```txt
-Si exporta un componente React, usar PascalCase.
+If it exports a React component, use PascalCase.
 ```
 
 ### Hooks
 
-Los hooks deben usar `camelCase` y empezar con `use`.
+Hooks must use `camelCase` and start with `use`.
 
-Correcto:
+Correct:
 
 ```txt
 useAuth
@@ -64,7 +64,7 @@ usePagination
 useDisclosure
 ```
 
-Incorrecto:
+Incorrect:
 
 ```txt
 UseAuth
@@ -73,17 +73,17 @@ CoursesHook
 use_courses
 ```
 
-Regla:
+Rule:
 
 ```txt
-Si usa hooks de React o representa comportamiento reutilizable de React, debe empezar con use.
+If it uses React hooks or represents reusable React behavior, it must start with use.
 ```
 
-### Servicios
+### Services
 
-Los servicios deben usar nombres descriptivos por dominio.
+Services must use descriptive domain-based names.
 
-Correcto:
+Correct:
 
 ```txt
 auth.service.ts
@@ -98,7 +98,7 @@ recommendations.service.ts
 observations.service.ts
 ```
 
-Incorrecto:
+Incorrect:
 
 ```txt
 apiCalls.ts
@@ -107,17 +107,17 @@ dashboard.service.ts
 subjects.service.ts
 ```
 
-Nota:
+Note:
 
 ```txt
-Aunque el backend diga subjects, el frontend usa courses.service.ts.
+Although the backend says subjects, the frontend uses courses.service.ts.
 ```
 
 ### Types
 
-Los tipos deben vivir en carpetas por dominio.
+Types should live in domain-specific folders.
 
-Correcto:
+Correct:
 
 ```txt
 types/auth/auth.types.ts
@@ -130,7 +130,7 @@ types/recommendation/recommendation.types.ts
 types/api/api-error.types.ts
 ```
 
-Incorrecto:
+Incorrect:
 
 ```txt
 types.ts
@@ -139,17 +139,17 @@ interfaces.ts
 models.ts
 ```
 
-Regla:
+Rule:
 
 ```txt
-TypeScript estricto escala mejor con carpetas por dominio, no con archivos planos gigantes.
+Strict TypeScript scales better with domain folders than with giant flat files.
 ```
 
-### Carpetas De Assets
+### Asset Folders
 
-Las carpetas de assets deben usar `kebab-case`.
+Asset folders must use `kebab-case`.
 
-Correcto:
+Correct:
 
 ```txt
 assets/auth-hero/
@@ -158,7 +158,7 @@ assets/dashboard-backgrounds/
 assets/user-avatars/
 ```
 
-Incorrecto:
+Incorrect:
 
 ```txt
 assets/AuthHero/
@@ -167,26 +167,26 @@ assets/dashboard_backgrounds/
 assets/UserAvatars/
 ```
 
-Regla:
+Rule:
 
 ```txt
-Assets no son componentes React, por eso no usan PascalCase.
+Assets are not React components, therefore they do not use PascalCase.
 ```
 
 ## Imports
 
-### Usar Alias @/
+### Use @/ Alias
 
-Siempre usar el alias `@/` para imports desde `src`.
+Always use the `@/` alias for imports from `src`.
 
-El alias ya esta configurado en:
+The alias is already configured in:
 
 ```txt
 tsconfig.json
 vite.config.ts
 ```
 
-Correcto:
+Correct:
 
 ```ts
 import { Button, Heading, Text } from "@/components/atoms";
@@ -195,7 +195,7 @@ import LoginPage from "@/pages/auth/LoginPage";
 import { login } from "@/services/auth.service";
 ```
 
-Incorrecto:
+Incorrect:
 
 ```ts
 import { Button } from "../../../components/atoms";
@@ -203,30 +203,30 @@ import LoginPage from "../../pages/auth/LoginPage";
 import { login } from "../services/auth.service";
 ```
 
-Regla:
+Rule:
 
 ```txt
-Para cualquier import interno de src, usar @/.
+For any internal import from src, use @/.
 ```
 
-### Imports Relativos Permitidos
+### Allowed Relative Imports
 
-Los imports relativos solo se permiten dentro de la misma carpeta o modulo muy cercano.
+Relative imports are only allowed within the same folder or a very nearby module.
 
-Correcto:
+Correct:
 
 ```ts
 import "./styles.css";
 import Button from "./Button";
 ```
 
-Aceptable:
+Acceptable:
 
 ```ts
 export { default } from "./Button";
 ```
 
-Evitar:
+Avoid:
 
 ```ts
 import X from "../../../../services/api";
@@ -234,11 +234,11 @@ import X from "../../../../services/api";
 
 ## React
 
-### Formularios
+### Forms
 
-Usar React Hook Form para formularios.
+Use React Hook Form for forms.
 
-El proyecto ya lo usa en:
+The project already uses it in:
 
 ```txt
 LoginForm
@@ -246,7 +246,7 @@ RegisterForm
 ForgotPasswordForm
 ```
 
-Correcto:
+Correct:
 
 ```ts
 const {
@@ -256,25 +256,25 @@ const {
 } = useForm<LoginFormData>();
 ```
 
-Incorrecto:
+Incorrect:
 
 ```ts
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
 ```
 
-Regla:
+Rule:
 
 ```txt
-No usar formularios controlados para formularios normales.
-Usar React Hook Form.
+Do not use controlled forms for standard forms.
+Use React Hook Form.
 ```
 
-### Cuando Si Usar useState
+### When To Use useState
 
-`useState` es valido para estado local de UI.
+`useState` is valid for local UI state.
 
-Correcto:
+Correct:
 
 ```txt
 showPassword
@@ -284,34 +284,34 @@ isSubmitting
 serverError
 ```
 
-Ejemplo actual correcto:
+Current correct example:
 
 ```txt
-PasswordField usa showPassword como estado visual local.
+PasswordField uses showPassword as local visual state.
 ```
 
-No usar `useState` para reemplazar React Hook Form en formularios grandes.
+Do not use `useState` to replace React Hook Form in large forms.
 
-### Componentes
+### Components
 
-Los componentes deben mantenerse enfocados.
+Components should remain focused.
 
-Reglas:
+Rules:
 
-- Los atoms no deben conocer negocio.
-- Las molecules no deben llamar APIs.
-- Los organisms genericos no deben manejar reglas de dominio pesadas.
-- Las pages deben componer, no contener toda la logica.
-- Los componentes de negocio deben vivir en `features/`.
+- Atoms should not know business logic.
+- Molecules should not call APIs.
+- Generic organisms should not handle heavy domain rules.
+- Pages should compose, not contain all logic.
+- Business components should live in `features/`.
 
-Ejemplo:
+Example:
 
 ```txt
 CourseCard -> features/courses/components
 StudentRiskPanel -> features/analytics/components
 ```
 
-No:
+Not:
 
 ```txt
 components/atoms/CourseCard
@@ -320,120 +320,120 @@ components/molecules/StudentRiskPanel
 
 ## Zustand
 
-Zustand debe usarse solo para estado global real.
+Zustand should be used only for real global state.
 
-Uso correcto:
+Correct usage:
 
 ```txt
 auth.store.ts
 app.store.ts
 ```
 
-`auth.store.ts` debe manejar:
+`auth.store.ts` should manage:
 
-- sesion;
+- session;
 - tokens;
-- usuario autenticado;
-- rol;
+- authenticated user;
+- role;
 - login;
 - logout;
 - hydrate;
 - clearSession.
 
-No usar Zustand para:
+Do not use Zustand for:
 
-- valor de un input;
-- estado de un modal local;
-- tab seleccionada dentro de un componente aislado;
-- listas temporales de una sola pantalla;
-- errores locales de formulario.
+- an input value;
+- local modal state;
+- a selected tab inside an isolated component;
+- temporary lists on a single screen;
+- local form errors.
 
-Regla:
-
-```txt
-Si el estado no necesita sobrevivir navegacion o ser compartido por varias zonas, no va en Zustand.
-```
-
-## Fuente De Verdad De Sesion
-
-Regla final:
+Rule:
 
 ```txt
-AuthStore = fuente de verdad
+If the state does not need to survive navigation or be shared across multiple areas, it does not belong in Zustand.
 ```
 
-Estructura esperada:
+## Source Of Truth For Session
+
+Final rule:
+
+```txt
+AuthStore = source of truth
+```
+
+Expected structure:
 
 ```txt
 store/auth.store.ts
--> usa internamente services/api/tokenStorage.ts
--> axiosClient.ts pregunta por token
+-> internally uses services/api/tokenStorage.ts
+-> axiosClient.ts asks for token
 ```
 
-Responsabilidades:
+Responsibilities:
 
 ```txt
 auth.store.ts
--> sabe si hay sesion
--> guarda user
--> guarda role
--> ejecuta login/logout
--> hidrata sesion
+-> knows whether a session exists
+-> stores user
+-> stores role
+-> executes login/logout
+-> hydrates session
 
 tokenStorage.ts
--> solo lee/escribe tokens
+-> only reads/writes tokens
 
 axiosClient.ts
--> adjunta Authorization
--> no decide si hay sesion
+-> attaches Authorization
+-> does not decide whether a session exists
 ```
 
-Prohibido:
+Prohibited:
 
 ```txt
-componentes leyendo localStorage
-pages escribiendo tokens
-servicios de dominio manipulando sesion
-varias fuentes de verdad para auth
+components reading localStorage
+pages writing tokens
+domain services manipulating session
+multiple sources of truth for auth
 ```
 
 ## JWT
 
-No usar JWT como fuente de datos del usuario.
+Do not use JWT as the source of user data.
 
-Correcto:
+Correct:
 
 ```txt
-JWT = autenticacion
-/users/me = identidad, rol y estado del usuario
+JWT = authentication
+/users/me = user identity, role, and status
 ```
 
-Flujo recomendado:
+Recommended flow:
 
 ```txt
 Login
--> backend devuelve accessToken y refreshToken
--> auth.store guarda tokens
--> auth.store llama /api/v1/users/me
--> backend devuelve usuario real con rol
--> auth.store guarda user
--> RoleRedirect navega segun user.role
+-> backend returns accessToken and refreshToken
+-> auth.store stores tokens
+-> auth.store calls /api/v1/users/me
+-> backend returns the real user with role
+-> auth.store stores user
+-> RoleRedirect navigates according to user.role
 ```
 
-Incorrecto:
+Incorrect:
 
 ```txt
-Decodificar JWT en cada page para obtener role.
-Guardar role separado en localStorage desde componentes.
+Decode JWT on every page to obtain role.
+Store role separately in localStorage from components.
 ```
 
 ## Services
 
-### No Usar Axios Directo En Componentes
+### Do Not Use Axios Directly In Components
 
-Nunca usar Axios directo dentro de componentes.
+Never use Axios directly inside components.
 
-Correcto:
+Correct:
 
 ```ts
 import { login } from "@/services/auth.service";
@@ -441,7 +441,7 @@ import { login } from "@/services/auth.service";
 await login(data);
 ```
 
-Incorrecto:
+Incorrect:
 
 ```ts
 import axios from "axios";
@@ -449,20 +449,20 @@ import axios from "axios";
 await axios.post("/api/v1/auth/login", data);
 ```
 
-Regla:
+Rule:
 
 ```txt
-Los componentes llaman servicios.
-Los servicios llaman Axios.
+Components call services.
+Services call Axios.
 ```
 
-### Estado Actual A Corregir
+### Current State To Fix
 
-Actualmente `LoginForm` importa `axios` para usar `axios.isAxiosError`.
+Currently `LoginForm` imports `axios` to use `axios.isAxiosError`.
 
-Eso funciona, pero no es la convencion final.
+That works, but it is not the final convention.
 
-Mejor enfoque:
+Better approach:
 
 ```txt
 services/api/httpErrors.ts
@@ -473,11 +473,11 @@ LoginForm
 -> setServerError(normalizeApiError(error).message)
 ```
 
-Asi los componentes no dependen de Axios ni de la forma exacta del error HTTP.
+This way components do not depend on Axios or the exact shape of the HTTP error.
 
-### Estructura De Services
+### Service Structure
 
-Estructura recomendada:
+Recommended structure:
 
 ```txt
 services/
@@ -508,34 +508,34 @@ services/
 
 ### Endpoints
 
-No hardcodear endpoints dentro de componentes.
+Do not hardcode endpoints inside components.
 
-Correcto:
+Correct:
 
-```ts
+```ts id="0a67v4"
 api.post(ENDPOINTS.AUTH.LOGIN, credentials);
 ```
 
-Incorrecto:
+Incorrect:
 
-```ts
+```ts id="u6m7f3"
 api.post("/v1/auth/login", credentials);
 ```
 
-Excepcion temporal:
+Temporary exception:
 
-```txt
-El proyecto actual usa /v1/auth/login directamente en auth.service.ts.
-Debe moverse a endpoints.ts cuando se reorganice services/api.
+```txt id="hm4hdb"
+The current project uses /v1/auth/login directly in auth.service.ts.
+It should be moved to endpoints.ts when services/api is reorganized.
 ```
 
 ## Routes
 
-Las rutas deben centralizarse.
+Routes should be centralized.
 
-Estructura recomendada:
+Recommended structure:
 
-```txt
+```txt id="n5vy97"
 routes/
 |-- AppRouter.tsx
 |-- paths.ts
@@ -545,22 +545,22 @@ routes/
 `-- RoleRedirect.tsx
 ```
 
-Reglas:
+Rules:
 
-- `RoleRedirect` usa `authStore.user.role`, no JWT.
-- `ProtectedRoute` bloquea rutas privadas.
-- `PublicOnlyRoute` evita que usuarios autenticados vuelvan a login/register.
-- Las rutas privadas se agrupan por rol: `/student/*`, `/teacher/*`, `/admin/*`.
+- `RoleRedirect` uses `authStore.user.role`, not JWT.
+- `ProtectedRoute` blocks private routes.
+- `PublicOnlyRoute` prevents authenticated users from returning to login/register.
+- Private routes are grouped by role: `/student/*`, `/teacher/*`, `/admin/*`.
 
 ## Features
 
-No crear `features/dashboard`.
+Do not create `features/dashboard`.
 
-Dashboard es una vista compuesta, no un dominio.
+A dashboard is a composed view, not a domain.
 
-Features finales:
+Final features:
 
-```txt
+```txt id="p4m89v"
 features/
 |-- auth/
 |-- courses/
@@ -571,9 +571,9 @@ features/
 `-- admin/
 ```
 
-Cada feature puede contener:
+Each feature can contain:
 
-```txt
+```txt id="tzs5v0"
 components/
 hooks/
 mappers/
@@ -581,9 +581,9 @@ services/
 types/
 ```
 
-Ejemplo:
+Example:
 
-```txt
+```txt id="trd1b3"
 features/courses/
 |-- components/
 |-- hooks/
@@ -594,21 +594,21 @@ features/courses/
 
 ## Pages
 
-Los dashboards viven en `pages`, no en `features`.
+Dashboards belong in `pages`, not in `features`.
 
-Correcto:
+Correct:
 
-```txt
+```txt id="6okn8u"
 pages/student/StudentDashboardPage
 pages/teacher/TeacherDashboardPage
 pages/admin/AdminDashboardPage
 ```
 
-Cada page compone features reales.
+Each page composes real features.
 
-Ejemplo:
+Example:
 
-```txt
+```txt id="6f4e7d"
 StudentDashboardPage
 -> courses
 -> analytics
@@ -616,38 +616,38 @@ StudentDashboardPage
 -> students
 ```
 
-## Checklist Rapido
+## Quick Checklist
 
-Antes de crear un archivo, revisar:
+Before creating a file, check:
 
-- Es componente React? `PascalCase`.
-- Es hook? `useSomething` en `camelCase`.
-- Es asset? carpeta en `kebab-case`.
-- Importa desde `src`? usar `@/`.
-- Es formulario? usar React Hook Form.
-- Es estado global real? Zustand.
-- Es estado local de UI? `useState`.
-- Necesita backend? crear o usar un service.
-- Es Axios dentro de componente? no.
-- Es dashboard? va en `pages`, no en `features`.
-- Es Course/Student/Risk/Recommendation? va en `features`.
+- Is it a React component? `PascalCase`.
+- Is it a hook? `useSomething` in `camelCase`.
+- Is it an asset? Folder in `kebab-case`.
+- Importing from `src`? Use `@/`.
+- Is it a form? Use React Hook Form.
+- Is it real global state? Zustand.
+- Is it local UI state? `useState`.
+- Needs backend communication? Create or use a service.
+- Is it Axios inside a component? No.
+- Is it a dashboard? It belongs in `pages`, not in `features`.
+- Is it Course/Student/Risk/Recommendation? It belongs in `features`.
 
-## Resumen
+## Summary
 
-Convenciones finales:
+Final conventions:
 
-```txt
-PascalCase para componentes.
-camelCase con use para hooks.
-kebab-case para carpetas de assets.
-@/ para imports internos.
-React Hook Form para formularios.
-No formularios controlados para formularios normales.
-Zustand solo para estado global.
-AuthStore como fuente de verdad de sesion.
-No decodificar JWT para usuario.
-No Axios directo dentro de componentes.
+```txt id="iuwg9o"
+PascalCase for components.
+camelCase with use for hooks.
+kebab-case for asset folders.
+@/ for internal imports.
+React Hook Form for forms.
+No controlled forms for standard forms.
+Zustand only for global state.
+AuthStore as the source of truth for session.
+Do not decode JWT for user data.
+No direct Axios inside components.
 No features/dashboard.
 ```
 
-Estas reglas mantienen el frontend consistente, facil de revisar y alineado con la arquitectura de MentoraPredict.
+These rules keep the frontend consistent, easy to review, and aligned with the MentoraPredict architecture.
