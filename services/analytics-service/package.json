@@ -9,7 +9,9 @@
     "start": "node dist/main",
     "lint": "eslint src/",
     "test": "jest --config jest.config.js --no-coverage",
-    "test:cov": "jest --config jest.config.js --coverage"
+    "test:cov": "jest --config jest.config.js --coverage",
+    "migration:generate": "typeorm migration:generate src/migrations/init -d src/data-source.ts",
+    "migration:run": "typeorm migration:run -d dist/data-source.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
