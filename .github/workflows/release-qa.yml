@@ -1,15 +1,15 @@
-name: Create Release
+name: Create QA Release
 
 on:
   workflow_run:
-    workflows: ["Deploy to Production"]
+    workflows: ["Deploy to QA"]
     types:
       - completed
     branches:
-      - main
+      - QA
 
 jobs:
-  create-release:
+  create-qa-release:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
@@ -30,9 +30,9 @@ jobs:
 
             const lastTag = (() => {
               try {
-                return execSync('git describe --tags --match "v*" --abbrev=0 2>/dev/null').toString().trim();
+                return execSync('git describe --tags --match "qa-v*" --abbrev=0 2>/dev/null').toString().trim();
               } catch {
-                return 'v0.0.0';
+                return 'qa-v0.0.0';
               }
             })();
 
@@ -54,14 +54,15 @@ jobs:
               if (names.includes('feature')) hasFeature = true;
             }
 
-            const [maj, min, pat] = lastTag.replace('v', '').split('.').map(Number);
+            const cleanTag = lastTag.replace('qa-', '');
+            const [maj, min, pat] = cleanTag.replace('v', '').split('.').map(Number);
             let major = maj, minor = min, patch = pat;
 
             if (hasBreaking) { major++; minor = 0; patch = 0; }
             else if (hasFeature) { minor++; patch = 0; }
             else { patch++; }
 
-            const newVersion = `v${major}.${minor}.${patch}`;
+            const newVersion = `qa-v${major}.${minor}.${patch}`;
 
             try {
               await github.rest.git.getRef({
@@ -87,11 +88,11 @@ jobs:
             await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
-              name: `Release ${newVersion}`,
-              body: `## Release ${newVersion}\n\nDeployed commit: \`${shortSha}\` (\`${headSha}\`)\n\nThis release was automatically generated from a successful production deployment.`,
+              name: `QA Release ${newVersion}`,
+              body: `## QA Release ${newVersion}\n\nDeployed commit: \`${shortSha}\` (\`${headSha}\`)\n\nThis pre-release was automatically generated from a successful QA deployment.`,
               generate_release_notes: true,
               draft: false,
-              prerelease: false
+              prerelease: true
             });
 
             core.setOutput('new_version', newVersion);
