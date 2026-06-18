@@ -226,13 +226,23 @@ jobs:
             echo "[INFRA] Starting infrastructure"
             docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis
 
-            echo "[KONG] Starting API Gateway"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull kong
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d kong --force-recreate
+            echo "[WAIT DB READY]"
+            for i in {1..20}; do
+              docker exec $(docker ps -q --filter name=postgres) pg_isready && break
+              echo "waiting postgres..."
+              sleep 3
+            done
 
-            echo "[APP] Deploying all services"
-
+            echo "[PULL IMAGES]"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull
+
+            echo "[MIGRATIONS - SAFE ORDER]"
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm auth-service npm run migration:run
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm user-service npm run migration:run
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm academic-service npm run migration:run
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm analytics-service npm run migration:run
+
+            echo "[START SERVICES]"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate
 
             docker system prune -af --filter "until=24h"
