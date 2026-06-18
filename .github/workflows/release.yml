@@ -42,11 +42,14 @@ jobs:
               try {
                 return execSync(`git describe --tags --match "${tagMatch}" --abbrev=0 2>/dev/null`).toString().trim();
               } catch {
-                return `${tagPrefix}0.0.0`;
+                return '';
               }
             })();
 
-            const logOutput = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`).toString();
+            const logOutput = lastTag
+              ? execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`).toString()
+              : '';
+
             const prMatches = logOutput.match(/#[0-9]+/g) || [];
             const prNumbers = [...new Set(prMatches.map(m => m.replace('#', '')))];
 
@@ -64,13 +67,16 @@ jobs:
               if (names.includes('feature')) hasFeature = true;
             }
 
-            const cleanVersion = lastTag.replace(tagPrefix, '');
-            const [maj, min, pat] = cleanVersion.split('.').map(Number);
-            let major = maj, minor = min, patch = pat;
+            let major = 0, minor = 0, patch = 0;
 
-            if (hasBreaking) { major++; minor = 0; patch = 0; }
-            else if (hasFeature) { minor++; patch = 0; }
-            else { patch++; }
+            if (lastTag) {
+              const cleanVersion = lastTag.replace(tagPrefix, '');
+              [major, minor, patch] = cleanVersion.split('.').map(Number);
+
+              if (hasBreaking) { major++; minor = 0; patch = 0; }
+              else if (hasFeature) { minor++; patch = 0; }
+              else { patch++; }
+            }
 
             const newVersion = `${tagPrefix}${major}.${minor}.${patch}`;
 
