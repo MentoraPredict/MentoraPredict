@@ -1,24 +1,32 @@
-name: Create Release
+name: Create Release Tag
 
 on:
-  workflow_run:
-    workflows: ["Deploy to Production"]
-    types:
-      - completed
-    branches:
-      - main
+  workflow_call:
+    inputs:
+      tag-prefix:
+        required: true
+        type: string
+        description: "Tag prefix (e.g. 'qa-v' or 'v')"
+      prerelease:
+        required: true
+        type: boolean
+        description: "Mark as prerelease"
+      release-name:
+        required: true
+        type: string
+        description: "Release name prefix (e.g. 'QA Release' or 'Release')"
+
+permissions:
+  contents: write
+  issues: read
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: actions/github-script@v6
         id: release
@@ -26,13 +34,15 @@ jobs:
           script: |
             const { execSync } = require('child_process');
 
-            const headSha = context.payload.workflow_run.head_sha;
+            const headSha = context.sha;
+            const tagPrefix = '${{ inputs.tag-prefix }}';
+            const tagMatch = `${tagPrefix}*`;
 
             const lastTag = (() => {
               try {
-                return execSync('git describe --tags --match "v*" --abbrev=0 2>/dev/null').toString().trim();
+                return execSync(`git describe --tags --match "${tagMatch}" --abbrev=0 2>/dev/null`).toString().trim();
               } catch {
-                return 'v0.0.0';
+                return `${tagPrefix}0.0.0`;
               }
             })();
 
@@ -54,14 +64,15 @@ jobs:
               if (names.includes('feature')) hasFeature = true;
             }
 
-            const [maj, min, pat] = lastTag.replace('v', '').split('.').map(Number);
+            const cleanVersion = lastTag.replace(tagPrefix, '');
+            const [maj, min, pat] = cleanVersion.split('.').map(Number);
             let major = maj, minor = min, patch = pat;
 
             if (hasBreaking) { major++; minor = 0; patch = 0; }
             else if (hasFeature) { minor++; patch = 0; }
             else { patch++; }
 
-            const newVersion = `v${major}.${minor}.${patch}`;
+            const newVersion = `${tagPrefix}${major}.${minor}.${patch}`;
 
             try {
               await github.rest.git.getRef({
@@ -87,11 +98,11 @@ jobs:
             await github.rest.repos.createRelease({
               ...repo,
               tag_name: newVersion,
-              name: `Release ${newVersion}`,
-              body: `## Release ${newVersion}\n\nDeployed commit: \`${shortSha}\` (\`${headSha}\`)\n\nThis release was automatically generated from a successful production deployment.`,
+              name: `${{ inputs.release-name }} ${newVersion}`,
+              body: `## ${{ inputs.release-name }} ${newVersion}\n\nDeployed commit: \`${shortSha}\` (\`${headSha}\`)\n\nThis release was automatically generated from a successful deployment.`,
               generate_release_notes: true,
               draft: false,
-              prerelease: false
+              prerelease: ${{ inputs.prerelease }}
             });
 
             core.setOutput('new_version', newVersion);
