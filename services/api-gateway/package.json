@@ -1,0 +1,14 @@
+{
+  "name": "@mentorapredict/api-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo [api-gateway] running in development mode - implement with Kong/NGINX",
+    "build": "echo [api-gateway] building configuration - implement later",
+    "lint": "echo [api-gateway] linting configuration - implement later",
+    "test": "echo [api-gateway] testing routes - implement later",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -1,0 +1,114 @@
+name: Create Release Tag
+
+on:
+  workflow_call:
+    inputs:
+      tag-prefix:
+        required: true
+        type: string
+        description: "Tag prefix (e.g. 'qa-v' or 'v')"
+      prerelease:
+        required: true
+        type: boolean
+        description: "Mark as prerelease"
+      release-name:
+        required: true
+        type: string
+        description: "Release name prefix (e.g. 'QA Release' or 'Release')"
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/github-script@v6
+        id: release
+        with:
+          script: |
+            const { execSync } = require('child_process');
+
+            const headSha = context.sha;
+            const tagPrefix = '${{ inputs.tag-prefix }}';
+            const tagMatch = `${tagPrefix}*`;
+
+            const lastTag = (() => {
+              try {
+                return execSync(`git describe --tags --match "${tagMatch}" --abbrev=0 2>/dev/null`).toString().trim();
+              } catch {
+                return '';
+              }
+            })();
+
+            const logOutput = lastTag
+              ? execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`).toString()
+              : '';
+
+            const prMatches = logOutput.match(/#[0-9]+/g) || [];
+            const prNumbers = [...new Set(prMatches.map(m => m.replace('#', '')))];
+
+            const repo = context.repo;
+            let hasBreaking = false;
+            let hasFeature = false;
+
+            for (const pr of prNumbers) {
+              const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+                ...repo,
+                issue_number: parseInt(pr)
+              });
+              const names = labels.map(l => l.name);
+              if (names.includes('breaking')) hasBreaking = true;
+              if (names.includes('feature')) hasFeature = true;
+            }
+
+            let major = 0, minor = 0, patch = 0;
+
+            if (lastTag) {
+              const cleanVersion = lastTag.replace(tagPrefix, '');
+              [major, minor, patch] = cleanVersion.split('.').map(Number);
+
+              if (hasBreaking) { major++; minor = 0; patch = 0; }
+              else if (hasFeature) { minor++; patch = 0; }
+              else { patch++; }
+            }
+
+            const newVersion = `${tagPrefix}${major}.${minor}.${patch}`;
+
+            try {
+              await github.rest.git.getRef({
+                ...repo,
+                ref: `tags/${newVersion}`
+              });
+              core.setFailed(`Tag ${newVersion} already exists. Aborting to prevent duplicate.`);
+              return;
+            } catch (err) {
+              if (err.status !== 404) {
+                throw err;
+              }
+            }
+
+            await github.rest.git.createRef({
+              ...repo,
+              ref: `refs/tags/${newVersion}`,
+              sha: headSha
+            });
+
+            const shortSha = headSha.substring(0, 7);
+
+            await github.rest.repos.createRelease({
+              ...repo,
+              tag_name: newVersion,
+              name: `${{ inputs.release-name }} ${newVersion}`,
+              body: `## ${{ inputs.release-name }} ${newVersion}\n\nDeployed commit: \`${shortSha}\` (\`${headSha}\`)\n\nThis release was automatically generated from a successful deployment.`,
+              generate_release_notes: true,
+              draft: false,
+              prerelease: ${{ inputs.prerelease }}
+            });
+
+            core.setOutput('new_version', newVersion);
