@@ -260,3 +260,12 @@ jobs:
           echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Deploy SHA: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- Strategy: Full deploy from registry (Production)" >> $GITHUB_STEP_SUMMARY
+
+  create-release:
+    name: Create Release Tag
+    uses: ./.github/workflows/release.yml
+    needs: deploy-to-prod
+    with:
+      tag-prefix: v
+      prerelease: false
+      release-name: "Release"
