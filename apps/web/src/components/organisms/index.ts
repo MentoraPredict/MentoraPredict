@@ -1,2 +1,1 @@
-export { default as AuthHero } from "./AuthHero";
-export { default as LoginForm } from "./LoginForm";
+export { default as DashboardTopbar } from "./DashboardTopbar";

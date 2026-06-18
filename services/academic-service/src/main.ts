@@ -16,7 +16,14 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.enableCors({ origin: process.env.CORS_ORIGINS?.split(",") ?? "*" });
+  app.enableCors({
+    origin: process.env.CORS_ORIGINS?.split(",") ?? true,
+    credentials: true,
+  });
+
+  const swaggerServer =
+    process.env.SWAGGER_SERVER_URL ??
+    "https://mentorapredictqa.programacionwebuce.net";
 
   const config = new DocumentBuilder()
     .setTitle("MentoraPredict — academic-service")
@@ -25,16 +32,16 @@ async function bootstrap() {
     )
     .setVersion("1.0")
     .addBearerAuth()
-    .addServer(`http://localhost:${port}`)
+    .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(
-    "api/docs",
+    "api/v1/academic/docs",
     app,
     SwaggerModule.createDocument(app, config),
   );
 
   await app.listen(port);
   logger.log(`academic-service running on http://localhost:${port}`);
-  logger.log(`Swagger: http://localhost:${port}/api/docs`);
+  logger.log(`Swagger: http://localhost:${port}/api/v1/academic/docs`);
 }
 bootstrap();
