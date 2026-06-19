@@ -31,7 +31,17 @@ async function bootstrap() {
       "Averages, trends, compliance, risk, alerts — RF-015 to RF-021",
     )
     .setVersion("1.0")
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'access-token',
+    )
     .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(

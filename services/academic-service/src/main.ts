@@ -31,7 +31,17 @@ async function bootstrap() {
       "Subjects, enrollments, evaluations, grades — RF-006 to RF-013",
     )
     .setVersion("1.0")
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'access-token',
+    )
     .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(
