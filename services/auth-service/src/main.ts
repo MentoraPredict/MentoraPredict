@@ -37,7 +37,17 @@ async function bootstrap() {
     .setTitle("MentoraPredict — auth-service")
     .setDescription("Authentication, JWT RS256, RBAC — RF-001 to RF-005")
     .setVersion("1.0")
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'access-token',
+    )
     .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(

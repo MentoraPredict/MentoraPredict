@@ -87,7 +87,7 @@ export class AuthController {
   @Post("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: "RF-003: Logout — invalidates refresh token" })
   async logout(@Body() dto: RefreshDto, @Req() req: Request) {
     const userId = (req as unknown as { user: { sub: string } }).user.sub;

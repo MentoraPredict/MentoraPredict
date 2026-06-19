@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Headers, Param, Post, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { Body, Controller, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { CalculateAverageUseCase } from '../../application/use-cases/calculate-average.use-case';
 import { CalculateTrendUseCase } from '../../application/use-cases/calculate-trend.use-case';
 import { CalculateComplianceUseCase } from '../../application/use-cases/calculate-compliance.use-case';
@@ -11,8 +11,11 @@ import { GetAdminDashboardUseCase } from '../../application/use-cases/get-admin-
 import { ComplianceInputDto } from '../../application/dtos/compliance-input.dto';
 import { RiskInputDto } from '../../application/dtos/risk-input.dto';
 import { GenerateAlertsDto } from '../../application/dtos/generate-alerts.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('analytics-service')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
 @Controller('api/v1/analytics')
 export class AnalyticsController {
   constructor(
