@@ -16,11 +16,15 @@
 /build
 /dist
 
+# Build outputs
+dist/
+build/
+.turbo/
+
 # Dependencies
 /package
 /package-lock.json
 /yarn.lock
-/pnpm-lock.yaml
 
 # TypeScript
 /*.tsbuildinfo
@@ -38,3 +42,26 @@ Thumbs.db
 .idea
 *.swp
 *.swo
+=======
+node_modules/
+dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+.turbo/
+coverage/
+__pycache__/
+*.pyc
+.venv/
+
+# Secrets
+keys/
+*.pem
+
+#Kong
+kong.yml

@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[[paths]]
+  path = '''docs/.*'''
+  ignore = true
+
+[[paths]]
+  path = '''.*\.env\.example'''
+  ignore = true
