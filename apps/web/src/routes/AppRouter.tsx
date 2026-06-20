@@ -14,6 +14,8 @@ import RoleRedirect from "./RoleRedirect";
 import { APP_PATHS } from "./paths";
 import { useAuthStore } from "@/store/auth.store";
 
+import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
+
 export default function AppRouter() {
   useEffect(() => {
     void useAuthStore.getState().hydrateSession();
@@ -55,6 +57,10 @@ export default function AppRouter() {
             element={<Navigate to={APP_PATHS.admin.users} replace />}
           />
           <Route path={APP_PATHS.admin.users} element={<AdminUsersPage />} />
+          <Route
+            path={APP_PATHS.admin.courses}
+            element={<AdminCoursesPage />}
+          />
         </Route>
 
         <Route
