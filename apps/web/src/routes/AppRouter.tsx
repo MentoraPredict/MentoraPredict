@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+import AdminTemplate from "@/components/templates/AdminTemplate";
+import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import LandingPage from "@/pages/public/LandingPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import StudentDashboardPage from "@/pages/student/StudentDashboardPage";
 import TeacherDashboardPage from "@/pages/teacher/TeacherDashboardPage";
-import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import RoleRedirect from "./RoleRedirect";
@@ -52,11 +53,15 @@ export default function AppRouter() {
         <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
           <Route
             path={APP_PATHS.admin.dashboard}
-            element={<AdminDashboardPage />}
+            element={<Navigate to={APP_PATHS.admin.users} replace />}
           />
+          <Route path={APP_PATHS.admin.users} element={<AdminUsersPage />} />
         </Route>
 
-        <Route path="*" element={<Navigate to={APP_PATHS.public.landing} replace />} />
+        <Route
+          path="*"
+          element={<Navigate to={APP_PATHS.public.landing} replace />}
+        />
       </Routes>
     </BrowserRouter>
   );
