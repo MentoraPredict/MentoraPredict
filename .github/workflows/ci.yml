@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [QA, main]
+    branches: [QA, main, dev]
     types: [opened, synchronize, reopened]
 
 env:

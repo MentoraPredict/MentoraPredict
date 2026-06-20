@@ -43,8 +43,8 @@
       ]
     ],
     "subject-case": [0],
-    "subject-max-length": [2, "always", 120],
-    "header-max-length": [2, "always", 180],
+    "subject-max-length": [2, "always", 300],
+    "header-max-length": [2, "always", 450],
     "body-case": [0],
     "subject-full-stop": [2, "never", "."],
     "body-leading-blank": [2, "always"],
