@@ -11,7 +11,8 @@ export const APP_PATHS = {
     redirect: "/redirect",
   },
   student: {
-    dashboard: "/student/dashboard",
+    dashboard: "/student/courses",
+    courses: "/student/courses",
   },
   teacher: {
     dashboard: "/teacher/courses",

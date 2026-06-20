@@ -17,6 +17,8 @@ import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
 
 import TeacherCoursesPage from "@/pages/teacher/TeacherCoursesPage";
 
+import StudentCoursesPage from "@/pages/student/StudentCoursesPage";
+
 export default function AppRouter() {
   useEffect(() => {
     void useAuthStore.getState().hydrateSession();
@@ -40,8 +42,8 @@ export default function AppRouter() {
 
         <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
           <Route
-            path={APP_PATHS.student.dashboard}
-            element={<StudentDashboardPage />}
+            path={APP_PATHS.student.courses}
+            element={<StudentCoursesPage />}
           />
         </Route>
 
