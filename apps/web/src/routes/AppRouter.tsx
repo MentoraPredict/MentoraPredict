@@ -7,7 +7,6 @@ import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import StudentDashboardPage from "@/pages/student/StudentDashboardPage";
-import TeacherDashboardPage from "@/pages/teacher/TeacherDashboardPage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import RoleRedirect from "./RoleRedirect";
@@ -15,6 +14,8 @@ import { APP_PATHS } from "./paths";
 import { useAuthStore } from "@/store/auth.store";
 
 import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
+
+import TeacherCoursesPage from "@/pages/teacher/TeacherCoursesPage";
 
 export default function AppRouter() {
   useEffect(() => {
@@ -46,8 +47,8 @@ export default function AppRouter() {
 
         <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
           <Route
-            path={APP_PATHS.teacher.dashboard}
-            element={<TeacherDashboardPage />}
+            path={APP_PATHS.teacher.courses}
+            element={<TeacherCoursesPage />}
           />
         </Route>
 

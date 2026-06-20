@@ -10,3 +10,5 @@ export { default as UserRoleLabel } from "./UserRoleLabel";
 export { default as HelpDialog } from "./HelpDialog";
 export { default as NotificationIconButton } from "./NotificationIconButton";
 export { default as ProfileDropdown } from "./ProfileDropdown";
+
+export { default as SelectedItemChip } from "./SelectedItemChip";

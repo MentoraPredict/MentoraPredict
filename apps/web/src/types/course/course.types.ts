@@ -8,4 +8,5 @@ export interface Course {
   description: string;
   riskLevel: CourseRiskLevel;
   imageUrl?: string;
+  riskLabel?: string;
 }

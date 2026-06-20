@@ -14,7 +14,8 @@ export const APP_PATHS = {
     dashboard: "/student/dashboard",
   },
   teacher: {
-    dashboard: "/teacher/dashboard",
+    dashboard: "/teacher/courses",
+    courses: "/teacher/courses",
   },
   admin: {
     root: "/admin",

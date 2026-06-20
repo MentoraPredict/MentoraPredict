@@ -1,3 +1,4 @@
+import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
@@ -8,15 +9,26 @@ import type { Course } from "@/types/course";
 
 interface CourseCardProps {
   course: Course;
+  isDeleteMode?: boolean;
+  onDelete?: (courseId: string) => void;
+  onCancelDelete?: () => void;
 }
 
-export default function CourseCard({ course }: CourseCardProps) {
+export default function CourseCard({
+  course,
+  isDeleteMode = false,
+  onDelete,
+  onCancelDelete,
+}: CourseCardProps) {
   return (
     <article
       className="
+                group
+                relative
                 flex
                 h-full
                 flex-col
+                overflow-hidden
                 rounded-2xl
                 border
                 border-gray-200
@@ -28,6 +40,52 @@ export default function CourseCard({ course }: CourseCardProps) {
                 hover:shadow-md
             "
     >
+      {isDeleteMode ? (
+        <div
+          className="
+                        absolute
+                        inset-0
+                        z-20
+                        hidden
+                        items-center
+                        justify-center
+                        bg-white/90
+                        p-5
+                        group-hover:flex
+                    "
+        >
+          <div className="flex flex-col items-center gap-4">
+            <Text
+              variant="small"
+              className="text-center font-semibold text-gray-900"
+            >
+              ¿Eliminar este curso?
+            </Text>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                onClick={() => {
+                  onDelete?.(course.id);
+                }}
+                className="bg-red-700 px-4 py-2 text-sm hover:bg-red-800"
+              >
+                Eliminar
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancelDelete}
+                className="px-4 py-2 text-sm"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <CourseImagePlaceholder imageUrl={course.imageUrl} alt={course.name} />
 
       <div className="mt-5 space-y-4">

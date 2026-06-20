@@ -12,10 +12,20 @@ import RouterNavItem from "@/components/molecules/RouterNavItem";
 import UserWelcomeMessage from "@/components/molecules/UserWelcomeMessage";
 
 import useLogout from "@/hooks/useLogout";
-import { APP_PATHS } from "@/routes/paths";
 import { useAuthStore } from "@/store/auth.store";
 
-export default function AdminNavbar() {
+interface DashboardNavItem {
+  label: string;
+  to: string;
+}
+
+interface DashboardNavbarProps {
+  navItems?: DashboardNavItem[];
+}
+
+export default function DashboardNavbar({
+  navItems = [],
+}: DashboardNavbarProps) {
   const user = useAuthStore((state) => state.user);
   const { isLoggingOut, handleLogout } = useLogout();
 
@@ -43,24 +53,32 @@ export default function AdminNavbar() {
             <div className="flex items-center gap-6">
               <Logo />
 
+              <div className="hidden h-8 w-px bg-gray-200 sm:block" />
+
               <UserWelcomeMessage
                 firstName={user?.firstName}
                 lastName={user?.lastName}
               />
             </div>
 
-            <nav
-              className="
-                                hidden
-                                items-center
-                                gap-8
-                                md:flex
-                            "
-            >
-              <RouterNavItem label="Usuarios" to={APP_PATHS.admin.users} />
-
-              <RouterNavItem label="Cursos" to={APP_PATHS.admin.courses} />
-            </nav>
+            {navItems.length > 0 ? (
+              <nav
+                className="
+                                    hidden
+                                    items-center
+                                    gap-8
+                                    md:flex
+                                "
+              >
+                {navItems.map((item) => (
+                  <RouterNavItem
+                    key={item.to}
+                    label={item.label}
+                    to={item.to}
+                  />
+                ))}
+              </nav>
+            ) : null}
 
             <div className="flex items-center gap-3">
               <IconButton

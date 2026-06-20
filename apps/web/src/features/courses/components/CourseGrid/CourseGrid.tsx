@@ -5,9 +5,17 @@ import type { Course } from "@/types/course";
 
 interface CourseGridProps {
   courses: Course[];
+  isDeleteMode?: boolean;
+  onDeleteCourse?: (courseId: string) => void;
+  onCancelDeleteMode?: () => void;
 }
 
-export default function CourseGrid({ courses }: CourseGridProps) {
+export default function CourseGrid({
+  courses,
+  isDeleteMode = false,
+  onDeleteCourse,
+  onCancelDeleteMode,
+}: CourseGridProps) {
   if (courses.length === 0) {
     return (
       <div
@@ -36,7 +44,13 @@ export default function CourseGrid({ courses }: CourseGridProps) {
             "
     >
       {courses.map((course) => (
-        <CourseCard key={course.id} course={course} />
+        <CourseCard
+          key={course.id}
+          course={course}
+          isDeleteMode={isDeleteMode}
+          onDelete={onDeleteCourse}
+          onCancelDelete={onCancelDeleteMode}
+        />
       ))}
     </div>
   );
