@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import AdminTemplate from "@/components/templates/AdminTemplate";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import LandingPage from "@/pages/public/LandingPage";
 import LoginPage from "@/pages/auth/LoginPage";
