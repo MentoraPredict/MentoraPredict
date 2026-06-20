@@ -2,6 +2,7 @@ import type { CourseRiskLevel } from "@/types/course";
 
 interface CourseRiskBadgeProps {
   riskLevel: CourseRiskLevel;
+  label?: string;
 }
 
 const riskConfig: Record<
@@ -25,7 +26,10 @@ const riskConfig: Record<
   },
 };
 
-export default function CourseRiskBadge({ riskLevel }: CourseRiskBadgeProps) {
+export default function CourseRiskBadge({
+  riskLevel,
+  label,
+}: CourseRiskBadgeProps) {
   const config = riskConfig[riskLevel];
 
   return (
@@ -42,7 +46,7 @@ export default function CourseRiskBadge({ riskLevel }: CourseRiskBadgeProps) {
                 ${config.className}
             `}
     >
-      {config.label}
+      {label ?? config.label}
     </span>
   );
 }

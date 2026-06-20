@@ -90,6 +90,11 @@ export default function CourseCard({
 
       <div className="mt-5 space-y-4">
         <div>
+          <Heading as="h5" className="text-gray-900">
+            {course.name}
+          </Heading>
+        </div>
+        <div>
           <Text
             variant="caption"
             className="
@@ -152,7 +157,10 @@ export default function CourseCard({
       </div>
 
       <div className="mt-auto flex justify-center pt-6">
-        <CourseRiskBadge riskLevel={course.riskLevel} />
+        <CourseRiskBadge
+          riskLevel={course.riskLevel}
+          label={course.riskLabel}
+        />
       </div>
     </article>
   );
