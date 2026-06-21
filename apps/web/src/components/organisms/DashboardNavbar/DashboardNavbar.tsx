@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiHelpCircle } from "react-icons/fi";
 
 import Container from "@/components/atoms/Container";
+import Heading from "@/components/atoms/Heading";
 import IconButton from "@/components/atoms/IconButton";
 import Logo from "@/components/atoms/Logo";
 
@@ -21,10 +22,16 @@ interface DashboardNavItem {
 
 interface DashboardNavbarProps {
   navItems?: DashboardNavItem[];
+  showLogo?: boolean;
+  title?: string;
+  showWelcomeMessage?: boolean;
 }
 
 export default function DashboardNavbar({
   navItems = [],
+  showLogo = true,
+  title,
+  showWelcomeMessage = true,
 }: DashboardNavbarProps) {
   const user = useAuthStore((state) => state.user);
   const { isLoggingOut, handleLogout } = useLogout();
@@ -44,21 +51,31 @@ export default function DashboardNavbar({
           <div
             className="
                             flex
-                            h-20
+                            h-16
                             items-center
                             justify-between
                             gap-6
                         "
           >
             <div className="flex items-center gap-6">
-              <Logo />
+              {showLogo ? <Logo /> : null}
 
-              <div className="hidden h-8 w-px bg-gray-200 sm:block" />
+              {showLogo && showWelcomeMessage ? (
+                <div className="hidden h-8 w-px bg-gray-200 sm:block" />
+              ) : null}
 
-              <UserWelcomeMessage
-                firstName={user?.firstName}
-                lastName={user?.lastName}
-              />
+              {title ? (
+                <Heading as="h6" className="text-blue-700">
+                  {title}
+                </Heading>
+              ) : null}
+
+              {!title && showWelcomeMessage ? (
+                <UserWelcomeMessage
+                  firstName={user?.firstName}
+                  lastName={user?.lastName}
+                />
+              ) : null}
             </div>
 
             {navItems.length > 0 ? (
