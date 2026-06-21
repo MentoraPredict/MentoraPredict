@@ -62,7 +62,12 @@ export async function getCurrentUser() {
 
 export async function getUsers(): Promise<AppUser[]> {
     const response = await api.get<UserApiResponse[]>(
-        endpoints.users.list
+        endpoints.users.list,
+        {
+            params: {
+                _t: Date.now(),
+            },
+        }
     );
 
     return response.data.map(toAppUser);

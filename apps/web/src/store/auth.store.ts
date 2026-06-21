@@ -1,7 +1,6 @@
 import { create } from "zustand";
 
 import { login as loginRequest, logout as logoutRequest, refresh as refreshRequest } from "@/services/auth.service";
-import { getCurrentUser } from "@/services/users/users.service";
 import { clearTokens, getAccessToken, getRefreshToken, setAccessToken, setTokens } from "@/services/api/tokenStorage";
 import { decodeJwtPayload } from "@/utils/jwt";
 import type { LoginCredentials, AuthTokens, AuthSessionUser } from "@/types/auth/auth.types";
@@ -63,15 +62,9 @@ export const useAuthStore = create<AuthState>(
                 tokens.refreshToken
             );
 
-            let user: AuthSessionUser | null = null;
-
-            try {
-                user = await getCurrentUser();
-            } catch {
-                user = buildUserFallback(
-                    tokens.accessToken
-                );
-            }
+            const user = buildUserFallback(
+                tokens.accessToken
+            );
 
             if (!user) {
                 clearTokens();
@@ -136,29 +129,20 @@ export const useAuthStore = create<AuthState>(
                 isAuthenticated: true,
             });
 
-            try {
-                const user = await getCurrentUser();
-                set({
-                    user,
-                    isHydrated: true,
-                });
+            const fallbackUser =
+                buildUserFallback(accessToken);
+
+            if (!fallbackUser) {
+                get().clearSession();
+                set({ isHydrated: true });
                 return;
-            } catch {
-                const fallbackUser =
-                    buildUserFallback(accessToken);
-
-                if (!fallbackUser) {
-                    get().clearSession();
-                    set({ isHydrated: true });
-                    return;
-                }
-
-                set({
-                    user: fallbackUser,
-                    isHydrated: true,
-                    isAuthenticated: true,
-                });
             }
+
+            set({
+                user: fallbackUser,
+                isHydrated: true,
+                isAuthenticated: true,
+            });
         },
 
         logout: async () => {
