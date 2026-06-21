@@ -85,7 +85,7 @@ export default function LoginForm() {
             id="email"
             label="Correo institucional"
             type="email"
-            placeholder="correo@universidad.edu"
+            placeholder="correo@universidad.edu.ec"
             error={errors.email?.message}
             {...register("email", {
               required: "El correo es obligatorio",
