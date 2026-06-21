@@ -1,103 +1,22 @@
-import { useMemo, useState } from "react";
-
 import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 import SearchBar from "@/components/molecules/SearchBar";
 
 import AdminUsersTable from "@/features/admin/components/AdminUsersTable";
-import type { AppUser } from "@/types/user/user.types";
-
-const mockUsers: AppUser[] = [
-  {
-    id: "1",
-    firstName: "Franco",
-    lastName: "Paredes",
-    email: "franco.paredes@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-  {
-    id: "2",
-    firstName: "María",
-    lastName: "Gómez",
-    email: "maria.gomez@uce.edu.ec",
-    role: "TEACHER",
-    isActive: true,
-  },
-  {
-    id: "3",
-    firstName: "Carlos",
-    lastName: "Mendoza",
-    email: "carlos.mendoza@uce.edu.ec",
-    role: "STUDENT",
-    isActive: false,
-  },
-  {
-    id: "4",
-    firstName: "Admin",
-    lastName: "Académico",
-    email: "admin@uce.edu.ec",
-    role: "ADMIN",
-    isActive: true,
-  },
-];
+import useAdminUsers from "@/features/admin/hooks/useAdminUsers";
 
 export default function AdminUsersManagement() {
-  const [search, setSearch] = useState("");
-  const [users, setUsers] = useState<AppUser[]>(mockUsers);
-
-  const filteredUsers = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
-    if (!normalizedSearch) {
-      return users;
-    }
-
-    return users.filter((user) => {
-      const firstName = user.firstName?.toLowerCase() ?? "";
-      const lastName = user.lastName?.toLowerCase() ?? "";
-      const email = user.email.toLowerCase();
-
-      return (
-        firstName.includes(normalizedSearch) ||
-        lastName.includes(normalizedSearch) ||
-        email.includes(normalizedSearch)
-      );
-    });
-  }, [search, users]);
-
-  const handleClearSearch = () => {
-    setSearch("");
-  };
-
-  const handleToggleStatus = (userId: string) => {
-    setUsers((currentUsers) =>
-      currentUsers.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              isActive: !user.isActive,
-            }
-          : user,
-      ),
-    );
-  };
-
-  const handleToggleTeacherRole = (userId: string) => {
-    setUsers((currentUsers) =>
-      currentUsers.map((user) => {
-        if (user.id !== userId || user.role === "ADMIN") {
-          return user;
-        }
-
-        return {
-          ...user,
-          role: user.role === "STUDENT" ? "TEACHER" : "STUDENT",
-        };
-      }),
-    );
-  };
+  const {
+    search,
+    setSearch,
+    users,
+    isLoading,
+    error,
+    clearSearch,
+    toggleStatus,
+    toggleTeacherRole,
+  } = useAdminUsers();
 
   return (
     <section className="py-8">
@@ -139,16 +58,30 @@ export default function AdminUsersManagement() {
             value={search}
             placeholder="Buscar por nombres, apellidos o correo"
             onChange={setSearch}
-            onClear={handleClearSearch}
+            onClear={clearSearch}
             onSearch={() => {}}
           />
         </div>
 
-        <AdminUsersTable
-          users={filteredUsers}
-          onToggleStatus={handleToggleStatus}
-          onToggleTeacherRole={handleToggleTeacherRole}
-        />
+        {error ? (
+          <div className="border-x border-gray-200 bg-red-50 px-6 py-4">
+            <Text variant="small" className="font-medium text-red-700">
+              {error}
+            </Text>
+          </div>
+        ) : null}
+
+        {isLoading ? (
+          <div className="rounded-b-2xl border-x border-b border-gray-200 bg-white px-6 py-12 text-center">
+            <Text variant="small">Cargando usuarios...</Text>
+          </div>
+        ) : (
+          <AdminUsersTable
+            users={users}
+            onToggleStatus={toggleStatus}
+            onToggleTeacherRole={toggleTeacherRole}
+          />
+        )}
       </Container>
     </section>
   );

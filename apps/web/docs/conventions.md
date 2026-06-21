@@ -329,17 +329,74 @@ auth.store.ts
 app.store.ts
 ```
 
-`auth.store.ts` should manage:
+<<<<<<< HEAD
+`auth.store.ts` debe manejar:
 
-- session;
+- sesion;
 - tokens;
-- authenticated user;
-- role;
+- usuario autenticado;
+  > > > > > > > c1de29237bcc705874f30c7a7d65c8d25810d7e7
 - login;
 - logout;
 - hydrate;
 - clearSession.
 
+No usar Zustand para:
+
+- valor de un input;
+- estado de un modal local;
+- tab seleccionada dentro de un componente aislado;
+- listas temporales de una sola pantalla;
+- errores locales de formulario.
+
+Regla:
+
+```txt
+Si el estado no necesita sobrevivir navegacion o ser compartido por varias zonas, no va en Zustand.
+```
+
+## Fuente De Verdad De Sesion
+
+Regla final:
+
+```txt
+AuthStore = fuente de verdad
+```
+
+Estructura esperada:
+
+```txt
+store/auth.store.ts
+-> usa internamente services/api/tokenStorage.ts
+-> axiosClient.ts pregunta por token
+```
+
+Responsabilidades:
+
+```txt
+auth.store.ts
+-> sabe si hay sesion
+-> guarda user
+-> guarda role
+-> ejecuta login/logout
+-> hidrata sesion
+
+tokenStorage.ts
+-> solo lee/escribe tokens
+
+axiosClient.ts
+-> adjunta Authorization
+-> no decide si hay sesion
+```
+
+Prohibido:
+
+````txt
+componentes leyendo localStorage
+pages escribiendo tokens
+servicios de dominio manipulando sesion
+varias fuentes de verdad para auth
+=======
 Do not use Zustand for:
 
 - an input value;
@@ -352,7 +409,7 @@ Rule:
 
 ```txt
 If the state does not need to survive navigation or be shared across multiple areas, it does not belong in Zustand.
-```
+````
 
 ## Source Of Truth For Session
 
@@ -395,6 +452,7 @@ components reading localStorage
 pages writing tokens
 domain services manipulating session
 multiple sources of truth for auth
+>>>>>>> c1de29237bcc705874f30c7a7d65c8d25810d7e7
 ```
 
 ## JWT

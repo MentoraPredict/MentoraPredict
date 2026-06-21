@@ -1,4 +1,3 @@
-import { fn } from "storybook/test";
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import Heading from './Heading';
@@ -13,6 +12,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    "children": fn()
+    children: "Titulo de ejemplo",
   },
 };
