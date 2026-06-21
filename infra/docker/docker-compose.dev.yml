@@ -190,6 +190,7 @@ services:
     build:
       context: ../..
       dockerfile: services/auth-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/auth-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_auth_service
     restart: unless-stopped
     ports:
@@ -226,6 +227,7 @@ services:
     build:
       context: ../..
       dockerfile: services/user-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/user-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_user_service
     restart: unless-stopped
     ports:
@@ -255,6 +257,7 @@ services:
     build:
       context: ../..
       dockerfile: services/academic-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/academic-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_academic_service
     restart: unless-stopped
     ports:
@@ -301,6 +304,7 @@ services:
     build:
       context: ../..
       dockerfile: services/analytics-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/analytics-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_analytics_service
     restart: unless-stopped
     ports:
@@ -349,6 +353,7 @@ services:
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/web:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_web
     restart: unless-stopped
     expose:
