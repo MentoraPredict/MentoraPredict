@@ -13,10 +13,12 @@ export const APP_PATHS = {
   student: {
     dashboard: "/student/courses",
     courses: "/student/courses",
+    coursePerformance: "/student/courses/:courseId/performance",
   },
   teacher: {
     dashboard: "/teacher/courses",
     courses: "/teacher/courses",
+    coursePerformance: "/teacher/courses/:courseId/performance",
   },
   admin: {
     root: "/admin",
@@ -37,4 +39,12 @@ export function getDashboardPath(role: UserRole) {
     default:
       return APP_PATHS.public.landing;
   }
+}
+
+export function getTeacherCoursePerformancePath(courseId: string) {
+  return `/teacher/courses/${courseId}/performance`;
+}
+
+export function getStudentCoursePerformancePath(courseId: string) {
+  return `/student/courses/${courseId}/performance`;
 }

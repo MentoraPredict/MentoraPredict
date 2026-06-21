@@ -12,6 +12,9 @@ import { useAuthStore } from "@/store/auth.store";
 import type { Course } from "@/types/course";
 import type { AppUser } from "@/types/user/user.types";
 
+import { useNavigate } from "react-router-dom";
+import { getTeacherCoursePerformancePath } from "@/routes/paths";
+
 const mockStudents: AppUser[] = [
   {
     id: "1",
@@ -40,6 +43,7 @@ const mockStudents: AppUser[] = [
 ];
 
 export default function TeacherCoursesManagement() {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
   const teacherName = useMemo(() => {
@@ -101,6 +105,9 @@ export default function TeacherCoursesManagement() {
               <CourseGrid
                 courses={courses}
                 isDeleteMode={isDeleteMode}
+                onCourseClick={(courseId) => {
+                  navigate(getTeacherCoursePerformancePath(courseId));
+                }}
                 onDeleteCourse={handleDeleteCourse}
                 onCancelDeleteMode={() => {
                   setIsDeleteMode(false);

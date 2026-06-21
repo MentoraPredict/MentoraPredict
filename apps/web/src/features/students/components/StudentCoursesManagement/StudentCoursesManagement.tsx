@@ -7,6 +7,9 @@ import StudentCoursesEmptyState from "@/features/students/components/StudentCour
 
 import type { Course } from "@/types/course";
 
+import { useNavigate } from "react-router-dom";
+import { getStudentCoursePerformancePath } from "@/routes/paths";
+
 const mockStudentCourses: Course[] = [
   {
     id: "1",
@@ -41,6 +44,7 @@ const mockStudentCourses: Course[] = [
 ];
 
 export default function StudentCoursesManagement() {
+  const navigate = useNavigate();
   const courses = mockStudentCourses;
 
   return (
@@ -66,7 +70,12 @@ export default function StudentCoursesManagement() {
           </div>
 
           {courses.length > 0 ? (
-            <CourseGrid courses={courses} />
+            <CourseGrid
+              courses={courses}
+              onCourseClick={(courseId) => {
+                navigate(getStudentCoursePerformancePath(courseId));
+              }}
+            />
           ) : (
             <StudentCoursesEmptyState />
           )}

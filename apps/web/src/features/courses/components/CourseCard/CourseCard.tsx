@@ -10,6 +10,7 @@ import type { Course } from "@/types/course";
 interface CourseCardProps {
   course: Course;
   isDeleteMode?: boolean;
+  onClick?: (courseId: string) => void;
   onDelete?: (courseId: string) => void;
   onCancelDelete?: () => void;
 }
@@ -17,12 +18,32 @@ interface CourseCardProps {
 export default function CourseCard({
   course,
   isDeleteMode = false,
+  onClick,
   onDelete,
   onCancelDelete,
 }: CourseCardProps) {
+  const isClickable = !!onClick && !isDeleteMode;
+
+  const handleCardClick = () => {
+    if (!isClickable) {
+      return;
+    }
+
+    onClick(course.id);
+  };
+
   return (
     <article
-      className="
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={handleCardClick}
+      onKeyDown={(event) => {
+        if (isClickable && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onClick?.(course.id);
+        }
+      }}
+      className={`
                 group
                 relative
                 flex
@@ -38,7 +59,8 @@ export default function CourseCard({
                 transition
                 hover:-translate-y-1
                 hover:shadow-md
-            "
+                ${isClickable ? "cursor-pointer" : ""}
+            `}
     >
       {isDeleteMode ? (
         <div
@@ -65,7 +87,8 @@ export default function CourseCard({
             <div className="flex gap-3">
               <Button
                 type="button"
-                onClick={() => {
+                onClick={(event) => {
+                  event.stopPropagation();
                   onDelete?.(course.id);
                 }}
                 className="bg-red-700 px-4 py-2 text-sm hover:bg-red-800"
@@ -76,7 +99,10 @@ export default function CourseCard({
               <Button
                 type="button"
                 variant="outline"
-                onClick={onCancelDelete}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCancelDelete?.();
+                }}
                 className="px-4 py-2 text-sm"
               >
                 Cancelar
@@ -94,6 +120,7 @@ export default function CourseCard({
             {course.name}
           </Heading>
         </div>
+
         <div>
           <Text
             variant="caption"
@@ -107,7 +134,7 @@ export default function CourseCard({
             Nombre del docente
           </Text>
 
-          <Heading as="h5" className="mt-1 text-gray-900">
+          <Heading as="h6" className="mt-1 text-gray-900">
             {course.teacherName}
           </Heading>
         </div>
