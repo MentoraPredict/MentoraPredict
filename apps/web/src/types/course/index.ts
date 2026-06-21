@@ -5,3 +5,9 @@ export type {
   CourseRecommendation,
   CourseRiskItem,
 } from "./course-analytics.types";
+export type {
+  CourseUploadedFile,
+  GradeEvaluationItem,
+  SyllabusTopic,
+  StudentTopicComprehension,
+} from "./course-upload.types";
