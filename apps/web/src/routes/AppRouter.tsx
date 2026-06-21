@@ -6,7 +6,6 @@ import LandingPage from "@/pages/public/LandingPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
-import StudentDashboardPage from "@/pages/student/StudentDashboardPage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import RoleRedirect from "./RoleRedirect";
