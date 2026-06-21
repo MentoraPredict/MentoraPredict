@@ -11,3 +11,4 @@ export type {
   SyllabusTopic,
   StudentTopicComprehension,
 } from "./course-upload.types";
+export type { CourseEnrolledStudent } from "./course-students.types";

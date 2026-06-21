@@ -11,3 +11,9 @@ export { default as TeacherCourseUploadData } from "./TeacherCourseUploadData";
 export { default as CourseFilesUploadPanel } from "./CourseFilesUploadPanel";
 export { default as GradeEvaluationPanel } from "./GradeEvaluationPanel";
 export { default as SyllabusTopicsPanel } from "./SyllabusTopicsPanel";
+
+export { default as TeacherCourseStudents } from "./TeacherCourseStudents";
+export { default as TeacherCourseStudentsToolbar } from "./TeacherCourseStudentsToolbar";
+export { default as TeacherCourseStudentsTable } from "./TeacherCourseStudentsTable";
+export { default as TeacherCourseStudentsTableRow } from "./TeacherCourseStudentsTableRow";
+export { default as StudentEnrollmentCell } from "./StudentEnrollmentCell";

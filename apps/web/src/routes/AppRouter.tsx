@@ -22,6 +22,8 @@ import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerforman
 
 import TeacherCourseUploadDataPage from "@/pages/teacher/TeacherCourseUploadDataPage";
 
+import TeacherCourseStudentsPage from "@/pages/teacher/TeacherCourseStudentsPage";
+
 export default function AppRouter() {
   useEffect(() => {
     void useAuthStore.getState().hydrateSession();
@@ -62,6 +64,10 @@ export default function AppRouter() {
           <Route
             path={APP_PATHS.teacher.courseUploadData}
             element={<TeacherCourseUploadDataPage />}
+          />
+          <Route
+            path={APP_PATHS.teacher.courseStudents}
+            element={<TeacherCourseStudentsPage />}
           />
         </Route>
 
