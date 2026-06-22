@@ -189,8 +189,6 @@ services:
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
     depends_on:
-      postgres:
-        condition: service_healthy
       auth-service:
         condition: service_healthy
       user-service:
