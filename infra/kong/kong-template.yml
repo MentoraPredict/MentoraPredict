@@ -8,6 +8,9 @@ plugins:
         - http://localhost
         - http://localhost:3000
         - http://localhost:3001
+        - http://localhost:3002
+        - http://localhost:3003
+        - http://localhost:3004
         - http://localhost:5173
         - http://localhost:8000
         - http://mentorapredictqa.programacionwebuce.net
@@ -111,6 +114,11 @@ services:
   - name: user-service
     url: http://user-service:3002
     routes:
+      - name: user-docs
+        paths:
+          - /api/v1/users/docs
+        strip_path: false
+        regex_priority: 200
       - name: user-routes
         paths:
           - /api/v1/users
@@ -132,6 +140,22 @@ services:
   - name: academic-service
     url: http://academic-service:3003
     routes:
+      - name: academic-docs
+        paths:
+          - /api/v1/academic/docs
+        strip_path: false
+        regex_priority: 200
+      - name: academic-internal-routes
+        paths:
+          - /api/v1/academic/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: academic-routes
         paths:
           - /api/v1/academic
@@ -153,6 +177,11 @@ services:
   - name: analytics-service
     url: http://analytics-service:3004
     routes:
+      - name: analytics-docs
+        paths:
+          - /api/v1/analytics/docs
+        strip_path: false
+        regex_priority: 200
       - name: analytics-routes
         paths:
           - /api/v1/analytics
@@ -172,7 +201,7 @@ services:
               fault_tolerant: true
       - name: analytics-alerts
         paths:
-          - /alerts
+          - /api/v1/analytics/alerts
         strip_path: false
         regex_priority: 100
         plugins:
@@ -214,4 +243,5 @@ services:
                 - Accept
                 - Authorization
                 - Content-Type
+                - X-Correlation-ID
               credentials: true
