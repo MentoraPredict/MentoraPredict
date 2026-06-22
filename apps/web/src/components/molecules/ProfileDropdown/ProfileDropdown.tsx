@@ -1,5 +1,6 @@
+import { Link } from "react-router-dom";
 import { useState } from "react";
-import { FiChevronDown, FiLogOut } from "react-icons/fi";
+import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
 
 import Button from "@/components/atoms/Button";
 import Text from "@/components/atoms/Text";
@@ -12,6 +13,7 @@ interface ProfileDropdownProps {
   lastName?: string;
   role?: UserRole;
   imageUrl?: string;
+  profilePath?: string;
   isLoggingOut?: boolean;
   onLogout: () => void;
 }
@@ -21,6 +23,7 @@ export default function ProfileDropdown({
   lastName,
   role,
   imageUrl,
+  profilePath,
   isLoggingOut = false,
   onLogout,
 }: ProfileDropdownProps) {
@@ -82,6 +85,35 @@ export default function ProfileDropdown({
                         shadow-lg
                     "
         >
+          {profilePath ? (
+            <Link
+              to={profilePath}
+              onClick={() => {
+                setIsOpen(false);
+              }}
+              className="
+                                mb-2
+                                flex
+                                items-center
+                                gap-2
+                                rounded-xl
+                                border
+                                border-gray-200
+                                px-4
+                                py-2
+                                text-sm
+                                font-medium
+                                text-gray-700
+                                transition
+                                hover:bg-gray-50
+                                hover:text-blue-700
+                            "
+            >
+              <FiUser />
+              Ver perfil
+            </Link>
+          ) : null}
+
           <Button
             type="button"
             variant="outline"
