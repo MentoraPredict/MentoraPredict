@@ -12,3 +12,5 @@ export { default as NotificationIconButton } from "./NotificationIconButton";
 export { default as ProfileDropdown } from "./ProfileDropdown";
 
 export { default as SelectedItemChip } from "./SelectedItemChip";
+
+export { default as ImageUploadPreview } from "./ImageUploadPreview";

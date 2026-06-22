@@ -13,14 +13,17 @@ export const APP_PATHS = {
   student: {
     dashboard: "/student/courses",
     courses: "/student/courses",
+    profile: "/student/profile",
     coursePerformance: "/student/courses/:courseId/performance",
   },
   teacher: {
     dashboard: "/teacher/courses",
     courses: "/teacher/courses",
+    profile: "/teacher/profile",
     coursePerformance: "/teacher/courses/:courseId/performance",
     courseUploadData: "/teacher/courses/:courseId/upload-data",
     courseStudents: "/teacher/courses/:courseId/students",
+    courseEdit: "/teacher/courses/:courseId/edit",
   },
   admin: {
     root: "/admin",
@@ -57,4 +60,8 @@ export function getTeacherCourseUploadDataPath(courseId: string) {
 
 export function getTeacherCourseStudentsPath(courseId: string) {
   return `/teacher/courses/${courseId}/students`;
+}
+
+export function getTeacherCourseEditPath(courseId: string) {
+  return `/teacher/courses/${courseId}/edit`;
 }
