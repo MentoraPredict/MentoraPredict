@@ -179,3 +179,25 @@ services:
       - mentorapredict-net
     depends_on:
       - kong
+
+  seed-loader:
+    build:
+      context: ../..
+      dockerfile: database/Dockerfile.seed
+    container_name: mp_dev_seed_loader
+    restart: "no"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      academic-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+    networks:
+      - mentorapredict-net
