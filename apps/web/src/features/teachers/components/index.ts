@@ -17,3 +17,5 @@ export { default as TeacherCourseStudentsToolbar } from "./TeacherCourseStudents
 export { default as TeacherCourseStudentsTable } from "./TeacherCourseStudentsTable";
 export { default as TeacherCourseStudentsTableRow } from "./TeacherCourseStudentsTableRow";
 export { default as StudentEnrollmentCell } from "./StudentEnrollmentCell";
+
+export { default as TeacherCourseEdit } from "./TeacherCourseEdit";
