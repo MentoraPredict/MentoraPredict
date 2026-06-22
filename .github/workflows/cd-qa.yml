@@ -245,6 +245,9 @@ jobs:
             echo "[START SERVICES]"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate
 
+            echo "[SEEDS] Running database seeds (idempotent safe mode)"
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm seed || true
+
             docker system prune -af --filter "until=24h"
 
             echo "[OK] Deployment completed"

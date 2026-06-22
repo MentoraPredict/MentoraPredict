@@ -1,7 +1,7 @@
 # MentoraPredict — Development stack (DB-less Kong + core services)
 # Usage:
 # 1. cp ../.env.example ../.env
-# 2. (optional en caso de tener los archivos .pem) bash infra/kong/generate-kong-keys.sh
+# 2. (optional en caso de tener los archivos .pem) bash infra/kong/generate-keys.sh
 # 3. docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build
 
 networks:
@@ -222,6 +222,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3001/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   user-service:
     build:
@@ -245,6 +259,11 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+    volumes:
+      - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
     depends_on:
@@ -252,6 +271,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3002/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   academic-service:
     build:
@@ -286,6 +319,7 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -299,6 +333,20 @@ services:
         condition: service_healthy
       user-service:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3003/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   analytics-service:
     build:
@@ -335,6 +383,7 @@ services:
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -348,6 +397,20 @@ services:
         condition: service_healthy
       academic-service:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3004/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   web:
     build:
@@ -364,3 +427,25 @@ services:
       - mentorapredict-net
     depends_on:
       - kong
+
+  seed-loader:
+    build:
+      context: ../..
+      dockerfile: database/Dockerfile.seed
+    container_name: mp_dev_seed_loader
+    restart: "no"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      academic-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+    networks:
+      - mentorapredict-net

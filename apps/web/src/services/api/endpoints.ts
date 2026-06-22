@@ -9,5 +9,7 @@ export const endpoints = {
     },
     users: {
         me: "/v1/users/me",
+        list: "/v1/users",
+        detail: (id: string) => `/v1/users/${id}`,
     },
 } as const;

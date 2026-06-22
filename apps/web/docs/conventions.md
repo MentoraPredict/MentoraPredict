@@ -329,17 +329,6 @@ auth.store.ts
 app.store.ts
 ```
 
-`auth.store.ts` should manage:
-
-- session;
-- tokens;
-- authenticated user;
-- role;
-- login;
-- logout;
-- hydrate;
-- clearSession.
-
 Do not use Zustand for:
 
 - an input value;

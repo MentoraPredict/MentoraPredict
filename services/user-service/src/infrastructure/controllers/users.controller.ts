@@ -1,15 +1,18 @@
 import {
-  Controller, Get, Put, Delete, Param, Body, Query, HttpCode, HttpStatus,
+  Controller, Get, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { GetUserUseCase } from '../../application/use-cases/get-user.use-case';
 import { UpdateUserUseCase } from '../../application/use-cases/update-user.use-case';
 import { SoftDeleteUserUseCase } from '../../application/use-cases/soft-delete-user.use-case';
 import { ListUsersUseCase } from '../../application/use-cases/list-users.use-case';
 import { UpdateUserDto } from '../../application/dtos/update-user.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('user-service')
-@Controller('users')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
+@Controller('api/v1/users')
 export class UsersController {
   constructor(
     private readonly getUserUC: GetUserUseCase,

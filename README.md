@@ -133,7 +133,6 @@ mentorapredict/
 │   └── desktop/
 │
 ├── services/
-│   ├── api-gateway/
 │   ├── auth-service/
 │   ├── user-service/
 │   ├── academic-service/
@@ -431,9 +430,8 @@ From the repository root:
 - `apps/mobile` - React Native app
 - `apps/desktop` - Electron app
 
-**Backend Services (8 Microservices):**
+**Backend Services (7 Microservices):**
 
-- `services/api-gateway` - API Gateway
 - `services/auth-service` - Authentication service
 - `services/user-service` - User management
 - `services/academic-service` - Academic data
