@@ -15,6 +15,8 @@ import UserWelcomeMessage from "@/components/molecules/UserWelcomeMessage";
 import useLogout from "@/hooks/useLogout";
 import { useAuthStore } from "@/store/auth.store";
 
+import { APP_PATHS } from "@/routes/paths";
+
 interface DashboardNavItem {
   label: string;
   to: string;
@@ -37,6 +39,13 @@ export default function DashboardNavbar({
   const { isLoggingOut, handleLogout } = useLogout();
 
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  const profilePath =
+    user?.role === "TEACHER"
+      ? APP_PATHS.teacher.profile
+      : user?.role === "STUDENT"
+        ? APP_PATHS.student.profile
+        : undefined;
 
   return (
     <>
@@ -119,6 +128,7 @@ export default function DashboardNavbar({
                 firstName={user?.firstName}
                 lastName={user?.lastName}
                 role={user?.role}
+                profilePath={profilePath}
                 isLoggingOut={isLoggingOut}
                 onLogout={handleLogout}
               />
