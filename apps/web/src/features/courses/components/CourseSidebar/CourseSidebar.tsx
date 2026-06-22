@@ -69,15 +69,14 @@ export default function CourseSidebar({
           icon={<FiBarChart2 size={18} />}
           label="Rendimiento"
         />
+        <CourseSidebarNavItem
+          to={`${basePath}/courses/${activeCourseId}/upload-data`}
+          icon={<FiUploadCloud size={18} />}
+          label="Subir Datos"
+        />
 
         {isTeacher ? (
           <>
-            <CourseSidebarNavItem
-              to={`${basePath}/courses/${activeCourseId}/upload-data`}
-              icon={<FiUploadCloud size={18} />}
-              label="Subir Datos"
-            />
-
             <CourseSidebarNavItem
               to={`${basePath}/courses/${activeCourseId}/students`}
               icon={<FiUsers size={18} />}
