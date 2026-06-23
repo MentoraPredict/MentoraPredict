@@ -34,6 +34,22 @@ const defaultOptions: RatingScaleOption[] = [
   },
 ];
 
+const optionColors: Record<number, string> = {
+  1: "text-red-700 hover:bg-red-50",
+  2: "text-orange-600 hover:bg-orange-50",
+  3: "text-yellow-500 hover:bg-yellow-50",
+  4: "text-green-600 hover:bg-green-50",
+  5: "text-blue-700 hover:bg-blue-50",
+};
+
+const selectedOptionColors: Record<number, string> = {
+  1: "bg-red-700 text-white",
+  2: "bg-orange-600 text-white",
+  3: "bg-yellow-400 text-white",
+  4: "bg-green-600 text-white",
+  5: "bg-blue-700 text-white",
+};
+
 function getIcon(value: number) {
   if (value <= 2) {
     return <FiFrown size={20} />;
@@ -74,8 +90,8 @@ export default function RatingScale({
                             transition
                             ${
                               isSelected
-                                ? "bg-amber-400 text-white"
-                                : "text-gray-600 hover:bg-gray-100"
+                                ? selectedOptionColors[option.value]
+                                : optionColors[option.value]
                             }
                         `}
           >

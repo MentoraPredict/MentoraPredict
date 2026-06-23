@@ -329,6 +329,17 @@ auth.store.ts
 app.store.ts
 ```
 
+  `auth.store.ts` should manage:
+
+- session;
+- tokens;
+- authenticated user;
+- role;
+- login;
+- logout;
+- hydrate;
+- clearSession.
+
 Do not use Zustand for:
 
 - an input value;
@@ -432,10 +443,8 @@ await login(data);
 
 Incorrect:
 
-```ts
 import axios from "axios";
 
-await axios.post("/api/v1/auth/login", data);
 ```
 
 Rule:
