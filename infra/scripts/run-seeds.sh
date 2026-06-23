@@ -1,18 +1,22 @@
 #!/bin/bash
 set -e
 
+POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+POSTGRES_USER=${POSTGRES_USER:-mp_user}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+POSTGRES_DB=${POSTGRES_DB:-mentorapredict}
+
 echo "Waiting for Postgres..."
 
-until pg_isready -h postgres -U ${POSTGRES_USER:-mp_user} -d ${POSTGRES_DB:-mentorapredict}; do
+until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
   sleep 2
 done
 
 echo "Postgres ready"
-
 echo "Running seeds..."
 
-export PGPASSWORD=${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+export PGPASSWORD="$POSTGRES_PASSWORD"
 
-psql -h postgres -U ${POSTGRES_USER:-mp_user} -d ${POSTGRES_DB:-mentorapredict} -f /load_all.sql
+psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /load_all.sql
 
 echo "Seeds executed successfully"

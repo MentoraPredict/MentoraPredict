@@ -435,7 +435,11 @@ services:
     container_name: mp_dev_seed_loader
     restart: "no"
     environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mp_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
     depends_on:
       postgres:
         condition: service_healthy
