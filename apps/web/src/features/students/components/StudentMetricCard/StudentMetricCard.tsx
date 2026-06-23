@@ -5,6 +5,9 @@ interface StudentMetricCardProps {
   value: number;
   suffix: string;
   max?: number;
+  min?: number;
+  step?: number;
+  onChange: (value: number) => void;
 }
 
 export default function StudentMetricCard({
@@ -12,9 +15,10 @@ export default function StudentMetricCard({
   value,
   suffix,
   max = 100,
+  min = 0,
+  step = 1,
+  onChange,
 }: StudentMetricCardProps) {
-  const percentage = Math.min((value / max) * 100, 100);
-
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -27,14 +31,17 @@ export default function StudentMetricCard({
         </Text>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-gray-200">
-        <div
-          className="h-full rounded-full bg-blue-700"
-          style={{
-            width: `${percentage}%`,
-          }}
-        />
-      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => {
+          onChange(Number(event.target.value));
+        }}
+        className="w-full accent-blue-700"
+      />
     </div>
   );
 }

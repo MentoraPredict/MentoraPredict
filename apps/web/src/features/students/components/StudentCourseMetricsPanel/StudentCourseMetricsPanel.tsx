@@ -6,6 +6,8 @@ interface StudentCourseMetricsPanelProps {
   attendance: number;
   taskCompletion: number;
   emotionalState: number;
+  onChangeAttendance: (value: number) => void;
+  onChangeTaskCompletion: (value: number) => void;
   onChangeEmotionalState: (value: number) => void;
 }
 
@@ -13,6 +15,8 @@ export default function StudentCourseMetricsPanel({
   attendance,
   taskCompletion,
   emotionalState,
+  onChangeAttendance,
+  onChangeTaskCompletion,
   onChangeEmotionalState,
 }: StudentCourseMetricsPanelProps) {
   return (
@@ -31,12 +35,16 @@ export default function StudentCourseMetricsPanel({
           label="Asistencia considerada"
           value={attendance}
           suffix="%"
+          max={100}
+          onChange={onChangeAttendance}
         />
 
         <StudentMetricCard
           label="Cumplimiento de tareas"
           value={taskCompletion}
           suffix="%"
+          max={100}
+          onChange={onChangeTaskCompletion}
         />
 
         <div>

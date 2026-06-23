@@ -27,9 +27,9 @@ const initialTopics: StudentTopicSurveyItem[] = [
 ];
 
 export default function StudentCourseUploadData() {
-  const [attendance] = useState(66);
-  const [taskCompletion] = useState(66);
-  const [studyHours] = useState(4);
+  const [attendance, setAttendance] = useState(66);
+  const [taskCompletion, setTaskCompletion] = useState(66);
+  const [studyHours, setStudyHours] = useState(4);
 
   const [emotionalState, setEmotionalState] = useState(4);
   const [skillsText, setSkillsText] = useState("");
@@ -54,6 +54,9 @@ export default function StudentCourseUploadData() {
   };
 
   const handleCancel = () => {
+    setAttendance(66);
+    setTaskCompletion(66);
+    setStudyHours(4);
     setEmotionalState(4);
     setSkillsText("");
     setComprehensionLevel(4);
@@ -85,6 +88,8 @@ export default function StudentCourseUploadData() {
           attendance={attendance}
           taskCompletion={taskCompletion}
           emotionalState={emotionalState}
+          onChangeAttendance={setAttendance}
+          onChangeTaskCompletion={setTaskCompletion}
           onChangeEmotionalState={setEmotionalState}
         />
 
@@ -92,6 +97,7 @@ export default function StudentCourseUploadData() {
           studyHours={studyHours}
           skillsText={skillsText}
           comprehensionLevel={comprehensionLevel}
+          onChangeStudyHours={setStudyHours}
           onChangeSkillsText={setSkillsText}
           onChangeComprehensionLevel={setComprehensionLevel}
         />
