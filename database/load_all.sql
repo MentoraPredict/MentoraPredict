@@ -1,17 +1,8 @@
--- AUTH
-\i /seeds/auth-service/seed.sql
-
--- USER
-\i /seeds/user-service/seed.sql
-
--- ACADEMIC
-\i /seeds/academic-service/seed.sql
-
--- METRICS
--- \i /seeds/metrics-service/seed.sql
-
--- ANALYTICS
--- \i /seeds/analytics-service/seed.sql
-
--- PREDICTION
--- \i /seeds/prediction-service/seed.sql
+\i /seeds/postgres/00_users.sql
+\i /seeds/postgres/01_faculties.sql
+\i /seeds/postgres/02_careers.sql
+\i /seeds/postgres/03_academicPeriods.sql
+\i /seeds/postgres/04_subjects.sql
+\i /seeds/postgres/05_enrollments.sql
+\i /seeds/postgres/06_evaluations.sql
+\i /seeds/postgres/07_grades.sql
