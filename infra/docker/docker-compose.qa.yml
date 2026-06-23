@@ -219,10 +219,14 @@ services:
     build:
       context: ../..
       dockerfile: database/Dockerfile.seed
-    container_name: mp_dev_seed_loader
+    container_name: mp_seed_loader
     restart: "no"
     environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     depends_on:
       auth-service:
         condition: service_healthy
