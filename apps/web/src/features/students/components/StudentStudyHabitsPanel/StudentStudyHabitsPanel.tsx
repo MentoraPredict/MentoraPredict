@@ -7,6 +7,7 @@ interface StudentStudyHabitsPanelProps {
   studyHours: number;
   skillsText: string;
   comprehensionLevel: number;
+  onChangeStudyHours: (value: number) => void;
   onChangeSkillsText: (value: string) => void;
   onChangeComprehensionLevel: (value: number) => void;
 }
@@ -15,6 +16,7 @@ export default function StudentStudyHabitsPanel({
   studyHours,
   skillsText,
   comprehensionLevel,
+  onChangeStudyHours,
   onChangeSkillsText,
   onChangeComprehensionLevel,
 }: StudentStudyHabitsPanelProps) {
@@ -34,7 +36,8 @@ export default function StudentStudyHabitsPanel({
           label="Promedio de horas de estudio"
           value={studyHours}
           suffix="h"
-          max={10}
+          max={8}
+          onChange={onChangeStudyHours}
         />
 
         <div>
