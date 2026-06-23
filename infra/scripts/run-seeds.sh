@@ -17,6 +17,6 @@ echo "Running seeds..."
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
-psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /load_all.sql
+psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /load_all.sql
 
 echo "Seeds executed successfully"
