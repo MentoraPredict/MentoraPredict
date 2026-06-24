@@ -4,10 +4,7 @@ import StatCard from "@/components/molecules/StatCard";
 
 export default function StatsSection() {
   return (
-    <section
-      id="stats"
-      className="py-20"
-    >
+    <section id="stats" className="py-20  bg-blue-950">
       <Container>
         <div
           className="
@@ -17,25 +14,13 @@ export default function StatsSection() {
             lg:grid-cols-4
           "
         >
-          <StatCard
-            value="+25%"
-            label="Retención académica"
-          />
+          <StatCard value="+25%" label="Retención académica" />
 
-          <StatCard
-            value="92%"
-            label="Precisión predictiva"
-          />
+          <StatCard value="92%" label="Precisión predictiva" />
 
-          <StatCard
-            value="+500"
-            label="Estudiantes analizados"
-          />
+          <StatCard value="+500" label="Estudiantes analizados" />
 
-          <StatCard
-            value="24/7"
-            label="Monitoreo continuo"
-          />
+          <StatCard value="24/7" label="Monitoreo continuo" />
         </div>
       </Container>
     </section>

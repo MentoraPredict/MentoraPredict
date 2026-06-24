@@ -2,6 +2,8 @@ export { default as FormField } from "./FormField";
 export { default as PasswordField } from "./PasswordField";
 export { default as Divider } from "./Divider";
 export { default as AuthFooter } from "./AuthFooter";
+export { default as FooterBrand } from "./FooterBrand";
+export { default as FooterLinkColumn } from "./FooterLinkColumn";
 
 export { default as SearchBar } from "./SearchBar";
 export { default as RouterNavItem } from "./RouterNavItem";

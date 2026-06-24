@@ -17,7 +17,7 @@ export default function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
       className="
                 fixed
                 inset-0
-                z-50
+                z-[120]
                 flex
                 items-center
                 justify-center

@@ -1,48 +1,106 @@
-import { FaGithub } from "react-icons/fa";
-import { FaLinkedin } from "react-icons/fa";
-
 import Container from "@/components/atoms/Container";
-import Logo from "@/components/atoms/Logo";
-import Text from "@/components/atoms/Text";
+import FooterBrand from "@/components/molecules/FooterBrand";
+import FooterLinkColumn from "@/components/molecules/FooterLinkColumn";
 
-import SocialLink from "@/components/molecules/SocialLink";
+const footerSections = [
+  {
+    title: "Producto",
+    links: [
+      { label: "Caracter\u00edsticas", href: "#features" },
+      { label: "Seguridad de Datos", href: "#features" },
+      { label: "Casos de \u00c9xito", href: "#stats" },
+      { label: "API para Desarrolladores", href: "#footer" },
+    ],
+  },
+  {
+    title: "Tecnolog\u00eda",
+    links: [
+      { label: "Modelos Predictivos", href: "#features" },
+      { label: "Machine Learning Cloud", href: "#features" },
+      { label: "Integraci\u00f3n LMS", href: "#features" },
+      { label: "Infraestructura", href: "#stats" },
+    ],
+  },
+  {
+    title: "Soporte",
+    links: [
+      { label: "Documentaci\u00f3n", href: "#footer" },
+      { label: "Centro de Ayuda", href: "#footer" },
+      { label: "Webinars", href: "#footer" },
+      { label: "Contacto", href: "#footer" },
+    ],
+  },
+];
+
+const legalLinks = [
+  { label: "Privacidad", href: "#footer" },
+  { label: "T\u00e9rminos", href: "#footer" },
+  { label: "Cookies", href: "#footer" },
+];
 
 export default function Footer() {
   return (
     <footer
       id="footer"
       className="
-        border-t
-        border-gray-200
-        py-10
+        bg-blue-950
+        text-white
       "
     >
-      <Container>
+      <Container className="py-14 sm:py-16">
         <div
           className="
-            flex
-            flex-col
-            items-center
-            gap-6
+            grid
+            gap-10
+            md:grid-cols-2
+            lg:grid-cols-[1.2fr_repeat(3,1fr)]
           "
         >
-          <Logo />
+          <FooterBrand />
 
-          <div className="flex gap-4">
-            <SocialLink
-              href="#"
-              icon={<FaGithub />}
+          {footerSections.map((section) => (
+            <FooterLinkColumn
+              key={section.title}
+              title={section.title}
+              links={section.links}
             />
+          ))}
+        </div>
 
-            <SocialLink
-              href="#"
-              icon={<FaLinkedin />}
-            />
-          </div>
+        <div
+          className="
+            mt-16
+            border-t
+            border-white/15
+            pt-7
+            text-center
+            text-sm
+            text-blue-100/80
+          "
+        >
+          <p>&copy; 2024 MentoraPredict S.A. Todos los derechos reservados.</p>
 
-          <Text variant="caption">
-            © 2026 MentoraPredict
-          </Text>
+          <nav
+            aria-label="Legal"
+            className="
+              mt-2
+              flex
+              flex-wrap
+              justify-center
+              gap-x-8
+              gap-y-2
+            "
+          >
+            {legalLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className="transition-colors hover:text-white"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
         </div>
       </Container>
     </footer>

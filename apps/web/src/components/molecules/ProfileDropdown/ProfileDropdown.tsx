@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
 import { useState } from "react";
 import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/atoms/Button";
 import Text from "@/components/atoms/Text";
@@ -28,6 +28,7 @@ export default function ProfileDropdown({
   onLogout,
 }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ");
 
@@ -75,7 +76,7 @@ export default function ProfileDropdown({
                         absolute
                         right-0
                         top-14
-                        z-40
+                        z-[110]
                         w-56
                         rounded-xl
                         border
@@ -83,35 +84,21 @@ export default function ProfileDropdown({
                         bg-white
                         p-3
                         shadow-lg
-                    "
+          "
         >
           {profilePath ? (
-            <Link
-              to={profilePath}
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => {
                 setIsOpen(false);
+                navigate(profilePath);
               }}
-              className="
-                                mb-2
-                                flex
-                                items-center
-                                gap-2
-                                rounded-xl
-                                border
-                                border-gray-200
-                                px-4
-                                py-2
-                                text-sm
-                                font-medium
-                                text-gray-700
-                                transition
-                                hover:bg-gray-50
-                                hover:text-blue-700
-                            "
+              className="mb-2 w-full gap-2 px-4 py-2 text-sm"
             >
               <FiUser />
               Ver perfil
-            </Link>
+            </Button>
           ) : null}
 
           <Button

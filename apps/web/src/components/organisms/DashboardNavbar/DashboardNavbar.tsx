@@ -51,9 +51,14 @@ export default function DashboardNavbar({
     <>
       <header
         className="
+                    sticky
+                    top-0
+                    z-[100]
+                    isolate
                     border-b
-                    border-gray-200
-                    bg-white
+                    border-blue-900/10
+                    bg-[var(--color-app-background)]
+                    backdrop-blur
                 "
       >
         <Container>
@@ -70,7 +75,7 @@ export default function DashboardNavbar({
               {showLogo ? <Logo /> : null}
 
               {showLogo && showWelcomeMessage ? (
-                <div className="hidden h-8 w-px bg-gray-200 sm:block" />
+                <div className="hidden h-8 w-px bg-[var(--color-border-soft)] sm:block" />
               ) : null}
 
               {title ? (
@@ -122,7 +127,7 @@ export default function DashboardNavbar({
 
               <NotificationIconButton />
 
-              <div className="h-8 w-px bg-gray-200" />
+              <div className="h-8 w-px bg-[var(--color-border-soft)]" />
 
               <ProfileDropdown
                 firstName={user?.firstName}
