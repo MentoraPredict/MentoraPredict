@@ -329,17 +329,6 @@ auth.store.ts
 app.store.ts
 ```
 
-  `auth.store.ts` should manage:
-
-- session;
-- tokens;
-- authenticated user;
-- role;
-- login;
-- logout;
-- hydrate;
-- clearSession.
-
 Do not use Zustand for:
 
 - an input value;
@@ -443,8 +432,10 @@ await login(data);
 
 Incorrect:
 
+```ts
 import axios from "axios";
 
+await axios.post("/api/v1/auth/login", data);
 ```
 
 Rule:
@@ -460,7 +451,7 @@ Currently `LoginForm` imports `axios` to use `axios.isAxiosError`.
 
 That works, but it is not the final convention.
 
-Better approach:
+# Better approach:
 
 ```txt
 services/api/httpErrors.ts
@@ -648,4 +639,4 @@ No direct Axios inside components.
 No features/dashboard.
 ```
 
-These rules keep the frontend consistent, easy to review, and aligned with the MentoraPredict architecture.
+# These rules keep the frontend consistent, easy to review, and aligned with the MentoraPredict architecture.
