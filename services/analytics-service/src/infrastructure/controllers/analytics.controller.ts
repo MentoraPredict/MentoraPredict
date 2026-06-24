@@ -14,7 +14,7 @@ import { GenerateAlertsDto } from '../../application/dtos/generate-alerts.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('analytics-service')
-@ApiBearerAuth('access-token')
+@ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard)
 @Controller('api/v1/analytics')
 export class AnalyticsController {

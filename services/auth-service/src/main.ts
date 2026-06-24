@@ -25,6 +25,8 @@ async function bootstrap() {
   // CORS
   app.enableCors({
     origin: process.env.CORS_ORIGINS?.split(",") ?? true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-correlation-id", "x-request-id"],
     credentials: true,
   });
 
@@ -39,14 +41,13 @@ async function bootstrap() {
     .setVersion("1.0")
     .addBearerAuth(
       {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Enter JWT token',
-        in: 'header',
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        in: "header",
       },
-      'access-token',
+      "JWT",
     )
     .addServer(swaggerServer)
     .build();

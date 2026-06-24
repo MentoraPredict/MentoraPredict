@@ -103,7 +103,7 @@ import { ChangeSubjectStatusDto } from "../../application/dtos/change-subject-st
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 
 @ApiTags("academic-service")
-@ApiBearerAuth('access-token')
+@ApiBearerAuth("JWT")
 @UseGuards(JwtAuthGuard)
 @Controller("api/v1/academic")
 export class AcademicController {

@@ -1,63 +1,90 @@
 openapi: 3.0.3
 info:
-  title: Prediction Service API
+  title: prediction-service API
   version: '1.0.0'
+  description: >
+    Combina el riesgo determinístico de analytics-service con el contexto académico
+    del estudiante y genera, vía OpenAI, un resumen + plan de recomendaciones.
+    Fusiona los antiguos prediction-service y recommendation-service.
 servers:
-  - url: /api/v1
+  - url: /api/v1/prediction
 components:
   securitySchemes:
-    bearerAuth:
+    JWT:
       type: http
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    PredictionRequest:
-      type: object
-      required: [studentId, subjectId, context]
-      properties:
-        studentId:
-          type: string
-        subjectId:
-          type: string
-        context:
-          type: object
-    PredictionResponse:
+    RiskSnapshot:
       type: object
       properties:
-        studentId:
+        riskLevel: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        globalAverage: { type: number }
+        complianceIndex: { type: number }
+        attendance: { type: number }
+        failedEvaluations: { type: integer }
+        trendSlope: { type: number }
+    RecommendationItem:
+      type: object
+      properties:
+        type:
           type: string
-        subjectId:
-          type: string
-        probabilityPass:
-          type: number
-        predictedGrade:
-          type: number
-        modelVersion:
-          type: string
+          enum: [STUDY_HABIT, TUTORING, TIME_MANAGEMENT, ATTENDANCE, SUBJECT_FOCUS, WELLBEING]
+        title: { type: string }
+        reason: { type: string }
+        priority: { type: string, enum: [LOW, MEDIUM, HIGH] }
+    PredictionResult:
+      type: object
+      properties:
+        studentId: { type: string }
+        periodId: { type: string }
+        risk: { $ref: '#/components/schemas/RiskSnapshot' }
+        summary: { type: string }
+        recommendations:
+          type: array
+          items: { $ref: '#/components/schemas/RecommendationItem' }
+        modelVersion: { type: string }
+        generatedAt: { type: string, format: date-time }
 security:
-  - bearerAuth: []
+  - JWT: []
 paths:
-  /prediction/predict:
-    post:
-      summary: Request prediction
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PredictionRequest'
+  /students/{studentId}/periods/{periodId}:
+    get:
+      summary: Generate prediction + AI recommendations for a student
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: periodId
+          required: true
+          schema: { type: string }
       responses:
         '200':
           description: Prediction result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PredictionResponse'
-  /prediction/models:
+                $ref: '#/components/schemas/PredictionResult'
+  /students/{studentId}/history:
     get:
-      summary: List models
+      summary: List past predictions for a student
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer }
       responses:
         '200':
-          description: Models list
+          description: Prediction history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PredictionResult'

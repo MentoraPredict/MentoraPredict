@@ -14,6 +14,8 @@ import { RedisAdapter } from "./infrastructure/cache/redis.adapter";
 import { JwtAdapter } from "./infrastructure/config/jwt.adapter";
 import { BcryptAdapter } from "./infrastructure/config/bcrypt.adapter";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
+import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
+import { UserProfileHttpClient } from "./infrastructure/adapters/user-profile-http.client";
 
 import { RegisterUserUseCase } from "./application/use-cases/register-user.use-case";
 import { LoginUserUseCase } from "./application/use-cases/login-user.use-case";
@@ -59,7 +61,6 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
             signOptions: {
               algorithm: "RS256",
               issuer: "mentorapredict",
-              audience: "mentorapredict-api",
             },
           };
         }
@@ -67,7 +68,6 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
           secret: cfg.get("JWT_SECRET", "dev-secret-change-in-prod"),
           signOptions: {
             issuer: "mentorapredict",
-            audience: "mentorapredict-api",
           },
         };
       },
@@ -84,6 +84,8 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
     { provide: "IPasswordHasher", useClass: BcryptAdapter },
     { provide: "ITokenGenerator", useClass: JwtAdapter },
     { provide: "IUserRepository", useClass: UserRepository },
+    InternalJwtService,
+    { provide: "IUserProfileClient", useClass: UserProfileHttpClient },
     // Use-cases
     RegisterUserUseCase,
     LoginUserUseCase,

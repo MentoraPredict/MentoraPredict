@@ -7,7 +7,8 @@ import { TeacherRoleGuard } from '../guards/teacher-role.guard';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('observations')
-@ApiBearerAuth('access-token')
+@ApiBearerAuth('JWT')
+@UseGuards(JwtAuthGuard)
 @Controller('api/v1/academic/observations')
 export class ObservationsController {
   constructor(
@@ -16,14 +17,13 @@ export class ObservationsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, TeacherRoleGuard)
+  @UseGuards(TeacherRoleGuard)
   @ApiOperation({ summary: 'RF-022: Create teacher observation' })
   create(@Body() dto: CreateObservationDto) {
     return this.createObservationUC.execute(dto);
   }
 
   @Get('student/:id')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'RF-022: List observations for a student' })
   byStudent(@Param('id') studentId: string) {
     return this.getObservationsUC.execute(studentId);

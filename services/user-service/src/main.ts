@@ -16,8 +16,12 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // CORS
   app.enableCors({
     origin: process.env.CORS_ORIGINS?.split(",") ?? true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-correlation-id", "x-request-id"],
     credentials: true,
   });
 
@@ -31,14 +35,13 @@ async function bootstrap() {
     .setVersion("1.0")
     .addBearerAuth(
       {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Enter JWT token',
-        in: 'header',
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        in: "header",
       },
-      'access-token',
+      "JWT",
     )
     .addServer(swaggerServer)
     .build();
@@ -50,5 +53,6 @@ async function bootstrap() {
 
   await app.listen(port);
   logger.log(`user-service running on http://localhost:${port}`);
+  logger.log(`Swagger: http://localhost:${port}/api/v1/users/docs`);
 }
 bootstrap();
