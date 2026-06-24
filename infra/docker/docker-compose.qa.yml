@@ -72,6 +72,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://mp_user_service:3002}
       CORS_ORIGINS: ${CORS_ORIGINS}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
@@ -98,6 +99,11 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+    volumes:
+      - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
 
@@ -128,6 +134,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://mp_user_service:3002}
     networks:
       - mentorapredict-net
     volumes:
@@ -162,6 +169,34 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       RISK_HIGH_THRESHOLD: ${RISK_HIGH_THRESHOLD:-40}
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
+    volumes:
+      - ../keys:/secrets:ro
+    networks:
+      - mentorapredict-net
+
+  prediction-service:
+    image: ${DOCKERHUB_USERNAME}/prediction-service:${IMAGE_TAG:-qa-latest}
+    container_name: mp_prediction_service
+    restart: always
+    expose:
+      - 3006
+    environment:
+      NODE_ENV: development
+      PORT: 3006
+      MONGO_HOST: ${MONGO_HOST:-mongo}
+      MONGO_PORT: 27017
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://mp_analytics_service:3004}
+      ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://mp_academic_service:3003}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
     volumes:
       - ../keys:/secrets:ro
     networks:
