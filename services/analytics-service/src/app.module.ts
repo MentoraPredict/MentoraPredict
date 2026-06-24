@@ -25,6 +25,7 @@ import { MetricsCacheAdapter } from "./infrastructure/cache/metrics-cache.adapte
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
+import { JwtAuthGuard } from "./infrastructure/guards/jwt-auth.guard";
 
 import { CalculateAverageUseCase } from "./application/use-cases/calculate-average.use-case";
 import { CalculateTrendUseCase } from "./application/use-cases/calculate-trend.use-case";
@@ -92,6 +93,7 @@ import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapsho
   providers: [
     RedisClient,
     InternalJwtService,
+    JwtAuthGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
     {
       provide: "IStudentMetricsRepository",

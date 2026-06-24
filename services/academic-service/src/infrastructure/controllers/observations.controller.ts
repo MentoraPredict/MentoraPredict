@@ -17,13 +17,14 @@ export class ObservationsController {
   ) {}
 
   @Post()
-  @UseGuards(TeacherRoleGuard)
+  @UseGuards(JwtAuthGuard, TeacherRoleGuard)
   @ApiOperation({ summary: 'RF-022: Create teacher observation' })
   create(@Body() dto: CreateObservationDto) {
     return this.createObservationUC.execute(dto);
   }
 
   @Get('student/:id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'RF-022: List observations for a student' })
   byStudent(@Param('id') studentId: string) {
     return this.getObservationsUC.execute(studentId);

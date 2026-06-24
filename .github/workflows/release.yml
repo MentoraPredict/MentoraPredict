@@ -42,7 +42,7 @@ jobs:
               try {
                 return execSync(`git describe --tags --match "${tagMatch}" --abbrev=0 2>/dev/null`).toString().trim();
               } catch {
-                return `${tagPrefix}0.0.0`;
+                return '';
               }
             })();
 
@@ -67,13 +67,16 @@ jobs:
               if (names.includes('feature')) hasFeature = true;
             }
 
-            const cleanVersion = lastTag.replace(tagPrefix, '');
-            const [maj, min, pat] = cleanVersion.split('.').map(Number);
-            let major = maj, minor = min, patch = pat;
+            let major = 0, minor = 0, patch = 0;
 
             if (lastTag) {
               const cleanVersion = lastTag.replace(tagPrefix, '');
               [major, minor, patch] = cleanVersion.split('.').map(Number);
+
+              if (hasBreaking) { major++; minor = 0; patch = 0; }
+              else if (hasFeature) { minor++; patch = 0; }
+              else { patch++; }
+            }
 
             const newVersion = `${tagPrefix}${major}.${minor}.${patch}`;
 
