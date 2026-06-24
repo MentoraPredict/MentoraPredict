@@ -1,20 +1,31 @@
-FROM python:3.11-slim AS builder
+FROM node:22-alpine AS deps
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential && \
-    rm -rf /var/lib/apt/lists/*
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
+    NPM_CONFIG_FETCH_TIMEOUT=300000 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=30000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=300000 \
+    PNPM_HOME="/root/.pnpm"
+RUN npm install -g pnpm@11.0.0
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY services ./services
+COPY packages ./packages
+RUN pnpm install
 
-FROM python:3.11-slim AS runner
+FROM node:22-alpine AS builder
 WORKDIR /app
-RUN addgroup --system --gid 1001 python && \
-    adduser --system --uid 1001 python
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-COPY src/ ./src/
-USER python
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-EXPOSE 8000
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN npm install -g pnpm@11.0.0
+COPY --from=deps /app .
+RUN pnpm --filter @mentorapredict/prediction-service build
+
+FROM node:22-alpine AS runner
+WORKDIR /app/services/prediction-service
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+COPY --from=builder /app/services/prediction-service/dist ./dist
+COPY --from=builder /app/services/prediction-service/package.json ./
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/services/prediction-service/node_modules ./node_modules
+USER nestjs
+ENV NODE_ENV=production
+EXPOSE 3006
+CMD ["node", "dist/main"]

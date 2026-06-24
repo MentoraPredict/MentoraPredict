@@ -5,17 +5,20 @@ import { Email } from '../../domain/value-objects/email.vo';
 import { Password } from '../../domain/value-objects/password.vo';
 import { IUserRepository } from '../ports/output/i-user.repository';
 import { IPasswordHasher } from '../ports/output/i-password.hasher';
+import { IUserProfileClient } from '../ports/output/i-user-profile.client';
 import { RegisterDto } from '../dtos';
 import { IRegisterUseCase } from '../ports/input/i-auth.use-cases';
 
-export const USER_REPO  = 'IUserRepository';
-export const PWD_HASHER = 'IPasswordHasher';
+export const USER_REPO     = 'IUserRepository';
+export const PWD_HASHER    = 'IPasswordHasher';
+export const USER_PROFILE_CLIENT = 'IUserProfileClient';
 
 @Injectable()
 export class RegisterUserUseCase implements IRegisterUseCase {
   constructor(
     @Inject(USER_REPO)  private readonly userRepo: IUserRepository,
     @Inject(PWD_HASHER) private readonly hasher: IPasswordHasher,
+    @Inject(USER_PROFILE_CLIENT) private readonly userProfileClient: IUserProfileClient,
   ) {}
 
   async execute(dto: RegisterDto) {
@@ -34,6 +37,14 @@ export class RegisterUserUseCase implements IRegisterUseCase {
     );
 
     const saved = await this.userRepo.save(user);
+
+    // RF-014: keep user_profiles in sync with auth-service's users table.
+    // Fire-and-forget at the use-case boundary — failures are logged and never block registration.
+    this.userProfileClient.createProfile(saved.id).catch((err) => {
+      const logger = new (require('@nestjs/common').Logger)('RegisterUserUseCase');
+      logger.error(`Failed to trigger profile creation for user ${saved.id}: ${err.message}`);
+    });
+
     return {
       id:        saved.id,
       email:     saved.email,
