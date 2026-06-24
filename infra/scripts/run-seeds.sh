@@ -13,10 +13,31 @@ until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
 done
 
 echo "Postgres ready"
-echo "Running seeds..."
 
-export PGPASSWORD="$POSTGRES_PASSWORD"
+# CHECK IF SEEDS ALREADY RUN
+RESULT=$(psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "
+SELECT EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'seed_history'
+);
+")
 
-psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /load_all.sql
+if [ "$RESULT" != "t" ]; then
+  echo "Running seeds for first time..."
 
-echo "Seeds executed successfully"
+  psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -v ON_ERROR_STOP=1 -f /load_all.sql
+
+  psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+    CREATE TABLE seed_history (
+        id serial primary key,
+        executed_at timestamp default now()
+    );
+
+    INSERT INTO seed_history DEFAULT VALUES;
+  "
+
+  echo "Seeds executed successfully"
+else
+  echo "Seeds already executed, skipping..."
+fi
