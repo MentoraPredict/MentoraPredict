@@ -9,7 +9,7 @@ interface TeacherTemplateProps {
 
 export default function TeacherTemplate({ children }: TeacherTemplateProps) {
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="app-page">
       <DashboardNavbar />
 
       <main>{children}</main>

@@ -9,7 +9,7 @@ interface StudentTemplateProps {
 
 export default function StudentTemplate({ children }: StudentTemplateProps) {
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="app-page">
       <DashboardNavbar />
 
       <main>{children}</main>

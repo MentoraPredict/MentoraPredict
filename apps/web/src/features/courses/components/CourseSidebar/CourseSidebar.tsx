@@ -48,7 +48,7 @@ export default function CourseSidebar({
             "
     >
       <div className="mb-10">
-        <Logo />
+        <Logo variant="light" />
 
         <Text
           variant="caption"
@@ -56,7 +56,7 @@ export default function CourseSidebar({
                         mt-1
                         uppercase
                         tracking-[0.2em]
-                        text-blue-200
+                        text-white
                     "
         >
           Academic Strategy
@@ -99,7 +99,7 @@ export default function CourseSidebar({
                         mb-3
                         uppercase
                         tracking-[0.18em]
-                        text-blue-200
+                        text-white
                     "
         >
           Mis cursos
@@ -122,14 +122,14 @@ export default function CourseSidebar({
                                     ${
                                       isActive
                                         ? "bg-blue-700 text-white"
-                                        : "text-blue-100 hover:bg-blue-800"
+                                        : "text-white hover:bg-blue-800"
                                     }
                                 `
               }
             >
               <FiBookOpen size={14} />
 
-              <Text variant="caption" className="font-medium text-current">
+              <Text variant="caption" className="font-medium !text-white">
                 {course.name}
               </Text>
             </NavLink>

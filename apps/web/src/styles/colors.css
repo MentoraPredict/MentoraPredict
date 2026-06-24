@@ -47,4 +47,17 @@
     --color-gray-700: #374151;
     --color-gray-800: #1f2937;
     --color-gray-900: #111827;
+
+    /* SEMANTIC SURFACES */
+
+    --color-app-background: #edf4ff;
+    --color-surface: #ffffff;
+    --color-surface-soft: #f8fbff;
+    --color-surface-raised: rgba(255, 255, 255, 0.9);
+    --color-border-soft: rgba(15, 79, 146, 0.12);
+    --color-text-strong: #101828;
+    --color-text-muted: #526172;
+    --color-accent-teal: #0f9aa6;
+    --color-accent-teal-soft: #d9fbff;
+    --color-focus-ring: rgba(21, 101, 192, 0.28);
 }
