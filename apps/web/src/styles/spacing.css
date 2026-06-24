@@ -19,6 +19,7 @@
     --radius-lg: 0.75rem;
     --radius-xl: 1rem;
     --radius-2xl: 1.5rem;
+    --radius-full: 999px;
 
     /* SHADOWS */
 
@@ -30,6 +31,15 @@
 
     --shadow-lg:
         0 12px 24px rgba(0, 0, 0, 0.12);
+
+    --shadow-primary:
+        0 18px 30px rgba(21, 101, 192, 0.22);
+
+    --shadow-surface:
+        0 22px 60px rgba(15, 79, 146, 0.14);
+
+    --shadow-soft:
+        0 12px 34px rgba(16, 24, 40, 0.08);
 
     /* CONTAINER */
 

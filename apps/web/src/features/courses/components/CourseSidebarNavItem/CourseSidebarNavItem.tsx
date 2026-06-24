@@ -29,14 +29,14 @@ export default function CourseSidebarNavItem({
                     ${
                       isActive
                         ? "bg-blue-700 text-white"
-                        : "text-blue-100 hover:bg-blue-800"
+                        : "text-white hover:bg-blue-800"
                     }
                 `
       }
     >
       <span className="text-current">{icon}</span>
 
-      <Text variant="small" className="font-medium text-current">
+      <Text variant="small" className="font-medium !text-white">
         {label}
       </Text>
     </NavLink>
