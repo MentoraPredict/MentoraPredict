@@ -10,13 +10,18 @@ interface UserApiResponse {
     id: string;
     email?: string;
     firstName?: string;
+    first_name?: string;
     lastName?: string;
+    last_name?: string;
     role?: string;
     isActive?: boolean;
+    is_active?: boolean;
     status?: UserStatus;
     photo?: string | null;
     createdAt?: string;
+    created_at?: string;
     updatedAt?: string;
+    updated_at?: string;
 }
 
 interface UpdateUserPayload {
@@ -36,19 +41,21 @@ function isUserRole(role?: string): role is UserRole {
 
 function toAppUser(user: UserApiResponse): AppUser {
     const isActive =
-        user.isActive ?? user.status === "ACTIVE";
+        user.isActive ??
+        user.is_active ??
+        user.status === "ACTIVE";
 
     return {
         id: user.id,
         email: user.email ?? "Sin correo registrado",
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.firstName ?? user.first_name,
+        lastName: user.lastName ?? user.last_name,
         role: isUserRole(user.role)
             ? user.role
             : fallbackUserRole,
         isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
+        createdAt: user.createdAt ?? user.created_at,
+        updatedAt: user.updatedAt ?? user.updated_at,
     };
 }
 

@@ -2,9 +2,8 @@ FROM postgres:16
 
 COPY database/seeds /seeds
 COPY database/load_all.sql /load_all.sql
-
 COPY infra/scripts/run-seeds.sh /run-seeds.sh
 
 RUN chmod +x /run-seeds.sh
 
-ENTRYPOINT ["/run-seeds.sh"]
+ENTRYPOINT ["sh", "/run-seeds.sh"]

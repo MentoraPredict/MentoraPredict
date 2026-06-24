@@ -1,6 +1,7 @@
 export interface CourseUploadedFile {
   id: string;
   name: string;
+  file: File;
 }
 
 export interface GradeEvaluationItem {

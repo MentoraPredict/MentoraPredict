@@ -19,3 +19,4 @@ export { default as TeacherCourseStudentsTableRow } from "./TeacherCourseStudent
 export { default as StudentEnrollmentCell } from "./StudentEnrollmentCell";
 
 export { default as TeacherCourseEdit } from "./TeacherCourseEdit";
+export { default as TeacherCoursePageLayout } from "./TeacherCoursePageLayout";

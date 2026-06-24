@@ -8,7 +8,7 @@ import type { CourseUploadedFile } from "@/types/course";
 
 interface CourseFilesUploadPanelProps {
   files: CourseUploadedFile[];
-  onAddFile: (fileName: string) => void;
+  onAddFile: (file: File) => void;
   onRemoveFile: (fileId: string) => void;
 }
 
@@ -24,7 +24,7 @@ export default function CourseFilesUploadPanel({
       return;
     }
 
-    onAddFile(file.name);
+    onAddFile(file);
 
     event.target.value = "";
   };
