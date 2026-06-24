@@ -73,6 +73,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -119,6 +120,17 @@ services:
           - /api/v1/users/docs
         strip_path: false
         regex_priority: 200
+      - name: user-internal-routes
+        paths:
+          - /api/v1/users/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: user-routes
         paths:
           - /api/v1/users
@@ -127,6 +139,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -164,6 +177,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -190,6 +204,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -207,6 +222,34 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
+              key_claim_name: iss
+              claims_to_verify:
+                - exp
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
+  - name: prediction-service
+    url: http://prediction-service:3006
+    routes:
+      - name: prediction-docs
+        paths:
+          - /api/v1/prediction/docs
+        strip_path: false
+        regex_priority: 200
+      - name: prediction-routes
+        paths:
+          - /api/v1/prediction
+        strip_path: false
+        regex_priority: 100
+        plugins:
+          - name: jwt
+            config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
