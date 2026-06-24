@@ -10,7 +10,7 @@ import { UpdateUserDto } from '../../application/dtos/update-user.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('user-service')
-@ApiBearerAuth('access-token')
+@ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard)
 @Controller('api/v1/users')
 export class UsersController {

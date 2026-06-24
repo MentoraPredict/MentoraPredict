@@ -36,6 +36,8 @@ jobs:
               - 'services/user-service/**'
             analytics-service:
               - 'services/analytics-service/**'
+            prediction-service:
+              - 'services/prediction-service/**'
             web:
               - 'apps/web/**'
             kong:
@@ -56,6 +58,7 @@ jobs:
               {"service":"academic-service","type":"docker","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
               {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"},
               {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
+              {"service":"prediction-service","type":"docker","dockerfile":"services/prediction-service/Dockerfile","changed":"true"},
               {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"},
               {"service":"kong","type":"compose","changed":"true"}
             ]
@@ -209,6 +212,9 @@ jobs:
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             MONGO_DB=${{ secrets.MONGO_DB }}
             KONG_PROXY_PORT=${{ secrets.KONG_PROXY_PORT }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
+            SWAGGER_SERVER_URL=${{ secrets.SWAGGER_SERVER_URL }}
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env

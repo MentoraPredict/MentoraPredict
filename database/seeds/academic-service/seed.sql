@@ -128,7 +128,7 @@ INSERT INTO academic_periods (
  'Periodo académico segundo semestre 2028',
  '2028-09-01', '2029-02-28',
  'PLANNED', 'SEMESTER',
- NOW(), NOW()),
+ NOW(), NOW())
 
  ON CONFLICT (id) DO NOTHING;
 
@@ -255,7 +255,7 @@ INSERT INTO subjects (
 -- =====================================================
 ('10101010-0001-1111-1111-111111111111', 'Proyecto de Titulación', 'Trabajo final de grado', 'PT1001', 8,
  '55555555-5555-5555-5555-555555555551',
- '11111111-1111-1111-1111-111111111111', 25, NULL, TRUE, NOW(), NOW()),
+ '11111111-1111-1111-1111-111111111111', 25, NULL, TRUE, NOW(), NOW())
 
  ON CONFLICT (id) DO NOTHING;
 
@@ -322,6 +322,6 @@ INSERT INTO subjects (
 
 ('99999999-2222-2222-2222-000000000002', 'Historia del Arte', 'Corrientes artísticas', 'ART102', 3,
  '99999999-9999-9999-9999-999999999991',
- '11111111-1111-1111-1111-111111111111', 30, NULL, TRUE, NOW(), NOW()),
+ '11111111-1111-1111-1111-111111111111', 30, NULL, TRUE, NOW(), NOW())
 
  ON CONFLICT (id) DO NOTHING;

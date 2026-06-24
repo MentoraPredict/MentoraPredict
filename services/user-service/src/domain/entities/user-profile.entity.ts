@@ -16,7 +16,7 @@ export class UserProfileEntity {
     public readonly id: string,
     public photo: string | null,
     public bio: string | null,
-    public cedula: string,
+    public cedula: string | null,
     public authProvider: AuthProvider,
     public role: string,
     public status: UserProfileStatus,
