@@ -12,4 +12,10 @@ export const endpoints = {
         list: "/v1/users",
         detail: (id: string) => `/v1/users/${id}`,
     },
+    academic: {
+        subjects: "/v1/academic/subjects",
+        periods: "/v1/academic/periods",
+        careers: "/v1/academic/careers",
+        importGrades: "/v1/academic/import/grades",
+    },
 } as const;

@@ -3,40 +3,11 @@ import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
 import CourseGrid from "@/features/courses/components/CourseGrid";
-
-import type { Course } from "@/types/course";
-
-const mockCourses: Course[] = [
-  {
-    id: "1",
-    name: "Estadística avanzada",
-    teacherName: "Dr. Alberto Rodriguez",
-    semester: "2024-II",
-    description:
-      "Fundamentos de estadística avanzada aplicada a la toma de decisiones empresariales y minería de datos.",
-    riskLevel: "HIGH",
-  },
-  {
-    id: "2",
-    name: "Programación concurrente",
-    teacherName: "Ing. Marta Sánchez",
-    semester: "2024-II",
-    description:
-      "Introducción a la programación concurrente y algoritmos distribuidos para arquitecturas modernas.",
-    riskLevel: "LOW",
-  },
-  {
-    id: "3",
-    name: "Psicología cognitiva",
-    teacherName: "Dra. Claudia Pérez",
-    semester: "2024-II",
-    description:
-      "Psicología cognitiva y procesos de aprendizaje en entornos virtuales y educación híbrida.",
-    riskLevel: "MEDIUM",
-  },
-];
+import useAdminCourses from "@/features/admin/hooks/useAdminCourses";
 
 export default function AdminCoursesManagement() {
+  const { courses, isLoading, error } = useAdminCourses();
+
   return (
     <section className="py-8">
       <Container>
@@ -51,7 +22,21 @@ export default function AdminCoursesManagement() {
           </Text>
         </div>
 
-        <CourseGrid courses={mockCourses} />
+        {error ? (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-6 py-4">
+            <Text variant="small" className="font-medium text-red-700">
+              {error}
+            </Text>
+          </div>
+        ) : null}
+
+        {isLoading ? (
+          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center">
+            <Text variant="small">Cargando cursos...</Text>
+          </div>
+        ) : (
+          <CourseGrid courses={courses} />
+        )}
       </Container>
     </section>
   );
