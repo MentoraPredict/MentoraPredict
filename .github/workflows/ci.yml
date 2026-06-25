@@ -93,6 +93,7 @@ jobs:
           - user-service
           - academic-service
           - analytics-service
+          - prediction-service
           - web
         include:
           - service: auth-service
@@ -103,6 +104,8 @@ jobs:
             dockerfile: services/academic-service/Dockerfile
           - service: analytics-service
             dockerfile: services/analytics-service/Dockerfile
+          - service: prediction-service
+            dockerfile: services/prediction-service/Dockerfile
           - service: web
             dockerfile: apps/web/Dockerfile
 

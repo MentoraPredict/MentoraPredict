@@ -234,6 +234,8 @@ jobs:
             DEPLOY_SHA="${{ steps.sha.outputs.value }}"
             SHORT_SHA=$(echo "$DEPLOY_SHA" | cut -c1-7)
             IMAGE_TAG="main-${SHORT_SHA}"
+            CHANGED_SERVICES="${{ needs.detect-changes.outputs.changed_services }}"
+            SERVICES_LIST=$(echo "$CHANGED_SERVICES" | tr ',' ' ')
 
             sudo mkdir -p /opt/mentorapredict
             sudo chown ubuntu:ubuntu /opt/mentorapredict
@@ -279,9 +281,7 @@ jobs:
 
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
 
-            echo "[CLEAN] Removing existing application containers"
-            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
-            echo "[CLEAN] Cleanup completed"
+            echo "[SELECTIVE DEPLOY] Changed services: $CHANGED_SERVICES"
 
             echo "[KEYS] Creating certificate directories..."
             sudo mkdir -p /opt/mentorapredict/infra/keys
@@ -297,17 +297,25 @@ jobs:
               sleep 3
             done
 
-            echo "[PULL IMAGES]"
-            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml pull
+            echo "[PULL IMAGES] Changed: $CHANGED_SERVICES"
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml pull $SERVICES_LIST
 
-            echo "[MIGRATIONS - SAFE ORDER]"
-            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm auth-service npm run migration:run
-            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm user-service npm run migration:run
-            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm academic-service npm run migration:run
-            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm analytics-service npm run migration:run
+            echo "[MIGRATIONS - SELECTIVE]"
+            if echo "$CHANGED_SERVICES" | grep -q "auth-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm auth-service npm run migration:run
+            fi
+            if echo "$CHANGED_SERVICES" | grep -q "user-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm user-service npm run migration:run
+            fi
+            if echo "$CHANGED_SERVICES" | grep -q "academic-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm academic-service npm run migration:run
+            fi
+            if echo "$CHANGED_SERVICES" | grep -q "analytics-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm analytics-service npm run migration:run
+            fi
 
-            echo "[START SERVICES]"
-            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml up -d --force-recreate
+            echo "[START SERVICES] Starting only changed: $CHANGED_SERVICES"
+            docker compose --env-file .env -f infra/docker/docker-compose.prod.yml up -d --force-recreate $SERVICES_LIST
 
             echo "[MONITORING] Starting monitoring stack"
             docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml up -d 2>/dev/null || echo "[MONITORING] Monitoring stack not available — skipping"
