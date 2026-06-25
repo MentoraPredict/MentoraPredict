@@ -13,7 +13,7 @@ volumes:
 
 services:
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.7.0
     container_name: mp_node_exporter
     restart: unless-stopped
     command:
@@ -31,7 +31,7 @@ services:
       - mentorapredict-net
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: mp_cadvisor
     restart: unless-stopped
     security_opt:
@@ -53,7 +53,7 @@ services:
       - mentorapredict-net
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.52.0
     container_name: mp_prometheus
     restart: unless-stopped
     command:
@@ -76,7 +76,7 @@ services:
       - cadvisor
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:2.9.2
     container_name: mp_loki
     user: "10001:10001"
     restart: unless-stopped
@@ -91,7 +91,7 @@ services:
       - mentorapredict-net
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:2.9.2
     container_name: mp_promtail
     restart: unless-stopped
     command:
@@ -106,7 +106,7 @@ services:
       - loki
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.4.2
     container_name: mp_grafana
     user: "472:472"
     restart: unless-stopped
@@ -128,23 +128,3 @@ services:
       - prometheus
       - loki
 
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: mp_alertmanager
-    restart: unless-stopped
-    entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
-    command:
-      - --config.file=/etc/alertmanager/alertmanager.yml
-      - --storage.path=/alertmanager
-    environment:
-      ALERTMANAGER_SMTP_FROM: ${ALERTMANAGER_SMTP_FROM:-alertmanager@mentorapredict.com}
-      ALERTMANAGER_SMTP_HOST: ${ALERTMANAGER_SMTP_HOST:-localhost:25}
-      ALERTMANAGER_SMTP_TLS: ${ALERTMANAGER_SMTP_TLS:-false}
-      ALERTMANAGER_EMAIL_TO: ${ALERTMANAGER_EMAIL_TO:-admin@mentorapredict.com}
-    volumes:
-      - ./alerts/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - ./alerts/entrypoint.sh:/etc/alertmanager/entrypoint.sh:ro
-    networks:
-      - mentorapredict-net
-    depends_on:
-      - prometheus
