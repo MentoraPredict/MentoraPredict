@@ -67,3 +67,5 @@ keys/
 kong.yml
 *storybook.log
 storybook-static
+
+.pnpm-store/

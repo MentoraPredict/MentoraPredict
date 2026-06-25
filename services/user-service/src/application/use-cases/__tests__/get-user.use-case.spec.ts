@@ -5,6 +5,7 @@ import {
   AuthProvider,
   UserProfileEntity,
 } from "../../../domain/entities/user-profile.entity";
+import { IAuthServiceClient } from "../../ports/output/i-auth-service.client";
 
 const profile = new UserProfileEntity(
   "uid-1",
@@ -27,14 +28,28 @@ const mockRepo = (): jest.Mocked<IUserProfileRepository> => ({
   findAll: jest.fn(),
 });
 
+const mockAuthClient = (): jest.Mocked<IAuthServiceClient> => ({
+  getUserById: jest.fn(),
+});
+
 describe("GetUserUseCase", () => {
   it("returns user when found", async () => {
     const repo = mockRepo();
+    const authClient = mockAuthClient();
     repo.findById.mockResolvedValue(profile);
-    const useCase = new GetUserUseCase(repo);
+    authClient.getUserById.mockResolvedValue({
+      id: "uid-1",
+      email: "student@example.com",
+      firstName: "Ada",
+      lastName: "Lovelace",
+      isActive: true,
+    });
+    const useCase = new GetUserUseCase(repo, authClient);
 
     const result = await useCase.execute("uid-1");
     expect(result.id).toBe("uid-1");
+    expect(result.email).toBe("student@example.com");
+    expect(result.firstName).toBe("Ada");
   });
 
   it("throws when user not found", async () => {

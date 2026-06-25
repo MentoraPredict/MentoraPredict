@@ -1,6 +1,9 @@
-import { IsEnum, IsOptional, IsString, ValidateIf } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AuthProvider, UserProfileStatus } from '../../domain/entities/user-profile.entity';
+import { IsEnum, IsOptional, IsString, ValidateIf } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  AuthProvider,
+  UserProfileStatus,
+} from "../../domain/entities/user-profile.entity";
 
 export class UpdateUserDto {
   @ApiPropertyOptional()
@@ -36,3 +39,5 @@ export class UpdateUserDto {
   @IsEnum(UserProfileStatus)
   status?: UserProfileStatus;
 }
+
+export class UpdateUserProfileDto extends UpdateUserDto {}

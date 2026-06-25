@@ -14,6 +14,7 @@ const mockRepo = (): jest.Mocked<IUserRepository> => ({
 
 const mockUserProfileClient: IUserProfileClient = {
   createProfile: jest.fn().mockResolvedValue(undefined),
+  updateProfile: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockHasher = (): jest.Mocked<IPasswordHasher> => ({
@@ -27,6 +28,7 @@ describe("RegisterUserUseCase", () => {
   let hasher: jest.Mocked<IPasswordHasher>;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     repo = mockRepo();
     hasher = mockHasher();
     useCase = new RegisterUserUseCase(repo, hasher, mockUserProfileClient);

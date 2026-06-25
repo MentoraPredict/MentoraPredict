@@ -6,6 +6,8 @@ POSTGRES_USER=${POSTGRES_USER:-mp_user}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
 POSTGRES_DB=${POSTGRES_DB:-mentorapredict}
 
+export PGPASSWORD="$POSTGRES_PASSWORD"
+
 echo "Waiting for Postgres..."
 
 until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
