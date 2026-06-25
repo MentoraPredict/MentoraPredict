@@ -310,7 +310,7 @@ jobs:
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm seed || true
 
             echo "[MONITORING] Starting monitoring stack"
-            docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml up -d 2>/dev/null || echo "[MONITORING] Monitoring stack not available — skipping"
+            docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml --project-name mentorapredict up -d 2>&1 || echo "[MONITORING] Monitoring stack not available — skipping"
 
             docker system prune -af --filter "until=24h"
 
