@@ -108,7 +108,7 @@ start_monitoring() {
     docker compose -p "$PROJECT_NAME" \
         -f "infra/monitoring/docker-compose.monitoring.yml" \
         --env-file "$ENV_FILE" \
-        up -d 2>/dev/null || echo "[MONITORING] Monitoring stack not available — skipping"
+        up -d || echo "[MONITORING] Monitoring stack not available — skipping"
 }
 
 start_services() {
