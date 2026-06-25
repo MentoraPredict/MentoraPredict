@@ -30,13 +30,11 @@ storage_config:
   tsdb_shipper:
     active_index_directory: /loki/index
     cache_location: /loki/index_cache
-    shared_store: filesystem
   filesystem:
     directory: /loki/chunks
 
 compactor:
   working_directory: /loki/compactor
-  shared_store: filesystem
 
 limits_config:
   reject_old_samples: true
@@ -56,7 +54,6 @@ ruler:
     local:
       directory: /loki/rules
   rule_path: /loki/rules-temp
-  alertmanager_url: http://alertmanager:9093
   ring:
     kvstore:
       store: inmemory
