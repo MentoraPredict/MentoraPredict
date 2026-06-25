@@ -302,16 +302,16 @@ jobs:
 
             echo "[MIGRATIONS - SELECTIVE]"
             if echo "$CHANGED_SERVICES" | grep -q "auth-service"; then
-              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm auth-service npm run migration:run
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm auth-service sh -lc 'if npm run | grep -q "migration:run"; then npm run migration:run; else echo "[MIGRATION] auth-service has no migration:run script, skipping"; fi'
             fi
             if echo "$CHANGED_SERVICES" | grep -q "user-service"; then
-              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm user-service npm run migration:run
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm user-service sh -lc 'if npm run | grep -q "migration:run"; then npm run migration:run; else echo "[MIGRATION] user-service has no migration:run script, skipping"; fi'
             fi
             if echo "$CHANGED_SERVICES" | grep -q "academic-service"; then
-              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm academic-service npm run migration:run
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm academic-service sh -lc 'if npm run | grep -q "migration:run"; then npm run migration:run; else echo "[MIGRATION] academic-service has no migration:run script, skipping"; fi'
             fi
             if echo "$CHANGED_SERVICES" | grep -q "analytics-service"; then
-              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm analytics-service npm run migration:run
+              docker compose --env-file .env -f infra/docker/docker-compose.prod.yml run --rm analytics-service sh -lc 'if npm run | grep -q "migration:run"; then npm run migration:run; else echo "[MIGRATION] analytics-service has no migration:run script, skipping"; fi'
             fi
 
             echo "[START SERVICES] Starting only changed: $CHANGED_SERVICES"
