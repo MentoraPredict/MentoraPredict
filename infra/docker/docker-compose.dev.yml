@@ -6,6 +6,7 @@
 
 networks:
   mentorapredict-net:
+    name: mp_network
     driver: bridge
 
 volumes:
