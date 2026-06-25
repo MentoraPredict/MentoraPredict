@@ -44,6 +44,8 @@ jobs:
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
+            monitoring:
+              - 'infra/monitoring/**'
             infra:
               - 'infra/docker/**'
             packages:
@@ -58,6 +60,7 @@ jobs:
           ANALYTICS_CHANGED=${{ steps.filter.outputs.analytics-service }}
           WEB_CHANGED=${{ steps.filter.outputs.web }}
           KONG_CHANGED=${{ steps.filter.outputs.kong }}
+          MONITORING_CHANGED=${{ steps.filter.outputs.monitoring }}
           INFRA_CHANGED=${{ steps.filter.outputs.infra }}
           PACKAGES_CHANGED=${{ steps.filter.outputs.packages }}
 
@@ -68,6 +71,7 @@ jobs:
             ANALYTICS_CHANGED="true"
             WEB_CHANGED="true"
             KONG_CHANGED="true"
+            MONITORING_CHANGED="true"
           fi
 
           jq -n \
@@ -295,6 +299,9 @@ jobs:
 
             echo "[SEEDS] Running database seeds (idempotent safe mode)"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm seed || true
+
+            echo "[MONITORING] Starting monitoring stack"
+            docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml up -d 2>/dev/null || echo "[MONITORING] Monitoring stack not available — skipping"
 
             docker system prune -af --filter "until=24h"
 

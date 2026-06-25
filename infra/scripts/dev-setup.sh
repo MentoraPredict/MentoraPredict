@@ -102,6 +102,15 @@ run_migrations() {
         run --rm analytics-service npm run migration:run || true
 }
 
+start_monitoring() {
+    cd "$DEPLOY_DIR"
+    echo "[MONITORING] Starting monitoring stack (Prometheus, Grafana, Loki, Promtail)"
+    docker compose -p "$PROJECT_NAME" \
+        -f "infra/monitoring/docker-compose.monitoring.yml" \
+        --env-file "$ENV_FILE" \
+        up -d 2>/dev/null || echo "[MONITORING] Monitoring stack not available — skipping"
+}
+
 start_services() {
     cd "$DEPLOY_DIR"
     echo "[BUILD & START SERVICES]"
@@ -156,6 +165,7 @@ main() {
     run_migrations
     start_services
     run_seeds
+    start_monitoring
     cleanup_docker
     show_status
 }
