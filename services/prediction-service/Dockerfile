@@ -19,7 +19,8 @@ RUN pnpm --filter @mentorapredict/prediction-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/services/prediction-service
-RUN addgroup --system --gid 1001 nodejs && \
+RUN apk add --no-cache wget && \
+    addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 COPY --from=builder /app/services/prediction-service/dist ./dist
 COPY --from=builder /app/services/prediction-service/package.json ./
@@ -28,4 +29,6 @@ COPY --from=builder /app/services/prediction-service/node_modules ./node_modules
 USER nestjs
 ENV NODE_ENV=production
 EXPOSE 3006
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3006/health || exit 1
 CMD ["node", "dist/main"]

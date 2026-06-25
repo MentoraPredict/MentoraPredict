@@ -115,7 +115,7 @@ services:
       retries: 5
 
   redis-commander:
-    image: rediscommander/redis-commander:latest
+    image: rediscommander/redis-commander:0.7.2
     container_name: mp_redis_ui
     restart: unless-stopped
     profiles: ["tools"]
@@ -162,6 +162,8 @@ services:
       academic-service:
         condition: service_healthy
       analytics-service:
+        condition: service_healthy
+      prediction-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "kong", "health"]
