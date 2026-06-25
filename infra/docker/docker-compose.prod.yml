@@ -1,3 +1,7 @@
+# MentoraPredict — Production/QA Core Stack (Services + Gateway Only)
+# Usage:
+# 1. docker compose -p mentorapredict -f infra/docker/docker-compose.prod.yml --env-file .env up -d
+
 networks:
   mentorapredict-net:
     name: mp_network
@@ -57,7 +61,7 @@ services:
     container_name: mp_auth_service
     restart: always
     expose:
-      - 3001
+      - "3001"
     environment:
       NODE_ENV: development
       PORT: 3001
@@ -72,6 +76,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://mp_user_service:3002}
       CORS_ORIGINS: ${CORS_ORIGINS}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictprod.programacionwebuce.net}
     networks:
@@ -84,7 +89,7 @@ services:
     container_name: mp_user_service
     restart: always
     expose:
-      - 3002
+      - "3002"
     environment:
       NODE_ENV: development
       PORT: 3002
@@ -98,6 +103,14 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       CORS_ORIGINS: ${CORS_ORIGINS}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictprod.programacionwebuce.net}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
+    volumes:
+      - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
 
@@ -106,7 +119,7 @@ services:
     container_name: mp_academic_service
     restart: always
     expose:
-      - 3003
+      - "3003"
     environment:
       NODE_ENV: development
       PORT: 3003
@@ -128,6 +141,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://mp_user_service:3002}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     networks:
       - mentorapredict-net
     volumes:
@@ -138,7 +153,7 @@ services:
     container_name: mp_analytics_service
     restart: always
     expose:
-      - 3004
+      - "3004"
     environment:
       NODE_ENV: development
       PORT: 3004
@@ -160,8 +175,38 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://mp_academic_service:3003}
       RISK_HIGH_THRESHOLD: ${RISK_HIGH_THRESHOLD:-40}
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    volumes:
+      - ../keys:/secrets:ro
+    networks:
+      - mentorapredict-net
+
+  prediction-service:
+    image: ${DOCKERHUB_USERNAME}/prediction-service:${IMAGE_TAG:-main-latest}
+    container_name: mp_prediction_service
+    restart: always
+    expose:
+      - "3006"
+    environment:
+      NODE_ENV: development
+      PORT: 3006
+      MONGO_HOST: ${MONGO_HOST:-mongo}
+      MONGO_PORT: 27017
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://mp_analytics_service:3004}
+      ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://mp_academic_service:3003}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictprod.programacionwebuce.net}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -172,10 +217,34 @@ services:
     container_name: mp_web
     restart: always
     expose:
-      - 80
+      - "80"
     environment:
       NODE_ENV: development
     networks:
       - mentorapredict-net
     depends_on:
       - kong
+
+  seed-loader:
+    build:
+      context: ../..
+      dockerfile: database/Dockerfile.seed
+    container_name: mp_seed_loader
+    restart: "no"
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      academic-service:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+    networks:
+      - mentorapredict-net

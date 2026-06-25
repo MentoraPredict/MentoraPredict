@@ -1,27 +1,45 @@
 # prediction-service — Service Boundary
 
+> **Nota de fusión:** este servicio absorbe lo que originalmente eran `prediction-service`
+> y `recommendation-service` (ambos eran skeletons sin lógica implementada). Se unificaron
+> porque ambos dependían de los mismos datos (riesgo + contexto académico del estudiante)
+> y porque ya no se generan predicciones/análisis locales con modelos propios: las
+> recomendaciones se generan vía la API de OpenAI. Esto elimina la necesidad de un runtime
+> Python/ML separado.
+
 Responsabilidad única (SRP):
-- Ejecutar modelos de predicción y exponer endpoints para solicitud de predicciones, listado de modelos y feedback de etiquetas.
+- Combinar el riesgo académico ya calculado por `analytics-service` (RF-018, determinístico)
+  con el contexto académico del estudiante (`academic-service`) y producir, vía OpenAI,
+  un resumen en lenguaje natural + un plan de recomendaciones accionables.
+- prediction-service NUNCA calcula el riesgo por su cuenta — siempre lo consume de
+  analytics-service. OpenAI solo redacta texto, no decide niveles de riesgo.
 
 Inputs:
-- Requests de predicción desde `metrics-service` o `recommendation-service`.
-- Datos históricos y features desde `prediction-service` ingestion pipelines (fuera de fase 0).
+- `GET /api/v1/prediction/students/:studentId/periods/:periodId` (JWT de usuario, vía Kong).
+- Internamente: `analytics-service` (`/internal/risk-snapshot`) y `academic-service`
+  (`/internal/students/:id/grades`) vía tokens de servicio firmados con `InternalJwtService`.
 
 Outputs:
-- Predicciones por estudiante/asignatura.
-- Guardado de requests y resultados en MongoDB (`prediction_requests`).
-- Publicación opcional de eventos a `analytics-service`.
+- `PredictionResult` JSON: `{ studentId, periodId, risk, summary, recommendations[], modelVersion, generatedAt }`.
+- Persistencia de cada predicción en MongoDB (`prediction_logs`) para trazabilidad/auditoría.
 
 Datos que gestiona (ownership):
-- Colecciones en MongoDB: `prediction_requests`, `student_profiles`, `model_metadata`.
+- Colección MongoDB: `prediction_logs`.
 
 Dependencias:
-- `user-service` (para validate student existence) y `academic-service` (metadata asignaturas).
+- `analytics-service` (riesgo determinístico).
+- `academic-service` (notas/materias del período).
+- OpenAI API (`OPENAI_API_KEY`) — solo para redactar `summary` + `recommendations`.
 
 API surface (resumen):
-- `POST /api/v1/prediction/predict`
-- `GET /api/v1/prediction/models`
-- `POST /api/v1/prediction/feedback`
+- `GET /api/v1/prediction/students/:studentId/periods/:periodId` — genera predicción + recomendaciones.
+- `GET /api/v1/prediction/students/:studentId/history?limit=N` — historial de predicciones.
 
-Persistencia recomendada:
-- MongoDB para resultados y metadatos de modelos; S3/Blob para artefactos de modelos si aplica.
+Persistencia:
+- MongoDB (`prediction_logs`), sin Postgres ni Redis — el servicio es stateless respecto
+  a cálculos, solo registra resultados.
+
+Stack:
+- NestJS (TypeScript) puro. Sin Python, sin runtime ML local — toda la "predicción" de
+  riesgo es la fórmula determinística ya existente en analytics-service; lo único generativo
+  es el texto de recomendaciones, delegado a OpenAI.

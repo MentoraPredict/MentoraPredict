@@ -6,6 +6,7 @@ export interface UserProfileFilters {
 }
 
 export interface IUserProfileRepository {
+  create(profile: { id: string; role: string; cedula?: string | null }): Promise<UserProfileEntity>;
   findById(id: string): Promise<UserProfileEntity | null>;
   update(id: string, data: Partial<UserProfileEntity>): Promise<UserProfileEntity>;
   softDelete(id: string): Promise<void>;

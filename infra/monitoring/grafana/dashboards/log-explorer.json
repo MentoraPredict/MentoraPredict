@@ -1,0 +1,100 @@
+{
+  "title": "Log Explorer",
+  "uid": "log-explorer",
+  "version": 1,
+  "tags": ["mentorapredict", "logs"],
+  "timezone": "browser",
+  "editable": true,
+  "panels": [
+    {
+      "title": "Log Volume by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (service) (rate({job=\"docker-container-logs\"}[5m]))",
+          "legendFormat": "{{ service }}"
+        }
+      ],
+      "datasource": "Loki"
+    },
+    {
+      "title": "Log Volume by Container",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (container) (rate({job=\"docker-container-logs\"}[5m]))",
+          "legendFormat": "{{ container }}"
+        }
+      ],
+      "datasource": "Loki"
+    },
+    {
+      "title": "Error Logs",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "{job=\"docker-container-logs\"} |= \"ERROR\" |= \"mp_\"",
+          "legendFormat": ""
+        }
+      ],
+      "datasource": "Loki"
+    },
+    {
+      "title": "Recent Logs",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "expr": "{job=\"docker-container-logs\"} |= \"mp_\"",
+          "legendFormat": ""
+        }
+      ],
+      "datasource": "Loki"
+    },
+    {
+      "title": "Log Rate by Level",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 },
+      "targets": [
+        {
+          "expr": "sum by (level) (rate({job=\"docker-container-logs\"} | json [5m]))",
+          "legendFormat": "{{ level }}"
+        }
+      ],
+      "datasource": "Loki",
+      "options": {
+        "pieType": "pie",
+        "displayLabels": ["name", "value", "percent"],
+        "legend": { "displayMode": "table", "placement": "right" }
+      }
+    },
+    {
+      "title": "Logs by Service (Last 1h)",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 32 },
+      "targets": [
+        {
+          "expr": "sum by (service) (count_over_time({job=\"docker-container-logs\"}[1h]))",
+          "legendFormat": "{{ service }}"
+        }
+      ],
+      "datasource": "Loki"
+    },
+    {
+      "title": "Log Volume Timeline",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 },
+      "targets": [
+        {
+          "expr": "sum by (level) (rate({job=\"docker-container-logs\"} | json [1m]))",
+          "legendFormat": "{{ level }}"
+        }
+      ],
+      "datasource": "Loki"
+    }
+  ],
+  "schemaVersion": 36
+}

@@ -47,7 +47,7 @@ export class AcademicHttpClient implements IAcademicServiceClient {
 
         const res = await fetch(url, {
           headers: {
-            'x-internal-api-key': this.internalJwt.getServiceKey(),
+            Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
             'x-correlation-id': corrId,
             Accept: 'application/json',
           },

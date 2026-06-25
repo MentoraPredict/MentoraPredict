@@ -14,6 +14,8 @@ import { RedisAdapter } from "./infrastructure/cache/redis.adapter";
 import { JwtAdapter } from "./infrastructure/config/jwt.adapter";
 import { BcryptAdapter } from "./infrastructure/config/bcrypt.adapter";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
+import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
+import { UserProfileHttpClient } from "./infrastructure/adapters/user-profile-http.client";
 
 import { RegisterUserUseCase } from "./application/use-cases/register-user.use-case";
 import { LoginUserUseCase } from "./application/use-cases/login-user.use-case";
@@ -22,6 +24,8 @@ import { RefreshTokenUseCase } from "./application/use-cases/refresh-token.use-c
 import { ForgotPasswordUseCase } from "./application/use-cases/forgot-password.use-case";
 import { ResetPasswordUseCase } from "./application/use-cases/reset-password.use-case";
 import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
+import { InternalUsersController } from "./infrastructure/controllers/internal-auth.controller";
+import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-case";
 
 @Module({
   imports: [
@@ -47,8 +51,14 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
 
         // RS256 when asymmetric keys are provided (recommended for production).
         // Falls back to HS256 with JWT_SECRET for local development.
@@ -59,7 +69,6 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
             signOptions: {
               algorithm: "RS256",
               issuer: "mentorapredict",
-              audience: "mentorapredict-api",
             },
           };
         }
@@ -67,13 +76,17 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
           secret: cfg.get("JWT_SECRET", "dev-secret-change-in-prod"),
           signOptions: {
             issuer: "mentorapredict",
-            audience: "mentorapredict-api",
           },
         };
       },
     }),
   ],
-  controllers: [AuthController, HealthController, RootController],
+  controllers: [
+    AuthController,
+    HealthController,
+    RootController,
+    InternalUsersController,
+  ],
   providers: [
     // Infrastructure adapters registered as interface tokens
     RedisClient,
@@ -84,6 +97,8 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
     { provide: "IPasswordHasher", useClass: BcryptAdapter },
     { provide: "ITokenGenerator", useClass: JwtAdapter },
     { provide: "IUserRepository", useClass: UserRepository },
+    InternalJwtService,
+    { provide: "IUserProfileClient", useClass: UserProfileHttpClient },
     // Use-cases
     RegisterUserUseCase,
     LoginUserUseCase,
@@ -91,6 +106,7 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
     RefreshTokenUseCase,
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
+    GetAuthUserUseCase,
   ],
 })
 export class AppModule {}

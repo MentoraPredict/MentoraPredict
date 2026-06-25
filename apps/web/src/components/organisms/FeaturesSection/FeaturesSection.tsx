@@ -9,49 +9,52 @@ import Text from "@/components/atoms/Text";
 import FeatureCard from "@/components/molecules/FeatureCard";
 
 export default function FeaturesSection() {
-    return (
-        <section
-            id="features"
-            className="py-20"
-        >
-            <Container>
-                <div className="text-center">
-                    <Heading as="h2">
-                        Características
-                    </Heading>
+  return (
+    <section id="features" className="py-20">
+      <Container>
+        <div className="text-center">
+          <Heading as="h2">Características</Heading>
 
-                    <Text className="mt-4">
-                        Herramientas impulsadas por IA.
-                    </Text>
-                </div>
+          <Text className="mt-4">
+            Nuestra tecnología combina machine learning con pedagogía moderna
+            para ofrecer una visión 360 del ecosistema estudiantil.
+          </Text>
+        </div>
 
-                <div
-                    className="
+        <div
+          className="
             mt-12
             grid
             gap-6
             md:grid-cols-3
           "
-                >
-                    <FeatureCard
-                        icon={<FaBrain />}
-                        title="AI Analysis"
-                        description="Análisis avanzado del rendimiento."
-                    />
+        >
+          <FeatureCard
+            icon={<FaBrain />}
+            title="AI Analysis"
+            description="Algoritmos de red neuronal que analizan
+            patrones de comportamiento, asistencia y
+            calificaciones para detectar anomalías antes
+            de que ocurran."
+          />
 
-                    <FeatureCard
-                        icon={<FaBell />}
-                        title="Alertas"
-                        description="Detección temprana de riesgos."
-                    />
+          <FeatureCard
+            icon={<FaBell />}
+            title="Alertas"
+            description="Sistema de notificaciones inteligentes para
+            docentes y directivos cuando un estudiante
+            cruza umbrales críticos de riesgo académico."
+          />
 
-                    <FeatureCard
-                        icon={<FaChartLine />}
-                        title="Recomendaciones"
-                        description="Acciones personalizadas para mejorar resultados."
-                    />
-                </div>
-            </Container>
-        </section>
-    );
+          <FeatureCard
+            icon={<FaChartLine />}
+            title="Recomendaciones"
+            description="Sugerencias personalizadas de intervención
+            basadas en perfiles psicopedagógicos para
+            mejorar la tutoría y el acompañamiento."
+          />
+        </div>
+      </Container>
+    </section>
+  );
 }

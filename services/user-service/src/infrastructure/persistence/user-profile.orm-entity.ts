@@ -7,7 +7,7 @@ export class UserProfileOrmEntity {
   @PrimaryColumn('uuid') id!: string;
   @Column({ type: 'varchar', nullable: true }) photo!: string | null;
   @Column({ type: 'text', nullable: true }) bio!: string | null;
-  @Column({ unique: true }) cedula!: string;
+  @Column({ type: 'varchar', unique: true, nullable: true }) cedula!: string | null;
   @Column({ name: 'auth_provider', type: 'varchar', default: 'LOCAL' }) authProvider!: string;
   @Column({ type: 'varchar', default: 'STUDENT' }) role!: string;
   @Column({ type: 'varchar', default: 'ACTIVE' }) status!: string;

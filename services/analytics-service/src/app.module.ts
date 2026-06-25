@@ -6,6 +6,7 @@ import { JwtModule } from "@nestjs/jwt";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
+import { InternalAnalyticsController } from "./infrastructure/controllers/internal-analytics.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
@@ -24,7 +25,6 @@ import { MetricsCacheAdapter } from "./infrastructure/cache/metrics-cache.adapte
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
-import { JwtAuthGuard } from "./infrastructure/guards/jwt-auth.guard";
 
 import { CalculateAverageUseCase } from "./application/use-cases/calculate-average.use-case";
 import { CalculateTrendUseCase } from "./application/use-cases/calculate-trend.use-case";
@@ -35,6 +35,7 @@ import { GetAlertsUseCase } from "./application/use-cases/get-alerts.use-case";
 import { GetStudentDashboardUseCase } from "./application/use-cases/get-student-dashboard.use-case";
 import { GetTeacherDashboardUseCase } from "./application/use-cases/get-teacher-dashboard.use-case";
 import { GetAdminDashboardUseCase } from "./application/use-cases/get-admin-dashboard.use-case";
+import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapshot.use-case";
 
 @Module({
   imports: [
@@ -84,13 +85,13 @@ import { GetAdminDashboardUseCase } from "./application/use-cases/get-admin-dash
   controllers: [
     AnalyticsController,
     AlertsController,
+    InternalAnalyticsController,
     HealthController,
     RootController,
   ],
   providers: [
     RedisClient,
     InternalJwtService,
-    JwtAuthGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
     {
       provide: "IStudentMetricsRepository",
@@ -123,6 +124,7 @@ import { GetAdminDashboardUseCase } from "./application/use-cases/get-admin-dash
     GetStudentDashboardUseCase,
     GetTeacherDashboardUseCase,
     GetAdminDashboardUseCase,
+    GetRiskSnapshotUseCase,
   ],
 })
 export class AppModule {}

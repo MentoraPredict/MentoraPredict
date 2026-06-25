@@ -451,7 +451,7 @@ Currently `LoginForm` imports `axios` to use `axios.isAxiosError`.
 
 That works, but it is not the final convention.
 
-Better approach:
+# Better approach:
 
 ```txt
 services/api/httpErrors.ts
@@ -639,4 +639,4 @@ No direct Axios inside components.
 No features/dashboard.
 ```
 
-These rules keep the frontend consistent, easy to review, and aligned with the MentoraPredict architecture.
+# These rules keep the frontend consistent, easy to review, and aligned with the MentoraPredict architecture.

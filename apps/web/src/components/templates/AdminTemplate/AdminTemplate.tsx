@@ -21,7 +21,7 @@ const adminNavItems = [
 
 export default function AdminTemplate({ children }: AdminTemplateProps) {
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="app-page">
       <DashboardNavbar navItems={adminNavItems} />
 
       <main>{children}</main>

@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class InternalJwtService {
-  getServiceKey(): string {
-    const key = process.env.INTERNAL_API_KEY;
-    if (!key) throw new Error('INTERNAL_API_KEY is not set');
-    return key;
+  constructor(private readonly jwt: JwtService) {}
+
+  createServiceToken(): string {
+    return this.jwt.sign(
+      { sub: 'analytics-service', scope: 'service:internal' },
+      { expiresIn: '5m' },
+    );
   }
 }

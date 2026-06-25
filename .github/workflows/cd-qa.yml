@@ -4,6 +4,10 @@ on:
   push:
     branches: [QA]
 
+concurrency:
+  group: qa-deploy
+  cancel-in-progress: true
+
 env:
   REGISTRY: docker.io
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -13,9 +17,10 @@ jobs:
     name: Detect Changed Services
     runs-on: ubuntu-latest
     outputs:
+      has_changes: ${{ steps.generate-matrix.outputs.has_changes }}
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       docker_matrix: ${{ steps.generate-matrix.outputs.docker_matrix }}
-      packages: ${{ steps.filter.outputs.packages }}
+      changed_services: ${{ steps.generate-matrix.outputs.changed_services }}
 
     steps:
       - uses: actions/checkout@v4
@@ -34,44 +39,81 @@ jobs:
               - 'services/user-service/**'
             analytics-service:
               - 'services/analytics-service/**'
+            prediction-service:
+              - 'services/prediction-service/**'
             web:
               - 'apps/web/**'
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
+            monitoring:
+              - 'infra/monitoring/**'
             infra:
               - 'infra/docker/**'
             packages:
               - 'packages/**'
 
-      - name: Generate Matrix (changed:true TEMPORAL)
+      - name: Generate Dynamic Matrix
         id: generate-matrix
         run: |
-          cat <<EOF > matrix.json
-          {
-            "include": [
-              {"service":"auth-service","type":"docker","dockerfile":"services/auth-service/Dockerfile","changed":"true"},
-              {"service":"academic-service","type":"docker","dockerfile":"services/academic-service/Dockerfile","changed":"true"},
-              {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"},
-              {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"},
-              {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"},
-              {"service":"kong","type":"compose","changed":"true"}
-            ]
-          }
-          EOF
+          AUTH_CHANGED=${{ steps.filter.outputs.auth-service }}
+          ACADEMIC_CHANGED=${{ steps.filter.outputs.academic-service }}
+          USER_CHANGED=${{ steps.filter.outputs.user-service }}
+          ANALYTICS_CHANGED=${{ steps.filter.outputs.analytics-service }}
+          PREDICTION_CHANGED=${{ steps.filter.outputs.prediction-service }}
+          WEB_CHANGED=${{ steps.filter.outputs.web }}
+          KONG_CHANGED=${{ steps.filter.outputs.kong }}
+          MONITORING_CHANGED=${{ steps.filter.outputs.monitoring }}
+          INFRA_CHANGED=${{ steps.filter.outputs.infra }}
+          PACKAGES_CHANGED=${{ steps.filter.outputs.packages }}
+
+          if [ "$PACKAGES_CHANGED" = "true" ] || [ "$INFRA_CHANGED" = "true" ]; then
+            AUTH_CHANGED="true"
+            ACADEMIC_CHANGED="true"
+            USER_CHANGED="true"
+            ANALYTICS_CHANGED="true"
+            PREDICTION_CHANGED="true"
+            WEB_CHANGED="true"
+            KONG_CHANGED="true"
+            MONITORING_CHANGED="true"
+          fi
+
+          jq -n \
+            --arg AUTH "$AUTH_CHANGED" \
+            --arg ACADEMIC "$ACADEMIC_CHANGED" \
+            --arg USER "$USER_CHANGED" \
+            --arg ANALYTICS "$ANALYTICS_CHANGED" \
+            --arg PREDICTION "$PREDICTION_CHANGED" \
+            --arg WEB "$WEB_CHANGED" \
+            --arg KONG "$KONG_CHANGED" \
+            '{
+              "include": [
+                if $AUTH == "true" then {"service":"auth-service","type":"docker","dockerfile":"services/auth-service/Dockerfile","changed":"true"} else empty end,
+                if $ACADEMIC == "true" then {"service":"academic-service","type":"docker","dockerfile":"services/academic-service/Dockerfile","changed":"true"} else empty end,
+                if $USER == "true" then {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"} else empty end,
+                if $ANALYTICS == "true" then {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"} else empty end,
+                if $PREDICTION == "true" then {"service":"prediction-service","type":"docker","dockerfile":"services/prediction-service/Dockerfile","changed":"true"} else empty end,
+                if $WEB == "true" then {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"} else empty end,
+                if $KONG == "true" then {"service":"kong","type":"compose","changed":"true"} else empty end
+              ]
+            }' > matrix.json
 
           matrix=$(jq -c . matrix.json)
           docker_matrix=$(jq -c '.include |= map(select(.type=="docker"))' matrix.json)
+          has_changes=$(jq -c '.include | length > 0' matrix.json)
+          changed_services=$(jq -r '[.include[].service] | join(", ")' matrix.json)
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "docker_matrix=$docker_matrix" >> $GITHUB_OUTPUT
+          echo "has_changes=$has_changes" >> $GITHUB_OUTPUT
+          echo "changed_services=$changed_services" >> $GITHUB_OUTPUT
 
       - name: Debug outputs
         run: |
-          echo "MATRIX:"
-          echo '${{ steps.generate-matrix.outputs.matrix }}'
-          echo "DOCKER_MATRIX:"
-          echo '${{ steps.generate-matrix.outputs.docker_matrix }}'
+          echo "HAS CHANGES: ${{ steps.generate-matrix.outputs.has_changes }}"
+          echo "CHANGED SERVICES: ${{ steps.generate-matrix.outputs.changed_services }}"
+          echo "MATRIX: ${{ steps.generate-matrix.outputs.matrix }}"
+          echo "DOCKER MATRIX: ${{ steps.generate-matrix.outputs.docker_matrix }}"
 
   build-and-push:
     name: Build and Push Docker Images
@@ -79,9 +121,8 @@ jobs:
     timeout-minutes: 12
     needs: detect-changes
     if: >
-      needs.detect-changes.outputs.docker_matrix != '' &&
+      needs.detect-changes.outputs.has_changes == 'true' &&
       github.ref == 'refs/heads/QA'
-
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.detect-changes.outputs.docker_matrix) }}
@@ -155,13 +196,23 @@ jobs:
   deploy-to-qa:
     name: Deploy to EC2 QA
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [detect-changes, build-and-push]
     environment: QA enviroment
     timeout-minutes: 30
+    if: >
+      needs.detect-changes.outputs.has_changes == 'true' &&
+      github.ref == 'refs/heads/QA'
     steps:
       - uses: actions/checkout@v4
         with:
           ref: QA
+
+      - name: Deploy Summary
+        run: |
+          echo "## QA Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Changed Services | ${{ needs.detect-changes.outputs.changed_services }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Resolve deploy SHA
         id: sha
@@ -180,6 +231,8 @@ jobs:
             DEPLOY_SHA="${{ steps.sha.outputs.value }}"
             SHORT_SHA=$(echo "$DEPLOY_SHA" | cut -c1-7)
             IMAGE_TAG="qa-${SHORT_SHA}"
+            CHANGED_SERVICES="${{ needs.detect-changes.outputs.changed_services }}"
+            SERVICES_LIST=$(echo "$CHANGED_SERVICES" | tr ',' ' ')
 
             sudo mkdir -p /opt/mentorapredict
             sudo chown ubuntu:ubuntu /opt/mentorapredict
@@ -206,6 +259,9 @@ jobs:
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             MONGO_DB=${{ secrets.MONGO_DB }}
             KONG_PROXY_PORT=${{ secrets.KONG_PROXY_PORT }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
+            SWAGGER_SERVER_URL=${{ secrets.SWAGGER_SERVER_URL }}
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
@@ -213,11 +269,16 @@ jobs:
 
             echo "WEB_PORT=80" >> .env
 
+            if docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:${IMAGE_TAG} &>/dev/null; then
+              echo "[TAG] Using build tag: ${IMAGE_TAG}"
+            else
+              echo "[TAG] Build tag ${IMAGE_TAG} not found — using branch latest"
+              IMAGE_TAG="qa-latest"
+            fi
+
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
 
-            echo "[CLEAN] Removing existing application containers"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml down --remove-orphans 2>/dev/null || true
-            echo "[CLEAN] Cleanup completed"
+            echo "[SELECTIVE DEPLOY] Changed services: $CHANGED_SERVICES"
 
             echo "[KEYS] Creating certificate directories..."
             sudo mkdir -p /opt/mentorapredict/infra/keys
@@ -233,20 +294,31 @@ jobs:
               sleep 3
             done
 
-            echo "[PULL IMAGES]"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull
+            echo "[PULL IMAGES] Changed: $CHANGED_SERVICES"
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull $SERVICES_LIST
 
-            echo "[MIGRATIONS - SAFE ORDER]"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm auth-service npm run migration:run
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm user-service npm run migration:run
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm academic-service npm run migration:run
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm analytics-service npm run migration:run
+            echo "[MIGRATIONS - SELECTIVE]"
+            if echo "$CHANGED_SERVICES" | grep -q "auth-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm auth-service npm run migration:run
+            fi
+            if echo "$CHANGED_SERVICES" | grep -q "user-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm user-service npm run migration:run
+            fi
+            if echo "$CHANGED_SERVICES" | grep -q "academic-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm academic-service npm run migration:run
+            fi
+            if echo "$CHANGED_SERVICES" | grep -q "analytics-service"; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm analytics-service npm run migration:run
+            fi
 
-            echo "[START SERVICES]"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate
+            echo "[START SERVICES] Starting only changed: $CHANGED_SERVICES"
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
 
             echo "[SEEDS] Running database seeds (idempotent safe mode)"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm seed || true
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm seed-loader || true
+
+            echo "[MONITORING] Starting monitoring stack"
+            docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml up -d 2>/dev/null || echo "[MONITORING] Monitoring stack not available — skipping"
 
             docker system prune -af --filter "until=24h"
 
@@ -259,10 +331,12 @@ jobs:
         run: |
           echo "## QA Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Deploy SHA: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Strategy: Full deploy from registry (QA)" >> $GITHUB_STEP_SUMMARY
+          echo "- Changed: ${{ needs.detect-changes.outputs.changed_services }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Strategy: Selective build from registry (QA)" >> $GITHUB_STEP_SUMMARY
 
   create-qa-release:
     name: Create QA Release Tag
+    if: success() && needs.deploy-to-qa.result == 'success'
     uses: ./.github/workflows/release.yml
     needs: deploy-to-qa
     with:

@@ -18,9 +18,15 @@ body {
     margin: 0;
     min-width: 320px;
 
-    background-color: var(--color-neutral-50);
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(21, 101, 192, 0.08),
+            transparent 34rem
+        ),
+        var(--color-neutral-50);
 
-    color: var(--color-gray-900);
+    color: var(--color-text-strong);
 
     font-family: var(--font-sans);
 
@@ -47,6 +53,47 @@ a {
     text-decoration: none;
 }
 
+button,
+a,
+input,
+textarea,
+select {
+    outline-color: var(--color-focus-ring);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 3px;
+}
+
 #root {
     min-height: 100vh;
+}
+
+.app-page {
+    min-height: 100vh;
+    background-color: var(--color-neutral-50);
+}
+
+.app-section {
+    padding-block: clamp(4rem, 8vw, 7rem);
+}
+
+.surface {
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.surface-raised {
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-surface);
+    backdrop-filter: blur(18px);
 }
