@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { JwtModule } from "@nestjs/jwt";
+import { HttpModule } from "@nestjs/axios";
 
 import { UsersController } from "./infrastructure/controllers/users.controller";
 import { InternalUsersController } from "./infrastructure/controllers/internal-users.controller";
@@ -9,17 +10,20 @@ import { HealthController } from "./infrastructure/controllers/health.controller
 import { RootController } from "./infrastructure/controllers/root.controller";
 import { UserProfileOrmEntity } from "./infrastructure/persistence/user-profile.orm-entity";
 import { UserProfileRepository } from "./infrastructure/persistence/user-profile.repository";
-import { GetUserUseCase } from "./application/use-cases/get-user.use-case";
 import { UpdateUserUseCase } from "./application/use-cases/update-user.use-case";
 import { SoftDeleteUserUseCase } from "./application/use-cases/soft-delete-user.use-case";
 import { ListUsersUseCase } from "./application/use-cases/list-users.use-case";
 import { CreateUserProfileUseCase } from "./application/use-cases/create-user-profile.use-case";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
+import { AuthHttpClient } from "./infrastructure/adapters/auth-http.client";
+import { GetUserUseCase } from "./application/use-cases/get-user.use-case";
+import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    HttpModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
@@ -35,14 +39,19 @@ import { InternalServiceGuard } from "./infrastructure/guards/internal-service.g
       }),
     }),
     TypeOrmModule.forFeature([UserProfileOrmEntity]),
-    // Used only to VERIFY the internal service-to-service token that
-    // auth-service sends when creating a profile right after registration.
+    // Verifies user tokens and signs short-lived service-to-service tokens
+    // for internal calls to auth-service.
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        // user-service only VERIFIES tokens (never signs). publicKey is sufficient.
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
         if (publicKey) {
           return {
             ...(privateKey ? { privateKey } : {}),
@@ -54,14 +63,24 @@ import { InternalServiceGuard } from "./infrastructure/guards/internal-service.g
       },
     }),
   ],
-  controllers: [UsersController, InternalUsersController, HealthController, RootController],
+  controllers: [
+    UsersController,
+    InternalUsersController,
+    HealthController,
+    RootController,
+  ],
   providers: [
     { provide: "IUserProfileRepository", useClass: UserProfileRepository },
     GetUserUseCase,
+    {
+      provide: "IAuthServiceClient",
+      useClass: AuthHttpClient,
+    },
     UpdateUserUseCase,
     SoftDeleteUserUseCase,
     ListUsersUseCase,
     CreateUserProfileUseCase,
+    InternalJwtService,
     InternalServiceGuard,
   ],
 })

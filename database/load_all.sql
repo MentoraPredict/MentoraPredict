@@ -6,3 +6,4 @@
 \i /seeds/postgres/05_enrollments.sql
 \i /seeds/postgres/06_evaluations.sql
 \i /seeds/postgres/07_grades.sql
+\i /seeds/postgres/08_subject_teachers.sql

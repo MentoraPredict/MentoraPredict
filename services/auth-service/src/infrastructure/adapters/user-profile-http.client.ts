@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
-import { IUserProfileClient } from '../../application/ports/output/i-user-profile.client';
-import { InternalJwtService } from '../auth/internal-jwt.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { randomUUID } from "crypto";
+import { IUserProfileClient } from "../../application/ports/output/i-user-profile.client";
+import { InternalJwtService } from "../auth/internal-jwt.service";
 
 const TIMEOUT_MS = 5000;
 const MAX_RETRIES = 2;
@@ -16,7 +16,10 @@ export class UserProfileHttpClient implements IUserProfileClient {
     config: ConfigService,
     private readonly internalJwt: InternalJwtService,
   ) {
-    this.baseUrl = config.get<string>('USER_SERVICE_URL', 'http://user-service:3002');
+    this.baseUrl = config.get<string>(
+      "USER_SERVICE_URL",
+      "http://user-service:3002",
+    );
   }
 
   async createProfile(userId: string): Promise<void> {
@@ -30,11 +33,11 @@ export class UserProfileHttpClient implements IUserProfileClient {
         const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
         const res = await fetch(url, {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
-            'x-correlation-id': corrId,
-            'Content-Type': 'application/json',
+            "x-correlation-id": corrId,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ userId }),
           signal: controller.signal,
@@ -42,15 +45,23 @@ export class UserProfileHttpClient implements IUserProfileClient {
         clearTimeout(timer);
 
         if (!res.ok) {
-          const bodyText = await res.text().catch(() => '');
-          console.log(`[UserProfileHttpClient Error] Status: ${res.status}, Body: ${bodyText}`);
-          this.logger.error(`user-service responded ${res.status} creating profile for ${userId}. Response body: ${bodyText}`);
-          throw new Error(`user-service responded ${res.status} creating profile for ${userId}`);
+          const bodyText = await res.text().catch(() => "");
+          console.log(
+            `[UserProfileHttpClient Error] Status: ${res.status}, Body: ${bodyText}`,
+          );
+          this.logger.error(
+            `user-service responded ${res.status} creating profile for ${userId}. Response body: ${bodyText}`,
+          );
+          throw new Error(
+            `user-service responded ${res.status} creating profile for ${userId}`,
+          );
         }
         return;
       } catch (err) {
         lastError = err;
-        this.logger.warn(`createProfile attempt ${attempt + 1} failed for user ${userId}`);
+        this.logger.warn(
+          `createProfile attempt ${attempt + 1} failed for user ${userId}`,
+        );
         if (attempt < MAX_RETRIES) {
           await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
         }
@@ -62,5 +73,24 @@ export class UserProfileHttpClient implements IUserProfileClient {
       lastError as Error,
     );
     throw lastError;
+  }
+
+  async updateProfile(userId: string, dto: any): Promise<void> {
+    const url = `${this.baseUrl}/api/v1/users/internal/profiles/${userId}`;
+    const corrId = randomUUID();
+
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+        "x-correlation-id": corrId,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(dto),
+    });
+
+    if (!res.ok) {
+      throw new Error(`user-service update failed`);
+    }
   }
 }
