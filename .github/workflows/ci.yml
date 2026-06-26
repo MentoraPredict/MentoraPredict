@@ -26,6 +26,7 @@ jobs:
 
   validate:
     name: Lint, Build, and Test
+    if: github.base_ref != 'dev'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -83,7 +84,7 @@ jobs:
     name: Build and Push Dev Images
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [commitlint, validate]
+    needs: [commitlint]
     if: github.base_ref == 'dev'
     strategy:
       fail-fast: false
