@@ -80,35 +80,96 @@ jobs:
           echo "|------|-------|-------|----------|" >> $GITHUB_STEP_SUMMARY
           echo "| OK | OK | OK | Gitleaks |" >> $GITHUB_STEP_SUMMARY
 
+  detect-dev-changes:
+    name: Detect Changed Services for Dev
+    runs-on: ubuntu-latest
+    if: github.base_ref == 'dev'
+    outputs:
+      has_changes: ${{ steps.generate-matrix.outputs.has_changes }}
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          base: ${{ github.base_ref }}
+          filters: |
+            auth-service:
+              - 'services/auth-service/**'
+            academic-service:
+              - 'services/academic-service/**'
+            user-service:
+              - 'services/user-service/**'
+            analytics-service:
+              - 'services/analytics-service/**'
+            prediction-service:
+              - 'services/prediction-service/**'
+            web:
+              - 'apps/web/**'
+            infra:
+              - 'infra/docker/**'
+            packages:
+              - 'packages/**'
+
+      - name: Generate Dynamic Matrix
+        id: generate-matrix
+        run: |
+          AUTH=${{ steps.filter.outputs.auth-service }}
+          ACADEMIC=${{ steps.filter.outputs.academic-service }}
+          USER=${{ steps.filter.outputs.user-service }}
+          ANALYTICS=${{ steps.filter.outputs.analytics-service }}
+          PREDICTION=${{ steps.filter.outputs.prediction-service }}
+          WEB=${{ steps.filter.outputs.web }}
+          INFRA=${{ steps.filter.outputs.infra }}
+          PACKAGES=${{ steps.filter.outputs.packages }}
+
+          if [ "$PACKAGES" = "true" ] || [ "$INFRA" = "true" ]; then
+            AUTH="true"
+            ACADEMIC="true"
+            USER="true"
+            ANALYTICS="true"
+            PREDICTION="true"
+            WEB="true"
+          fi
+
+          jq -n \
+            --arg AUTH "$AUTH" \
+            --arg ACADEMIC "$ACADEMIC" \
+            --arg USER "$USER" \
+            --arg ANALYTICS "$ANALYTICS" \
+            --arg PREDICTION "$PREDICTION" \
+            --arg WEB "$WEB" \
+            '{
+              "include": [
+                if $AUTH == "true" then {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile"} else empty end,
+                if $ACADEMIC == "true" then {"service":"academic-service","dockerfile":"services/academic-service/Dockerfile"} else empty end,
+                if $USER == "true" then {"service":"user-service","dockerfile":"services/user-service/Dockerfile"} else empty end,
+                if $ANALYTICS == "true" then {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile"} else empty end,
+                if $PREDICTION == "true" then {"service":"prediction-service","dockerfile":"services/prediction-service/Dockerfile"} else empty end,
+                if $WEB == "true" then {"service":"web","dockerfile":"apps/web/Dockerfile"} else empty end
+              ]
+            }' > matrix.json
+
+          matrix=$(jq -c . matrix.json)
+          has_changes=$(jq -c '.include | length > 0' matrix.json)
+
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "has_changes=$has_changes" >> $GITHUB_OUTPUT
+
   build-and-push-dev:
     name: Build and Push Dev Images
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [commitlint]
-    if: github.base_ref == 'dev'
+    needs: [commitlint, detect-dev-changes]
+    if: >
+      github.base_ref == 'dev' &&
+      needs.detect-dev-changes.outputs.has_changes == 'true'
     strategy:
       fail-fast: false
-      matrix:
-        service:
-          - auth-service
-          - user-service
-          - academic-service
-          - analytics-service
-          - prediction-service
-          - web
-        include:
-          - service: auth-service
-            dockerfile: services/auth-service/Dockerfile
-          - service: user-service
-            dockerfile: services/user-service/Dockerfile
-          - service: academic-service
-            dockerfile: services/academic-service/Dockerfile
-          - service: analytics-service
-            dockerfile: services/analytics-service/Dockerfile
-          - service: prediction-service
-            dockerfile: services/prediction-service/Dockerfile
-          - service: web
-            dockerfile: apps/web/Dockerfile
+      matrix: ${{ fromJson(needs.detect-dev-changes.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v4
