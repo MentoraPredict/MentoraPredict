@@ -6,6 +6,14 @@
 -- definidas en 04_subjects.sql. Cada materia queda asociada al
 -- docente y periodo academico configurados en subjects.
 
+DELETE FROM subject_teachers st
+USING subjects s
+WHERE st.subject_id = s.id
+  AND (
+    st.teacher_id IS DISTINCT FROM s.teacher_id
+    OR st.period_id IS DISTINCT FROM s.academic_period_id
+  );
+
 INSERT INTO subject_teachers (
     subject_id,
     teacher_id,
@@ -20,4 +28,5 @@ INNER JOIN users u
     ON u.id = s.teacher_id
    AND u.role = 'TEACHER'
 WHERE s.teacher_id IS NOT NULL
-ON CONFLICT (subject_id, teacher_id, period_id) DO NOTHING;
+ON CONFLICT (subject_id, teacher_id, period_id) DO UPDATE SET
+    teacher_id = EXCLUDED.teacher_id;
