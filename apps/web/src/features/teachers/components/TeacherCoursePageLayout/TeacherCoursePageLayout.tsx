@@ -5,12 +5,23 @@ import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalytics
 import CourseSidebar from "@/features/courses/components/CourseSidebar";
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
 import { useAuthStore } from "@/store/auth.store";
+import type { UpdateTeacherCoursePayload } from "@/services/academic.service";
 
 import type { Course } from "@/types/course";
 
 interface TeacherCoursePageLayoutProps {
   courseId?: string;
-  children: ReactNode | ((course: Course) => ReactNode);
+  children:
+    | ReactNode
+    | ((course: Course, actions: TeacherCoursePageActions) => ReactNode);
+}
+
+interface TeacherCoursePageActions {
+  updateCourse: (
+    courseId: string,
+    payload: UpdateTeacherCoursePayload,
+  ) => Promise<void>;
+  updatingCourseId: string | null;
 }
 
 function getTeacherDisplayName(user: ReturnType<typeof useAuthStore.getState>["user"]) {
@@ -26,7 +37,7 @@ export default function TeacherCoursePageLayout({
   const user = useAuthStore((state) => state.user);
   const teacherName = useMemo(() => getTeacherDisplayName(user), [user]);
 
-  const { courses, isLoading, error } = useTeacherCourses(
+  const { courses, isLoading, error, updateCourse, updatingCourseId } = useTeacherCourses(
     user?.id,
     teacherName
   );
@@ -62,7 +73,7 @@ export default function TeacherCoursePageLayout({
         </div>
       ) : activeCourse ? (
         typeof children === "function" ? (
-          children(activeCourse)
+          children(activeCourse, { updateCourse, updatingCourseId })
         ) : (
           children
         )

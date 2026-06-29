@@ -14,8 +14,16 @@ export const endpoints = {
     },
     academic: {
         subjects: "/v1/academic/subjects",
+        subject: (id: string) => `/v1/academic/subjects/${id}`,
+        faculties: "/v1/academic/faculties",
         periods: "/v1/academic/periods",
+        activePeriod: "/v1/academic/periods/active",
         careers: "/v1/academic/careers",
+        enrollments: "/v1/academic/enrollments",
         importGrades: "/v1/academic/import/grades",
+    },
+    analytics: {
+        studentDashboard: (studentId: string) =>
+            `/v1/analytics/dashboard/student/${studentId}`,
     },
 } as const;

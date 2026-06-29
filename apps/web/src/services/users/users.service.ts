@@ -80,6 +80,23 @@ export async function getUsers(): Promise<AppUser[]> {
     return response.data.map(toAppUser);
 }
 
+export async function getStudents(): Promise<AppUser[]> {
+    const response = await api.get<UserApiResponse[]>(
+        endpoints.users.list,
+        {
+            params: {
+                role: "STUDENT",
+                status: "ACTIVE",
+                _t: Date.now(),
+            },
+        }
+    );
+
+    return response.data
+        .map(toAppUser)
+        .filter((user) => user.role === "STUDENT" && user.isActive);
+}
+
 export async function updateUser(
     userId: string,
     payload: UpdateUserPayload

@@ -6,6 +6,7 @@ import type { Course } from "@/types/course";
 interface CourseGridProps {
   courses: Course[];
   isDeleteMode?: boolean;
+  deletingCourseId?: string | null;
   onCourseClick?: (courseId: string) => void;
   onDeleteCourse?: (courseId: string) => void;
   onCancelDeleteMode?: () => void;
@@ -14,6 +15,7 @@ interface CourseGridProps {
 export default function CourseGrid({
   courses,
   isDeleteMode = false,
+  deletingCourseId,
   onCourseClick,
   onDeleteCourse,
   onCancelDeleteMode,
@@ -50,6 +52,7 @@ export default function CourseGrid({
           key={course.id}
           course={course}
           isDeleteMode={isDeleteMode}
+          isDeleting={deletingCourseId === course.id}
           onClick={onCourseClick}
           onDelete={onDeleteCourse}
           onCancelDelete={onCancelDeleteMode}

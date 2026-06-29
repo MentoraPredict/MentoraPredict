@@ -1,45 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import Text from "@/components/atoms/Text";
 import TeacherCourseStudentsTable from "@/features/teachers/components/TeacherCourseStudentsTable";
 import TeacherCourseStudentsToolbar from "@/features/teachers/components/TeacherCourseStudentsToolbar";
+import { enrollStudentsInCourse } from "@/services/academic.service";
+import { getStudents } from "@/services/users/users.service";
 
 import type { CourseEnrolledStudent } from "@/types/course";
 import type { AppUser } from "@/types/user/user.types";
-
-const mockAvailableStudents: AppUser[] = [
-  {
-    id: "1",
-    firstName: "Franco",
-    lastName: "Paredes",
-    email: "franco.paredes@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-  {
-    id: "2",
-    firstName: "Daniela",
-    lastName: "Morales",
-    email: "daniela.morales@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-  {
-    id: "3",
-    firstName: "Carlos",
-    lastName: "Mendoza",
-    email: "carlos.mendoza@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-  {
-    id: "4",
-    firstName: "Valeria",
-    lastName: "Quishpe",
-    email: "valeria.quishpe@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-];
 
 const initialEnrolledStudents: CourseEnrolledStudent[] = [
   {
@@ -72,13 +40,54 @@ const initialEnrolledStudents: CourseEnrolledStudent[] = [
   },
 ];
 
-export default function TeacherCourseStudents() {
+interface TeacherCourseStudentsProps {
+  courseId: string;
+}
+
+export default function TeacherCourseStudents({
+  courseId,
+}: TeacherCourseStudentsProps) {
   const [search, setSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const [availableStudents, setAvailableStudents] = useState<AppUser[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<AppUser[]>([]);
   const [enrolledStudents, setEnrolledStudents] = useState<
     CourseEnrolledStudent[]
   >(initialEnrolledStudents);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
+  const [isAddingStudents, setIsAddingStudents] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStudents = async () => {
+      setIsLoadingStudents(true);
+      setError(null);
+
+      try {
+        const students = await getStudents();
+        if (isMounted) {
+          setAvailableStudents(students);
+        }
+      } catch {
+        if (isMounted) {
+          setError("No se pudieron cargar los estudiantes disponibles.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingStudents(false);
+        }
+      }
+    };
+
+    void loadStudents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const enrolledUserIds = useMemo(
     () =>
@@ -100,7 +109,7 @@ export default function TeacherCourseStudents() {
 
     const normalizedSearch = search.trim().toLowerCase();
 
-    return mockAvailableStudents.filter((student) => {
+    return availableStudents.filter((student) => {
       const fullName = [student.firstName, student.lastName]
         .filter(Boolean)
         .join(" ")
@@ -114,7 +123,7 @@ export default function TeacherCourseStudents() {
           student.email.toLowerCase().includes(normalizedSearch))
       );
     });
-  }, [enrolledUserIds, search, selectedUserIds, showResults]);
+  }, [availableStudents, enrolledUserIds, search, selectedUserIds, showResults]);
 
   const handleSearch = () => {
     setShowResults(true);
@@ -138,12 +147,24 @@ export default function TeacherCourseStudents() {
     );
   };
 
-  const handleAddStudents = () => {
+  const handleAddStudents = async () => {
     if (selectedStudents.length === 0) {
       return;
     }
 
-    const newEnrolledStudents: CourseEnrolledStudent[] = selectedStudents.map(
+    setIsAddingStudents(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    const failedStudentIds = await enrollStudentsInCourse(
+      courseId,
+      selectedStudents.map((student) => student.id),
+    );
+    const successfulStudents = selectedStudents.filter(
+      (student) => !failedStudentIds.includes(student.id),
+    );
+
+    const newEnrolledStudents: CourseEnrolledStudent[] = successfulStudents.map(
       (student) => ({
         id: crypto.randomUUID(),
         user: student,
@@ -158,9 +179,22 @@ export default function TeacherCourseStudents() {
       ...newEnrolledStudents,
     ]);
 
+    if (failedStudentIds.length > 0) {
+      setError(
+        `No se pudo matricular a ${failedStudentIds.length} estudiante(s). Es posible que ya esten matriculados o que el curso no tenga cupos.`,
+      );
+    }
+
+    if (successfulStudents.length > 0) {
+      setSuccessMessage(
+        `${successfulStudents.length} estudiante(s) matriculado(s) correctamente.`,
+      );
+    }
+
     setSelectedStudents([]);
     setSearch("");
     setShowResults(false);
+    setIsAddingStudents(false);
   };
 
   const handleUnenrollStudent = (studentId: string) => {
@@ -171,6 +205,22 @@ export default function TeacherCourseStudents() {
 
   return (
     <div>
+      {error ? (
+        <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
+          <Text variant="small" className="font-medium text-red-700">
+            {error}
+          </Text>
+        </div>
+      ) : null}
+
+      {successMessage ? (
+        <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+          <Text variant="small" className="font-medium text-emerald-700">
+            {successMessage}
+          </Text>
+        </div>
+      ) : null}
+
       <TeacherCourseStudentsToolbar
         search={search}
         selectedStudents={selectedStudents}
@@ -181,6 +231,8 @@ export default function TeacherCourseStudents() {
         onSelectStudent={handleSelectStudent}
         onRemoveSelectedStudent={handleRemoveSelectedStudent}
         onAddStudents={handleAddStudents}
+        isLoadingStudents={isLoadingStudents}
+        isAddingStudents={isAddingStudents}
       />
 
       <TeacherCourseStudentsTable
