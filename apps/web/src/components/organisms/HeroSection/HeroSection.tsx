@@ -13,6 +13,7 @@ export default function HeroSection() {
       id="hero"
       className="
                 overflow-hidden
+                scroll-mt-20
                 bg-[var(--color-app-background)]
                 py-16
                 sm:py-20

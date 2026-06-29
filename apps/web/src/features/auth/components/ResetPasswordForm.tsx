@@ -3,7 +3,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { Button, Heading, Text } from "@/components/atoms";
+import {
+  Button,
+  FeedbackMessage,
+  Heading,
+  MotionEntrance,
+  Text,
+} from "@/components/atoms";
 import { PasswordField } from "@/components/molecules";
 import { APP_PATHS } from "@/routes/paths";
 import { resetPassword } from "@/services/auth.service";
@@ -67,7 +73,7 @@ export default function ResetPasswordForm() {
 
   return (
     <div className="flex items-center justify-center px-8 py-12">
-      <div className="w-full max-w-md">
+      <MotionEntrance variant="form" className="w-full max-w-md">
         <Heading as="h2">Crear nueva contraseña</Heading>
 
         <Text className="mt-2">
@@ -103,11 +109,14 @@ export default function ResetPasswordForm() {
             })}
           />
 
-          {!token ? (
-            <Text className="text-sm text-red-500">
-              Este enlace no contiene un token de recuperación.
-            </Text>
-          ) : null}
+          <FeedbackMessage
+            message={
+              token
+                ? undefined
+                : "Este enlace no contiene un token de recuperación."
+            }
+            tone="error"
+          />
 
           <Button
             type="submit"
@@ -117,13 +126,9 @@ export default function ResetPasswordForm() {
             {isSubmitting ? "Actualizando..." : "Actualizar contraseña"}
           </Button>
 
-          {serverError ? (
-            <Text className="text-sm text-red-500">{serverError}</Text>
-          ) : null}
+          <FeedbackMessage message={serverError} tone="error" />
 
-          {successMessage ? (
-            <Text className="text-sm text-green-700">{successMessage}</Text>
-          ) : null}
+          <FeedbackMessage message={successMessage} tone="success" />
 
           <Button
             type="button"
@@ -140,7 +145,7 @@ export default function ResetPasswordForm() {
             {successMessage ? "Ir al login" : "Solicitar un enlace nuevo"}
           </Button>
         </form>
-      </div>
+      </MotionEntrance>
     </div>
   );
 }

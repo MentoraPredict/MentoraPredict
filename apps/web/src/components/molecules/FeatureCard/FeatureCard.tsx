@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 
 import Heading from "@/components/atoms/Heading";
+import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
 interface FeatureCardProps {
@@ -15,14 +16,13 @@ export default function FeatureCard({
     description,
 }: FeatureCardProps) {
     return (
-        <article
+        <MotionCard
+            as="article"
             className="
         rounded-2xl
         bg-white
         p-6
         shadow-md
-        transition-transform
-        hover:-translate-y-1
       "
         >
             <div className="mb-4 text-3xl text-blue-700">
@@ -36,6 +36,6 @@ export default function FeatureCard({
             <Text className="mt-2">
                 {description}
             </Text>
-        </article>
+        </MotionCard>
     );
 }

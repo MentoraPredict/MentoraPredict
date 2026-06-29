@@ -3,7 +3,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
-import { Button, Heading, Text } from "@/components/atoms";
+import {
+  Button,
+  FeedbackMessage,
+  Heading,
+  MotionEntrance,
+  Text,
+} from "@/components/atoms";
 import { FormField } from "@/components/molecules";
 import { APP_PATHS } from "@/routes/paths";
 import { forgotPassword } from "@/services/auth.service";
@@ -56,7 +62,7 @@ export default function ForgotPasswordForm() {
 
   return (
     <div className="flex items-center justify-center px-8 py-12">
-      <div className="w-full max-w-md">
+      <MotionEntrance variant="form" className="w-full max-w-md">
         <Heading as="h2">Recuperar contraseña</Heading>
 
         <Text className="mt-2">
@@ -84,13 +90,9 @@ export default function ForgotPasswordForm() {
             {isSubmitting ? "Enviando..." : "Enviar enlace"}
           </Button>
 
-          {serverError ? (
-            <Text className="text-sm text-red-500">{serverError}</Text>
-          ) : null}
+          <FeedbackMessage message={serverError} tone="error" />
 
-          {successMessage ? (
-            <Text className="text-sm text-green-700">{successMessage}</Text>
-          ) : null}
+          <FeedbackMessage message={successMessage} tone="success" />
 
           {developmentToken ? (
             <Button
@@ -116,7 +118,7 @@ export default function ForgotPasswordForm() {
             Volver al login
           </Button>
         </form>
-      </div>
+      </MotionEntrance>
     </div>
   );
 }
