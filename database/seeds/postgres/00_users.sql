@@ -47,7 +47,7 @@ BEGIN
             created_at, updated_at
         )
         VALUES (
-            ('aaaaaaaa-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid,
+            ('aaaaaaaa-0000-4000-8000-0000000000' || lpad(i::text, 2, '0'))::uuid,
             'admin' || lpad(i::text, 2, '0') || '@mentorapredict.edu.ec',
             password_hash,
             'ADMIN',
@@ -63,7 +63,7 @@ BEGIN
             deleted_at, created_at, updated_at
         )
         VALUES (
-            ('aaaaaaaa-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid,
+            ('aaaaaaaa-0000-4000-8000-0000000000' || lpad(i::text, 2, '0'))::uuid,
             NULL,
             'Administrador del sistema.',
             '17000000' || lpad(i::text, 2, '0'),
@@ -86,7 +86,7 @@ BEGIN
             created_at, updated_at
         )
         VALUES (
-            ('bbbbbbbb-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid,
+            ('bbbbbbbb-0000-4000-8000-0000000000' || lpad(i::text, 2, '0'))::uuid,
             'teacher' || lpad(i::text, 2, '0') || '@mentorapredict.edu.ec',
             password_hash,
             'TEACHER',
@@ -102,7 +102,7 @@ BEGIN
             deleted_at, created_at, updated_at
         )
         VALUES (
-            ('bbbbbbbb-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid,
+            ('bbbbbbbb-0000-4000-8000-0000000000' || lpad(i::text, 2, '0'))::uuid,
             NULL,
             'Docente del sistema.',
             '18000000' || lpad(i::text, 2, '0'),
@@ -125,7 +125,7 @@ BEGIN
             created_at, updated_at
         )
         VALUES (
-            ('cccccccc-0000-0000-0000-000000000' || lpad(i::text, 3, '0'))::uuid,
+            ('cccccccc-0000-4000-8000-000000000' || lpad(i::text, 3, '0'))::uuid,
             'student' || lpad(i::text, 3, '0') || '@mentorapredict.edu.ec',
             password_hash,
             'STUDENT',
@@ -141,7 +141,7 @@ BEGIN
             deleted_at, created_at, updated_at
         )
         VALUES (
-            ('cccccccc-0000-0000-0000-000000000' || lpad(i::text, 3, '0'))::uuid,
+            ('cccccccc-0000-4000-8000-000000000' || lpad(i::text, 3, '0'))::uuid,
             NULL,
             'Estudiante de MentoraPredict',
             '01000000' || lpad(i::text, 3, '0'),

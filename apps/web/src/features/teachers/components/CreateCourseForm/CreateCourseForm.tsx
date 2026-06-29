@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { FiHelpCircle } from "react-icons/fi";
 
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
@@ -14,6 +15,7 @@ import type { Course } from "@/types/course";
 import type { AppUser } from "@/types/user/user.types";
 import type {
   CourseCareerOption,
+  CourseFacultyOption,
   CoursePeriodOption,
   CreateTeacherCoursePayload,
 } from "@/services/academic.service";
@@ -23,26 +25,29 @@ interface CreateCourseFormValues {
   code: string;
   description: string;
   credits: string;
+  facultyId: string;
   careerId: string;
   academicPeriodId: string;
   maxCapacity: string;
-  image?: FileList;
 }
 
 interface CreateCourseFormProps {
   availableStudents: AppUser[];
+  faculties: CourseFacultyOption[];
   careers: CourseCareerOption[];
   periods: CoursePeriodOption[];
   teacherName: string;
   isSubmitting?: boolean;
   onCancel: () => void;
   onCreateCourse: (
-    course: Omit<CreateTeacherCoursePayload, "teacherId" | "teacherName">
+    course: Omit<CreateTeacherCoursePayload, "teacherId" | "teacherName">,
+    studentIds: string[]
   ) => Promise<Course | null> | Course | null | void;
 }
 
 export default function CreateCourseForm({
   availableStudents,
+  faculties,
   careers,
   periods,
   teacherName,
@@ -51,6 +56,7 @@ export default function CreateCourseForm({
   onCreateCourse,
 }: CreateCourseFormProps) {
   const [selectedStudents, setSelectedStudents] = useState<AppUser[]>([]);
+  const [isCodeHelpOpen, setIsCodeHelpOpen] = useState(false);
 
   const {
     register,
@@ -58,6 +64,7 @@ export default function CreateCourseForm({
     reset,
     setValue,
     getValues,
+    watch,
     formState: { errors },
   } = useForm<CreateCourseFormValues>({
     defaultValues: {
@@ -65,11 +72,30 @@ export default function CreateCourseForm({
       code: "",
       description: "",
       credits: "4",
+      facultyId: "",
       careerId: "",
       academicPeriodId: periods[0]?.id ?? "",
       maxCapacity: "30",
     },
   });
+
+  const selectedFacultyId = watch("facultyId");
+  const selectedCareerId = watch("careerId");
+  const filteredCareers = useMemo(
+    () => careers.filter((career) => career.facultyId === selectedFacultyId),
+    [careers, selectedFacultyId]
+  );
+  const selectedCareer = useMemo(
+    () => careers.find((career) => career.id === selectedCareerId),
+    [careers, selectedCareerId]
+  );
+  const studentOptions = useMemo(
+    () =>
+      availableStudents.filter(
+        (student) => student.role === "STUDENT" && student.isActive
+      ),
+    [availableStudents]
+  );
 
   useEffect(() => {
     if (!getValues("academicPeriodId") && periods[0]?.id) {
@@ -80,12 +106,25 @@ export default function CreateCourseForm({
   }, [getValues, periods, setValue]);
 
   useEffect(() => {
-    if (!getValues("careerId") && careers[0]?.id) {
-      setValue("careerId", careers[0].id, {
+    if (!getValues("facultyId") && faculties[0]?.id) {
+      setValue("facultyId", faculties[0].id, {
         shouldValidate: true,
       });
     }
-  }, [careers, getValues, setValue]);
+  }, [faculties, getValues, setValue]);
+
+  useEffect(() => {
+    const currentCareerId = getValues("careerId");
+    const belongsToFaculty = filteredCareers.some(
+      (career) => career.id === currentCareerId
+    );
+
+    if (!belongsToFaculty) {
+      setValue("careerId", filteredCareers[0]?.id ?? "", {
+        shouldValidate: true,
+      });
+    }
+  }, [filteredCareers, getValues, setValue]);
 
   const handleSelectStudent = (student: AppUser) => {
     setSelectedStudents((current) => {
@@ -110,15 +149,18 @@ export default function CreateCourseForm({
       return;
     }
 
-    const createdCourse = await onCreateCourse({
-      name: values.name,
-      code: values.code,
-      description: values.description,
-      credits: Number(values.credits),
-      careerId: values.careerId,
-      academicPeriodId: values.academicPeriodId,
-      maxCapacity: Number(values.maxCapacity),
-    });
+    const createdCourse = await onCreateCourse(
+      {
+        name: values.name,
+        code: values.code,
+        description: values.description,
+        credits: Number(values.credits),
+        careerId: values.careerId,
+        academicPeriodId: values.academicPeriodId,
+        maxCapacity: Number(values.maxCapacity),
+      },
+      selectedStudents.map((student) => student.id)
+    );
 
     if (!createdCourse) {
       return;
@@ -150,7 +192,28 @@ export default function CreateCourseForm({
 
         <div className="grid gap-5 md:grid-cols-3">
           <div>
-            <Label htmlFor="code">Codigo</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="code">Codigo institucional</Label>
+
+              <button
+                type="button"
+                aria-label="Mostrar recomendacion para el codigo institucional"
+                aria-expanded={isCodeHelpOpen}
+                onClick={() => {
+                  setIsCodeHelpOpen((isOpen) => !isOpen);
+                }}
+                className="mb-1 text-gray-500 transition hover:text-blue-700"
+              >
+                <FiHelpCircle size={17} />
+              </button>
+            </div>
+
+            {isCodeHelpOpen ? (
+              <div className="mb-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800">
+                Usa las siglas de la carrera en mayusculas, un guion y un numero.
+                Ejemplo: {selectedCareer?.code ?? "SIGLAS"}-701.
+              </div>
+            ) : null}
 
             <Input
               id="code"
@@ -164,7 +227,7 @@ export default function CreateCourseForm({
           </div>
 
           <div>
-            <Label htmlFor="credits">Creditos</Label>
+            <Label htmlFor="credits">Creditos academicos</Label>
 
             <Input
               id="credits"
@@ -191,8 +254,16 @@ export default function CreateCourseForm({
               {...register("maxCapacity", {
                 required: true,
                 min: 1,
+                validate: (value) =>
+                  Number(value) >= selectedStudents.length ||
+                  "La capacidad no puede ser menor que los estudiantes seleccionados.",
               })}
             />
+            {errors.maxCapacity?.message ? (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.maxCapacity.message}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -210,18 +281,7 @@ export default function CreateCourseForm({
           />
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <div>
-            <Label htmlFor="image">Imagen del Curso</Label>
-
-            <Input
-              id="image"
-              type="file"
-              accept="image/*"
-              {...register("image")}
-            />
-          </div>
-
+        <div>
           <div>
             <Label htmlFor="academicPeriodId">Periodo academico</Label>
 
@@ -242,27 +302,49 @@ export default function CreateCourseForm({
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="careerId">Carrera</Label>
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <Label htmlFor="facultyId">Facultad</Label>
 
-          <Select
-            id="careerId"
-            hasError={!!errors.careerId}
-            {...register("careerId", {
-              required: true,
-            })}
-          >
-            <option value="">Selecciona la carrera</option>
-            {careers.map((career) => (
-              <option key={career.id} value={career.id}>
-                {career.name}
-              </option>
-            ))}
-          </Select>
+            <Select
+              id="facultyId"
+              hasError={!!errors.facultyId}
+              {...register("facultyId", {
+                required: true,
+              })}
+            >
+              <option value="">Selecciona la facultad</option>
+              {faculties.map((faculty) => (
+                <option key={faculty.id} value={faculty.id}>
+                  {faculty.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="careerId">Carrera</Label>
+
+            <Select
+              id="careerId"
+              hasError={!!errors.careerId}
+              disabled={!selectedFacultyId}
+              {...register("careerId", {
+                required: true,
+              })}
+            >
+              <option value="">Selecciona la carrera</option>
+              {filteredCareers.map((career) => (
+                <option key={career.id} value={career.id}>
+                  {career.name}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
 
         <StudentSelector
-          students={availableStudents}
+          students={studentOptions}
           selectedStudents={selectedStudents}
           onSelectStudent={handleSelectStudent}
           onRemoveStudent={handleRemoveStudent}

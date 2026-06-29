@@ -14,7 +14,7 @@ subjects AS (
 ),
 
 period AS (
-    SELECT 'aaaaaaaa-2026-1111-1111-111111111111'::uuid AS period_id
+    SELECT 'aaaaaaaa-2026-4111-8111-111111111111'::uuid AS period_id
 ),
 
 pairs AS (
