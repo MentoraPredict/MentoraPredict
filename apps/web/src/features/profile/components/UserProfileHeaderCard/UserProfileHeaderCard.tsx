@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import Heading from "@/components/atoms/Heading";
+import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
 
@@ -29,7 +30,8 @@ export default function UserProfileHeaderCard({
   };
 
   return (
-    <section
+    <MotionCard
+      as="section"
       className="
                 rounded-2xl
                 border
@@ -57,6 +59,6 @@ export default function UserProfileHeaderCard({
           </Text>
         </div>
       </div>
-    </section>
+    </MotionCard>
   );
 }

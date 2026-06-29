@@ -8,7 +8,13 @@ export default function TeacherCourseEditPage() {
 
   return (
     <TeacherCoursePageLayout courseId={courseId}>
-      {(activeCourse) => <TeacherCourseEdit course={activeCourse} />}
+      {(activeCourse, { updateCourse, updatingCourseId }) => (
+        <TeacherCourseEdit
+          course={activeCourse}
+          isSaving={updatingCourseId === activeCourse.id}
+          onSave={(payload) => updateCourse(activeCourse.id, payload)}
+        />
+      )}
     </TeacherCoursePageLayout>
   );
 }

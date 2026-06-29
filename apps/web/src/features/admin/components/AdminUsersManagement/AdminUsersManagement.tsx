@@ -1,10 +1,14 @@
 import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
+import Pagination from "@/components/molecules/Pagination";
 import SearchBar from "@/components/molecules/SearchBar";
 
 import AdminUsersTable from "@/features/admin/components/AdminUsersTable";
 import useAdminUsers from "@/features/admin/hooks/useAdminUsers";
+import usePagination from "@/hooks/usePagination";
+
+const USERS_PER_PAGE = 10;
 
 export default function AdminUsersManagement() {
   const {
@@ -17,6 +21,13 @@ export default function AdminUsersManagement() {
     toggleStatus,
     toggleTeacherRole,
   } = useAdminUsers();
+  const {
+    currentPage,
+    paginatedItems: paginatedUsers,
+    totalItems,
+    totalPages,
+    setCurrentPage,
+  } = usePagination(users, USERS_PER_PAGE, search);
 
   return (
     <section className="py-8">
@@ -77,11 +88,22 @@ export default function AdminUsersManagement() {
           </div>
         ) : (
           <AdminUsersTable
-            users={users}
+            users={paginatedUsers}
             onToggleStatus={toggleStatus}
             onToggleTeacherRole={toggleTeacherRole}
           />
         )}
+
+        {!isLoading && !error ? (
+          <Pagination
+            currentPage={currentPage}
+            pageSize={USERS_PER_PAGE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="usuarios"
+            onPageChange={setCurrentPage}
+          />
+        ) : null}
       </Container>
     </section>
   );

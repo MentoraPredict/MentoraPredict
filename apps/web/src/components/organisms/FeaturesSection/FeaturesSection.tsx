@@ -10,7 +10,7 @@ import FeatureCard from "@/components/molecules/FeatureCard";
 
 export default function FeaturesSection() {
   return (
-    <section id="features" className="py-20">
+    <section id="features" className="scroll-mt-20 py-20">
       <Container>
         <div className="text-center">
           <Heading as="h2">Características</Heading>

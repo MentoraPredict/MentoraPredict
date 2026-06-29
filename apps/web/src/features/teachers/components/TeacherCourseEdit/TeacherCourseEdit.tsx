@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AxiosError } from "axios";
 
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
@@ -6,39 +7,67 @@ import Input from "@/components/atoms/Input";
 import Label from "@/components/atoms/Label";
 import Text from "@/components/atoms/Text";
 import Textarea from "@/components/atoms/Textarea";
-import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
-
+import type { UpdateTeacherCoursePayload } from "@/services/academic.service";
 import type { Course } from "@/types/course";
 
 interface TeacherCourseEditProps {
   course: Course;
+  isSaving?: boolean;
+  onSave: (payload: UpdateTeacherCoursePayload) => Promise<void>;
 }
 
-export default function TeacherCourseEdit({ course }: TeacherCourseEditProps) {
+function getSaveErrorMessage(error: unknown) {
+  if (error instanceof AxiosError) {
+    return `No se pudieron guardar los cambios. Codigo HTTP: ${
+      error.response?.status ?? "desconocido"
+    }.`;
+  }
+
+  return "No se pudieron guardar los cambios. Intenta nuevamente.";
+}
+
+export default function TeacherCourseEdit({
+  course,
+  isSaving = false,
+  onSave,
+}: TeacherCourseEditProps) {
   const [courseName, setCourseName] = useState(course.name);
   const [description, setDescription] = useState(course.description);
-  const [imageUrl, setImageUrl] = useState<string | undefined>(course.imageUrl);
   const [isEditingName, setIsEditingName] = useState(false);
-
-  const handleChangeImage = (file: File) => {
-    const previewUrl = URL.createObjectURL(file);
-    setImageUrl(previewUrl);
-  };
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleCancel = () => {
     setCourseName(course.name);
     setDescription(course.description);
-    setImageUrl(course.imageUrl);
     setIsEditingName(false);
+    setError(null);
+    setSuccessMessage(null);
   };
 
-  const handleSave = () => {
-    console.log({
-      courseId: course.id,
-      name: courseName,
-      description,
-      imageUrl,
-    });
+  const handleSave = async () => {
+    const normalizedName = courseName.trim();
+
+    if (!normalizedName) {
+      setError("El nombre del curso es obligatorio.");
+      return;
+    }
+
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await onSave({
+        name: normalizedName,
+        description: description.trim(),
+      });
+      setCourseName(normalizedName);
+      setDescription(description.trim());
+      setIsEditingName(false);
+      setSuccessMessage("Curso actualizado correctamente.");
+    } catch (saveError) {
+      setError(getSaveErrorMessage(saveError));
+    }
   };
 
   return (
@@ -52,23 +81,8 @@ export default function TeacherCourseEdit({ course }: TeacherCourseEditProps) {
                 shadow-sm
             "
     >
-      <div
-        className="
-                    flex
-                    flex-col
-                    gap-6
-                    md:flex-row
-                    md:items-start
-                "
-      >
-        <ImageUploadPreview
-          imageUrl={imageUrl}
-          alt={courseName}
-          helperText="¿Cambiar imagen del curso?"
-          onChangeImage={handleChangeImage}
-        />
-
-        <div className="flex-1 pt-4">
+      <div>
+        <div className="pt-4">
           {isEditingName ? (
             <div className="max-w-md">
               <Label htmlFor="courseName">Nombre del curso</Label>
@@ -115,6 +129,22 @@ export default function TeacherCourseEdit({ course }: TeacherCourseEditProps) {
         </div>
       </div>
 
+      {error ? (
+        <div className="mt-6 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
+          <Text variant="small" className="font-medium text-red-700">
+            {error}
+          </Text>
+        </div>
+      ) : null}
+
+      {successMessage ? (
+        <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+          <Text variant="small" className="font-medium text-emerald-700">
+            {successMessage}
+          </Text>
+        </div>
+      ) : null}
+
       <div className="mt-8">
         <Heading as="h5" className="text-gray-900">
           Descripción del curso
@@ -152,8 +182,13 @@ export default function TeacherCourseEdit({ course }: TeacherCourseEditProps) {
           Cancelar
         </Button>
 
-        <Button type="button" onClick={handleSave} className="min-w-28">
-          Guardar
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving || !courseName.trim()}
+          className="min-w-28"
+        >
+          {isSaving ? "Guardando..." : "Guardar"}
         </Button>
       </div>
     </section>

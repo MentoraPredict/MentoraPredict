@@ -1,12 +1,23 @@
 import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
+import Pagination from "@/components/molecules/Pagination";
 
 import CourseGrid from "@/features/courses/components/CourseGrid";
 import useAdminCourses from "@/features/admin/hooks/useAdminCourses";
+import usePagination from "@/hooks/usePagination";
+
+const COURSES_PER_PAGE = 6;
 
 export default function AdminCoursesManagement() {
   const { courses, isLoading, error } = useAdminCourses();
+  const {
+    currentPage,
+    paginatedItems: paginatedCourses,
+    totalItems,
+    totalPages,
+    setCurrentPage,
+  } = usePagination(courses, COURSES_PER_PAGE);
 
   return (
     <section className="py-8">
@@ -35,8 +46,19 @@ export default function AdminCoursesManagement() {
             <Text variant="small">Cargando cursos...</Text>
           </div>
         ) : (
-          <CourseGrid courses={courses} />
+          <CourseGrid courses={paginatedCourses} />
         )}
+
+        {!isLoading && !error ? (
+          <Pagination
+            currentPage={currentPage}
+            pageSize={COURSES_PER_PAGE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="cursos"
+            onPageChange={setCurrentPage}
+          />
+        ) : null}
       </Container>
     </section>
   );

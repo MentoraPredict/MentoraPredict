@@ -10,38 +10,10 @@ import TeacherCoursesHeader from "@/features/teachers/components/TeacherCoursesH
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
 
 import { useAuthStore } from "@/store/auth.store";
-import type { AppUser } from "@/types/user/user.types";
 import Text from "@/components/atoms/Text";
 
 import { useNavigate } from "react-router-dom";
 import { getTeacherCoursePerformancePath } from "@/routes/paths";
-
-const mockStudents: AppUser[] = [
-  {
-    id: "1",
-    firstName: "Franco",
-    lastName: "Paredes",
-    email: "franco.paredes@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-  {
-    id: "2",
-    firstName: "Daniela",
-    lastName: "Morales",
-    email: "daniela.morales@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-  {
-    id: "3",
-    firstName: "Carlos",
-    lastName: "Mendoza",
-    email: "carlos.mendoza@uce.edu.ec",
-    role: "STUDENT",
-    isActive: true,
-  },
-];
 
 export default function TeacherCoursesManagement() {
   const navigate = useNavigate();
@@ -57,34 +29,27 @@ export default function TeacherCoursesManagement() {
 
   const {
     courses: backendCourses,
+    faculties,
     careers,
     periods,
+    students,
     isLoading,
     isCreating,
+    deletingCourseId,
     error,
     createCourse,
-  } = useTeacherCourses(user?.id, teacherName);
+    deleteCourse,
+  } = useTeacherCourses(user?.id, teacherName, true);
 
-  const [hiddenCourseIds, setHiddenCourseIds] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
 
-  const courses = useMemo(
-    () =>
-      backendCourses.filter(
-        (course) => !hiddenCourseIds.includes(course.id)
-      ),
-    [backendCourses, hiddenCourseIds]
-  );
+  const courses = backendCourses;
 
   const hasCourses = courses.length > 0;
 
-  const handleDeleteCourse = (courseId: string) => {
-    setHiddenCourseIds((currentCourseIds) => [
-      ...currentCourseIds,
-      courseId,
-    ]);
-
+  const handleDeleteCourse = async (courseId: string) => {
+    await deleteCourse(courseId);
     setIsDeleteMode(false);
   };
 
@@ -131,6 +96,7 @@ export default function TeacherCoursesManagement() {
               <CourseGrid
                 courses={courses}
                 isDeleteMode={isDeleteMode}
+                deletingCourseId={deletingCourseId}
                 onCourseClick={(courseId) => {
                   navigate(getTeacherCoursePerformancePath(courseId));
                 }}
@@ -150,9 +116,15 @@ export default function TeacherCoursesManagement() {
         </Container>
       </section>
 
-      <CreateCourseModal isOpen={isCreateModalOpen}>
+      <CreateCourseModal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+        }}
+      >
         <CreateCourseForm
-          availableStudents={mockStudents}
+          availableStudents={students}
+          faculties={faculties}
           careers={careers}
           periods={periods}
           teacherName={teacherName}
@@ -160,8 +132,8 @@ export default function TeacherCoursesManagement() {
           onCancel={() => {
             setIsCreateModalOpen(false);
           }}
-          onCreateCourse={async (coursePayload) => {
-            const createdCourse = await createCourse(coursePayload);
+          onCreateCourse={async (coursePayload, studentIds) => {
+            const createdCourse = await createCourse(coursePayload, studentIds);
 
             if (createdCourse) {
               setIsCreateModalOpen(false);

@@ -1,153 +1,94 @@
-import CourseAlertsPanel from "@/features/courses/components/CourseAlertsPanel";
 import CourseAverageChart from "@/features/courses/components/CourseAverageChart";
-import CourseProgressChart from "@/features/courses/components/CourseProgressChart";
-import CourseRecommendationsPanel from "@/features/courses/components/CourseRecommendationsPanel";
-import CourseRiskBars from "@/features/courses/components/CourseRiskBars";
+import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
+import useStudentCoursePerformance from "@/features/students/hooks/useStudentCoursePerformance";
 
-import type {
-  CourseAlert,
-  CourseProgressPoint,
-  CourseRecommendation,
-  CourseRiskItem,
-} from "@/types/course";
+interface StudentCoursePerformanceProps {
+  courseId: string;
+}
 
-const progressData: CourseProgressPoint[] = [
-  {
-    week: "S1",
-    actual: 5,
-    projection: 7,
-  },
-  {
-    week: "S2",
-    actual: 6,
-    projection: 6,
-  },
-  {
-    week: "S3",
-    actual: 5,
-    projection: 9,
-  },
-  {
-    week: "S4",
-    actual: 9,
-    projection: 8,
-  },
-  {
-    week: "S5",
-    actual: 10,
-    projection: 11,
-  },
-  {
-    week: "S6",
-    actual: 8,
-    projection: 12,
-  },
-  {
-    week: "S7",
-    actual: 13,
-    projection: 10,
-  },
-  {
-    week: "S8",
-    actual: 14,
-    projection: 11,
-  },
-  {
-    week: "S9",
-    actual: 16,
-    projection: 13,
-  },
-];
+export default function StudentCoursePerformance({
+  courseId,
+}: StudentCoursePerformanceProps) {
+  const { period, metrics, subjectAverage, isLoading, error } =
+    useStudentCoursePerformance(courseId);
+  const isValidSubjectAverage =
+    subjectAverage !== null && subjectAverage >= 0 && subjectAverage <= 10;
+  const isValidGlobalAverage =
+    metrics !== null && metrics.globalAverage >= 0 && metrics.globalAverage <= 10;
 
-const alerts: CourseAlert[] = [
-  {
-    id: "1",
-    message: "En la nota individual tienes 3 puntos sobre 7",
-    severity: "HIGH",
-  },
-  {
-    id: "2",
-    message: "Estás al límite de faltas permitidas",
-    severity: "HIGH",
-  },
-  {
-    id: "3",
-    message: "En el examen obtuviste una nota de 5/20, equivalente al 20%.",
-    severity: "MEDIUM",
-  },
-];
+  if (isLoading) {
+    return (
+      <StudentPerformanceUnavailableCard
+        title="Cargando rendimiento"
+        description="Estamos consultando las métricas del periodo académico activo."
+      />
+    );
+  }
 
-const recommendations: CourseRecommendation[] = [
-  {
-    id: "1",
-    title: "Recomendación 1",
-    description:
-      "Repasa los conceptos base del módulo 2 antes de la próxima evaluación.",
-  },
-  {
-    id: "2",
-    title: "Recomendación 2",
-    description:
-      "Agenda una sesión de tutoría para reforzar los temas con menor comprensión.",
-  },
-  {
-    id: "3",
-    title: "Recomendación 3",
-    description:
-      "Entrega el reporte pendiente antes del viernes para mejorar tu progreso.",
-  },
-];
+  if (error) {
+    return (
+      <StudentPerformanceUnavailableCard
+        title="No se pudo cargar el rendimiento"
+        description={error}
+      />
+    );
+  }
 
-const riskItems: CourseRiskItem[] = [
-  {
-    id: "risk",
-    label: "Riesgo de perder la materia",
-    value: 93,
-  },
-];
-
-export default function StudentCoursePerformance() {
   return (
-    <div
-      className="
-                grid
-                gap-6
-                xl:grid-cols-[1fr_360px]
-            "
-    >
+    <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
       <div className="space-y-6">
-        <CourseProgressChart
-          data={progressData}
-          title="Progreso"
-          subtitle="Métricas de rendimiento personal por semana"
+        <StudentPerformanceUnavailableCard
+          title="Progreso semanal"
+          description="El backend todavía no entrega una serie histórica semanal ni una proyección por materia."
         />
-
-        <CourseAlertsPanel alerts={alerts} />
-
-        <section
-          className="
-                        rounded-2xl
-                        border
-                        border-red-200
-                        bg-red-50
-                        p-6
-                        shadow-sm
-                    "
-        >
-          <CourseRiskBars items={riskItems} />
-        </section>
+        <StudentPerformanceUnavailableCard
+          title="Alertas de la materia"
+          description="Las alertas existentes son generales del estudiante y no incluyen el identificador de la materia."
+        />
+        <StudentPerformanceUnavailableCard
+          title="Riesgo de la materia"
+          description="El riesgo disponible es global y usa valores neutros para asistencia, cumplimiento y tendencia; por eso no se presenta como riesgo de este curso."
+        />
       </div>
 
       <div className="space-y-6">
-        <CourseAverageChart
-          average={7}
-          title="Promedio actual"
-          description="Tu promedio actual se encuentra por debajo del umbral recomendado para aprobar la materia."
-        />
+        {isValidSubjectAverage ? (
+          <CourseAverageChart
+            average={subjectAverage}
+            maxAverage={10}
+            title="Promedio actual de la materia"
+            description={`Calculado por Analytics para el periodo ${period?.name ?? "activo"}.`}
+          />
+        ) : (
+          <StudentPerformanceUnavailableCard
+            title="Promedio de la materia"
+            description={
+              subjectAverage !== null
+                ? "Analytics devolvió un promedio fuera del rango válido de 0 a 10. Revisa los datos cargados."
+                : metrics
+                ? "Analytics no contiene un promedio asociado al identificador de este curso."
+                : "Todavía no existen métricas procesadas para el periodo activo."
+            }
+          />
+        )}
 
-        <CourseRecommendationsPanel
-          recommendations={recommendations}
-          showReportButton={false}
+        {isValidGlobalAverage ? (
+          <CourseAverageChart
+            average={metrics.globalAverage}
+            maxAverage={10}
+            title="Promedio general del periodo"
+            description={`Promedio global del estudiante en ${period?.name ?? "el periodo activo"}; no corresponde únicamente a esta materia.`}
+          />
+        ) : metrics ? (
+          <StudentPerformanceUnavailableCard
+            title="Promedio general del periodo"
+            description="Analytics devolvió un promedio fuera del rango válido de 0 a 10. Revisa los datos cargados."
+          />
+        ) : null}
+
+        <StudentPerformanceUnavailableCard
+          title="Recomendaciones"
+          description="Las recomendaciones existentes se generan desde un riesgo global incompleto y no están asociadas a esta materia."
         />
       </div>
     </div>

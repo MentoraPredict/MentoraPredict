@@ -3,7 +3,13 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import { Button, Heading, Text } from "@/components/atoms";
+import {
+  Button,
+  FeedbackMessage,
+  Heading,
+  MotionEntrance,
+  Text,
+} from "@/components/atoms";
 
 import { FormField, PasswordField } from "@/components/molecules";
 import { APP_PATHS } from "@/routes/paths";
@@ -82,7 +88,8 @@ export default function RegisterForm() {
                 py-12
             "
     >
-      <div
+      <MotionEntrance
+        variant="form"
         className="
                     w-full
                     max-w-md
@@ -162,13 +169,9 @@ export default function RegisterForm() {
             {isSubmitting ? "Registrando..." : "Registrarse"}
           </Button>
 
-          {serverError ? (
-            <Text className="text-sm text-red-500">{serverError}</Text>
-          ) : null}
+          <FeedbackMessage message={serverError} tone="error" />
 
-          {successMessage ? (
-            <Text className="text-sm text-green-700">{successMessage}</Text>
-          ) : null}
+          <FeedbackMessage message={successMessage} tone="success" />
 
           <Button
             type="button"
@@ -179,7 +182,7 @@ export default function RegisterForm() {
             Ya tengo cuenta
           </Button>
         </form>
-      </div>
+      </MotionEntrance>
     </div>
   );
 }
