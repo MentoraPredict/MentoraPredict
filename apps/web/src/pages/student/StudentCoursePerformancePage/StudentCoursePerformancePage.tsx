@@ -57,7 +57,7 @@ export default function StudentCoursePerformancePage() {
         />
       }
     >
-      <StudentCoursePerformance />
+      <StudentCoursePerformance courseId={activeCourse.id} />
     </CourseAnalyticsLayout>
   );
 }

@@ -24,7 +24,7 @@ data AS (
         ae.subject_id,
         ve.evaluation_id,
 
-        (20 + floor(random() * 79))::int AS value, -- 20–100
+        (2 + floor(random() * 8))::int AS value, -- 2–9 (escala valida del backend: 0–10)
 
         -- docente responsable (si quieres más realista luego lo cambiamos)
         (SELECT id FROM users WHERE role = 'TEACHER' LIMIT 1) AS registered_by,
