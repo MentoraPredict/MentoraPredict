@@ -16,5 +16,6 @@ export { default as ProfileDropdown } from "./ProfileDropdown";
 export { default as SelectedItemChip } from "./SelectedItemChip";
 
 export { default as ImageUploadPreview } from "./ImageUploadPreview";
+export { default as LogoLink } from "./LogoLink";
 
 export { default as RatingScale } from "./RatingScale";

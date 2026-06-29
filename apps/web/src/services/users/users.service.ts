@@ -30,6 +30,10 @@ interface UpdateUserPayload {
 }
 
 const fallbackUserRole: UserRole = "STUDENT";
+const STUDENTS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let studentsCache: { value: AppUser[]; expiresAt: number } | undefined;
+let studentsRequest: Promise<AppUser[]> | undefined;
 
 function isUserRole(role?: string): role is UserRole {
     return (
@@ -68,33 +72,44 @@ export async function getCurrentUser() {
 }
 
 export async function getUsers(): Promise<AppUser[]> {
-    const response = await api.get<UserApiResponse[]>(
-        endpoints.users.list,
-        {
-            params: {
-                _t: Date.now(),
-            },
-        }
-    );
+    const response = await api.get<UserApiResponse[]>(endpoints.users.list);
 
     return response.data.map(toAppUser);
 }
 
 export async function getStudents(): Promise<AppUser[]> {
-    const response = await api.get<UserApiResponse[]>(
+    if (studentsCache && studentsCache.expiresAt > Date.now()) {
+        return studentsCache.value;
+    }
+
+    if (studentsRequest) {
+        return studentsRequest;
+    }
+
+    studentsRequest = api.get<UserApiResponse[]>(
         endpoints.users.list,
         {
             params: {
                 role: "STUDENT",
                 status: "ACTIVE",
-                _t: Date.now(),
             },
         }
-    );
+    ).then((response) => {
+        const students = response.data
+            .map(toAppUser)
+            .filter((user) => user.role === "STUDENT" && user.isActive);
 
-    return response.data
-        .map(toAppUser)
-        .filter((user) => user.role === "STUDENT" && user.isActive);
+        studentsCache = {
+            value: students,
+            expiresAt: Date.now() + STUDENTS_CACHE_TTL_MS,
+        };
+
+        return students;
+    }).finally(() => {
+        studentsRequest = undefined;
+    });
+
+    return studentsRequest;
 }
 
 export async function updateUser(
@@ -105,6 +120,8 @@ export async function updateUser(
         endpoints.users.detail(userId),
         payload
     );
+
+    studentsCache = undefined;
 
     return toAppUser(response.data);
 }

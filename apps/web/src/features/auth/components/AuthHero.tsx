@@ -1,5 +1,6 @@
 import mentoraPredictBanner from "@/assets/mentorapredict-banner.jpg";
-import { Badge, Heading, Logo, Text } from "@/components/atoms";
+import { Badge, Heading, Text } from "@/components/atoms";
+import { LogoLink } from "@/components/molecules";
 import { FaShieldAlt } from "react-icons/fa";
 
 export default function AuthHero() {
@@ -18,7 +19,7 @@ export default function AuthHero() {
       "
     >
       <div className="w-full mb-6 ">
-        <Logo variant="light" />
+        <LogoLink variant="light" />
       </div>
 
       <div className="flex w-full max-w-md flex-col items-center text-center">

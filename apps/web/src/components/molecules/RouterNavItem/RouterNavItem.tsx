@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { NavLink } from "react-router-dom";
 
 interface RouterNavItemProps {
@@ -6,11 +7,19 @@ interface RouterNavItemProps {
 }
 
 export default function RouterNavItem({ label, to }: RouterNavItemProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `
+    <motion.span
+      className="inline-flex"
+      whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+      whileTap={shouldReduceMotion ? undefined : { scale: 0.94 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+    >
+      <NavLink
+        to={to}
+        className={({ isActive }) =>
+          `
                     text-sm
                     font-medium
                     transition-colors
@@ -20,9 +29,10 @@ export default function RouterNavItem({ label, to }: RouterNavItemProps) {
                         : "text-gray-600 hover:text-blue-700"
                     }
                 `
-      }
-    >
-      {label}
-    </NavLink>
+        }
+      >
+        {label}
+      </NavLink>
+    </motion.span>
   );
 }

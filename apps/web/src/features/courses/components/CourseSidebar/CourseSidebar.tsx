@@ -7,8 +7,8 @@ import {
 } from "react-icons/fi";
 import { NavLink } from "react-router-dom";
 
-import Logo from "@/components/atoms/Logo";
 import Text from "@/components/atoms/Text";
+import LogoLink from "@/components/molecules/LogoLink";
 import CourseSidebarNavItem from "@/features/courses/components/CourseSidebarNavItem";
 
 import type { Course } from "@/types/course";
@@ -48,7 +48,7 @@ export default function CourseSidebar({
             "
     >
       <div className="mb-10">
-        <Logo variant="light" />
+        <LogoLink variant="light" />
 
         <Text
           variant="caption"

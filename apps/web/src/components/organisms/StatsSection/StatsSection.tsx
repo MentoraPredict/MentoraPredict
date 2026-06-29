@@ -4,7 +4,7 @@ import StatCard from "@/components/molecules/StatCard";
 
 export default function StatsSection() {
   return (
-    <section id="stats" className="py-20  bg-blue-950">
+    <section id="stats" className="scroll-mt-20 bg-blue-950 py-20">
       <Container>
         <div
           className="

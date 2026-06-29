@@ -1,5 +1,6 @@
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
+import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
 import CourseImagePlaceholder from "@/features/courses/components/CourseImagePlaceholder";
@@ -35,7 +36,8 @@ export default function CourseCard({
   };
 
   return (
-    <article
+    <MotionCard
+      as="article"
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
       onClick={handleCardClick}
@@ -59,7 +61,6 @@ export default function CourseCard({
                 p-5
                 shadow-sm
                 transition
-                hover:-translate-y-1
                 hover:shadow-md
                 ${isClickable ? "cursor-pointer" : ""}
             `}
@@ -192,6 +193,6 @@ export default function CourseCard({
           label={course.riskLabel}
         />
       </div>
-    </article>
+    </MotionCard>
   );
 }
