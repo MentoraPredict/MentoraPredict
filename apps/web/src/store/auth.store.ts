@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { login as loginRequest, logout as logoutRequest, refresh as refreshRequest } from "@/services/auth.service";
 import { clearTokens, getAccessToken, getRefreshToken, setAccessToken, setTokens } from "@/services/api/tokenStorage";
+import { getCurrentUser } from "@/services/users/users.service";
 import { decodeJwtPayload } from "@/utils/jwt";
 import type { LoginCredentials, AuthTokens, AuthSessionUser } from "@/types/auth/auth.types";
 
@@ -45,6 +46,30 @@ function buildUserFallback(
     };
 }
 
+async function resolveSessionUser(
+    accessToken: string
+): Promise<AuthSessionUser | null> {
+    const fallbackUser = buildUserFallback(accessToken);
+
+    if (!fallbackUser) {
+        return null;
+    }
+
+    try {
+        const profile = await getCurrentUser();
+
+        return {
+            ...fallbackUser,
+            ...profile,
+            id: profile.id || fallbackUser.id,
+            email: profile.email || fallbackUser.email,
+            role: profile.role || fallbackUser.role,
+        };
+    } catch {
+        return fallbackUser;
+    }
+}
+
 export const useAuthStore = create<AuthState>(
     (set, get) => ({
         user: null,
@@ -62,7 +87,7 @@ export const useAuthStore = create<AuthState>(
                 tokens.refreshToken
             );
 
-            const user = buildUserFallback(
+            const user = await resolveSessionUser(
                 tokens.accessToken
             );
 
@@ -129,17 +154,17 @@ export const useAuthStore = create<AuthState>(
                 isAuthenticated: true,
             });
 
-            const fallbackUser =
-                buildUserFallback(accessToken);
+            const sessionUser =
+                await resolveSessionUser(accessToken);
 
-            if (!fallbackUser) {
+            if (!sessionUser) {
                 get().clearSession();
                 set({ isHydrated: true });
                 return;
             }
 
             set({
-                user: fallbackUser,
+                user: sessionUser,
                 isHydrated: true,
                 isAuthenticated: true,
             });
