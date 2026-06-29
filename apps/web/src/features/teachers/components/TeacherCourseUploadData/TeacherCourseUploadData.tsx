@@ -5,34 +5,10 @@ import Button from "@/components/atoms/Button";
 import Text from "@/components/atoms/Text";
 
 import CourseFilesUploadPanel from "@/features/teachers/components/CourseFilesUploadPanel";
-import GradeEvaluationPanel from "@/features/teachers/components/GradeEvaluationPanel";
 import SyllabusTopicsPanel from "@/features/teachers/components/SyllabusTopicsPanel";
 import { importGradesFile } from "@/services/academic.service";
 
-import type { CourseUploadedFile, GradeEvaluationItem } from "@/types/course";
-
-const initialEvaluationItems: GradeEvaluationItem[] = [
-  {
-    id: "individual",
-    label: "Individual",
-    percentage: 10,
-  },
-  {
-    id: "group",
-    label: "Grupal",
-    percentage: 20,
-  },
-  {
-    id: "exam-1",
-    label: "Examen 1",
-    percentage: 30,
-  },
-  {
-    id: "exam-2",
-    label: "Examen 2",
-    percentage: 40,
-  },
-];
+import type { CourseUploadedFile } from "@/types/course";
 
 function getUploadErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
@@ -51,20 +27,10 @@ function getUploadErrorMessage(error: unknown) {
 
 export default function TeacherCourseUploadData() {
   const [files, setFiles] = useState<CourseUploadedFile[]>([]);
-
-  const [evaluationItems, setEvaluationItems] = useState<GradeEvaluationItem[]>(
-    initialEvaluationItems,
-  );
-
   const [syllabusTopicsText, setSyllabusTopicsText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const totalEvaluation = evaluationItems.reduce(
-    (sum, item) => sum + item.percentage,
-    0,
-  );
 
   const handleAddFile = (file: File) => {
     setFiles((currentFiles) => [
@@ -85,32 +51,14 @@ export default function TeacherCourseUploadData() {
     );
   };
 
-  const handleChangePercentage = (itemId: string, percentage: number) => {
-    setEvaluationItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              percentage,
-            }
-          : item,
-      ),
-    );
-  };
-
   const handleCancel = () => {
     setFiles([]);
-    setEvaluationItems(initialEvaluationItems);
     setSyllabusTopicsText("");
     setError(null);
     setSuccessMessage(null);
   };
 
   const handleSave = async () => {
-    if (totalEvaluation !== 100) {
-      return;
-    }
-
     if (files.length === 0) {
       setError("Selecciona al menos un archivo CSV o Excel para subir.");
       return;
@@ -141,24 +89,11 @@ export default function TeacherCourseUploadData() {
 
   return (
     <div className="space-y-6">
-      <div
-        className="
-                    grid
-                    gap-6
-                    xl:grid-cols-[1fr_380px]
-                "
-      >
-        <CourseFilesUploadPanel
-          files={files}
-          onAddFile={handleAddFile}
-          onRemoveFile={handleRemoveFile}
-        />
-
-        <GradeEvaluationPanel
-          items={evaluationItems}
-          onChangePercentage={handleChangePercentage}
-        />
-      </div>
+      <CourseFilesUploadPanel
+        files={files}
+        onAddFile={handleAddFile}
+        onRemoveFile={handleRemoveFile}
+      />
 
       <SyllabusTopicsPanel
         value={syllabusTopicsText}
@@ -194,12 +129,8 @@ export default function TeacherCourseUploadData() {
         <Button
           type="button"
           onClick={handleSave}
-          disabled={totalEvaluation !== 100 || isSaving}
-          className={
-            totalEvaluation !== 100 || isSaving
-              ? "cursor-not-allowed opacity-60"
-              : ""
-          }
+          disabled={isSaving}
+          className={isSaving ? "cursor-not-allowed opacity-60" : ""}
         >
           {isSaving ? "Guardando..." : "Guardar"}
         </Button>
