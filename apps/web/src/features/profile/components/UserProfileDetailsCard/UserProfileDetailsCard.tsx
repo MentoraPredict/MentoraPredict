@@ -1,6 +1,7 @@
 import { FiInfo } from "react-icons/fi";
 
 import Heading from "@/components/atoms/Heading";
+import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 import type { UserRole } from "@/types/user/role.types";
 
@@ -22,7 +23,8 @@ export default function UserProfileDetailsCard({
   timezone = "Quito/Ecuador (GMT-5)",
 }: UserProfileDetailsCardProps) {
   return (
-    <section
+    <MotionCard
+      as="section"
       className="
                 rounded-2xl
                 border
@@ -80,6 +82,6 @@ export default function UserProfileDetailsCard({
           </Text>
         </div>
       </div>
-    </section>
+    </MotionCard>
   );
 }

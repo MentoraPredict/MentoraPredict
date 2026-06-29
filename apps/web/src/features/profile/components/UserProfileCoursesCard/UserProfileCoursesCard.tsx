@@ -1,6 +1,7 @@
 import { FiBookOpen } from "react-icons/fi";
 
 import Heading from "@/components/atoms/Heading";
+import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
 interface UserProfileCourseSummary {
@@ -18,7 +19,8 @@ export default function UserProfileCoursesCard({
   courses,
 }: UserProfileCoursesCardProps) {
   return (
-    <section
+    <MotionCard
+      as="section"
       className="
                 rounded-2xl
                 border
@@ -59,6 +61,6 @@ export default function UserProfileCoursesCard({
       ) : (
         <Text variant="small">No existen cursos asociados a este perfil.</Text>
       )}
-    </section>
+    </MotionCard>
   );
 }

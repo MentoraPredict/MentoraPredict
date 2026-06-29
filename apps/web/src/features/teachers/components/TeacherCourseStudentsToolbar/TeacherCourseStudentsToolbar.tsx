@@ -15,6 +15,8 @@ interface TeacherCourseStudentsToolbarProps {
   onSelectStudent: (student: AppUser) => void;
   onRemoveSelectedStudent: (studentId: string) => void;
   onAddStudents: () => void;
+  isLoadingStudents?: boolean;
+  isAddingStudents?: boolean;
 }
 
 export default function TeacherCourseStudentsToolbar({
@@ -27,6 +29,8 @@ export default function TeacherCourseStudentsToolbar({
   onSelectStudent,
   onRemoveSelectedStudent,
   onAddStudents,
+  isLoadingStudents = false,
+  isAddingStudents = false,
 }: TeacherCourseStudentsToolbarProps) {
   return (
     <div
@@ -65,18 +69,22 @@ export default function TeacherCourseStudentsToolbar({
         <Button
           type="button"
           onClick={onAddStudents}
-          disabled={selectedStudents.length === 0}
+          disabled={selectedStudents.length === 0 || isAddingStudents}
           className={
-            selectedStudents.length === 0
+            selectedStudents.length === 0 || isAddingStudents
               ? "cursor-not-allowed opacity-60 lg:min-w-28"
               : "lg:min-w-28"
           }
         >
-          Agregar
+          {isAddingStudents ? "Agregando..." : "Agregar"}
         </Button>
       </div>
 
-      {searchResults.length > 0 ? (
+      {isLoadingStudents ? (
+        <Text variant="caption" className="mt-4 block text-gray-500">
+          Cargando estudiantes disponibles...
+        </Text>
+      ) : searchResults.length > 0 ? (
         <div
           className="
                         mt-4

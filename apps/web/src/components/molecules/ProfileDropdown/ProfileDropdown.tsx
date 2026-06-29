@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
@@ -28,27 +29,44 @@ export default function ProfileDropdown({
   onLogout,
 }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
   const navigate = useNavigate();
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ");
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
         onClick={() => {
           setIsOpen((current) => !current);
         }}
-        className="
-                    flex
-                    items-center
-                    gap-3
-                    rounded-xl
-                    px-2
-                    py-1
-                    transition
-                    hover:bg-gray-100
-                "
+        className="flex items-center gap-3 rounded-xl px-2 py-1 transition hover:bg-gray-100"
       >
         <div className="hidden text-right sm:block">
           <Text
@@ -67,52 +85,57 @@ export default function ProfileDropdown({
           lastName={lastName}
         />
 
-        <FiChevronDown size={16} className="text-gray-500" />
+        <motion.span
+          className="inline-flex text-gray-500"
+          animate={{ rotate: isOpen && !shouldReduceMotion ? 180 : 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          <FiChevronDown size={16} />
+        </motion.span>
       </button>
 
-      {isOpen ? (
-        <div
-          className="
-                        absolute
-                        right-0
-                        top-14
-                        z-[110]
-                        w-56
-                        rounded-xl
-                        border
-                        border-gray-200
-                        bg-white
-                        p-3
-                        shadow-lg
-          "
-        >
-          {profilePath ? (
+      <AnimatePresence>
+        {isOpen ? (
+          <motion.div
+            role="menu"
+            aria-label="Opciones del perfil"
+            className="absolute right-0 top-14 z-[110] w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg"
+            initial={{ opacity: 0, scale: 0.97, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -6 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            style={{ transformOrigin: "top right" }}
+          >
+            {profilePath ? (
+              <Button
+                role="menuitem"
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(profilePath);
+                }}
+                className="mb-2 w-full gap-2 px-4 py-2 text-sm"
+              >
+                <FiUser />
+                Ver perfil
+              </Button>
+            ) : null}
+
             <Button
+              role="menuitem"
               type="button"
               variant="outline"
-              onClick={() => {
-                setIsOpen(false);
-                navigate(profilePath);
-              }}
-              className="mb-2 w-full gap-2 px-4 py-2 text-sm"
+              onClick={onLogout}
+              disabled={isLoggingOut}
+              className="w-full gap-2 px-4 py-2 text-sm"
             >
-              <FiUser />
-              Ver perfil
+              <FiLogOut />
+              {isLoggingOut ? "Saliendo..." : "Cerrar sesión"}
             </Button>
-          ) : null}
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onLogout}
-            disabled={isLoggingOut}
-            className="w-full gap-2 px-4 py-2 text-sm"
-          >
-            <FiLogOut />
-            {isLoggingOut ? "Saliendo..." : "Cerrar sesión"}
-          </Button>
-        </div>
-      ) : null}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

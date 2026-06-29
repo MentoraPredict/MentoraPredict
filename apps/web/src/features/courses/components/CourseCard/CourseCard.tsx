@@ -1,5 +1,6 @@
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
+import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
 import CourseImagePlaceholder from "@/features/courses/components/CourseImagePlaceholder";
@@ -10,6 +11,7 @@ import type { Course } from "@/types/course";
 interface CourseCardProps {
   course: Course;
   isDeleteMode?: boolean;
+  isDeleting?: boolean;
   onClick?: (courseId: string) => void;
   onDelete?: (courseId: string) => void;
   onCancelDelete?: () => void;
@@ -18,6 +20,7 @@ interface CourseCardProps {
 export default function CourseCard({
   course,
   isDeleteMode = false,
+  isDeleting = false,
   onClick,
   onDelete,
   onCancelDelete,
@@ -33,7 +36,8 @@ export default function CourseCard({
   };
 
   return (
-    <article
+    <MotionCard
+      as="article"
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
       onClick={handleCardClick}
@@ -57,7 +61,6 @@ export default function CourseCard({
                 p-5
                 shadow-sm
                 transition
-                hover:-translate-y-1
                 hover:shadow-md
                 ${isClickable ? "cursor-pointer" : ""}
             `}
@@ -87,13 +90,14 @@ export default function CourseCard({
             <div className="flex gap-3">
               <Button
                 type="button"
+                disabled={isDeleting}
                 onClick={(event) => {
                   event.stopPropagation();
                   onDelete?.(course.id);
                 }}
                 className="bg-red-700 px-4 py-2 text-sm hover:bg-red-800"
               >
-                Eliminar
+                {isDeleting ? "Eliminando..." : "Eliminar"}
               </Button>
 
               <Button
@@ -189,6 +193,6 @@ export default function CourseCard({
           label={course.riskLabel}
         />
       </div>
-    </article>
+    </MotionCard>
   );
 }

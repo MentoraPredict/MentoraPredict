@@ -1,11 +1,19 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import LandingPage from "@/pages/public/LandingPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import RoleRedirect from "./RoleRedirect";
@@ -32,14 +40,20 @@ import StudentProfilePage from "@/pages/student/StudentProfilePage";
 import StudentCoursePerformancePage from "@/pages/student/StudentCoursePerformancePage";
 import StudentCourseUploadDataPage from "@/pages/student/StudentCourseUploadDataPage";
 
-export default function AppRouter() {
-  useEffect(() => {
-    void useAuthStore.getState().hydrateSession();
-  }, []);
+function AnimatedRoutes() {
+  const location = useLocation();
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname}
+        className="min-h-screen"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
+        <Routes location={location}>
         <Route path={APP_PATHS.public.landing} element={<LandingPage />} />
 
         <Route element={<PublicOnlyRoute />}>
@@ -48,6 +62,10 @@ export default function AppRouter() {
           <Route
             path={APP_PATHS.public.forgotPassword}
             element={<ForgotPasswordPage />}
+          />
+          <Route
+            path={APP_PATHS.public.resetPassword}
+            element={<ResetPasswordPage />}
           />
         </Route>
 
@@ -115,7 +133,20 @@ export default function AppRouter() {
           path="*"
           element={<Navigate to={APP_PATHS.public.landing} replace />}
         />
-      </Routes>
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+export default function AppRouter() {
+  useEffect(() => {
+    void useAuthStore.getState().hydrateSession();
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <AnimatedRoutes />
     </BrowserRouter>
   );
 }
