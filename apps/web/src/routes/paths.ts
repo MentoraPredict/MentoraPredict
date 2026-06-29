@@ -6,6 +6,7 @@ export const APP_PATHS = {
     login: "/login",
     register: "/register",
     forgotPassword: "/forgot-password",
+    resetPassword: "/reset-password",
   },
   shared: {
     redirect: "/redirect",

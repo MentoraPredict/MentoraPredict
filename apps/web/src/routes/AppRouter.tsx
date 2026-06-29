@@ -6,6 +6,7 @@ import LandingPage from "@/pages/public/LandingPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import RoleRedirect from "./RoleRedirect";
@@ -48,6 +49,10 @@ export default function AppRouter() {
           <Route
             path={APP_PATHS.public.forgotPassword}
             element={<ForgotPasswordPage />}
+          />
+          <Route
+            path={APP_PATHS.public.resetPassword}
+            element={<ResetPasswordPage />}
           />
         </Route>
 

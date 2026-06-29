@@ -2,10 +2,13 @@ import api from "./api";
 import { endpoints } from "./api/endpoints";
 import type {
     AuthTokens,
+    ForgotPasswordPayload,
+    ForgotPasswordResponse,
     LoginCredentials,
     RegisterCredentials,
     RegisterResponse,
     RefreshTokenPayload,
+    ResetPasswordPayload,
 } from "@/types/auth/auth.types";
 
 export async function login(
@@ -44,4 +47,21 @@ export async function register(
     );
 
     return response.data;
+}
+
+export async function forgotPassword(
+    payload: ForgotPasswordPayload
+): Promise<ForgotPasswordResponse> {
+    const response = await api.post<ForgotPasswordResponse>(
+        endpoints.auth.forgotPassword,
+        payload
+    );
+
+    return response.data ?? {};
+}
+
+export async function resetPassword(
+    payload: ResetPasswordPayload
+): Promise<void> {
+    await api.post(endpoints.auth.resetPassword, payload);
 }
