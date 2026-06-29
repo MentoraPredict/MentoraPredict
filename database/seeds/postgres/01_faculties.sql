@@ -18,4 +18,9 @@ INSERT INTO faculties (id, name, code, description, status, created_at, updated_
 ('f9999999-9999-4999-8999-999999999999', 'Facultad de Artes', 'FA', 'Arte y expresión creativa', 'ACTIVE', NOW(), NOW()),
 ('faaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Facultad de Arquitectura y Urbanismo', 'FAU', 'Diseño arquitectónico y urbano', 'ACTIVE', NOW(), NOW())
 
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    code = EXCLUDED.code,
+    description = EXCLUDED.description,
+    status = EXCLUDED.status,
+    updated_at = NOW();

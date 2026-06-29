@@ -167,4 +167,14 @@ FROM (
     created_at,
     updated_at
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    code = EXCLUDED.code,
+    credits = EXCLUDED.credits,
+    career_id = EXCLUDED.career_id,
+    academic_period_id = EXCLUDED.academic_period_id,
+    max_capacity = EXCLUDED.max_capacity,
+    teacher_id = EXCLUDED.teacher_id,
+    is_active = EXCLUDED.is_active,
+    updated_at = NOW();
