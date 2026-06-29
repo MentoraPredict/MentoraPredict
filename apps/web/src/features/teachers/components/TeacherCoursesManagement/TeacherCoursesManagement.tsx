@@ -39,7 +39,7 @@ export default function TeacherCoursesManagement() {
     error,
     createCourse,
     deleteCourse,
-  } = useTeacherCourses(user?.id, teacherName);
+  } = useTeacherCourses(user?.id, teacherName, true);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -116,7 +116,12 @@ export default function TeacherCoursesManagement() {
         </Container>
       </section>
 
-      <CreateCourseModal isOpen={isCreateModalOpen}>
+      <CreateCourseModal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+        }}
+      >
         <CreateCourseForm
           availableStudents={students}
           faculties={faculties}

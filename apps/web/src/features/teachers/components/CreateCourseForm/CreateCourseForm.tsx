@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { FiHelpCircle } from "react-icons/fi";
 
@@ -199,6 +200,7 @@ export default function CreateCourseForm({
                 type="button"
                 aria-label="Mostrar recomendacion para el codigo institucional"
                 aria-expanded={isCodeHelpOpen}
+                aria-controls="course-code-help"
                 onClick={() => {
                   setIsCodeHelpOpen((isOpen) => !isOpen);
                 }}
@@ -208,12 +210,21 @@ export default function CreateCourseForm({
               </button>
             </div>
 
-            {isCodeHelpOpen ? (
-              <div className="mb-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800">
-                Usa las siglas de la carrera en mayusculas, un guion y un numero.
-                Ejemplo: {selectedCareer?.code ?? "SIGLAS"}-701.
-              </div>
-            ) : null}
+            <AnimatePresence initial={false}>
+              {isCodeHelpOpen ? (
+                <motion.div
+                  id="course-code-help"
+                  className="overflow-hidden rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800"
+                  initial={{ height: 0, marginBottom: 0, opacity: 0 }}
+                  animate={{ height: "auto", marginBottom: 8, opacity: 1 }}
+                  exit={{ height: 0, marginBottom: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                  Usa las siglas de la carrera en mayusculas, un guion y un
+                  numero. Ejemplo: {selectedCareer?.code ?? "SIGLAS"}-701.
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             <Input
               id="code"

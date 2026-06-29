@@ -57,7 +57,8 @@ function isUuid(value?: string) {
 
 export default function useTeacherCourses(
   teacherId?: string,
-  teacherName?: string
+  teacherName?: string,
+  includeCreationData = false
 ) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [faculties, setFaculties] = useState<CourseFacultyOption[]>([]);
@@ -82,23 +83,28 @@ export default function useTeacherCourses(
     setError(null);
 
     try {
-      const [loadedCourses, creationOptions, loadedStudents] = await Promise.all([
-        getTeacherCourses(teacherId, teacherName),
-        getCourseCreationOptions(),
-        getStudents(),
-      ]);
+      if (includeCreationData) {
+        const [loadedCourses, creationOptions, loadedStudents] =
+          await Promise.all([
+            getTeacherCourses(teacherId, teacherName),
+            getCourseCreationOptions(),
+            getStudents(),
+          ]);
 
-      setCourses(loadedCourses);
-      setFaculties(creationOptions.faculties);
-      setCareers(creationOptions.careers);
-      setPeriods(creationOptions.periods);
-      setStudents(loadedStudents);
+        setCourses(loadedCourses);
+        setFaculties(creationOptions.faculties);
+        setCareers(creationOptions.careers);
+        setPeriods(creationOptions.periods);
+        setStudents(loadedStudents);
+      } else {
+        setCourses(await getTeacherCourses(teacherId, teacherName));
+      }
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
       setIsLoading(false);
     }
-  }, [teacherId, teacherName]);
+  }, [includeCreationData, teacherId, teacherName]);
 
   useEffect(() => {
     void loadCourses();

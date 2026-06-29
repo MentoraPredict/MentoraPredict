@@ -99,12 +99,98 @@ interface MaybeWrappedArray<T> {
   items?: T[];
 }
 
+interface RequestCache<T> {
+  value?: T;
+  expiresAt?: number;
+  request?: Promise<T>;
+}
+
+const ACADEMIC_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const subjectsCache: RequestCache<SubjectApiResponse[]> = {};
+const periodsCache: RequestCache<AcademicPeriodApiResponse[]> = {};
+const facultiesCache: RequestCache<FacultyApiResponse[]> = {};
+const careersCache: RequestCache<CareerApiResponse[]> = {};
+
+function loadCached<T>(
+  cache: RequestCache<T>,
+  loader: () => Promise<T>
+): Promise<T> {
+  if (cache.value && cache.expiresAt && cache.expiresAt > Date.now()) {
+    return Promise.resolve(cache.value);
+  }
+
+  if (cache.request) {
+    return cache.request;
+  }
+
+  const request = loader()
+    .then((value) => {
+      cache.value = value;
+      cache.expiresAt = Date.now() + ACADEMIC_CACHE_TTL_MS;
+      return value;
+    })
+    .finally(() => {
+      if (cache.request === request) {
+        cache.request = undefined;
+      }
+    });
+
+  cache.request = request;
+  return request;
+}
+
+function invalidateSubjectsCache() {
+  subjectsCache.value = undefined;
+  subjectsCache.expiresAt = undefined;
+}
+
 function unwrapArray<T>(response: T[] | MaybeWrappedArray<T>): T[] {
   if (Array.isArray(response)) {
     return response;
   }
 
   return response.value ?? response.data ?? response.items ?? [];
+}
+
+function getSubjects() {
+  return loadCached(subjectsCache, async () => {
+    const response = await api.get<
+      SubjectApiResponse[] | MaybeWrappedArray<SubjectApiResponse>
+    >(endpoints.academic.subjects);
+
+    return unwrapArray(response.data);
+  });
+}
+
+function getPeriods() {
+  return loadCached(periodsCache, async () => {
+    const response = await api.get<
+      AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
+    >(endpoints.academic.periods);
+
+    return unwrapArray(response.data);
+  });
+}
+
+function getFaculties() {
+  return loadCached(facultiesCache, async () => {
+    const response = await api.get<
+      FacultyApiResponse[] | MaybeWrappedArray<FacultyApiResponse>
+    >(endpoints.academic.faculties);
+
+    return unwrapArray(response.data);
+  });
+}
+
+function getCareers() {
+  return loadCached(careersCache, async () => {
+    const response = await api.get<
+      CareerApiResponse[] | MaybeWrappedArray<CareerApiResponse>
+    >(endpoints.academic.careers);
+
+    return unwrapArray(response.data);
+  });
 }
 
 function getTeacherName(subject: SubjectApiResponse) {
@@ -144,27 +230,8 @@ function toCourse(
 }
 
 async function getAcademicCourseData() {
-  const [subjectsResponse, periodsResponse] = await Promise.all([
-    api.get<SubjectApiResponse[] | MaybeWrappedArray<SubjectApiResponse>>(
-      endpoints.academic.subjects,
-      {
-        params: {
-          _t: Date.now(),
-        },
-      }
-    ),
-    api.get<
-      AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
-    >(endpoints.academic.periods, {
-      params: {
-        _t: Date.now(),
-      },
-    }),
-  ]);
-
-  const periods = unwrapArray(periodsResponse.data);
+  const [subjects, periods] = await Promise.all([getSubjects(), getPeriods()]);
   const periodsById = new Map(periods.map((period) => [period.id, period]));
-  const subjects = unwrapArray(subjectsResponse.data);
 
   return {
     subjects,
@@ -200,33 +267,13 @@ export async function getCourseCreationOptions(): Promise<{
   careers: CourseCareerOption[];
   periods: CoursePeriodOption[];
 }> {
-  const [facultiesResponse, careersResponse, periodsResponse] = await Promise.all([
-    api.get<FacultyApiResponse[] | MaybeWrappedArray<FacultyApiResponse>>(
-      endpoints.academic.faculties,
-      {
-        params: {
-          _t: Date.now(),
-        },
-      }
-    ),
-    api.get<CareerApiResponse[] | MaybeWrappedArray<CareerApiResponse>>(
-      endpoints.academic.careers,
-      {
-        params: {
-          _t: Date.now(),
-        },
-      }
-    ),
-    api.get<
-      AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
-    >(endpoints.academic.periods, {
-      params: {
-        _t: Date.now(),
-      },
-    }),
+  const [loadedFaculties, loadedCareers, loadedPeriods] = await Promise.all([
+    getFaculties(),
+    getCareers(),
+    getPeriods(),
   ]);
 
-  const faculties = unwrapArray(facultiesResponse.data)
+  const faculties = loadedFaculties
     .filter((faculty) => !faculty.status || faculty.status === "ACTIVE")
     .map((faculty) => ({
       id: faculty.id,
@@ -234,7 +281,7 @@ export async function getCourseCreationOptions(): Promise<{
       code: faculty.code,
     }));
 
-  const careers = unwrapArray(careersResponse.data)
+  const careers = loadedCareers
     .filter(
       (career) =>
         (!career.status || career.status === "ACTIVE") &&
@@ -247,7 +294,7 @@ export async function getCourseCreationOptions(): Promise<{
       facultyId: career.facultyId ?? career.faculty_id ?? "",
     }));
 
-  const periods = unwrapArray(periodsResponse.data)
+  const periods = loadedPeriods
     .filter((period) => !period.status || period.status === "ACTIVE")
     .map((period) => ({
       id: period.id,
@@ -298,22 +345,17 @@ export async function createTeacherCourse(
     }
   );
 
-  const periodsResponse = await api.get<
-    AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
-  >(endpoints.academic.periods, {
-    params: {
-      _t: Date.now(),
-    },
-  });
-
-  const periods = unwrapArray(periodsResponse.data);
+  const periods = await getPeriods();
   const periodsById = new Map(periods.map((period) => [period.id, period]));
+
+  invalidateSubjectsCache();
 
   return toCourse(response.data, periodsById, payload.teacherName);
 }
 
 export async function deleteTeacherCourse(courseId: string): Promise<void> {
   await api.delete(endpoints.academic.subject(courseId));
+  invalidateSubjectsCache();
 }
 
 export async function updateTeacherCourse(
@@ -324,6 +366,8 @@ export async function updateTeacherCourse(
     endpoints.academic.subject(courseId),
     payload
   );
+
+  invalidateSubjectsCache();
 
   return {
     id: response.data.id,
