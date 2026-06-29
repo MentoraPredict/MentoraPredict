@@ -33,6 +33,13 @@ export interface CourseCareerOption {
   id: string;
   name: string;
   code?: string;
+  facultyId: string;
+}
+
+export interface CourseFacultyOption {
+  id: string;
+  name: string;
+  code?: string;
 }
 
 export interface CoursePeriodOption {
@@ -54,12 +61,32 @@ export interface CreateTeacherCoursePayload {
   teacherName?: string;
 }
 
+export interface UpdateTeacherCoursePayload {
+  name: string;
+  description: string;
+}
+
+export interface UpdateTeacherCourseResult {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface ImportGradesResponse {
   imported: number;
   grades: unknown[];
 }
 
 interface CareerApiResponse {
+  id: string;
+  name: string;
+  code?: string;
+  status?: string;
+  facultyId?: string;
+  faculty_id?: string;
+}
+
+interface FacultyApiResponse {
   id: string;
   name: string;
   code?: string;
@@ -72,12 +99,98 @@ interface MaybeWrappedArray<T> {
   items?: T[];
 }
 
+interface RequestCache<T> {
+  value?: T;
+  expiresAt?: number;
+  request?: Promise<T>;
+}
+
+const ACADEMIC_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const subjectsCache: RequestCache<SubjectApiResponse[]> = {};
+const periodsCache: RequestCache<AcademicPeriodApiResponse[]> = {};
+const facultiesCache: RequestCache<FacultyApiResponse[]> = {};
+const careersCache: RequestCache<CareerApiResponse[]> = {};
+
+function loadCached<T>(
+  cache: RequestCache<T>,
+  loader: () => Promise<T>
+): Promise<T> {
+  if (cache.value && cache.expiresAt && cache.expiresAt > Date.now()) {
+    return Promise.resolve(cache.value);
+  }
+
+  if (cache.request) {
+    return cache.request;
+  }
+
+  const request = loader()
+    .then((value) => {
+      cache.value = value;
+      cache.expiresAt = Date.now() + ACADEMIC_CACHE_TTL_MS;
+      return value;
+    })
+    .finally(() => {
+      if (cache.request === request) {
+        cache.request = undefined;
+      }
+    });
+
+  cache.request = request;
+  return request;
+}
+
+function invalidateSubjectsCache() {
+  subjectsCache.value = undefined;
+  subjectsCache.expiresAt = undefined;
+}
+
 function unwrapArray<T>(response: T[] | MaybeWrappedArray<T>): T[] {
   if (Array.isArray(response)) {
     return response;
   }
 
   return response.value ?? response.data ?? response.items ?? [];
+}
+
+function getSubjects() {
+  return loadCached(subjectsCache, async () => {
+    const response = await api.get<
+      SubjectApiResponse[] | MaybeWrappedArray<SubjectApiResponse>
+    >(endpoints.academic.subjects);
+
+    return unwrapArray(response.data);
+  });
+}
+
+function getPeriods() {
+  return loadCached(periodsCache, async () => {
+    const response = await api.get<
+      AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
+    >(endpoints.academic.periods);
+
+    return unwrapArray(response.data);
+  });
+}
+
+function getFaculties() {
+  return loadCached(facultiesCache, async () => {
+    const response = await api.get<
+      FacultyApiResponse[] | MaybeWrappedArray<FacultyApiResponse>
+    >(endpoints.academic.faculties);
+
+    return unwrapArray(response.data);
+  });
+}
+
+function getCareers() {
+  return loadCached(careersCache, async () => {
+    const response = await api.get<
+      CareerApiResponse[] | MaybeWrappedArray<CareerApiResponse>
+    >(endpoints.academic.careers);
+
+    return unwrapArray(response.data);
+  });
 }
 
 function getTeacherName(subject: SubjectApiResponse) {
@@ -117,27 +230,8 @@ function toCourse(
 }
 
 async function getAcademicCourseData() {
-  const [subjectsResponse, periodsResponse] = await Promise.all([
-    api.get<SubjectApiResponse[] | MaybeWrappedArray<SubjectApiResponse>>(
-      endpoints.academic.subjects,
-      {
-        params: {
-          _t: Date.now(),
-        },
-      }
-    ),
-    api.get<
-      AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
-    >(endpoints.academic.periods, {
-      params: {
-        _t: Date.now(),
-      },
-    }),
-  ]);
-
-  const periods = unwrapArray(periodsResponse.data);
+  const [subjects, periods] = await Promise.all([getSubjects(), getPeriods()]);
   const periodsById = new Map(periods.map((period) => [period.id, period]));
-  const subjects = unwrapArray(subjectsResponse.data);
 
   return {
     subjects,
@@ -169,36 +263,38 @@ export async function getTeacherCourses(
 }
 
 export async function getCourseCreationOptions(): Promise<{
+  faculties: CourseFacultyOption[];
   careers: CourseCareerOption[];
   periods: CoursePeriodOption[];
 }> {
-  const [careersResponse, periodsResponse] = await Promise.all([
-    api.get<CareerApiResponse[] | MaybeWrappedArray<CareerApiResponse>>(
-      endpoints.academic.careers,
-      {
-        params: {
-          _t: Date.now(),
-        },
-      }
-    ),
-    api.get<
-      AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
-    >(endpoints.academic.periods, {
-      params: {
-        _t: Date.now(),
-      },
-    }),
+  const [loadedFaculties, loadedCareers, loadedPeriods] = await Promise.all([
+    getFaculties(),
+    getCareers(),
+    getPeriods(),
   ]);
 
-  const careers = unwrapArray(careersResponse.data)
-    .filter((career) => !career.status || career.status === "ACTIVE")
+  const faculties = loadedFaculties
+    .filter((faculty) => !faculty.status || faculty.status === "ACTIVE")
+    .map((faculty) => ({
+      id: faculty.id,
+      name: faculty.name,
+      code: faculty.code,
+    }));
+
+  const careers = loadedCareers
+    .filter(
+      (career) =>
+        (!career.status || career.status === "ACTIVE") &&
+        !!(career.facultyId ?? career.faculty_id)
+    )
     .map((career) => ({
       id: career.id,
       name: career.name,
       code: career.code,
+      facultyId: career.facultyId ?? career.faculty_id ?? "",
     }));
 
-  const periods = unwrapArray(periodsResponse.data)
+  const periods = loadedPeriods
     .filter((period) => !period.status || period.status === "ACTIVE")
     .map((period) => ({
       id: period.id,
@@ -208,9 +304,28 @@ export async function getCourseCreationOptions(): Promise<{
     }));
 
   return {
+    faculties,
     careers,
     periods,
   };
+}
+
+export async function enrollStudentsInCourse(
+  subjectId: string,
+  studentIds: string[]
+): Promise<string[]> {
+  const results = await Promise.allSettled(
+    studentIds.map((studentId) =>
+      api.post(endpoints.academic.enrollments, {
+        studentId,
+        subjectId,
+      })
+    )
+  );
+
+  return results.flatMap((result, index) =>
+    result.status === "rejected" ? [studentIds[index]] : []
+  );
 }
 
 export async function createTeacherCourse(
@@ -230,18 +345,35 @@ export async function createTeacherCourse(
     }
   );
 
-  const periodsResponse = await api.get<
-    AcademicPeriodApiResponse[] | MaybeWrappedArray<AcademicPeriodApiResponse>
-  >(endpoints.academic.periods, {
-    params: {
-      _t: Date.now(),
-    },
-  });
-
-  const periods = unwrapArray(periodsResponse.data);
+  const periods = await getPeriods();
   const periodsById = new Map(periods.map((period) => [period.id, period]));
 
+  invalidateSubjectsCache();
+
   return toCourse(response.data, periodsById, payload.teacherName);
+}
+
+export async function deleteTeacherCourse(courseId: string): Promise<void> {
+  await api.delete(endpoints.academic.subject(courseId));
+  invalidateSubjectsCache();
+}
+
+export async function updateTeacherCourse(
+  courseId: string,
+  payload: UpdateTeacherCoursePayload
+): Promise<UpdateTeacherCourseResult> {
+  const response = await api.put<SubjectApiResponse>(
+    endpoints.academic.subject(courseId),
+    payload
+  );
+
+  invalidateSubjectsCache();
+
+  return {
+    id: response.data.id,
+    name: response.data.name,
+    description: response.data.description ?? "",
+  };
 }
 
 export async function importGradesFile(

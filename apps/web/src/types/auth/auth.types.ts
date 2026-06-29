@@ -32,4 +32,18 @@ export interface RefreshTokenPayload {
     refreshToken: string;
 }
 
+export interface ForgotPasswordPayload {
+    email: string;
+}
+
+export interface ForgotPasswordResponse {
+    message?: string;
+    token?: string;
+}
+
+export interface ResetPasswordPayload {
+    token: string;
+    newPassword: string;
+}
+
 export type AuthSessionUser = AppUser;

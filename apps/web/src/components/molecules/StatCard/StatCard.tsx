@@ -1,4 +1,5 @@
 import Heading from "@/components/atoms/Heading";
+import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
 interface StatCardProps {
@@ -8,7 +9,7 @@ interface StatCardProps {
 
 export default function StatCard({ value, label }: StatCardProps) {
   return (
-    <div
+    <MotionCard
       className="
         rounded-2xl
         bg-white
@@ -21,6 +22,6 @@ export default function StatCard({ value, label }: StatCardProps) {
       </Heading>
 
       <Text>{label}</Text>
-    </div>
+    </MotionCard>
   );
 }

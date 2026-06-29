@@ -4,9 +4,9 @@ import { FiHelpCircle } from "react-icons/fi";
 import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
 import IconButton from "@/components/atoms/IconButton";
-import Logo from "@/components/atoms/Logo";
 
 import HelpDialog from "@/components/molecules/HelpDialog";
+import LogoLink from "@/components/molecules/LogoLink";
 import NotificationIconButton from "@/components/molecules/NotificationIconButton";
 import ProfileDropdown from "@/components/molecules/ProfileDropdown";
 import RouterNavItem from "@/components/molecules/RouterNavItem";
@@ -72,7 +72,7 @@ export default function DashboardNavbar({
                         "
           >
             <div className="flex items-center gap-6">
-              {showLogo ? <Logo /> : null}
+              {showLogo ? <LogoLink /> : null}
 
               {showLogo && showWelcomeMessage ? (
                 <div className="hidden h-8 w-px bg-[var(--color-border-soft)] sm:block" />

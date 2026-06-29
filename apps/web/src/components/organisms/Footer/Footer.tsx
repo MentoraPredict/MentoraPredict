@@ -43,6 +43,7 @@ export default function Footer() {
     <footer
       id="footer"
       className="
+        scroll-mt-20
         bg-blue-950
         text-white
       "

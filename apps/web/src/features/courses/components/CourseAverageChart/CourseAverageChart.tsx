@@ -17,6 +17,13 @@ export default function CourseAverageChart({
   description = "El promedio actual se sitúa por debajo del umbral objetivo esperado para esta etapa.",
 }: CourseAverageChartProps) {
   const remaining = Math.max(maxAverage - average, 0);
+  const performanceRatio = maxAverage > 0 ? average / maxAverage : 0;
+  const performanceLabel =
+    performanceRatio < 0.7
+      ? "Bajo rendimiento"
+      : performanceRatio < 0.85
+        ? "En seguimiento"
+        : "Buen rendimiento";
 
   const data = [
     {
@@ -81,7 +88,7 @@ export default function CourseAverageChart({
             variant="caption"
             className="font-semibold uppercase text-gray-600"
           >
-            Bajo rendimiento
+            {performanceLabel}
           </Text>
         </div>
       </div>

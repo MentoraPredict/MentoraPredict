@@ -1,7 +1,7 @@
 import { FaAt, FaGithub, FaLink } from "react-icons/fa";
 
-import Logo from "@/components/atoms/Logo";
 import Text from "@/components/atoms/Text";
+import LogoLink from "@/components/molecules/LogoLink";
 import SocialLink from "@/components/molecules/SocialLink";
 
 const socialLinks = [
@@ -25,7 +25,7 @@ const socialLinks = [
 export default function FooterBrand() {
   return (
     <div className="max-w-xs">
-      <Logo variant="light" />
+      <LogoLink variant="light" />
 
       <Text className="mt-6 font-medium leading-relaxed text-white">
         {
