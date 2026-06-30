@@ -3,7 +3,6 @@ export interface ServiceUrls {
   authService: string;
   userService: string;
   academicService: string;
-  metricsService: string;
   analyticsService: string;
   predictionService: string;
   recommendationService: string;

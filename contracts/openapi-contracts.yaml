@@ -539,19 +539,42 @@ paths:
         "202": { description: Ingestion job accepted }
 
 # ─────────────────────────────────────────────────────────────
-# 4. METRICS-SERVICE  (port 3004)
+# 4. ANALYTICS METRICS  (analytics-service)
 # ─────────────────────────────────────────────────────────────
 # Covers: RF-015, RF-016, RF-017
 # ─────────────────────────────────────────────────────────────
 
-  /api/v1/metrics/students/{studentId}:
+  /api/v1/analytics/metrics/overview:
     get:
-      tags: [metrics-service]
-      summary: "RF-015/016/017: Full academic metrics for a student"
+      tags: [analytics-service]
+      summary: "RF-015/016/017: Institution-wide aggregated academic metrics"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: periodId
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Aggregated metrics overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  periodId:                 { type: string, format: uuid }
+                  totalStudentsWithMetrics: { type: integer }
+                  institutionalAverage:     { type: number, example: 7.4 }
+                  subjectCount:             { type: integer }
+                  generatedAt:              { type: string, format: date-time }
+
+  /api/v1/analytics/metrics/users/{userId}:
+    get:
+      tags: [analytics-service]
+      summary: "RF-015/016/017: Latest or period-specific metrics for a user"
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
-          name: studentId
+          name: userId
           required: true
           schema: { type: string, format: uuid }
         - in: query
@@ -559,28 +582,31 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         "200":
-          description: Student metrics
+          description: User metrics
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  studentId:       { type: string, format: uuid }
+                  userId:          { type: string, format: uuid }
                   periodId:        { type: string, format: uuid }
-                  average:         { type: number, example: 7.4 }
-                  trend:           { type: string, enum: [IMPROVING, STABLE, DECLINING] }
-                  complianceIndex: { type: number, minimum: 0, maximum: 100, example: 82.5 }
-                  computedAt:      { type: string, format: date-time }
+                  globalAverage:   { type: number, example: 7.4 }
+                  subjectAverages: { type: object, additionalProperties: { type: number } }
+                  calculatedAt:    { type: string, format: date-time }
+                  version:         { type: integer }
 
-  /api/v1/metrics/subjects/{subjectId}:
+  /api/v1/analytics/metrics/subjects/{subjectId}:
     get:
-      tags: [metrics-service]
-      summary: "RF-015: Subject-level metrics (TEACHER/ADMIN)"
+      tags: [analytics-service]
+      summary: "RF-015: Subject-level aggregated metrics (TEACHER/ADMIN)"
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
           name: subjectId
           required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: periodId
           schema: { type: string, format: uuid }
       responses:
         "200":
@@ -590,13 +616,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  subjectId:     { type: string, format: uuid }
-                  classAverage:  { type: number }
-                  passRate:      { type: number }
-                  atRiskCount:   { type: integer }
+                  subjectId:           { type: string, format: uuid }
+                  periodId:            { type: string, format: uuid }
+                  studentsWithMetrics: { type: integer }
+                  classAverage:        { type: number }
+                  passRate:            { type: number }
+                  atRiskCount:         { type: integer }
+                  generatedAt:         { type: string, format: date-time }
 
 # ─────────────────────────────────────────────────────────────
-# 5. ANALYTICS-SERVICE  (port 3005)
+# 5. ANALYTICS-SERVICE  (port 3004)
 # ─────────────────────────────────────────────────────────────
 # Covers: RF-018, RF-021, RF-023, RF-024, RF-025
 # ─────────────────────────────────────────────────────────────

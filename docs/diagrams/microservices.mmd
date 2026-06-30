@@ -4,7 +4,6 @@ graph LR
     AUTH[auth-service]
     USER[user-service]
     ACADEMIC[academic-service]
-    METRICS[metrics-service]
     PRED[prediction-service]
     RECO[recommendation-service]
     ANALYTICS[analytics-service]
@@ -17,19 +16,16 @@ graph LR
   APIGW -->|/api/v1/auth| AUTH
   APIGW -->|/api/v1/users| USER
   APIGW -->|/api/v1/academic| ACADEMIC
-  APIGW -->|/api/v1/metrics| METRICS
   APIGW -->|/api/v1/prediction| PRED
   APIGW -->|/api/v1/recommendation| RECO
   APIGW -->|/api/v1/analytics| ANALYTICS
 
   USER --> PG
   ACADEMIC --> PG
-  METRICS --> PG
   ANALYTICS --> PG
 
   PRED --> MONGO
   RECO --> MONGO
 
   AUTH --> REDIS
-  METRICS --> REDIS
   ANALYTICS --> REDIS

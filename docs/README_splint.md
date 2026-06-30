@@ -20,7 +20,6 @@ Bienvenido a la documentación del proyecto **MentoraPredict**, una plataforma d
 - **[Prediction Service](./services/prediction-service.md)** - Predicción de riesgo académico
 - **[Recommendation Service](./services/recommendation-service.md)** - Recomendaciones personalizadas
 - **[User Service](./services/user-service.md)** - Gestión de usuarios y perfiles
-- **[Metrics Service](./services/metrics-service.md)** - Métricas y observabilidad
 
 ### Desarrollo
 - **[Guía de Desarrollo](./DEVELOPMENT.md)** - Cómo desarrollar nuevas funcionalidades
@@ -76,7 +75,6 @@ Consulta [SETUP.md](./SETUP.md) para instrucciones detalladas.
 | prediction-service | 3005 | 🔧 EN DESARROLLO | Predicción de riesgo académico |
 | recommendation-service | 3006 | 🔧 EN DESARROLLO | Sistema de recomendaciones |
 | user-service | 3002 | 🔧 EN DESARROLLO | Gestión de perfiles de usuario |
-| metrics-service | 3007 | 🔧 EN DESARROLLO | Métricas y observabilidad |
 
 ---
 

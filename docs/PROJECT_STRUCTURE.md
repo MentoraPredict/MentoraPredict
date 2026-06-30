@@ -183,11 +183,6 @@ mentorapredict/
 │   │   ├── src/
 │   │   ├── package.json
 │   │   └── ...
-│   │
-│   └── metrics-service/                           # 🔧 En desarrollo
-│       ├── src/
-│       ├── package.json
-│       └── ...
 │
 ├── 📂 packages/                                   # 📦 Paquetes compartidos
 │   │

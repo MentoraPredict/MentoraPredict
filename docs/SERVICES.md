@@ -13,7 +13,6 @@
 4. **[Prediction Service](#prediction-service)** - Predicción de Riesgo
 5. **[Recommendation Service](#recommendation-service)** - Recomendaciones
 6. **[User Service](#user-service)** - Gestión de Usuarios
-7. **[Metrics Service](#metrics-service)** - Métricas y Observabilidad
 
 ---
 
@@ -379,7 +378,6 @@ Ver [academic-service.md](./services/academic-service.md)
 - 🔧 Event Bus / Message Queue
 
 ### Sprint 4
-- 🔧 Metrics Service
 - 🔧 Distributed Tracing
 - 🔧 Monitoring
 
