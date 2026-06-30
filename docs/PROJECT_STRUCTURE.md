@@ -171,11 +171,6 @@ mentorapredict/
 │   │
 │   ├── prediction-service/                        # 🔧 En desarrollo
 │   │   ├── src/
-│   │   ├── requirements.txt                       # Python
-│   │   └── ...
-│   │
-│   ├── recommendation-service/                    # 🔧 En desarrollo
-│   │   ├── src/
 │   │   ├── package.json
 │   │   └── ...
 │   │
@@ -337,11 +332,11 @@ HTTP Response
 
 ## 🔐 Separación de Responsabilidades
 
-| Capa | Responsabilidad | Ejemplo |
-|------|-----------------|---------|
-| **Domain** | Lógica de negocio pura | Email.create() valida formato |
-| **Application** | Orquestación | RegisterUserUseCase coordina |
-| **Infrastructure** | Detalles técnicos | BcryptAdapter implementa hash |
+| Capa               | Responsabilidad        | Ejemplo                       |
+| ------------------ | ---------------------- | ----------------------------- |
+| **Domain**         | Lógica de negocio pura | Email.create() valida formato |
+| **Application**    | Orquestación           | RegisterUserUseCase coordina  |
+| **Infrastructure** | Detalles técnicos      | BcryptAdapter implementa hash |
 
 ---
 

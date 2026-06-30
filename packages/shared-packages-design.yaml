@@ -203,7 +203,7 @@ shared-types:
     - "JWT signing/verification logic → stays in auth-service"
     - "Database queries or repositories → never shared"
     - "NestJS decorators or framework-specific code"
-    - "OpenAI prompt templates → stays in recommendation-service"
+    - "OpenAI prompt templates → stays in prediction-service"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -257,7 +257,6 @@ shared-config:
             academicService: string;
             analyticsService: string;
             predictionService: string;
-            recommendationService: string;
           }
 
       env-validation/:

@@ -5,7 +5,6 @@ graph LR
     USER[user-service]
     ACADEMIC[academic-service]
     PRED[prediction-service]
-    RECO[recommendation-service]
     ANALYTICS[analytics-service]
   end
   subgraph Databases
@@ -17,7 +16,6 @@ graph LR
   APIGW -->|/api/v1/users| USER
   APIGW -->|/api/v1/academic| ACADEMIC
   APIGW -->|/api/v1/prediction| PRED
-  APIGW -->|/api/v1/recommendation| RECO
   APIGW -->|/api/v1/analytics| ANALYTICS
 
   USER --> PG
@@ -25,7 +23,6 @@ graph LR
   ANALYTICS --> PG
 
   PRED --> MONGO
-  RECO --> MONGO
 
   AUTH --> REDIS
   ANALYTICS --> REDIS

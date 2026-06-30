@@ -17,8 +17,7 @@ Bienvenido a la documentación del proyecto **MentoraPredict**, una plataforma d
 - **[Auth Service](./services/auth-service.md)** ✅ Autenticación y autorización (FUNCIONAL)
 - **[Academic Service](./services/academic-service.md)** ✅ Gestión académica (FUNCIONAL)
 - **[Analytics Service](./services/analytics-service.md)** - Análisis de datos académicos
-- **[Prediction Service](./services/prediction-service.md)** - Predicción de riesgo académico
-- **[Recommendation Service](./services/recommendation-service.md)** - Recomendaciones personalizadas
+- **[Prediction Service](./services/prediction-service.md)** - Predicción de riesgo académico y recomendaciones personalizadas
 - **[User Service](./services/user-service.md)** - Gestión de usuarios y perfiles
 
 ### Desarrollo
@@ -72,8 +71,7 @@ Consulta [SETUP.md](./SETUP.md) para instrucciones detalladas.
 | **auth-service** | 3001 | ✅ FUNCIONAL | Autenticación JWT RS256 y RBAC |
 | **academic-service** | 3003 | ✅ FUNCIONAL | Gestión de asignaturas, matriculaciones y calificaciones |
 | analytics-service | 3004 | 🔧 EN DESARROLLO | Análisis de datos académicos |
-| prediction-service | 3005 | 🔧 EN DESARROLLO | Predicción de riesgo académico |
-| recommendation-service | 3006 | 🔧 EN DESARROLLO | Sistema de recomendaciones |
+| prediction-service | 3006 | 🔧 EN DESARROLLO | Predicción de riesgo académico y recomendaciones |
 | user-service | 3002 | 🔧 EN DESARROLLO | Gestión de perfiles de usuario |
 
 ---

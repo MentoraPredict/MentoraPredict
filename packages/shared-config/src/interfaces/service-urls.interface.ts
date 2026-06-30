@@ -5,5 +5,4 @@ export interface ServiceUrls {
   academicService: string;
   analyticsService: string;
   predictionService: string;
-  recommendationService: string;
 }

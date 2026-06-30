@@ -79,8 +79,7 @@ curl http://localhost:3003/health
 |----------|--------|-------------|--------|
 | User Service | 3002 | Gestión de perfiles y roles | 🔧 Planeado |
 | Analytics Service | 3004 | Análisis de datos académicos | 🔧 Planeado |
-| Prediction Service | 3005 | ML para predicción de riesgo | 🔧 Planeado |
-| Recommendation Service | 3006 | Sistema de recomendaciones | 🔧 Planeado |
+| Prediction Service | 3006 | Predicción de riesgo y recomendaciones | 🔧 Planeado |
 
 ---
 
@@ -113,7 +112,6 @@ mentorapredict/
 │   │
 │   ├── analytics-service/
 │   ├── prediction-service/
-│   ├── recommendation-service/
 │   ├── user-service/
 │
 ├── packages/                      # 📦 Paquetes compartidos
@@ -480,8 +478,7 @@ Este proyecto está bajo licencia MIT. Ver [LICENSE](./LICENSE) para detalles.
 - 🔧 JWT en Academic Service
 
 ### Sprint 3+
-- 🔧 Prediction Service (ML)
-- 🔧 Recommendation Service
+- 🔧 Prediction Service con recomendaciones
 - 🔧 Event Bus / Message Queue
 - 🔧 Metrics y Monitoring
 
