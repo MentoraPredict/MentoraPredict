@@ -556,7 +556,7 @@ paths:
 
 **Sprint 1:** Contratos básicos (Auth, Academic)
 **Sprint 2:** Agregar User Service, Analytics Service
-**Sprint 3:** Agregar Prediction Service, Recommendation Service
+**Sprint 3:** Agregar Prediction Service con recomendaciones generadas
 **Sprint 4+:** Event Stream, Message Queue
 
 ---

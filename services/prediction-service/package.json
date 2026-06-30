@@ -2,7 +2,7 @@
   "name": "@mentorapredict/prediction-service",
   "version": "1.0.0",
   "private": true,
-  "description": "Risk-based predictions + OpenAI-generated recommendations — merges former prediction/recommendation services",
+  "description": "Risk-based predictions with OpenAI-generated recommendations",
   "scripts": {
     "build": "pnpm exec nest build",
     "dev": "nest start --watch",

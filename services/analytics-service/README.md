@@ -1,42 +1,33 @@
 # analytics-service
 
-**MentoraPredict MVP Backend** | Port: 3005 | Runtime: NestJS/TypeScript
+**MentoraPredict Backend** | Port: 3004 | Runtime: NestJS/TypeScript
 
 ## Coverage
 
-RF-018, RF-021, RF-023–025
+RF-015 to RF-018, RF-021, RF-023 to RF-025.
 
 ## Description
 
-Risk classification, early alerts, and dashboard aggregation. Caches in Redis.
+Owns academic analytics for MentoraPredict: student averages, trends,
+compliance calculations, risk classification, early alerts, dashboards, and
+aggregated metrics. It consumes canonical academic data from
+`academic-service` and persists derived metric snapshots in `student_metrics`.
+
+## Metrics Endpoints
+
+- `GET /api/v1/analytics/metrics/overview`
+- `GET /api/v1/analytics/metrics/users/:userId`
+- `GET /api/v1/analytics/metrics/subjects/:subjectId`
+
+Each endpoint accepts an optional `periodId` query parameter when the caller
+needs period-specific metrics. Without `periodId`, analytics returns the latest
+available metric snapshots per student.
 
 ## Hexagonal Architecture
 
-```
+```text
 src/
-├── domain/                  # Core business rules — zero framework dependencies
-│   ├── entities/            # Domain entities (plain TS classes / Python dataclasses)
-│   ├── value-objects/       # Immutable value types
-│   └── services/            # Domain services (pure logic)
-├── application/             # Use-cases — orchestrate domain + call ports
-│   ├── use-cases/           # One file per use-case
-│   ├── dtos/                # Input/output data transfer objects
-│   └── ports/
-│       ├── input/           # Primary ports — interfaces that controllers call
-│       └── output/          # Secondary ports — interfaces that adapters implement
-└── infrastructure/          # Adapters — framework, DB, HTTP, cache, external APIs
-    ├── controllers/         # REST controllers (primary adapters)
-    ├── persistence/         # TypeORM/Mongo repositories (secondary adapters)
-    ├── cache/               # Redis adapter (if applicable)
-    ├── external/            # Third-party API clients (OpenAI, etc.)
-    └── config/              # Environment config & NestJS module setup
+├── domain/                  # Core business rules
+├── application/             # Use-cases and ports
+└── infrastructure/          # Controllers, persistence, cache, HTTP adapters
 ```
-
-## Status
-
-> ⚠️ **Skeleton only** — no business logic, no DB connections, no endpoints.
-> Implementation starts in Sprint 1.
-
-## Getting Started
-
-_Not available in this phase. See root `docker-compose.yml` for infra._

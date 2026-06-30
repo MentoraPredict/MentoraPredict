@@ -9,14 +9,14 @@ Inputs:
 
 Outputs:
 - DTOs y colecciones de datos académicos para otros servicios.
-- Eventos de `enrollment_created`, `evaluation_created` hacia `analytics-service` y `metrics-service`.
+- Eventos de `enrollment_created`, `evaluation_created` hacia `analytics-service`.
 
 Datos que gestiona (ownership):
 - `faculties`, `careers`, `subjects`, `academic_periods`, `enrollments`, `evaluations`, `grades`, `observations`.
 
 Dependencias:
 - `user-service` para validar `studentId` y `teacherId` (solo lectura).
-- `metrics-service` y `analytics-service` para exportar eventos/aggregados.
+- `analytics-service` para exportar eventos/aggregados.
 
 API surface (resumen):
 - `GET /api/v1/academic/faculties`
