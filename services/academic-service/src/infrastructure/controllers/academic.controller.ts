@@ -8,6 +8,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   HttpCode,
   HttpStatus,
   UseInterceptors,
@@ -34,6 +35,11 @@ type MulterUploadedFile = {
   size: number;
   [key: string]: unknown;
 };
+
+interface JwtRequest {
+  user?: { sub?: string; role?: string };
+}
+
 import { RecordGradeUseCase } from "../../application/use-cases/record-grade.use-case";
 import { RegisterGradeUseCase } from "../../application/use-cases/register-grade.use-case";
 import { UpdateGradeUseCase } from "../../application/use-cases/update-grade.use-case";
@@ -55,8 +61,6 @@ import { ListFacultiesUseCase } from "../../application/use-cases/list-faculties
 import { UpdateFacultyUseCase } from "../../application/use-cases/update-faculty.use-case";
 import { ChangeFacultyStatusUseCase } from "../../application/use-cases/change-faculty-status.use-case";
 import { DeleteFacultyUseCase } from "../../application/use-cases/delete-faculty.use-case";
-
-// Faculty DTOs
 import { CreateFacultyDto } from "../../application/dtos/create-faculty.dto";
 import { UpdateFacultyDto } from "../../application/dtos/update-faculty.dto";
 import { ChangeFacultyStatusDto } from "../../application/dtos/change-faculty-status.dto";
@@ -69,8 +73,6 @@ import { GetActivePeriodUseCase } from "../../application/use-cases/get-active-p
 import { UpdateAcademicPeriodUseCase } from "../../application/use-cases/update-academic-period.use-case";
 import { ChangeAcademicPeriodStatusUseCase } from "../../application/use-cases/change-academic-period-status.use-case";
 import { DeleteAcademicPeriodUseCase } from "../../application/use-cases/delete-academic-period.use-case";
-
-// Academic Period DTOs
 import { CreateAcademicPeriodDto } from "../../application/dtos/create-academic-period.dto";
 import { UpdateAcademicPeriodDto } from "../../application/dtos/update-academic-period.dto";
 import { ChangeAcademicPeriodStatusDto } from "../../application/dtos/change-academic-period-status.dto";
@@ -82,8 +84,6 @@ import { ListCareersUseCase } from "../../application/use-cases/list-careers.use
 import { UpdateCareerUseCase } from "../../application/use-cases/update-career.use-case";
 import { ChangeCareerStatusUseCase } from "../../application/use-cases/change-career-status.use-case";
 import { DeleteCareerUseCase } from "../../application/use-cases/delete-career.use-case";
-
-// Career DTOs
 import { CreateCareerDto } from "../../application/dtos/create-career.dto";
 import { UpdateCareerDto } from "../../application/dtos/update-career.dto";
 import { ChangeCareerStatusDto } from "../../application/dtos/change-career-status.dto";
@@ -95,16 +95,16 @@ import { ListSubjectsUseCase } from "../../application/use-cases/list-subjects.u
 import { UpdateSubjectUseCase } from "../../application/use-cases/update-subject.use-case";
 import { ChangeSubjectStatusUseCase } from "../../application/use-cases/change-subject-status.use-case";
 import { DeleteSubjectUseCase } from "../../application/use-cases/delete-subject.use-case";
-
-// Subject DTOs
 import { CreateSubjectDto } from "../../application/dtos/create-subject.dto";
 import { UpdateSubjectDto } from "../../application/dtos/update-subject.dto";
 import { ChangeSubjectStatusDto } from "../../application/dtos/change-subject-status.dto";
+
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
+import { RolesGuard, Roles } from "../guards/roles.guard";
 
 @ApiTags("academic-service")
 @ApiBearerAuth("JWT")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("api/v1/academic")
 export class AcademicController {
   constructor(
@@ -146,7 +146,10 @@ export class AcademicController {
     private readonly deleteSubjectUC: DeleteSubjectUseCase,
   ) {}
 
+  // ─── Enrollments ──────────────────────────────────────────────────────────────
+
   @Post("enrollments")
+  @Roles("ADMIN", "TEACHER")
   @ApiOperation({ summary: "RF-007: Enroll student in a subject" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 409, description: "Already enrolled" })
@@ -154,40 +157,61 @@ export class AcademicController {
     return this.enrollStudentUC.execute(dto);
   }
 
+  // ─── Evaluations ──────────────────────────────────────────────────────────────
+
   @Post("evaluations")
+  @Roles("TEACHER", "ADMIN")
   @ApiOperation({ summary: "RF-008: Create evaluation for a subject" })
   @ApiResponse({ status: 201 })
   async createEvaluation(@Body() dto: CreateEvaluationDto) {
     return this.createEvaluationUC.execute(dto);
   }
 
+  // ─── Grades ───────────────────────────────────────────────────────────────────
+
   @Post("grades")
+  @Roles("TEACHER", "ADMIN")
   @ApiOperation({ summary: "RF-008: Register grade for student/subject" })
   @ApiResponse({ status: 201 })
-  async registerGrade(@Body() dto: RegisterGradeDto) {
-    return this.registerGradeUC.execute(dto, "system");
+  async registerGrade(@Body() dto: RegisterGradeDto, @Req() req: JwtRequest) {
+    const registeredBy = req.user?.sub ?? "system";
+    return this.registerGradeUC.execute(dto, registeredBy);
   }
 
   @Post("grades/evaluation")
+  @Roles("TEACHER", "ADMIN")
   @ApiOperation({ summary: "Record grade for a student evaluation" })
   @ApiResponse({ status: 201 })
-  async recordGrade(@Body() dto: RecordGradeDto) {
-    return this.recordGradeUC.execute(dto, "system");
+  async recordGrade(@Body() dto: RecordGradeDto, @Req() req: JwtRequest) {
+    const registeredBy = req.user?.sub ?? "system";
+    return this.recordGradeUC.execute(dto, registeredBy);
   }
 
   @Put("grades/:id")
+  @Roles("TEACHER", "ADMIN")
   @ApiOperation({ summary: "RF-012: Update grade with audit history" })
-  async updateGrade(@Param("id") id: string, @Body() dto: UpdateGradeDto) {
-    return this.updateGradeUC.execute(id, dto, "system");
+  async updateGrade(
+    @Param("id") id: string,
+    @Body() dto: UpdateGradeDto,
+    @Req() req: JwtRequest,
+  ) {
+    const updatedBy = req.user?.sub ?? "system";
+    return this.updateGradeUC.execute(id, dto, updatedBy);
   }
 
+  // ─── Teacher assignment ───────────────────────────────────────────────────────
+
   @Post("teachers/assign")
+  @Roles("ADMIN")
   @ApiOperation({ summary: "RF-011: Assign teacher to subject" })
   async assignTeacher(@Body() dto: AssignTeacherDto) {
     return this.assignTeacherUC.execute(dto);
   }
 
+  // ─── Grade import ─────────────────────────────────────────────────────────────
+
   @Post("import/grades")
+  @Roles("TEACHER", "ADMIN")
   @ApiOperation({ summary: "RF-013: Import grades from CSV/XLSX" })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
@@ -197,50 +221,56 @@ export class AcademicController {
     },
   })
   @UseInterceptors(FileInterceptor("file"))
-  async importGrades(@UploadedFile() file: MulterUploadedFile) {
+  async importGrades(
+    @UploadedFile() file: MulterUploadedFile,
+    @Req() req: JwtRequest,
+  ) {
     if (!file?.buffer) throw new BadRequestException("File is required");
-    return this.importGradesUC.execute(file.buffer, "system");
+    const registeredBy = req.user?.sub ?? "system";
+    return this.importGradesUC.execute(file.buffer, registeredBy);
   }
 
   // ─── Faculties ───────────────────────────────────────────────────────────────
 
   @Get("faculties")
   @ApiOperation({ summary: "List all faculties" })
-  @ApiResponse({ status: 200, description: "Returns list of all faculties" })
+  @ApiResponse({ status: 200 })
   async listFaculties() {
     return this.listFacultiesUC.execute();
   }
 
   @Get("faculties/:id")
   @ApiOperation({ summary: "Get faculty by ID" })
-  @ApiResponse({ status: 200, description: "Returns the faculty" })
-  @ApiResponse({ status: 404, description: "Faculty not found" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async getFaculty(@Param("id") id: string) {
     return this.getFacultyUC.execute(id);
   }
 
   @Post("faculties")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new faculty" })
-  @ApiResponse({ status: 201, description: "Faculty created successfully" })
-  @ApiResponse({ status: 409, description: "Faculty with same code or name already exists" })
+  @ApiOperation({ summary: "Create a new faculty (ADMIN only)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 409 })
   async createFaculty(@Body() dto: CreateFacultyDto) {
     return this.createFacultyUC.execute(dto);
   }
 
   @Put("faculties/:id")
-  @ApiOperation({ summary: "Update faculty data" })
-  @ApiResponse({ status: 200, description: "Faculty updated successfully" })
-  @ApiResponse({ status: 404, description: "Faculty not found" })
-  @ApiResponse({ status: 409, description: "Code or name conflict with existing faculty" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Update faculty data (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async updateFaculty(@Param("id") id: string, @Body() dto: UpdateFacultyDto) {
     return this.updateFacultyUC.execute(id, dto);
   }
 
   @Patch("faculties/:id/status")
-  @ApiOperation({ summary: "Change faculty status (ACTIVE / INACTIVE)" })
-  @ApiResponse({ status: 200, description: "Faculty status updated" })
-  @ApiResponse({ status: 404, description: "Faculty not found" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Change faculty status (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async changeFacultyStatus(
     @Param("id") id: string,
     @Body() dto: ChangeFacultyStatusDto,
@@ -249,11 +279,12 @@ export class AcademicController {
   }
 
   @Delete("faculties/:id")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a faculty (only if no associated careers)" })
-  @ApiResponse({ status: 204, description: "Faculty deleted" })
-  @ApiResponse({ status: 400, description: "Cannot delete faculty with associated careers" })
-  @ApiResponse({ status: 404, description: "Faculty not found" })
+  @ApiOperation({ summary: "Delete a faculty (ADMIN only)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
   async deleteFaculty(@Param("id") id: string) {
     return this.deleteFacultyUC.execute(id);
   }
@@ -262,50 +293,52 @@ export class AcademicController {
 
   @Get("periods")
   @ApiOperation({ summary: "List all academic periods" })
-  @ApiResponse({ status: 200, description: "Returns list of all academic periods" })
+  @ApiResponse({ status: 200 })
   async listPeriods() {
     return this.listAcademicPeriodsUC.execute();
   }
 
   @Get("periods/active")
   @ApiOperation({ summary: "Get the currently active academic period" })
-  @ApiResponse({ status: 200, description: "Returns the active period" })
-  @ApiResponse({ status: 404, description: "No active period found" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async getActivePeriod() {
     return this.getActivePeriodUC.execute();
   }
 
   @Get("periods/:id")
   @ApiOperation({ summary: "Get academic period by ID" })
-  @ApiResponse({ status: 200, description: "Returns the academic period" })
-  @ApiResponse({ status: 404, description: "Academic period not found" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async getPeriod(@Param("id") id: string) {
     return this.getAcademicPeriodUC.execute(id);
   }
 
   @Post("periods")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new academic period" })
-  @ApiResponse({ status: 201, description: "Academic period created successfully" })
-  @ApiResponse({ status: 400, description: "Invalid date range" })
-  @ApiResponse({ status: 409, description: "Period with same code or name already exists" })
+  @ApiOperation({ summary: "Create a new academic period (ADMIN only)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 409 })
   async createPeriod(@Body() dto: CreateAcademicPeriodDto) {
     return this.createAcademicPeriodUC.execute(dto);
   }
 
   @Put("periods/:id")
-  @ApiOperation({ summary: "Update academic period data" })
-  @ApiResponse({ status: 200, description: "Academic period updated successfully" })
-  @ApiResponse({ status: 404, description: "Academic period not found" })
-  @ApiResponse({ status: 409, description: "Code or name conflict" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Update academic period (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async updatePeriod(@Param("id") id: string, @Body() dto: UpdateAcademicPeriodDto) {
     return this.updateAcademicPeriodUC.execute(id, dto);
   }
 
   @Patch("periods/:id/status")
-  @ApiOperation({ summary: "Change academic period status (PLANNED / ACTIVE / FINISHED / CANCELLED)" })
-  @ApiResponse({ status: 200, description: "Status updated" })
-  @ApiResponse({ status: 409, description: "Another period is already active" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Change academic period status (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 409 })
   async changePeriodStatus(
     @Param("id") id: string,
     @Body() dto: ChangeAcademicPeriodStatusDto,
@@ -314,11 +347,12 @@ export class AcademicController {
   }
 
   @Delete("periods/:id")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete an academic period (only if no associated records)" })
-  @ApiResponse({ status: 204, description: "Academic period deleted" })
-  @ApiResponse({ status: 400, description: "Cannot delete period with associated records" })
-  @ApiResponse({ status: 404, description: "Academic period not found" })
+  @ApiOperation({ summary: "Delete an academic period (ADMIN only)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
   async deletePeriod(@Param("id") id: string) {
     return this.deleteAcademicPeriodUC.execute(id);
   }
@@ -326,43 +360,45 @@ export class AcademicController {
   // ─── Careers ─────────────────────────────────────────────────────────────────
 
   @Get("careers")
-  @ApiOperation({ summary: "List all careers, optionally filtered by facultyId" })
-  @ApiResponse({ status: 200, description: "Returns list of careers" })
-  async listCareers(@Query('facultyId') facultyId?: string) {
+  @ApiOperation({ summary: "List all careers" })
+  @ApiResponse({ status: 200 })
+  async listCareers(@Query("facultyId") facultyId?: string) {
     return this.listCareersUC.execute(facultyId);
   }
 
   @Get("careers/:id")
   @ApiOperation({ summary: "Get career by ID" })
-  @ApiResponse({ status: 200, description: "Returns the career" })
-  @ApiResponse({ status: 404, description: "Career not found" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async getCareer(@Param("id") id: string) {
     return this.getCareerUC.execute(id);
   }
 
   @Post("careers")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new career" })
-  @ApiResponse({ status: 201, description: "Career created successfully" })
-  @ApiResponse({ status: 404, description: "Faculty not found" })
-  @ApiResponse({ status: 409, description: "Career with same code already exists" })
+  @ApiOperation({ summary: "Create a new career (ADMIN only)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
   async createCareer(@Body() dto: CreateCareerDto) {
     return this.createCareerUC.execute(dto);
   }
 
   @Put("careers/:id")
-  @ApiOperation({ summary: "Update career data" })
-  @ApiResponse({ status: 200, description: "Career updated successfully" })
-  @ApiResponse({ status: 404, description: "Career not found" })
-  @ApiResponse({ status: 409, description: "Code conflict with existing career" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Update career data (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async updateCareer(@Param("id") id: string, @Body() dto: UpdateCareerDto) {
     return this.updateCareerUC.execute(id, dto);
   }
 
   @Patch("careers/:id/status")
-  @ApiOperation({ summary: "Change career status (ACTIVE / INACTIVE)" })
-  @ApiResponse({ status: 200, description: "Career status updated" })
-  @ApiResponse({ status: 404, description: "Career not found" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Change career status (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async changeCareerStatus(
     @Param("id") id: string,
     @Body() dto: ChangeCareerStatusDto,
@@ -371,11 +407,12 @@ export class AcademicController {
   }
 
   @Delete("careers/:id")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a career (only if no associated subjects)" })
-  @ApiResponse({ status: 204, description: "Career deleted" })
-  @ApiResponse({ status: 400, description: "Cannot delete career with associated subjects" })
-  @ApiResponse({ status: 404, description: "Career not found" })
+  @ApiOperation({ summary: "Delete a career (ADMIN only)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
   async deleteCareer(@Param("id") id: string) {
     return this.deleteCareerUC.execute(id);
   }
@@ -383,46 +420,49 @@ export class AcademicController {
   // ─── Subjects ─────────────────────────────────────────────────────────────
 
   @Get("subjects")
-  @ApiOperation({ summary: "List all subjects, optionally filtered by careerId and/or periodId" })
-  @ApiResponse({ status: 200, description: "Returns list of subjects" })
+  @ApiOperation({ summary: "List subjects" })
+  @ApiResponse({ status: 200 })
   async listSubjects(
-    @Query('careerId') careerId?: string,
-    @Query('periodId') periodId?: string,
+    @Query("careerId") careerId?: string,
+    @Query("periodId") periodId?: string,
   ) {
     return this.listSubjectsUC.execute({ careerId, periodId });
   }
 
   @Get("subjects/:id")
   @ApiOperation({ summary: "Get subject by ID" })
-  @ApiResponse({ status: 200, description: "Returns the subject" })
-  @ApiResponse({ status: 404, description: "Subject not found" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async getSubject(@Param("id") id: string) {
     return this.getSubjectUC.execute(id);
   }
 
   @Post("subjects")
+  @Roles("ADMIN", "TEACHER")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new subject" })
-  @ApiResponse({ status: 201, description: "Subject created successfully" })
-  @ApiResponse({ status: 400, description: "Period not active" })
-  @ApiResponse({ status: 404, description: "Career or period not found" })
-  @ApiResponse({ status: 409, description: "Subject with same name in period or same code already exists" })
+  @ApiOperation({ summary: "Create a new subject (ADMIN or TEACHER)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
   async createSubject(@Body() dto: CreateSubjectDto) {
     return this.createSubjectUC.execute(dto);
   }
 
   @Put("subjects/:id")
-  @ApiOperation({ summary: "Update subject data" })
-  @ApiResponse({ status: 200, description: "Subject updated successfully" })
-  @ApiResponse({ status: 404, description: "Subject not found" })
+  @Roles("ADMIN", "TEACHER")
+  @ApiOperation({ summary: "Update subject data (ADMIN or TEACHER)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async updateSubject(@Param("id") id: string, @Body() dto: UpdateSubjectDto) {
     return this.updateSubjectUC.execute(id, dto);
   }
 
   @Patch("subjects/:id/status")
-  @ApiOperation({ summary: "Change subject active status" })
-  @ApiResponse({ status: 200, description: "Subject status updated" })
-  @ApiResponse({ status: 404, description: "Subject not found" })
+  @Roles("ADMIN", "TEACHER")
+  @ApiOperation({ summary: "Change subject active status (ADMIN or TEACHER)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
   async changeSubjectStatus(
     @Param("id") id: string,
     @Body() dto: ChangeSubjectStatusDto,
@@ -431,11 +471,12 @@ export class AcademicController {
   }
 
   @Delete("subjects/:id")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a subject (only if no academic records)" })
-  @ApiResponse({ status: 204, description: "Subject deleted" })
-  @ApiResponse({ status: 400, description: "Cannot delete subject with academic records" })
-  @ApiResponse({ status: 404, description: "Subject not found" })
+  @ApiOperation({ summary: "Delete a subject (ADMIN only)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
   async deleteSubject(@Param("id") id: string) {
     return this.deleteSubjectUC.execute(id);
   }

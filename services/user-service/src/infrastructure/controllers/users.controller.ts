@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  ForbiddenException,
   UnauthorizedException,
 } from "@nestjs/common";
 import {
@@ -23,17 +24,19 @@ import { SoftDeleteUserUseCase } from "../../application/use-cases/soft-delete-u
 import { ListUsersUseCase } from "../../application/use-cases/list-users.use-case";
 import { UpdateUserDto } from "../../application/dtos/update-user.dto";
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
+import { RolesGuard, Roles } from "../guards/roles.guard";
 import { GetUserUseCase } from "../../application/use-cases/get-user.use-case";
 
 interface AuthenticatedRequest {
   user?: {
     sub?: string;
+    role?: string;
   };
 }
 
 @ApiTags("user-service")
 @ApiBearerAuth("JWT")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("api/v1/users")
 export class UsersController {
   constructor(
@@ -44,7 +47,8 @@ export class UsersController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: "List users with optional filters" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "List users with optional filters (ADMIN only)" })
   @ApiQuery({ name: "role", required: false })
   @ApiQuery({ name: "status", required: false })
   list(@Query("role") role?: string, @Query("status") status?: string) {
@@ -55,10 +59,7 @@ export class UsersController {
   @ApiOperation({ summary: "Get current authenticated user profile" })
   getMe(@Req() req: AuthenticatedRequest) {
     const userId = req.user?.sub;
-    if (!userId) {
-      throw new UnauthorizedException("Invalid authorization token");
-    }
-
+    if (!userId) throw new UnauthorizedException("Invalid authorization token");
     return this.getUserUC.execute(userId);
   }
 
@@ -70,13 +71,30 @@ export class UsersController {
 
   @Put(":id")
   @ApiOperation({ summary: "Update user profile" })
-  update(@Param("id") id: string, @Body() dto: UpdateUserDto) {
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateUserDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const caller = req.user;
+    if (!caller?.sub) throw new UnauthorizedException("Invalid authorization token");
+
+    if (caller.role !== "ADMIN") {
+      if (caller.sub !== id) {
+        throw new ForbiddenException("Cannot edit another user's profile");
+      }
+      if (dto.role !== undefined || dto.status !== undefined) {
+        throw new ForbiddenException("Only ADMIN can change role or status");
+      }
+    }
+
     return this.updateUserUC.execute(id, dto);
   }
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Soft delete user profile" })
+  @ApiOperation({ summary: "Soft delete user profile (ADMIN only)" })
+  @Roles("ADMIN")
   async remove(@Param("id") id: string) {
     await this.softDeleteUserUC.execute(id);
   }
