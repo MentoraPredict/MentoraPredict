@@ -30,10 +30,10 @@ jobs:
         run: npm install -g @commitlint/cli @commitlint/config-conventional
 
       - name: Fetch base branch
-        run: git fetch origin ${{ github.base_ref }}
+        run: git fetch origin ${{ github.base_ref }} --depth=0
 
-      - name: Validate commit messages (PR only)
-        run: npx commitlint --from origin/${{ github.base_ref }} --to HEAD
+      - name: Validate commit messages
+        run: npx commitlint --from $(git merge-base origin/${{ github.base_ref }} HEAD) --to HEAD
 
   validate:
     name: Lint, Build, and Test
