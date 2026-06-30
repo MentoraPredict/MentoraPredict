@@ -15,14 +15,25 @@ jobs:
     name: Validate Commit Messages
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: wagoid/commitlint-github-action@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          configFile: .commitlintrc.json
-          helpURL: https://github.com/MentoraPredict/mentorapredict/blob/main/docs/commit-convention.md
+          node-version: 22
+
+      - name: Install commitlint
+        run: npm install -g @commitlint/cli @commitlint/config-conventional
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: Validate commit messages (PR only)
+        run: npx commitlint --from origin/${{ github.base_ref }} --to HEAD
 
   validate:
     name: Lint, Build, and Test
