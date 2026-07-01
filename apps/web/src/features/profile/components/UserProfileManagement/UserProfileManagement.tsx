@@ -19,11 +19,15 @@ interface ProfileCourse {
 interface UserProfileManagementProps {
   role: Extract<UserRole, "TEACHER" | "STUDENT">;
   courses: ProfileCourse[];
+  isCoursesLoading?: boolean;
+  coursesError?: string | null;
 }
 
 export default function UserProfileManagement({
   role,
   courses,
+  isCoursesLoading = false,
+  coursesError = null,
 }: UserProfileManagementProps) {
   const user = useAuthStore((state) => state.user);
 
@@ -64,7 +68,12 @@ export default function UserProfileManagement({
           <div className="grid gap-6 lg:grid-cols-2">
             <UserProfileDetailsCard email={user.email} role={user.role} />
 
-            <UserProfileCoursesCard title={courseTitle} courses={courses} />
+            <UserProfileCoursesCard
+              title={courseTitle}
+              courses={courses}
+              isLoading={isCoursesLoading}
+              error={coursesError}
+            />
           </div>
 
           <div className="flex justify-center gap-4">

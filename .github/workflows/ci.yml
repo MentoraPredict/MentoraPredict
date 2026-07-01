@@ -30,7 +30,7 @@ jobs:
         run: npm install -g @commitlint/cli @commitlint/config-conventional
 
       - name: Fetch base branch
-        run: git fetch origin ${{ github.base_ref }} --depth=0
+        run: git fetch origin ${{ github.base_ref }}
 
       - name: Validate commit messages
         run: npx commitlint --from $(git merge-base origin/${{ github.base_ref }} HEAD) --to HEAD

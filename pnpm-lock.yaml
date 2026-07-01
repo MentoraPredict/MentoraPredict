@@ -409,18 +409,6 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
-  services/metrics-service:
-    dependencies:
-      '@mentorapredict/shared-config':
-        specifier: workspace:*
-        version: link:../../packages/shared-config
-      '@mentorapredict/shared-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@mentorapredict/shared-utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-utils
-
   services/prediction-service:
     dependencies:
       '@nestjs/common':

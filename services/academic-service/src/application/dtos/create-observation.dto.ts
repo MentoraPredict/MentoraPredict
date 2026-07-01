@@ -4,7 +4,6 @@ import { ObservationType } from '../../domain/entities/teacher-observation.entit
 
 export class CreateObservationDto {
   @ApiProperty() @IsUUID() studentId!: string;
-  @ApiProperty() @IsUUID() teacherId!: string;
   @ApiProperty() @IsUUID() subjectId!: string;
   @ApiProperty({ enum: ObservationType })
   @IsEnum(ObservationType)

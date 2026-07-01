@@ -136,9 +136,7 @@ mentorapredict/
 │   ├── auth-service/
 │   ├── user-service/
 │   ├── academic-service/
-│   ├── metrics-service/
 │   ├── prediction-service/
-│   ├── recommendation-service/
 │   └── analytics-service/
 │
 ├── packages/
@@ -430,14 +428,12 @@ From the repository root:
 - `apps/mobile` - React Native app
 - `apps/desktop` - Electron app
 
-**Backend Services (7 Microservices):**
+**Backend Services (5 Microservices):**
 
 - `services/auth-service` - Authentication service
 - `services/user-service` - User management
 - `services/academic-service` - Academic data
-- `services/metrics-service` - Analytics metrics
 - `services/prediction-service` - AI predictions
-- `services/recommendation-service` - Recommendations
 - `services/analytics-service` - Advanced analytics
 
 **Shared Packages (9):**

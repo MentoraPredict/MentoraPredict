@@ -218,10 +218,10 @@ postgresql:
         - is_resolved
         - risk_level
 
-  # ─── DOMAIN: recommendation-service ────────────────────
+  # ─── DOMAIN: academic-service observations ────────────────────
 
     observations:
-      owner: recommendation-service
+      owner: academic-service
       description: "RF-022: Teacher qualitative observations per student."
       columns:
         id:          { type: UUID, constraint: PK }
@@ -236,10 +236,10 @@ postgresql:
         - teacher_id
         - subject_id
 
-  # ─── DOMAIN: metrics-service ─────────────────────────────
+  # ─── DOMAIN: analytics-service metrics ─────────────────────────────
 
     academic_metrics_snapshots:
-      owner: metrics-service
+      owner: analytics-service
       description: "RF-015/016/017: Computed metric snapshots (cached & persisted)."
       columns:
         id:               { type: UUID, constraint: PK }
@@ -287,7 +287,7 @@ mongodb:
 
   # ── Collection: recommendation_plans ──────────────────────
   recommendation_plans:
-    owner: recommendation-service
+    owner: prediction-service
     description: "RF-020: Full GPT-generated improvement plans (variable JSON schema)."
     index:
       - student_id
@@ -322,7 +322,7 @@ mongodb:
   # ── Collection: prediction_logs ───────────────────────────
   prediction_logs:
     owner: prediction-service
-    description: "RNF-040: Full traceability of every ML inference. Audit trail."
+    description: "RNF-040: Full traceability of every prediction and generated recommendation plan. Audit trail."
     index:
       - anonymous_student_id
       - inference_date
@@ -345,7 +345,7 @@ mongodb:
           MEDIUM: 0.20
           HIGH: 0.72
       model_metadata:
-        model_name: "logistic-regression-v1"
+        model_name: "gpt-recommendation-v1"
         model_version: "1.0.0"
         confidence_score: 0.87
         training_date: "2026-04-01"
@@ -432,7 +432,7 @@ redis:
       ttl:          900      # 15 min sliding window
       purpose:      "Brute-force protection (RNF-006)"
 
-  metrics_service:
+  analytics_metrics:
     student_metrics:
       key_pattern:  "metrics:student:<studentId>:<periodId>"
       value:        "JSON { average, trend, complianceIndex, computedAt }"

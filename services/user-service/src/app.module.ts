@@ -16,7 +16,9 @@ import { ListUsersUseCase } from "./application/use-cases/list-users.use-case";
 import { CreateUserProfileUseCase } from "./application/use-cases/create-user-profile.use-case";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
+import { RolesGuard } from "./infrastructure/guards/roles.guard";
 import { AuthHttpClient } from "./infrastructure/adapters/auth-http.client";
+import { AuthSyncClient } from "./infrastructure/adapters/auth-sync.client";
 import { GetUserUseCase } from "./application/use-cases/get-user.use-case";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 
@@ -39,8 +41,6 @@ import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
       }),
     }),
     TypeOrmModule.forFeature([UserProfileOrmEntity]),
-    // Verifies user tokens and signs short-lived service-to-service tokens
-    // for internal calls to auth-service.
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
@@ -71,17 +71,16 @@ import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
   ],
   providers: [
     { provide: "IUserProfileRepository", useClass: UserProfileRepository },
+    { provide: "IAuthServiceClient", useClass: AuthHttpClient },
+    { provide: "IAuthSyncClient", useClass: AuthSyncClient },
     GetUserUseCase,
-    {
-      provide: "IAuthServiceClient",
-      useClass: AuthHttpClient,
-    },
     UpdateUserUseCase,
     SoftDeleteUserUseCase,
     ListUsersUseCase,
     CreateUserProfileUseCase,
     InternalJwtService,
     InternalServiceGuard,
+    RolesGuard,
   ],
 })
 export class AppModule {}
