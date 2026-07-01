@@ -15,6 +15,8 @@ import {
   UseGuards,
   UploadedFile,
   BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
@@ -44,6 +46,7 @@ import { RecordGradeUseCase } from "../../application/use-cases/record-grade.use
 import { RegisterGradeUseCase } from "../../application/use-cases/register-grade.use-case";
 import { UpdateGradeUseCase } from "../../application/use-cases/update-grade.use-case";
 import { EnrollStudentUseCase } from "../../application/use-cases/enroll-student.use-case";
+import { GetStudentEnrollmentsUseCase } from "../../application/use-cases/get-student-enrollments.use-case";
 import { CreateEvaluationUseCase } from "../../application/use-cases/create-evaluation.use-case";
 import { AssignTeacherUseCase } from "../../application/use-cases/assign-teacher.use-case";
 import { ImportGradesUseCase } from "../../application/use-cases/import-grades.use-case";
@@ -112,6 +115,7 @@ export class AcademicController {
     private readonly registerGradeUC: RegisterGradeUseCase,
     private readonly updateGradeUC: UpdateGradeUseCase,
     private readonly enrollStudentUC: EnrollStudentUseCase,
+    private readonly getStudentEnrollmentsUC: GetStudentEnrollmentsUseCase,
     private readonly createEvaluationUC: CreateEvaluationUseCase,
     private readonly assignTeacherUC: AssignTeacherUseCase,
     private readonly importGradesUC: ImportGradesUseCase,
@@ -155,6 +159,30 @@ export class AcademicController {
   @ApiResponse({ status: 409, description: "Already enrolled" })
   async enroll(@Body() dto: EnrollStudentDto) {
     return this.enrollStudentUC.execute(dto);
+  }
+
+  @Get("enrollments")
+  @Roles("ADMIN", "TEACHER", "STUDENT")
+  @ApiOperation({ summary: "List enrollments by student" })
+  @ApiResponse({ status: 200 })
+  async listEnrollments(
+    @Req() req: JwtRequest,
+    @Query("studentId") studentId?: string,
+  ) {
+    const caller = req.user;
+    if (!caller?.sub) throw new UnauthorizedException("Invalid authorization token");
+
+    const targetStudentId = studentId ?? caller.sub;
+
+    if (caller.role === "STUDENT" && targetStudentId !== caller.sub) {
+      throw new ForbiddenException("Students can only list their own enrollments");
+    }
+
+    if (!targetStudentId) {
+      throw new BadRequestException("studentId is required");
+    }
+
+    return this.getStudentEnrollmentsUC.execute(targetStudentId);
   }
 
   // ─── Evaluations ──────────────────────────────────────────────────────────────

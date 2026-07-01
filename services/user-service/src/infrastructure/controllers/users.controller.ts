@@ -47,11 +47,28 @@ export class UsersController {
   ) {}
 
   @Get()
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "List users with optional filters (ADMIN only)" })
+  @Roles("ADMIN", "TEACHER")
+  @ApiOperation({ summary: "List users with optional filters" })
   @ApiQuery({ name: "role", required: false })
   @ApiQuery({ name: "status", required: false })
-  list(@Query("role") role?: string, @Query("status") status?: string) {
+  list(
+    @Req() req: AuthenticatedRequest,
+    @Query("role") role?: string,
+    @Query("status") status?: string,
+  ) {
+    const callerRole = req.user?.role;
+
+    if (callerRole === "TEACHER") {
+      if (role && role !== "STUDENT") {
+        throw new ForbiddenException("Teachers can only list students");
+      }
+
+      return this.listUsersUC.execute({
+        role: "STUDENT",
+        status: status ?? "ACTIVE",
+      });
+    }
+
     return this.listUsersUC.execute({ role, status });
   }
 

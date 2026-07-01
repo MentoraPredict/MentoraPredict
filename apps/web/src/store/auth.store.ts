@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { AxiosError } from "axios";
 
 import { login as loginRequest, logout as logoutRequest, refresh as refreshRequest } from "@/services/auth.service";
 import { clearTokens, getAccessToken, getRefreshToken, setAccessToken, setTokens } from "@/services/api/tokenStorage";
@@ -65,7 +66,14 @@ async function resolveSessionUser(
             email: profile.email || fallbackUser.email,
             role: profile.role || fallbackUser.role,
         };
-    } catch {
+    } catch (error) {
+        if (
+            error instanceof AxiosError &&
+            (error.response?.status === 401 || error.response?.status === 403)
+        ) {
+            return null;
+        }
+
         return fallbackUser;
     }
 }

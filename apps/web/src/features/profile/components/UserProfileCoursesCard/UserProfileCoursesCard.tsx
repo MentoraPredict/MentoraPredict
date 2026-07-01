@@ -12,11 +12,15 @@ interface UserProfileCourseSummary {
 interface UserProfileCoursesCardProps {
   title?: string;
   courses: UserProfileCourseSummary[];
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 export default function UserProfileCoursesCard({
   title = "Cursos",
   courses,
+  isLoading = false,
+  error = null,
 }: UserProfileCoursesCardProps) {
   return (
     <MotionCard
@@ -38,7 +42,13 @@ export default function UserProfileCoursesCard({
         </Heading>
       </div>
 
-      {courses.length > 0 ? (
+      {isLoading ? (
+        <Text variant="small">Cargando cursos...</Text>
+      ) : error ? (
+        <Text variant="small" className="text-red-600">
+          {error}
+        </Text>
+      ) : courses.length > 0 ? (
         <div className="space-y-3">
           {courses.map((course) => (
             <div
