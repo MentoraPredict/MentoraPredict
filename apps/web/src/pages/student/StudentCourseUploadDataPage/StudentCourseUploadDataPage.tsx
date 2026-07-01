@@ -1,63 +1,42 @@
 import { useParams } from "react-router-dom";
 
+import Text from "@/components/atoms/Text";
 import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalyticsLayout";
 import CourseSidebar from "@/features/courses/components/CourseSidebar";
 import StudentCourseUploadData from "@/features/students/components/StudentCourseUploadData";
-
-import type { Course } from "@/types/course";
-
-const mockStudentCourses: Course[] = [
-  {
-    id: "1",
-    name: "Álgebra Lineal",
-    teacherName: "Dr. Roberto Sánchez",
-    semester: "2024-I",
-    description:
-      "Fundamentos de espacios vectoriales, matrices y transformaciones lineales.",
-    riskLevel: "HIGH",
-    riskLabel: "Estudiante en riesgo",
-  },
-  {
-    id: "2",
-    name: "Programación II",
-    teacherName: "Ing. Martha Luz Pardo",
-    semester: "2024-I",
-    description:
-      "Desarrollo avanzado bajo el paradigma de programación orientada a objetos.",
-    riskLevel: "LOW",
-    riskLabel: "Estudiante en óptimas condiciones",
-  },
-  {
-    id: "3",
-    name: "Matemáticas Discretas",
-    teacherName: "Lic. Jorge Eliécer",
-    semester: "2024-I",
-    description:
-      "Teoría de grafos, conjuntos y lógica proposicional aplicada a la computación.",
-    riskLevel: "MEDIUM",
-    riskLabel: "Estudiante medianamente en riesgo",
-  },
-];
+import useStudentCourses from "@/features/students/hooks/useStudentCourses";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentCourseUploadDataPage() {
   const { courseId } = useParams();
-
+  const user = useAuthStore((state) => state.user);
+  const { courses, isLoading, error } = useStudentCourses(user?.id);
   const activeCourse =
-    mockStudentCourses.find((course) => course.id === courseId) ??
-    mockStudentCourses[0];
+    courses.find((course) => course.id === courseId) ?? courses[0] ?? null;
+  const activeCourseId = activeCourse?.id ?? courseId ?? "";
 
   return (
     <CourseAnalyticsLayout
-      title={`${activeCourse.name} - Estudiante`}
+      title={activeCourse ? `${activeCourse.name} - Estudiante` : "Curso - Estudiante"}
       sidebar={
         <CourseSidebar
           mode="student"
-          courses={mockStudentCourses}
-          activeCourseId={activeCourse.id}
+          courses={courses}
+          activeCourseId={activeCourseId}
         />
       }
     >
-      <StudentCourseUploadData />
+      {isLoading ? (
+        <Text variant="small">Cargando curso...</Text>
+      ) : error ? (
+        <Text variant="small" className="text-red-700">
+          {error}
+        </Text>
+      ) : activeCourse ? (
+        <StudentCourseUploadData />
+      ) : (
+        <Text variant="small">No se encontro el curso seleccionado.</Text>
+      )}
     </CourseAnalyticsLayout>
   );
 }

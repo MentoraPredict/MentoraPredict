@@ -12,5 +12,6 @@ export interface IEnrollmentRepository {
   ): Promise<EnrollmentEntity | null>;
   countActiveBySubject(subjectId: string): Promise<number>;
   findByStudentId(studentId: string): Promise<EnrollmentEntity[]>;
+  findBySubjectId(subjectId: string): Promise<EnrollmentEntity[]>;
   save(enrollment: EnrollmentEntity): Promise<EnrollmentEntity>;
 }
