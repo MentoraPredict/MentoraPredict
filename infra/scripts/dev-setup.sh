@@ -117,7 +117,14 @@ start_services() {
     docker compose -p "$PROJECT_NAME" \
         -f "$COMPOSE_FILE" \
         --env-file "$ENV_FILE" \
-        up -d --build
+        up -d --build \
+        auth-service \
+        user-service \
+        academic-service \
+        analytics-service \
+        prediction-service \
+        web \
+        kong
 }
 
 run_seeds() {
@@ -126,7 +133,7 @@ run_seeds() {
     docker compose -p "$PROJECT_NAME" \
         -f "$COMPOSE_FILE" \
         --env-file "$ENV_FILE" \
-        run --rm seed-loader || true
+        up --build --force-recreate seed-loader
 }
 
 cleanup_docker() {
@@ -142,7 +149,7 @@ show_status() {
     docker compose -p "$PROJECT_NAME" \
         -f "$COMPOSE_FILE" \
         --env-file "$ENV_FILE" \
-        ps
+        ps -a
     echo ""
     echo "Access endpoints:"
     echo "  Kong Proxy  : http://localhost:8000"
