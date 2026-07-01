@@ -1,6 +1,8 @@
 import api from "@/services/api";
 import { endpoints } from "@/services/api/endpoints";
 import type { Course } from "@/types/course";
+import type { CourseEnrolledStudent } from "@/types/course";
+import type { AppUser } from "@/types/user/user.types";
 
 interface SubjectApiResponse {
   id: string;
@@ -39,6 +41,17 @@ interface StudentEnrollmentApiResponse {
   subject_name?: string;
   subjectCredits?: number;
   subject_credits?: number;
+  periodId?: string;
+  period_id?: string;
+  status?: string;
+}
+
+interface SubjectEnrollmentApiResponse {
+  id: string;
+  studentId?: string;
+  student_id?: string;
+  subjectId?: string;
+  subject_id?: string;
   periodId?: string;
   period_id?: string;
   status?: string;
@@ -378,6 +391,42 @@ export async function enrollStudentsInCourse(
   return results.flatMap((result, index) =>
     result.status === "rejected" ? [studentIds[index]] : []
   );
+}
+
+export async function getCourseEnrolledStudents(
+  subjectId: string,
+  students: AppUser[]
+): Promise<CourseEnrolledStudent[]> {
+  const response = await api.get<
+    SubjectEnrollmentApiResponse[] | MaybeWrappedArray<SubjectEnrollmentApiResponse>
+  >(endpoints.academic.enrollments, {
+    params: {
+      subjectId,
+    },
+  });
+
+  const studentsById = new Map(students.map((student) => [student.id, student]));
+
+  return unwrapArray(response.data)
+    .filter((enrollment) => !enrollment.status || enrollment.status === "ACTIVE")
+    .flatMap((enrollment) => {
+      const studentId = enrollment.studentId ?? enrollment.student_id;
+      const student = studentId ? studentsById.get(studentId) : undefined;
+
+      if (!student) {
+        return [];
+      }
+
+      return [
+        {
+          id: enrollment.id,
+          user: student,
+          average: 0,
+          attendance: 0,
+          isEnrolled: true,
+        },
+      ];
+    });
 }
 
 export async function createTeacherCourse(

@@ -52,6 +52,7 @@ import { AssignTeacherUseCase } from "./application/use-cases/assign-teacher.use
 import { ImportGradesUseCase } from "./application/use-cases/import-grades.use-case";
 import { GetStudentGradesUseCase } from "./application/use-cases/get-student-grades.use-case";
 import { GetStudentEnrollmentsUseCase } from "./application/use-cases/get-student-enrollments.use-case";
+import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
 import { CreateObservationUseCase } from "./application/use-cases/create-observation.use-case";
 import { GetObservationsByStudentUseCase } from "./application/use-cases/get-observations-by-student.use-case";
 
@@ -189,6 +190,7 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
     ImportGradesUseCase,
     GetStudentGradesUseCase,
     GetStudentEnrollmentsUseCase,
+    GetSubjectEnrollmentsUseCase,
     CreateObservationUseCase,
     GetObservationsByStudentUseCase,
     // Faculty use-cases
