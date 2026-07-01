@@ -15,6 +15,7 @@ import { JwtAdapter } from "./infrastructure/config/jwt.adapter";
 import { BcryptAdapter } from "./infrastructure/config/bcrypt.adapter";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
+import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { UserProfileHttpClient } from "./infrastructure/adapters/user-profile-http.client";
 
 import { RegisterUserUseCase } from "./application/use-cases/register-user.use-case";
@@ -26,6 +27,7 @@ import { ResetPasswordUseCase } from "./application/use-cases/reset-password.use
 import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
 import { InternalUsersController } from "./infrastructure/controllers/internal-auth.controller";
 import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-case";
+import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-case";
 
 @Module({
   imports: [
@@ -60,8 +62,6 @@ import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-ca
             cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
         );
 
-        // RS256 when asymmetric keys are provided (recommended for production).
-        // Falls back to HS256 with JWT_SECRET for local development.
         if (privateKey && publicKey) {
           return {
             privateKey,
@@ -88,7 +88,6 @@ import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-ca
     InternalUsersController,
   ],
   providers: [
-    // Infrastructure adapters registered as interface tokens
     RedisClient,
     RedisAdapter,
     { provide: "ITokenCache", useExisting: RedisAdapter },
@@ -98,8 +97,8 @@ import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-ca
     { provide: "ITokenGenerator", useClass: JwtAdapter },
     { provide: "IUserRepository", useClass: UserRepository },
     InternalJwtService,
+    InternalServiceGuard,
     { provide: "IUserProfileClient", useClass: UserProfileHttpClient },
-    // Use-cases
     RegisterUserUseCase,
     LoginUserUseCase,
     LogoutUserUseCase,
@@ -107,6 +106,7 @@ import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-ca
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
     GetAuthUserUseCase,
+    SyncAuthUserUseCase,
   ],
 })
 export class AppModule {}

@@ -2,8 +2,9 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { GetAlertsUseCase } from '../../application/use-cases/get-alerts.use-case';
 
+
 @ApiTags('alerts')
-@Controller('alerts')
+@Controller('api/v1/analytics/alerts')
 export class AlertsController {
   constructor(private readonly getAlertsUC: GetAlertsUseCase) {}
 
