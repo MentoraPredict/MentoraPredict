@@ -16,7 +16,7 @@ const initialEnrolledStudents: CourseEnrolledStudent[] = [
       id: "1",
       firstName: "Franco",
       lastName: "Paredes",
-      email: "franco.paredes@uce.edu.ec",
+      email: "franco.@uce.edu.ec",
       role: "STUDENT",
       isActive: true,
     },
@@ -123,7 +123,13 @@ export default function TeacherCourseStudents({
           student.email.toLowerCase().includes(normalizedSearch))
       );
     });
-  }, [availableStudents, enrolledUserIds, search, selectedUserIds, showResults]);
+  }, [
+    availableStudents,
+    enrolledUserIds,
+    search,
+    selectedUserIds,
+    showResults,
+  ]);
 
   const handleSearch = () => {
     setShowResults(true);
