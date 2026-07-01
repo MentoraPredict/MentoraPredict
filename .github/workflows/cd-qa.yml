@@ -315,7 +315,7 @@ jobs:
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
 
             echo "[SEEDS] Running database seeds (idempotent safe mode)"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm seed-loader || true
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up --build --force-recreate seed-loader
 
             echo "[MONITORING] Starting monitoring stack"
             docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml --project-name mentorapredict up -d 2>&1 || echo "[MONITORING] Monitoring stack not available — skipping"
@@ -325,7 +325,7 @@ jobs:
             echo "[OK] Deployment completed"
             echo ""
             echo "[STATUS] Final services status:"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml ps
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml ps -a
 
       - name: Deployment Summary
         run: |
