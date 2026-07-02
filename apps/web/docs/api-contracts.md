@@ -15,7 +15,6 @@ services/auth-service
 services/user-service
 services/academic-service
 services/analytics-service
-services/recommendation-service
 ```
 
 ## Frontend Rule
@@ -961,94 +960,67 @@ POST /api/v1/analytics/alerts/:studentId
 
 These routes appear to be more internal or calculation-oriented. For frontend dashboards, prefer aggregated `GET /dashboard/...` endpoints when they are available.
 
-## Recommendation Service
+## Prediction Service
 
 Responsible for:
 
-- generating recommendations;
-- consulting recommendation history;
-- recording teacher observations.
+- generating risk predictions for a student and period;
+- returning AI-generated `summary` and `recommendations[]`;
+- consulting prediction and recommendation history through prediction logs.
 
-Current state:
+### GET /api/v1/prediction/students/{studentId}/periods/{periodId}
 
-```txt
-recommendation-service is currently a skeleton and does not have fully functional controllers.
-```
-
-The central contract defines the expected routes.
-
-### POST /api/v1/recommendations/generate
-
-Generates a personalized improvement plan.
+Generates a risk prediction and recommendation plan.
 
 Recommended frontend path:
 
 ```txt
-POST /v1/recommendations/generate
-```
-
-Request:
-
-```json
-{
-  "studentId": "student-uuid",
-  "context": {
-    "riskLevel": "HIGH",
-    "weakSubjects": ["Web Programming", "Calculus II"],
-    "complianceIndex": 62.5,
-    "trend": "DECLINING"
-  }
-}
-```
-
-Response `201`:
-
-```json
-{
-  "id": "recommendation-uuid",
-  "studentId": "student-uuid",
-  "plan": "Personalized improvement plan",
-  "actions": [
-    "Review pending activities",
-    "Schedule tutoring with the teacher"
-  ],
-  "generatedAt": "2026-06-14T00:00:00.000Z"
-}
-```
-
-### GET /api/v1/recommendations/students/{studentId}
-
-Retrieves the recommendation history of a student.
-
-Recommended frontend path:
-
-```txt
-GET /v1/recommendations/students/:studentId
+GET /v1/prediction/students/:studentId/periods/:periodId
 ```
 
 Expected response:
 
 ```json
-[
-  {
-    "id": "recommendation-uuid",
-    "studentId": "student-uuid",
+{
+  "studentId": "student-uuid",
+  "periodId": "period-uuid",
+  "risk": {
     "riskLevel": "HIGH",
-    "plan": "Personalized improvement plan",
-    "actions": [],
-    "generatedAt": "2026-06-14T00:00:00.000Z"
-  }
-]
+    "globalAverage": 6.1,
+    "complianceIndex": 62.5
+  },
+  "summary": "The student needs immediate follow-up.",
+  "recommendations": [
+    {
+      "type": "TUTORING",
+      "title": "Schedule weekly tutoring",
+      "reason": "Low average and declining trend.",
+      "priority": "HIGH"
+    }
+  ],
+  "modelVersion": "gpt-recommendation-v1",
+  "generatedAt": "2026-06-14T00:00:00.000Z"
+}
 ```
 
-### POST /api/v1/observations
+### GET /api/v1/prediction/students/{studentId}/history
+
+Retrieves previous predictions and generated recommendation plans for a student.
+
+Recommended frontend path:
+
+```txt
+GET /v1/prediction/students/:studentId/history?limit=10
+```
+
+### POST /api/v1/academic/observations
 
 Records a teacher observation for a student.
 
 Recommended frontend path:
 
 ```txt
-POST /v1/observations
+POST /v1/academic/observations
 ```
 
 Request:
@@ -1106,11 +1078,14 @@ export const ENDPOINTS = {
       `/v1/analytics/dashboard/teacher/${teacherId}`,
     ADMIN_DASHBOARD: "/v1/analytics/dashboard/admin",
   },
-  RECOMMENDATIONS: {
-    GENERATE: "/v1/recommendations/generate",
-    BY_STUDENT: (studentId: string) =>
-      `/v1/recommendations/students/${studentId}`,
-    OBSERVATIONS: "/v1/observations",
+  PREDICTION: {
+    GENERATE: (studentId: string, periodId: string) =>
+      `/v1/prediction/students/${studentId}/periods/${periodId}`,
+    HISTORY: (studentId: string) =>
+      `/v1/prediction/students/${studentId}/history`,
+  },
+  OBSERVATIONS: {
+    CREATE: "/v1/academic/observations",
   },
 } as const;
 ```
@@ -1159,8 +1134,11 @@ Academic Service
 Analytics Service
 -> risk, alerts, dashboards
 
-Recommendation Service
--> generated plans, recommendation history, observations
+Prediction Service
+-> generated recommendation plans, prediction history
+
+Academic Service
+-> teacher observations
 ```
 
 The frontend should consume them through centralized services and maintain the product language:

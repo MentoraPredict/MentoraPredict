@@ -42,6 +42,10 @@ export class EnrollmentRepository implements IEnrollmentRepository {
     return (await this.repo.find({ where: { studentId } })).map(this.toDomain);
   }
 
+  async findBySubjectId(subjectId: string): Promise<EnrollmentEntity[]> {
+    return (await this.repo.find({ where: { subjectId } })).map(this.toDomain);
+  }
+
   async save(e: EnrollmentEntity): Promise<EnrollmentEntity> {
     const saved = await this.repo.save(this.toOrm(e));
     return this.toDomain(saved);

@@ -1,27 +1,47 @@
-# prediction-service — Service Boundary
+# prediction-service - Service Boundary
 
-Responsabilidad única (SRP):
-- Ejecutar modelos de predicción y exponer endpoints para solicitud de predicciones, listado de modelos y feedback de etiquetas.
+Responsabilidad unica (SRP):
+
+- Combinar el riesgo academico ya calculado por `analytics-service` (RF-018, deterministico)
+  con el contexto academico del estudiante (`academic-service`) y producir, via OpenAI,
+  un resumen en lenguaje natural + un plan de recomendaciones accionables.
+- prediction-service nunca calcula el riesgo por su cuenta: siempre lo consume de
+  analytics-service. OpenAI solo redacta texto y recomendaciones; no decide niveles de riesgo.
 
 Inputs:
-- Requests de predicción desde `metrics-service` o `recommendation-service`.
-- Datos históricos y features desde `prediction-service` ingestion pipelines (fuera de fase 0).
+
+- `GET /api/v1/prediction/students/:studentId/periods/:periodId` (JWT de usuario, via Kong).
+- Internamente: `analytics-service` (`/internal/risk-snapshot`) y `academic-service`
+  (`/internal/students/:id/grades`) via tokens de servicio firmados con `InternalJwtService`.
 
 Outputs:
-- Predicciones por estudiante/asignatura.
-- Guardado de requests y resultados en MongoDB (`prediction_requests`).
-- Publicación opcional de eventos a `analytics-service`.
+
+- `PredictionResult` JSON: `{ studentId, periodId, risk, summary, recommendations[], modelVersion, generatedAt }`.
+- Persistencia de cada prediccion en MongoDB (`prediction_logs`) para trazabilidad/auditoria.
 
 Datos que gestiona (ownership):
-- Colecciones en MongoDB: `prediction_requests`, `student_profiles`, `model_metadata`.
+
+- Coleccion MongoDB: `prediction_logs`.
+- Plan de recomendaciones generado dentro de cada resultado de prediccion.
 
 Dependencias:
-- `user-service` (para validate student existence) y `academic-service` (metadata asignaturas).
+
+- `analytics-service` (riesgo deterministico).
+- `academic-service` (notas/materias del periodo).
+- OpenAI API (`OPENAI_API_KEY`) solo para redactar `summary` + `recommendations`.
 
 API surface (resumen):
-- `POST /api/v1/prediction/predict`
-- `GET /api/v1/prediction/models`
-- `POST /api/v1/prediction/feedback`
 
-Persistencia recomendada:
-- MongoDB para resultados y metadatos de modelos; S3/Blob para artefactos de modelos si aplica.
+- `GET /api/v1/prediction/students/:studentId/periods/:periodId` - genera prediccion + recomendaciones.
+- `GET /api/v1/prediction/students/:studentId/history?limit=N` - historial de predicciones.
+
+Persistencia:
+
+- MongoDB (`prediction_logs`), sin Postgres ni Redis. El servicio es stateless respecto
+  a calculos y solo registra resultados.
+
+Stack:
+
+- NestJS (TypeScript) puro. Sin Python ni runtime ML local. El riesgo proviene de la
+  formula deterministica existente en analytics-service; lo generativo es el texto y
+  el plan de recomendaciones delegado a OpenAI.

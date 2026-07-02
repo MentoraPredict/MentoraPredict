@@ -38,7 +38,9 @@ import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.ad
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
+import { RolesGuard } from "./infrastructure/guards/roles.guard";
 import { JwtAuthGuard } from "./infrastructure/guards/jwt-auth.guard";
+import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 
 import { RecordGradeUseCase } from "./application/use-cases/record-grade.use-case";
@@ -50,6 +52,7 @@ import { AssignTeacherUseCase } from "./application/use-cases/assign-teacher.use
 import { ImportGradesUseCase } from "./application/use-cases/import-grades.use-case";
 import { GetStudentGradesUseCase } from "./application/use-cases/get-student-grades.use-case";
 import { GetStudentEnrollmentsUseCase } from "./application/use-cases/get-student-enrollments.use-case";
+import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
 import { CreateObservationUseCase } from "./application/use-cases/create-observation.use-case";
 import { GetObservationsByStudentUseCase } from "./application/use-cases/get-observations-by-student.use-case";
 
@@ -140,8 +143,14 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
         if (privateKey && publicKey) {
           return {
             privateKey,
@@ -162,8 +171,10 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
   ],
   providers: [
     RedisClient,
+    InternalJwtService,
     InternalServiceGuard,
     TeacherRoleGuard,
+    RolesGuard,
     JwtAuthGuard,
     { provide: "IFacultyRepository", useClass: FacultyRepository },
     { provide: "ICareerRepository", useClass: CareerRepository },
@@ -194,6 +205,7 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
     ImportGradesUseCase,
     GetStudentGradesUseCase,
     GetStudentEnrollmentsUseCase,
+    GetSubjectEnrollmentsUseCase,
     CreateObservationUseCase,
     GetObservationsByStudentUseCase,
     // Faculty use-cases

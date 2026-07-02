@@ -8,9 +8,7 @@
     "start": "node dist/main",
     "lint": "eslint src/",
     "test": "jest --passWithNoTests",
-    "test:cov": "jest --coverage",
-    "migration:generate": "typeorm migration:generate src/migrations/init -d src/data-source.ts",
-    "migration:run": "typeorm migration:run -d dist/data-source.js"
+    "test:cov": "jest --coverage"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

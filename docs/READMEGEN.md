@@ -12,7 +12,7 @@
 ✅ Predecir riesgo académico de estudiantes  
 ✅ Proporcionar recomendaciones personalizadas  
 ✅ Identificar patrones de desempeño  
-✅ Apoyar la toma de decisiones educativas  
+✅ Apoyar la toma de decisiones educativas
 
 Construida con **microservicios**, **arquitectura limpia** y **buenas prácticas de software**.
 
@@ -68,20 +68,18 @@ curl http://localhost:3003/health
 
 ### ✅ Servicios Funcionales (Sprint 1)
 
-| Servicio | Puerto | Descripción | Estado |
-|----------|--------|-------------|--------|
-| **Auth Service** | 3001 | Autenticación JWT RS256 y RBAC | ✅ FUNCIONAL |
-| **Academic Service** | 3003 | Gestión de asignaturas, matriculaciones y calificaciones | ✅ FUNCIONAL |
+| Servicio             | Puerto | Descripción                                              | Estado       |
+| -------------------- | ------ | -------------------------------------------------------- | ------------ |
+| **Auth Service**     | 3001   | Autenticación JWT RS256 y RBAC                           | ✅ FUNCIONAL |
+| **Academic Service** | 3003   | Gestión de asignaturas, matriculaciones y calificaciones | ✅ FUNCIONAL |
 
 ### 🔧 Servicios en Desarrollo (Sprint 2+)
 
-| Servicio | Puerto | Descripción | Estado |
-|----------|--------|-------------|--------|
-| User Service | 3002 | Gestión de perfiles y roles | 🔧 Planeado |
-| Analytics Service | 3004 | Análisis de datos académicos | 🔧 Planeado |
-| Prediction Service | 3005 | ML para predicción de riesgo | 🔧 Planeado |
-| Recommendation Service | 3006 | Sistema de recomendaciones | 🔧 Planeado |
-| Metrics Service | 3007 | Monitoreo y observabilidad | 🔧 Planeado |
+| Servicio           | Puerto | Descripción                            | Estado      |
+| ------------------ | ------ | -------------------------------------- | ----------- |
+| User Service       | 3002   | Gestión de perfiles y roles            | 🔧 Planeado |
+| Analytics Service  | 3004   | Análisis de datos académicos           | 🔧 Planeado |
+| Prediction Service | 3006   | Predicción de riesgo y recomendaciones | 🔧 Planeado |
 
 ---
 
@@ -114,9 +112,7 @@ mentorapredict/
 │   │
 │   ├── analytics-service/
 │   ├── prediction-service/
-│   ├── recommendation-service/
 │   ├── user-service/
-│   └── metrics-service/
 │
 ├── packages/                      # 📦 Paquetes compartidos
 │   ├── shared-config/             # Configuración centralizada
@@ -168,24 +164,29 @@ Documentación completa disponible en la carpeta `docs/`:
 ### 📖 Documentación Completa
 
 #### Para Principiantes
+
 - **[docs/README.md](./docs/README.md)** - Índice de documentación (punto de entrada)
 - **[docs/SETUP.md](./docs/SETUP.md)** - Instalación paso a paso
 - **[docs/SERVICES.md](./docs/SERVICES.md)** - Descripción general de servicios
 
 #### Arquitectura
+
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Arquitectura del sistema (DDD, Clean Arch)
 - **[docs/PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)** - Estructura completa del proyecto
 
 #### Servicios Específicos
+
 - **[docs/services/auth-service.md](./docs/services/auth-service.md)** - Auth Service (autenticación, JWT, RBAC)
 - **[docs/services/academic-service.md](./docs/services/academic-service.md)** - Academic Service (asignaturas, calificaciones)
 
 #### Desarrollo
+
 - **[docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)** - Guía para crear nuevas funcionalidades
 - **[docs/CODE_STANDARDS.md](./docs/CODE_STANDARDS.md)** - Convenciones de código y estándares
 - **[docs/API.md](./docs/API.md)** - Referencia completa de APIs con ejemplos
 
 #### Producción
+
 - **[docs/SECURITY.md](./docs/SECURITY.md)** - Medidas de seguridad implementadas
 - **[docs/CONTRACTS.md](./docs/CONTRACTS.md)** - DTOs, enums y contratos compartidos
 - **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Solución de problemas comunes
@@ -470,20 +471,22 @@ Este proyecto está bajo licencia MIT. Ver [LICENSE](./LICENSE) para detalles.
 ## 📅 Historial de Cambios
 
 ### Sprint 1 (Actual)
+
 - ✅ Auth Service - Autenticación con JWT
 - ✅ Academic Service - Gestión académica
 - ✅ Documentación completa
 - ✅ Docker Compose setup
 
 ### Sprint 2 (Próximo)
+
 - 🔧 User Service
 - 🔧 Analytics Service
 - 🔧 API Gateway
 - 🔧 JWT en Academic Service
 
 ### Sprint 3+
-- 🔧 Prediction Service (ML)
-- 🔧 Recommendation Service
+
+- 🔧 Prediction Service con recomendaciones
 - 🔧 Event Bus / Message Queue
 - 🔧 Metrics y Monitoring
 

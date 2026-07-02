@@ -4,7 +4,13 @@ import axios from "axios";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { Button, Heading, Text } from "@/components/atoms";
+import {
+  Button,
+  FeedbackMessage,
+  Heading,
+  MotionEntrance,
+  Text,
+} from "@/components/atoms";
 
 import {
   AuthFooter,
@@ -67,7 +73,8 @@ export default function LoginForm() {
                 p-8
             "
     >
-      <div
+      <MotionEntrance
+        variant="form"
         className="
                     w-full
                     max-w-md
@@ -85,7 +92,7 @@ export default function LoginForm() {
             id="email"
             label="Correo institucional"
             type="email"
-            placeholder="correo@universidad.edu"
+            placeholder="correo@universidad.edu.ec"
             error={errors.email?.message}
             {...register("email", {
               required: "El correo es obligatorio",
@@ -126,9 +133,7 @@ export default function LoginForm() {
           <Button type="submit" className="w-full" disabled={isSubmittingLogin}>
             Iniciar sesión
           </Button>
-          {serverError ? (
-            <Text className="text-sm text-red-500">{serverError}</Text>
-          ) : null}
+          <FeedbackMessage message={serverError} tone="error" />
         </form>
 
         <Divider />
@@ -144,7 +149,7 @@ export default function LoginForm() {
         </Button>
 
         <AuthFooter />
-      </div>
+      </MotionEntrance>
     </section>
   );
 }

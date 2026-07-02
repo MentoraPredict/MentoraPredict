@@ -16,3 +16,5 @@ if [ ! -f "$KEYS_DIR/private.pem" ] || [ ! -f "$KEYS_DIR/public.pem" ]; then
 else
     echo "Las claves ya existen."
 fi
+
+chmod 644 "$KEYS_DIR/private.pem" "$KEYS_DIR/public.pem"

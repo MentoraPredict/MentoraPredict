@@ -10,10 +10,8 @@
 ### 🔧 Servicios en Desarrollo
 
 3. **[Analytics Service](#analytics-service)** - Análisis de Datos
-4. **[Prediction Service](#prediction-service)** - Predicción de Riesgo
-5. **[Recommendation Service](#recommendation-service)** - Recomendaciones
-6. **[User Service](#user-service)** - Gestión de Usuarios
-7. **[Metrics Service](#metrics-service)** - Métricas y Observabilidad
+4. **[Prediction Service](#prediction-service)** - Predicción de Riesgo y Recomendaciones
+5. **[User Service](#user-service)** - Gestión de Usuarios
 
 ---
 
@@ -30,6 +28,7 @@
 Servicio centralizador de **autenticación y autorización** del sistema MentoraPredict.
 
 **Responsabilidades:**
+
 - Registrar nuevos usuarios
 - Autenticar usuarios existentes
 - Generar y refrescar tokens JWT
@@ -46,13 +45,13 @@ Servicio centralizador de **autenticación y autorización** del sistema Mentora
 
 ### Endpoints
 
-| Método | Ruta | Descripción | Autenticación |
-|--------|------|-------------|---------------|
-| POST | `/api/v1/auth/register` | Registrar usuario | ❌ Pública |
-| POST | `/api/v1/auth/login` | Iniciar sesión | ❌ Pública |
-| POST | `/api/v1/auth/refresh` | Refrescar token | ❌ Pública |
-| POST | `/api/v1/auth/logout` | Cerrar sesión | ✅ Requerida |
-| GET | `/health` | Verificar salud del servicio | ❌ Pública |
+| Método | Ruta                    | Descripción                  | Autenticación |
+| ------ | ----------------------- | ---------------------------- | ------------- |
+| POST   | `/api/v1/auth/register` | Registrar usuario            | ❌ Pública    |
+| POST   | `/api/v1/auth/login`    | Iniciar sesión               | ❌ Pública    |
+| POST   | `/api/v1/auth/refresh`  | Refrescar token              | ❌ Pública    |
+| POST   | `/api/v1/auth/logout`   | Cerrar sesión                | ✅ Requerida  |
+| GET    | `/health`               | Verificar salud del servicio | ❌ Pública    |
 
 ### Flujo de Autenticación
 
@@ -158,12 +157,12 @@ Servicio de **gestión académica** que centraliza:
 
 ### Endpoints
 
-| Método | Ruta | Descripción | Autenticación |
-|--------|------|-------------|---------------|
-| POST | `/api/v1/academic/enrollments` | Matricular estudiante | ✅ Requerida |
-| POST | `/api/v1/academic/evaluations` | Crear evaluación | ✅ Requerida |
-| POST | `/api/v1/academic/grades` | Registrar calificación | ✅ Requerida |
-| GET | `/health` | Verificar salud | ❌ Pública |
+| Método | Ruta                           | Descripción            | Autenticación |
+| ------ | ------------------------------ | ---------------------- | ------------- |
+| POST   | `/api/v1/academic/enrollments` | Matricular estudiante  | ✅ Requerida  |
+| POST   | `/api/v1/academic/evaluations` | Crear evaluación       | ✅ Requerida  |
+| POST   | `/api/v1/academic/grades`      | Registrar calificación | ✅ Requerida  |
+| GET    | `/health`                      | Verificar salud        | ❌ Pública    |
 
 ### Datos Principales
 
@@ -246,46 +245,24 @@ Ver [academic-service.md](./services/academic-service.md)
 
 ## 🔧 PREDICTION SERVICE
 
-**Puerto:** 3005  
-**Propósito:** Predicción de riesgo académico usando ML  
-**Lenguaje:** Python  
+**Puerto:** 3006
+**Propósito:** Predicción de riesgo académico y recomendaciones con OpenAI
+**Lenguaje:** TypeScript / NestJS
 **Estado:** 🔧 EN DESARROLLO
 
 ### Planned Features
 
 - Predicción de probabilidad de reprobación
 - Identificación de estudiantes en riesgo
-- Recomendaciones preventivas
-- Modelos de ML (Logistic Regression, Random Forest, etc)
+- Recomendaciones preventivas generadas a partir del riesgo y contexto académico
+- Registro de historial de predicciones y recomendaciones
 - Pipeline de datos desde analytics
 
 ### Stack Técnico
 
-- Python 3.9+
-- FastAPI
-- scikit-learn / TensorFlow
-- Pandas
-
----
-
-## 🔧 RECOMMENDATION SERVICE
-
-**Puerto:** 3006  
-**Propósito:** Sistema de recomendaciones personalizadas  
-**Estado:** 🔧 EN DESARROLLO
-
-### Planned Features
-
-- Recomendaciones de asignaturas
-- Sugerencias de cambio de carrera
-- Ofertas de tutorías
-- Recomendación de grupos de estudio
-
-### Algoritmos
-
-- Content-based filtering
-- Collaborative filtering
-- Hybrid recommendations
+- NestJS
+- OpenAI API
+- MongoDB
 
 ---
 
@@ -351,7 +328,7 @@ Ver [academic-service.md](./services/academic-service.md)
     │  - users (auth)                                 │
     │  - subjects, enrollments, grades (academic)     │
     └─────────────────────────────────────────────────┘
-    
+
     ┌─────────────────────────────────────────────────┐
     │            Redis (Shared Cache)                 │
     │  - JWT tokens                                   │
@@ -365,21 +342,23 @@ Ver [academic-service.md](./services/academic-service.md)
 ## Hoja de Ruta
 
 ### Sprint 1 (Actual)
+
 - ✅ Auth Service (Completo)
 - ✅ Academic Service (Completo)
 
 ### Sprint 2
+
 - 🔧 User Service
 - 🔧 Analytics Service
 - 🔧 API Gateway
 
 ### Sprint 3
-- 🔧 Prediction Service
-- 🔧 Recommendation Service
+
+- 🔧 Prediction Service con recomendaciones
 - 🔧 Event Bus / Message Queue
 
 ### Sprint 4
-- 🔧 Metrics Service
+
 - 🔧 Distributed Tracing
 - 🔧 Monitoring
 

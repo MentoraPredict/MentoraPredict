@@ -2,7 +2,19 @@
 useDefault = true
 
 [[paths]]
-  path = '''docs/.*'''
+  path = '''^\.github/.*$'''
+  ignore = true
+
+[[paths]]
+  path = '''^database/.*$'''
+  ignore = true
+
+[[paths]]
+  path = '''^docs/.*$'''
+  ignore = true
+
+[[paths]]
+  path = '''^[^/]+$'''
   ignore = true
 
 [[paths]]

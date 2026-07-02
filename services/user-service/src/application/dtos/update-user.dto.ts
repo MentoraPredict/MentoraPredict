@@ -1,22 +1,28 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AuthProvider, UserProfileStatus } from '../../domain/entities/user-profile.entity';
+import { IsEnum, IsOptional, IsString, ValidateIf } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  AuthProvider,
+  UserProfileStatus,
+} from "../../domain/entities/user-profile.entity";
 
 export class UpdateUserDto {
   @ApiPropertyOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsOptional()
   @IsString()
   photo?: string | null;
 
   @ApiPropertyOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsOptional()
   @IsString()
   bio?: string | null;
 
   @ApiPropertyOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsOptional()
   @IsString()
-  cedula?: string;
+  cedula?: string | null;
 
   @ApiPropertyOptional({ enum: AuthProvider })
   @IsOptional()
@@ -33,3 +39,5 @@ export class UpdateUserDto {
   @IsEnum(UserProfileStatus)
   status?: UserProfileStatus;
 }
+
+export class UpdateUserProfileDto extends UpdateUserDto {}

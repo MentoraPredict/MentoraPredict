@@ -6,7 +6,7 @@ import StatsSection from "@/components/organisms/StatsSection";
 
 export default function LandingTemplate() {
   return (
-    <>
+    <div className="app-page">
       <Navbar />
 
       <main>
@@ -18,6 +18,6 @@ export default function LandingTemplate() {
       </main>
 
       <Footer />
-    </>
+    </div>
   );
 }

@@ -1,11 +1,12 @@
 # MentoraPredict — Development stack (DB-less Kong + core services)
 # Usage:
 # 1. cp ../.env.example ../.env
-# 2. (optional en caso de tener los archivos .pem) bash infra/kong/generate-kong-keys.sh
+# 2. (optional en caso de tener los archivos .pem) bash infra/kong/generate-keys.sh
 # 3. docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build
 
 networks:
   mentorapredict-net:
+    name: mp_network
     driver: bridge
 
 volumes:
@@ -114,7 +115,7 @@ services:
       retries: 5
 
   redis-commander:
-    image: rediscommander/redis-commander:latest
+    image: rediscommander/redis-commander:0.7.2
     container_name: mp_redis_ui
     restart: unless-stopped
     profiles: ["tools"]
@@ -157,11 +158,23 @@ services:
       - mentorapredict-net
     depends_on:
       auth-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
+      user-service:
+        condition: service_started
+        restart: true
       academic-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
       analytics-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
+      prediction-service:
+        condition: service_started
+        restart: true
+      web:
+        condition: service_started
+        restart: true
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
@@ -190,6 +203,7 @@ services:
     build:
       context: ../..
       dockerfile: services/auth-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/auth-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_auth_service
     restart: unless-stopped
     ports:
@@ -212,20 +226,31 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3001/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   user-service:
     build:
       context: ../..
       dockerfile: services/user-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/user-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_user_service
     restart: unless-stopped
     ports:
@@ -243,18 +268,36 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
+    volumes:
+      - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3002/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   academic-service:
     build:
       context: ../..
       dockerfile: services/academic-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/academic-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_academic_service
     restart: unless-stopped
     ports:
@@ -283,24 +326,31 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3003/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   analytics-service:
     build:
       context: ../..
       dockerfile: services/analytics-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/analytics-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_analytics_service
     restart: unless-stopped
     ports:
@@ -331,24 +381,78 @@ services:
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      academic-service:
-        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3004/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  prediction-service:
+    build:
+      context: ../..
+      dockerfile: services/prediction-service/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/prediction-service:${DEV_IMAGE_TAG:-dev-latest}
+    container_name: mp_dev_prediction_service
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      APP_PORT: ${PREDICTION_SERVICE_PORT:-3006}
+      MONGO_HOST: ${MONGO_HOST:-mongo}
+      MONGO_PORT: ${MONGO_PORT:-27017}
+      MONGO_USER: ${MONGO_USER:-mp_mongo_user}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
+      MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+      ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://analytics-service:3004}
+      ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+    volumes:
+      - ../keys:/secrets:ro
+    networks:
+      - mentorapredict-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3006/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   web:
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/web:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_web
     restart: unless-stopped
     expose:
@@ -357,5 +461,29 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
     networks:
       - mentorapredict-net
+
+  seed-loader:
+    build:
+      context: ../..
+      dockerfile: database/Dockerfile.seed
+    container_name: mp_dev_seed_loader
+    restart: "no"
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mp_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
     depends_on:
-      - kong
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      academic-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+    networks:
+      - mentorapredict-net

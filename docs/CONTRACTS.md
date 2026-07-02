@@ -3,6 +3,7 @@
 ## 📋 Definición de Contratos
 
 Los contratos compartidos definen los acuerdos entre servicios:
+
 - DTOs (Transferencia de datos)
 - Enums (Valores constantes)
 - Interfaces (Tipos compartidos)
@@ -33,7 +34,7 @@ export abstract class BaseEntityDto {
 **Archivo:** `packages/shared-types/src/dtos/pagination-query.dto.ts`
 
 ```typescript
-import { IsOptional, IsInt, Min } from 'class-validator';
+import { IsOptional, IsInt, Min } from "class-validator";
 
 export class PaginationQueryDto {
   @IsOptional()
@@ -50,11 +51,12 @@ export class PaginationQueryDto {
   sortBy?: string;
 
   @IsOptional()
-  sortOrder?: 'ASC' | 'DESC' = 'ASC';
+  sortOrder?: "ASC" | "DESC" = "ASC";
 }
 ```
 
 **Respuesta Paginada:**
+
 ```typescript
 export interface PaginatedResponse<T> {
   data: T[];
@@ -66,6 +68,7 @@ export interface PaginatedResponse<T> {
 ```
 
 **Ejemplo:**
+
 ```json
 {
   "data": [
@@ -89,14 +92,15 @@ export interface PaginatedResponse<T> {
 
 ```typescript
 export enum UserRole {
-  ADMIN = 'ADMIN',
-  TEACHER = 'TEACHER',
-  STUDENT = 'STUDENT',
-  GUEST = 'GUEST',
+  ADMIN = "ADMIN",
+  TEACHER = "TEACHER",
+  STUDENT = "STUDENT",
+  GUEST = "GUEST",
 }
 ```
 
 **Uso en Auth Service:**
+
 ```typescript
 // Registro
 const user = new UserEntity(
@@ -105,10 +109,10 @@ const user = new UserEntity(
   passwordHash,
   firstName,
   lastName,
-  UserRole.STUDENT,  // ← Role por defecto
+  UserRole.STUDENT, // ← Role por defecto
   true,
   createdAt,
-  updatedAt
+  updatedAt,
 );
 
 // RBAC
@@ -123,21 +127,22 @@ if (user.role === UserRole.ADMIN) {
 
 ```typescript
 export enum EnrollmentStatus {
-  ACTIVE = 'ACTIVE',
-  SUSPENDED = 'SUSPENDED',
-  COMPLETED = 'COMPLETED',
-  DROPPED = 'DROPPED',
+  ACTIVE = "ACTIVE",
+  SUSPENDED = "SUSPENDED",
+  COMPLETED = "COMPLETED",
+  DROPPED = "DROPPED",
 }
 ```
 
 **Uso en Academic Service:**
+
 ```typescript
 const enrollment = new EnrollmentEntity(
   id,
   studentId,
   subjectId,
-  EnrollmentStatus.ACTIVE,  // ← Status inicial
-  enrollmentDate
+  EnrollmentStatus.ACTIVE, // ← Status inicial
+  enrollmentDate,
 );
 ```
 
@@ -147,10 +152,10 @@ const enrollment = new EnrollmentEntity(
 
 ```typescript
 export enum RiskLevel {
-  LOW = 'LOW',           // GPA ≥ 3.5
-  MEDIUM = 'MEDIUM',     // GPA 2.5 - 3.5
-  HIGH = 'HIGH',         // GPA < 2.5
-  CRITICAL = 'CRITICAL', // GPA < 1.0 o faltas
+  LOW = "LOW", // GPA ≥ 3.5
+  MEDIUM = "MEDIUM", // GPA 2.5 - 3.5
+  HIGH = "HIGH", // GPA < 2.5
+  CRITICAL = "CRITICAL", // GPA < 1.0 o faltas
 }
 ```
 
@@ -162,9 +167,9 @@ export enum RiskLevel {
 
 ```typescript
 export enum Trend {
-  IMPROVING = 'IMPROVING',    // Calificación subiendo
-  STABLE = 'STABLE',          // Calificación estable
-  DECLINING = 'DECLINING',    // Calificación bajando
+  IMPROVING = "IMPROVING", // Calificación subiendo
+  STABLE = "STABLE", // Calificación estable
+  DECLINING = "DECLINING", // Calificación bajando
 }
 ```
 
@@ -174,10 +179,10 @@ export enum Trend {
 
 ```typescript
 export enum IngestionFormat {
-  CSV = 'CSV',
-  EXCEL = 'EXCEL',
-  JSON = 'JSON',
-  XML = 'XML',
+  CSV = "CSV",
+  EXCEL = "EXCEL",
+  JSON = "JSON",
+  XML = "XML",
 }
 ```
 
@@ -189,10 +194,10 @@ export enum IngestionFormat {
 
 ```typescript
 export enum ServiceStatus {
-  UP = 'UP',
-  DOWN = 'DOWN',
-  DEGRADED = 'DEGRADED',
-  MAINTENANCE = 'MAINTENANCE',
+  UP = "UP",
+  DOWN = "DOWN",
+  DEGRADED = "DEGRADED",
+  MAINTENANCE = "MAINTENANCE",
 }
 ```
 
@@ -216,6 +221,7 @@ export interface ApiResponse<T> {
 ```
 
 **Ejemplo:**
+
 ```json
 {
   "statusCode": 200,
@@ -247,6 +253,7 @@ export interface ErrorResponse {
 ```
 
 **Ejemplo (Validation Error):**
+
 ```json
 {
   "statusCode": 400,
@@ -260,9 +267,7 @@ export interface ErrorResponse {
       "Password must contain uppercase",
       "Password must contain special character"
     ],
-    "email": [
-      "Email format is invalid"
-    ]
+    "email": ["Email format is invalid"]
   }
 }
 ```
@@ -278,44 +283,47 @@ export interface ErrorResponse {
 ```typescript
 export const API_ROUTES = {
   AUTH: {
-    REGISTER: '/api/v1/auth/register',
-    LOGIN: '/api/v1/auth/login',
-    LOGOUT: '/api/v1/auth/logout',
-    REFRESH: '/api/v1/auth/refresh',
-    PROFILE: '/api/v1/auth/profile',
+    REGISTER: "/api/v1/auth/register",
+    LOGIN: "/api/v1/auth/login",
+    LOGOUT: "/api/v1/auth/logout",
+    REFRESH: "/api/v1/auth/refresh",
+    PROFILE: "/api/v1/auth/profile",
   },
   ACADEMIC: {
-    ENROLLMENTS: '/api/v1/academic/enrollments',
-    GRADES: '/api/v1/academic/grades',
-    EVALUATIONS: '/api/v1/academic/evaluations',
-    SUBJECTS: '/api/v1/academic/subjects',
+    ENROLLMENTS: "/api/v1/academic/enrollments",
+    GRADES: "/api/v1/academic/grades",
+    EVALUATIONS: "/api/v1/academic/evaluations",
+    SUBJECTS: "/api/v1/academic/subjects",
   },
   ANALYTICS: {
-    PERFORMANCE: '/api/v1/analytics/performance',
-    TRENDS: '/api/v1/analytics/trends',
-    RISKS: '/api/v1/analytics/risks',
+    PERFORMANCE: "/api/v1/analytics/performance",
+    TRENDS: "/api/v1/analytics/trends",
+    RISKS: "/api/v1/analytics/risks",
   },
 };
 
 export const SERVICE_URLS = {
-  AUTH_SERVICE: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
-  ACADEMIC_SERVICE: process.env.ACADEMIC_SERVICE_URL || 'http://localhost:3003',
-  ANALYTICS_SERVICE: process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3004',
-  USER_SERVICE: process.env.USER_SERVICE_URL || 'http://localhost:3002',
+  AUTH_SERVICE: process.env.AUTH_SERVICE_URL || "http://localhost:3001",
+  ACADEMIC_SERVICE: process.env.ACADEMIC_SERVICE_URL || "http://localhost:3003",
+  ANALYTICS_SERVICE:
+    process.env.ANALYTICS_SERVICE_URL || "http://localhost:3004",
+  USER_SERVICE: process.env.USER_SERVICE_URL || "http://localhost:3002",
 };
 
-export const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:3000')
-  .split(',')
-  .map(origin => origin.trim());
+export const CORS_ORIGINS = (
+  process.env.CORS_ORIGINS || "http://localhost:3000"
+)
+  .split(",")
+  .map((origin) => origin.trim());
 
 export const JWT_EXPIRY = {
-  ACCESS_TOKEN: '15m',
-  REFRESH_TOKEN: '7d',
+  ACCESS_TOKEN: "15m",
+  REFRESH_TOKEN: "7d",
 };
 
 export const RATE_LIMITING = {
   MAX_LOGIN_ATTEMPTS: 10,
-  RATE_LIMIT_TTL: '15m',
+  RATE_LIMIT_TTL: "15m",
 };
 ```
 
@@ -326,24 +334,27 @@ export const RATE_LIMITING = {
 ```typescript
 export const REDIS_KEYS = {
   // Rate Limiting
-  RATE_LIMIT_LOGIN: 'RATE_LIMIT:LOGIN:{{IP}}',
-  
+  RATE_LIMIT_LOGIN: "RATE_LIMIT:LOGIN:{{IP}}",
+
   // Tokens
-  REFRESH_TOKEN: 'REFRESH_TOKEN:{{USER_ID}}',
-  BLACKLIST_TOKEN: 'BLACKLIST:{{TOKEN_ID}}',
-  
+  REFRESH_TOKEN: "REFRESH_TOKEN:{{USER_ID}}",
+  BLACKLIST_TOKEN: "BLACKLIST:{{TOKEN_ID}}",
+
   // Cache
-  USER: 'USER:{{USER_ID}}',
-  SUBJECT: 'SUBJECT:{{SUBJECT_ID}}',
-  ENROLLMENT: 'ENROLLMENT:{{ENROLLMENT_ID}}',
-  GRADE: 'GRADE:{{GRADE_ID}}',
-  
+  USER: "USER:{{USER_ID}}",
+  SUBJECT: "SUBJECT:{{SUBJECT_ID}}",
+  ENROLLMENT: "ENROLLMENT:{{ENROLLMENT_ID}}",
+  GRADE: "GRADE:{{GRADE_ID}}",
+
   // Sessions
-  SESSION: 'SESSION:{{SESSION_ID}}',
+  SESSION: "SESSION:{{SESSION_ID}}",
 };
 
 // Helper
-export const getRedisKey = (template: string, params: Record<string, string>): string => {
+export const getRedisKey = (
+  template: string,
+  params: Record<string, string>,
+): string => {
   let key = template;
   Object.entries(params).forEach(([placeholder, value]) => {
     key = key.replace(`{{${placeholder}}}`, value);
@@ -352,7 +363,7 @@ export const getRedisKey = (template: string, params: Record<string, string>): s
 };
 
 // Ejemplo de uso
-const userKey = getRedisKey(REDIS_KEYS.USER, { USER_ID: '123' });
+const userKey = getRedisKey(REDIS_KEYS.USER, { USER_ID: "123" });
 // Result: 'USER:123'
 ```
 
@@ -363,6 +374,7 @@ const userKey = getRedisKey(REDIS_KEYS.USER, { USER_ID: '123' });
 ### Auth Service DTOs
 
 **RegisterDto:**
+
 ```typescript
 export class RegisterDto {
   @IsEmail() email!: string;
@@ -373,6 +385,7 @@ export class RegisterDto {
 ```
 
 **LoginDto:**
+
 ```typescript
 export class LoginDto {
   @IsEmail() email!: string;
@@ -381,6 +394,7 @@ export class LoginDto {
 ```
 
 **RefreshDto:**
+
 ```typescript
 export class RefreshDto {
   @IsJWT() refreshToken!: string;
@@ -388,6 +402,7 @@ export class RefreshDto {
 ```
 
 **AuthResponseDto:**
+
 ```typescript
 export class AuthResponseDto extends BaseEntityDto {
   email!: string;
@@ -401,6 +416,7 @@ export class AuthResponseDto extends BaseEntityDto {
 ### Academic Service DTOs
 
 **EnrollStudentDto:**
+
 ```typescript
 export class EnrollStudentDto {
   @IsUUID() studentId!: string;
@@ -409,6 +425,7 @@ export class EnrollStudentDto {
 ```
 
 **RecordGradeDto:**
+
 ```typescript
 export class RecordGradeDto {
   @IsUUID() studentId!: string;
@@ -418,6 +435,7 @@ export class RecordGradeDto {
 ```
 
 **CreateEvaluationDto:**
+
 ```typescript
 export class CreateEvaluationDto {
   @IsUUID() subjectId!: string;
@@ -435,13 +453,14 @@ export class CreateEvaluationDto {
 ### Auth Service → Academic Service
 
 **Validación de Tokens:**
+
 ```typescript
 // Academic Service recibe token de Auth Service
 // Verifica con public key de Auth Service
 
-const publicKey = fs.readFileSync('auth-service-public-key.pem');
+const publicKey = fs.readFileSync("auth-service-public-key.pem");
 const decoded = jwt.verify(token, publicKey, {
-  algorithms: ['RS256']
+  algorithms: ["RS256"],
 });
 
 const userId = decoded.sub;
@@ -451,15 +470,16 @@ const userRole = decoded.role;
 ### Service-to-Service Calls
 
 **En Sprint 2:**
+
 ```typescript
 // Academic Service llama a Auth Service
 const userResponse = await fetch(
   `${SERVICE_URLS.AUTH_SERVICE}/api/v1/users/${userId}`,
   {
     headers: {
-      'Authorization': `Bearer ${internalToken}`
-    }
-  }
+      Authorization: `Bearer ${internalToken}`,
+    },
+  },
 );
 ```
 
@@ -471,24 +491,24 @@ const userResponse = await fetch(
 
 ```typescript
 // Enums
-export * from './enums/role.enum';
-export * from './enums/enrollment-status.enum';
-export * from './enums/risk-level.enum';
-export * from './enums/trend.enum';
-export * from './enums/ingestion-format.enum';
-export * from './enums/service-status.enum';
+export * from "./enums/role.enum";
+export * from "./enums/enrollment-status.enum";
+export * from "./enums/risk-level.enum";
+export * from "./enums/trend.enum";
+export * from "./enums/ingestion-format.enum";
+export * from "./enums/service-status.enum";
 
 // DTOs
-export * from './dtos/base-entity.dto';
-export * from './dtos/pagination-query.dto';
+export * from "./dtos/base-entity.dto";
+export * from "./dtos/pagination-query.dto";
 
 // Interfaces
-export * from './interfaces/api-response.interface';
-export * from './interfaces/error-response.interface';
+export * from "./interfaces/api-response.interface";
+export * from "./interfaces/error-response.interface";
 
 // Constants
-export * from './constants/api.constants';
-export * from './constants/redis-keys.constants';
+export * from "./constants/api.constants";
+export * from "./constants/redis-keys.constants";
 ```
 
 ---
@@ -498,8 +518,13 @@ export * from './constants/redis-keys.constants';
 ### Importar desde shared-types
 
 **En Auth Service:**
+
 ```typescript
-import { UserRole, RegisterDto, AuthResponseDto } from '@mentorapredict/shared-types';
+import {
+  UserRole,
+  RegisterDto,
+  AuthResponseDto,
+} from "@mentorapredict/shared-types";
 
 export class RegisterUserUseCase {
   // UserRole disponible
@@ -507,8 +532,12 @@ export class RegisterUserUseCase {
 ```
 
 **En Academic Service:**
+
 ```typescript
-import { EnrollmentStatus, EnrollStudentDto } from '@mentorapredict/shared-types';
+import {
+  EnrollmentStatus,
+  EnrollStudentDto,
+} from "@mentorapredict/shared-types";
 
 export class EnrollStudentUseCase {
   // EnrollmentStatus disponible
@@ -536,18 +565,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterDto'
+              $ref: "#/components/schemas/RegisterDto"
       responses:
         201:
           description: User created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponseDto'
+                $ref: "#/components/schemas/AuthResponseDto"
         400:
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         409:
-          $ref: '#/components/responses/Conflict'
+          $ref: "#/components/responses/Conflict"
 ```
 
 ---
@@ -556,7 +585,7 @@ paths:
 
 **Sprint 1:** Contratos básicos (Auth, Academic)
 **Sprint 2:** Agregar User Service, Analytics Service
-**Sprint 3:** Agregar Prediction Service, Recommendation Service
+**Sprint 3:** Agregar Prediction Service con recomendaciones generadas
 **Sprint 4+:** Event Stream, Message Queue
 
 ---

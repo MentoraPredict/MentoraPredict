@@ -73,7 +73,12 @@ export class AuthController {
   @ApiOperation({ summary: "RF-004: Request password reset email" })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     const result = await this.forgotPasswordUC.execute(dto);
-    return result || { message: "If the email is registered, you will receive a reset link shortly" };
+    return (
+      result || {
+        message:
+          "If the email is registered, you will receive a reset link shortly",
+      }
+    );
   }
 
   @Post("reset-password")
@@ -87,7 +92,7 @@ export class AuthController {
   @Post("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT")
   @ApiOperation({ summary: "RF-003: Logout — invalidates refresh token" })
   async logout(@Body() dto: RefreshDto, @Req() req: Request) {
     const userId = (req as unknown as { user: { sub: string } }).user.sub;

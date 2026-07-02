@@ -1,16 +1,29 @@
-import { FaGraduationCap } from "react-icons/fa";
+import { FaChartBar } from "react-icons/fa";
 
-export default function Logo() {
-    return (
-        <div className="flex items-center gap-2">
-            <FaGraduationCap
-                size={24}
-                className="text-blue-700"
-            />
+interface LogoProps {
+  variant?: "default" | "light";
+}
 
-            <span className="text-xl font-bold">
-                MentoraPredict
-            </span>
-        </div>
-    );
+export default function Logo({ variant = "default" }: LogoProps) {
+  const textColor = variant === "light" ? "text-white" : "text-blue-700";
+
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className="
+                    grid
+                    size-8
+                    place-items-center
+                    rounded-lg
+                    bg-blue-700
+                    text-white
+                    shadow-sm
+                "
+      >
+        <FaChartBar size={15} aria-hidden="true" />
+      </span>
+
+      <span className={`text-xl font-bold ${textColor}`}>MentoraPredict</span>
+    </div>
+  );
 }

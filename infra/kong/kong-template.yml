@@ -8,6 +8,9 @@ plugins:
         - http://localhost
         - http://localhost:3000
         - http://localhost:3001
+        - http://localhost:3002
+        - http://localhost:3003
+        - http://localhost:3004
         - http://localhost:5173
         - http://localhost:8000
         - http://mentorapredictqa.programacionwebuce.net
@@ -70,6 +73,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -111,6 +115,22 @@ services:
   - name: user-service
     url: http://user-service:3002
     routes:
+      - name: user-docs
+        paths:
+          - /api/v1/users/docs
+        strip_path: false
+        regex_priority: 200
+      - name: user-internal-routes
+        paths:
+          - /api/v1/users/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: user-routes
         paths:
           - /api/v1/users
@@ -119,6 +139,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -132,6 +153,22 @@ services:
   - name: academic-service
     url: http://academic-service:3003
     routes:
+      - name: academic-docs
+        paths:
+          - /api/v1/academic/docs
+        strip_path: false
+        regex_priority: 200
+      - name: academic-internal-routes
+        paths:
+          - /api/v1/academic/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: academic-routes
         paths:
           - /api/v1/academic
@@ -140,6 +177,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -153,6 +191,11 @@ services:
   - name: analytics-service
     url: http://analytics-service:3004
     routes:
+      - name: analytics-docs
+        paths:
+          - /api/v1/analytics/docs
+        strip_path: false
+        regex_priority: 200
       - name: analytics-routes
         paths:
           - /api/v1/analytics
@@ -161,6 +204,7 @@ services:
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -172,12 +216,40 @@ services:
               fault_tolerant: true
       - name: analytics-alerts
         paths:
-          - /alerts
+          - /api/v1/analytics/alerts
         strip_path: false
         regex_priority: 100
         plugins:
           - name: jwt
             config:
+              run_on_preflight: false
+              key_claim_name: iss
+              claims_to_verify:
+                - exp
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
+  - name: prediction-service
+    url: http://prediction-service:3006
+    routes:
+      - name: prediction-docs
+        paths:
+          - /api/v1/prediction/docs
+        strip_path: false
+        regex_priority: 200
+      - name: prediction-routes
+        paths:
+          - /api/v1/prediction
+        strip_path: false
+        regex_priority: 100
+        plugins:
+          - name: jwt
+            config:
+              run_on_preflight: false
               key_claim_name: iss
               claims_to_verify:
                 - exp
@@ -214,4 +286,5 @@ services:
                 - Accept
                 - Authorization
                 - Content-Type
+                - X-Correlation-ID
               credentials: true

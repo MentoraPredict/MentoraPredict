@@ -16,8 +16,17 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // CORS
   app.enableCors({
     origin: process.env.CORS_ORIGINS?.split(",") ?? true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-correlation-id",
+      "x-request-id",
+    ],
     credentials: true,
   });
 
@@ -29,7 +38,16 @@ async function bootstrap() {
     .setTitle("MentoraPredict — user-service")
     .setDescription("User profiles — RF-014")
     .setVersion("1.0")
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        in: "header",
+      },
+      "JWT",
+    )
     .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(
@@ -40,5 +58,6 @@ async function bootstrap() {
 
   await app.listen(port);
   logger.log(`user-service running on http://localhost:${port}`);
+  logger.log(`Swagger: http://localhost:${port}/api/v1/users/docs`);
 }
 bootstrap();

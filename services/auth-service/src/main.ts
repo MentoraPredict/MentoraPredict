@@ -25,6 +25,13 @@ async function bootstrap() {
   // CORS
   app.enableCors({
     origin: process.env.CORS_ORIGINS?.split(",") ?? true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-correlation-id",
+      "x-request-id",
+    ],
     credentials: true,
   });
 
@@ -37,7 +44,16 @@ async function bootstrap() {
     .setTitle("MentoraPredict — auth-service")
     .setDescription("Authentication, JWT RS256, RBAC — RF-001 to RF-005")
     .setVersion("1.0")
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        in: "header",
+      },
+      "JWT",
+    )
     .addServer(swaggerServer)
     .build();
   SwaggerModule.setup(
