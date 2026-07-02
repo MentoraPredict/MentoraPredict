@@ -25,6 +25,7 @@ import { DatasetVersionRepository } from "./infrastructure/persistence/dataset-v
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { MetricsCacheAdapter } from "./infrastructure/cache/metrics-cache.adapter";
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
+import { PredictionHttpClient } from "./infrastructure/adapters/prediction-http.client";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 import { RolesGuard } from "./infrastructure/guards/roles.guard";
@@ -104,6 +105,7 @@ import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-c
     InternalJwtService,
     RolesGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
+    { provide: "IPredictionClientPort", useClass: PredictionHttpClient },
     {
       provide: "IStudentMetricsRepository",
       useClass: StudentMetricsRepository,

@@ -7,6 +7,7 @@ import { IStudentSubjectMetricsRepository } from '../../domain/ports/i-student-s
 import { StudentSubjectMetricsEntity, SubjectRiskLevel } from '../../domain/entities/student-subject-metrics.entity';
 import { IAlertRepository } from '../../domain/ports/i-alert.repository';
 import { AlertEntity, AlertSeverity } from '../../domain/entities/alert.entity';
+import { IPredictionClientPort } from '../../domain/ports/i-prediction-client.port';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 
 const PASSING_GRADE = 7;
@@ -32,6 +33,10 @@ const RISK_RANK: Record<SubjectRiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2
  *   → ClassifyRiskUseCase.execute            (sync)  — per-subject risk classification
  *   → subjectMetricsRepo.upsert              (await) — persists the per-subject weekly row (with trendSlope)
  *   → alert escalate/resolve                 (await) — Fase 7, see handleAlertTransition
+ *   → prediction.triggerRecalculate          (fire-and-forget) — Fase 8, next link in the chain:
+ *       POST prediction-service/internal/recalculate, which itself pulls
+ *       riskLevel/trendSlope/factors back from this same metrics/latest
+ *       endpoint — this use-case never pushes already-computed data to it.
  *
  * There is no cron, no queue, no periodic retry. If any call in this chain
  * fails for a given student, that student's row simply stays stale until the
@@ -49,6 +54,7 @@ export class RecalculateStudentMetricsUseCase {
     @Inject('IStudentSubjectMetricsRepository')
     private readonly subjectMetricsRepo: IStudentSubjectMetricsRepository,
     @Inject('IAlertRepository') private readonly alertRepo: IAlertRepository,
+    @Inject('IPredictionClientPort') private readonly predictionClient: IPredictionClientPort,
   ) {}
 
   async execute(
@@ -158,6 +164,15 @@ export class RecalculateStudentMetricsUseCase {
           complianceIndex,
           now,
         });
+
+        // Fase 8 — fire-and-forget, same pattern as every trigger so far
+        // (ImportSubjectGradesUseCase, UpsertCheckInUseCase): a failure here
+        // must not fail the grade import or check-in save that got us here.
+        this.predictionClient
+          .triggerRecalculate(studentId, subjectId, periodId)
+          .catch((err) =>
+            this.logger.error(`Prediction trigger failed: ${err instanceof Error ? err.message : String(err)}`),
+          );
 
         processed++;
       } catch (err) {

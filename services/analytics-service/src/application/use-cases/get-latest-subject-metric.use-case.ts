@@ -5,6 +5,13 @@ import { SubjectRiskLevel } from '../../domain/entities/student-subject-metrics.
 export interface LatestSubjectMetricView {
   averageGrade: number | null;
   riskLevel: SubjectRiskLevel | null;
+  // Fase 8 — prediction-service needs these to derive a recommendation and
+  // to know when there isn't enough history for a real prediction.
+  trendSlope: number | null;
+  complianceIndex: number | null;
+  attendanceRate: number | null;
+  studyHours: number | null;
+  comprehensionAvg: number | null;
   computedAt: Date;
 }
 
@@ -21,6 +28,11 @@ export class GetLatestSubjectMetricUseCase {
     return {
       averageGrade: metric.averageGrade,
       riskLevel: metric.riskLevel,
+      trendSlope: metric.trendSlope,
+      complianceIndex: metric.complianceIndex,
+      attendanceRate: metric.attendanceRate,
+      studyHours: metric.studyHours,
+      comprehensionAvg: metric.comprehensionAvg,
       computedAt: metric.computedAt,
     };
   }
