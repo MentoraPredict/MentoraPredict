@@ -12,6 +12,8 @@ networks:
 volumes:
   postgres_data:
     name: mp_dev_postgres_data
+  pgadmin_data:
+    name: mp_dev_pgadmin_data
   mongo_data:
     name: mp_dev_mongo_data
   redis_data:
@@ -43,6 +45,30 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    container_name: mp_dev_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      SCRIPT_NAME: /pgadmin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_CONFIG_PROXY_X_HOST_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_PORT_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_PROTO_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_PREFIX_COUNT: "1"
+    expose:
+      - "80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - mentorapredict-net
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   mongo:
     image: mongo:7.0
@@ -170,6 +196,9 @@ services:
         condition: service_started
         restart: true
       prediction-service:
+        condition: service_started
+        restart: true
+      pgadmin:
         condition: service_started
         restart: true
       web:

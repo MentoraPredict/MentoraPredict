@@ -93,7 +93,7 @@ jobs:
                 if $USER == "true" then {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"} else empty end,
                 if $ANALYTICS == "true" then {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"} else empty end,
                 if $PREDICTION == "true" then {"service":"prediction-service","type":"docker","dockerfile":"services/prediction-service/Dockerfile","changed":"true"} else empty end,
-                if $WEB == "true" then {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"} else empty end,
+                if $WEB == "true" then {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile.qa","changed":"true"} else empty end,
                 if $KONG == "true" then {"service":"kong","type":"compose","changed":"true"} else empty end
               ]
             }' > matrix.json
@@ -285,7 +285,7 @@ jobs:
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
             echo "[INFRA] Starting infrastructure"
-            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis
+            docker compose --profile qa-tools --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis pgadmin
 
             echo "[WAIT DB READY]"
             for i in {1..20}; do
@@ -326,6 +326,7 @@ jobs:
             echo ""
             echo "[STATUS] Final services status:"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml ps -a
+            docker compose --profile qa-tools --env-file .env -f infra/docker/docker-compose.infra.yml ps -a
 
       - name: Deployment Summary
         run: |
