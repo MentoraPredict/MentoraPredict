@@ -21,6 +21,15 @@ export class StudentMetricsRepository implements IStudentMetricsRepository {
     return o ? this.toDomain(o) : null;
   }
 
+  async findLatestByStudent(studentId: string): Promise<StudentMetricsEntity | null> {
+    const [o] = await this.repo.find({
+      where: { studentId },
+      order: { calculatedAt: 'DESC', version: 'DESC' },
+      take: 1,
+    });
+    return o ? this.toDomain(o) : null;
+  }
+
   async findByPeriod(periodId: string): Promise<StudentMetricsEntity[]> {
     // Obtiene la versión más reciente por estudiante para el período dado
     const rows = await this.repo
@@ -28,6 +37,17 @@ export class StudentMetricsRepository implements IStudentMetricsRepository {
       .where('m.periodId = :periodId', { periodId })
       .distinctOn(['m.studentId'])
       .orderBy('m.studentId')
+      .addOrderBy('m.version', 'DESC')
+      .getMany();
+    return rows.map((o) => this.toDomain(o));
+  }
+
+  async findLatestPerStudent(): Promise<StudentMetricsEntity[]> {
+    const rows = await this.repo
+      .createQueryBuilder('m')
+      .distinctOn(['m.studentId'])
+      .orderBy('m.studentId')
+      .addOrderBy('m.calculatedAt', 'DESC')
       .addOrderBy('m.version', 'DESC')
       .getMany();
     return rows.map((o) => this.toDomain(o));

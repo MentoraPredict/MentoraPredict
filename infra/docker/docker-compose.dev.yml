@@ -158,13 +158,23 @@ services:
       - mentorapredict-net
     depends_on:
       auth-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
+      user-service:
+        condition: service_started
+        restart: true
       academic-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
       analytics-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
       prediction-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
+      web:
+        condition: service_started
+        restart: true
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
@@ -221,11 +231,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -273,11 +278,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -331,15 +331,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -395,15 +386,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      academic-service:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -451,11 +433,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      mongo:
-        condition: service_healthy
-      analytics-service:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -484,8 +461,6 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
     networks:
       - mentorapredict-net
-    depends_on:
-      - kong
 
   seed-loader:
     build:

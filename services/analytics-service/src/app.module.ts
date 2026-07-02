@@ -6,6 +6,7 @@ import { JwtModule } from "@nestjs/jwt";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
+import { MetricsController } from "./infrastructure/controllers/metrics.controller";
 import { InternalAnalyticsController } from "./infrastructure/controllers/internal-analytics.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
@@ -36,6 +37,7 @@ import { GetStudentDashboardUseCase } from "./application/use-cases/get-student-
 import { GetTeacherDashboardUseCase } from "./application/use-cases/get-teacher-dashboard.use-case";
 import { GetAdminDashboardUseCase } from "./application/use-cases/get-admin-dashboard.use-case";
 import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapshot.use-case";
+import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggregated-metrics.use-case";
 
 @Module({
   imports: [
@@ -85,6 +87,7 @@ import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapsho
   controllers: [
     AnalyticsController,
     AlertsController,
+    MetricsController,
     InternalAnalyticsController,
     HealthController,
     RootController,
@@ -125,6 +128,7 @@ import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapsho
     GetTeacherDashboardUseCase,
     GetAdminDashboardUseCase,
     GetRiskSnapshotUseCase,
+    GetAggregatedMetricsUseCase,
   ],
 })
 export class AppModule {}

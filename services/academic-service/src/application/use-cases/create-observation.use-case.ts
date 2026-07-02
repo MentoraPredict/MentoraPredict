@@ -10,11 +10,11 @@ export class CreateObservationUseCase {
     @Inject('ITeacherObservationRepository') private readonly repo: ITeacherObservationRepository,
   ) {}
 
-  async execute(dto: CreateObservationDto): Promise<TeacherObservationEntity> {
+  async execute(dto: CreateObservationDto, teacherId: string): Promise<TeacherObservationEntity> {
     const observation = new TeacherObservationEntity(
       randomUUID(),
       dto.studentId,
-      dto.teacherId,
+      teacherId,
       dto.subjectId,
       dto.type,
       dto.content,

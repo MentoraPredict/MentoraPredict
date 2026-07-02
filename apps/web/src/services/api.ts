@@ -71,11 +71,15 @@ function shouldRefreshToken(error: AxiosError<ApiErrorResponse>) {
     const status = error.response?.status;
     const response = error.response?.data;
     const requestUrl = error.config?.url ?? "";
+    const isRefreshRequest = requestUrl.includes(endpoints.auth.refresh);
+
+    if (isRefreshRequest) {
+        return false;
+    }
 
     return (
-        status === 401 &&
-        response?.exp === "token expired" &&
-        !requestUrl.includes(endpoints.auth.refresh)
+        (status === 401 && response?.exp === "token expired") ||
+        status === 403
     );
 }
 
