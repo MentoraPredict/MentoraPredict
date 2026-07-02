@@ -15,13 +15,13 @@ describe('CreateObservationUseCase', () => {
 
     const result = await useCase.execute({
       studentId: 'stud-1',
-      teacherId: 'teach-1',
       subjectId: 'subj-1',
       type: ObservationType.ACADEMIC,
       content: 'Needs improvement in assignments',
-    });
+    }, 'teach-1');
 
     expect(result.studentId).toBe('stud-1');
+    expect(result.teacherId).toBe('teach-1');
     expect(result.type).toBe(ObservationType.ACADEMIC);
     expect(repo.save).toHaveBeenCalledTimes(1);
   });
