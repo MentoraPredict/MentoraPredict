@@ -1,13 +1,16 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import {
-  AuthProvider, UserProfileEntity, UserProfileStatus,
-} from '../../domain/entities/user-profile.entity';
+  AuthProvider,
+  UserProfileEntity,
+  UserProfileStatus,
+} from "../../domain/entities/user-profile.entity";
 import {
-  IUserProfileRepository, UserProfileFilters,
-} from '../../domain/ports/i-user-profile.repository';
-import { UserProfileOrmEntity } from './user-profile.orm-entity';
+  IUserProfileRepository,
+  UserProfileFilters,
+} from "../../domain/ports/i-user-profile.repository";
+import { UserProfileOrmEntity } from "./user-profile.orm-entity";
 
 @Injectable()
 export class UserProfileRepository implements IUserProfileRepository {
@@ -16,7 +19,11 @@ export class UserProfileRepository implements IUserProfileRepository {
     private readonly repo: Repository<UserProfileOrmEntity>,
   ) {}
 
-  async create(profile: { id: string; role: string; cedula?: string | null }): Promise<UserProfileEntity> {
+  async create(profile: {
+    id: string;
+    role: string;
+    cedula?: string | null;
+  }): Promise<UserProfileEntity> {
     const existing = await this.repo.findOne({ where: { id: profile.id } });
     if (existing) return this.toDomain(existing);
 
@@ -26,8 +33,8 @@ export class UserProfileRepository implements IUserProfileRepository {
       photo: null,
       bio: null,
       cedula: profile.cedula ?? null,
-      authProvider: 'LOCAL',
-      status: 'ACTIVE',
+      authProvider: "LOCAL",
+      status: "ACTIVE",
     });
     const saved = await this.repo.save(orm);
     return this.toDomain(saved);
@@ -38,9 +45,12 @@ export class UserProfileRepository implements IUserProfileRepository {
     return orm ? this.toDomain(orm) : null;
   }
 
-  async update(id: string, data: Partial<UserProfileEntity>): Promise<UserProfileEntity> {
+  async update(
+    id: string,
+    data: Partial<UserProfileEntity>,
+  ): Promise<UserProfileEntity> {
     const orm = await this.repo.findOne({ where: { id } });
-    if (!orm) throw new Error('User not found');
+    if (!orm) throw new Error("User not found");
 
     if (data.photo !== undefined) orm.photo = data.photo;
     if (data.bio !== undefined) orm.bio = data.bio;
@@ -55,16 +65,18 @@ export class UserProfileRepository implements IUserProfileRepository {
 
   async softDelete(id: string): Promise<void> {
     await this.repo.softDelete(id);
-    await this.repo.update(id, { status: 'INACTIVE' });
+    await this.repo.update(id, { status: "INACTIVE" });
   }
 
   async findAll(filters: UserProfileFilters): Promise<UserProfileEntity[]> {
-    const qb = this.repo.createQueryBuilder('u');
+    const qb = this.repo.createQueryBuilder("u");
     if (filters.role) {
-      qb.andWhere('LOWER(u.role) = LOWER(:role)', { role: filters.role });
+      qb.andWhere("LOWER(u.role) = LOWER(:role)", { role: filters.role });
     }
     if (filters.status) {
-      qb.andWhere('LOWER(u.status) = LOWER(:status)', { status: filters.status });
+      qb.andWhere("LOWER(u.status) = LOWER(:status)", {
+        status: filters.status,
+      });
     }
     const list = await qb.getMany();
     return list.map((o) => this.toDomain(o));

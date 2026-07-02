@@ -173,11 +173,14 @@ export class AcademicController {
     @Query("subjectId") subjectId?: string,
   ) {
     const caller = req.user;
-    if (!caller?.sub) throw new UnauthorizedException("Invalid authorization token");
+    if (!caller?.sub)
+      throw new UnauthorizedException("Invalid authorization token");
 
     if (subjectId) {
       if (caller.role === "STUDENT") {
-        throw new ForbiddenException("Students cannot list subject enrollments");
+        throw new ForbiddenException(
+          "Students cannot list subject enrollments",
+        );
       }
 
       return this.getSubjectEnrollmentsUC.execute(subjectId);
@@ -186,7 +189,9 @@ export class AcademicController {
     const targetStudentId = studentId ?? caller.sub;
 
     if (caller.role === "STUDENT" && targetStudentId !== caller.sub) {
-      throw new ForbiddenException("Students can only list their own enrollments");
+      throw new ForbiddenException(
+        "Students can only list their own enrollments",
+      );
     }
 
     if (!targetStudentId) {
@@ -369,7 +374,10 @@ export class AcademicController {
   @ApiOperation({ summary: "Update academic period (ADMIN only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 404 })
-  async updatePeriod(@Param("id") id: string, @Body() dto: UpdateAcademicPeriodDto) {
+  async updatePeriod(
+    @Param("id") id: string,
+    @Body() dto: UpdateAcademicPeriodDto,
+  ) {
     return this.updateAcademicPeriodUC.execute(id, dto);
   }
 

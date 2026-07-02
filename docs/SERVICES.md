@@ -28,6 +28,7 @@
 Servicio centralizador de **autenticación y autorización** del sistema MentoraPredict.
 
 **Responsabilidades:**
+
 - Registrar nuevos usuarios
 - Autenticar usuarios existentes
 - Generar y refrescar tokens JWT
@@ -44,13 +45,13 @@ Servicio centralizador de **autenticación y autorización** del sistema Mentora
 
 ### Endpoints
 
-| Método | Ruta | Descripción | Autenticación |
-|--------|------|-------------|---------------|
-| POST | `/api/v1/auth/register` | Registrar usuario | ❌ Pública |
-| POST | `/api/v1/auth/login` | Iniciar sesión | ❌ Pública |
-| POST | `/api/v1/auth/refresh` | Refrescar token | ❌ Pública |
-| POST | `/api/v1/auth/logout` | Cerrar sesión | ✅ Requerida |
-| GET | `/health` | Verificar salud del servicio | ❌ Pública |
+| Método | Ruta                    | Descripción                  | Autenticación |
+| ------ | ----------------------- | ---------------------------- | ------------- |
+| POST   | `/api/v1/auth/register` | Registrar usuario            | ❌ Pública    |
+| POST   | `/api/v1/auth/login`    | Iniciar sesión               | ❌ Pública    |
+| POST   | `/api/v1/auth/refresh`  | Refrescar token              | ❌ Pública    |
+| POST   | `/api/v1/auth/logout`   | Cerrar sesión                | ✅ Requerida  |
+| GET    | `/health`               | Verificar salud del servicio | ❌ Pública    |
 
 ### Flujo de Autenticación
 
@@ -156,12 +157,12 @@ Servicio de **gestión académica** que centraliza:
 
 ### Endpoints
 
-| Método | Ruta | Descripción | Autenticación |
-|--------|------|-------------|---------------|
-| POST | `/api/v1/academic/enrollments` | Matricular estudiante | ✅ Requerida |
-| POST | `/api/v1/academic/evaluations` | Crear evaluación | ✅ Requerida |
-| POST | `/api/v1/academic/grades` | Registrar calificación | ✅ Requerida |
-| GET | `/health` | Verificar salud | ❌ Pública |
+| Método | Ruta                           | Descripción            | Autenticación |
+| ------ | ------------------------------ | ---------------------- | ------------- |
+| POST   | `/api/v1/academic/enrollments` | Matricular estudiante  | ✅ Requerida  |
+| POST   | `/api/v1/academic/evaluations` | Crear evaluación       | ✅ Requerida  |
+| POST   | `/api/v1/academic/grades`      | Registrar calificación | ✅ Requerida  |
+| GET    | `/health`                      | Verificar salud        | ❌ Pública    |
 
 ### Datos Principales
 
@@ -327,7 +328,7 @@ Ver [academic-service.md](./services/academic-service.md)
     │  - users (auth)                                 │
     │  - subjects, enrollments, grades (academic)     │
     └─────────────────────────────────────────────────┘
-    
+
     ┌─────────────────────────────────────────────────┐
     │            Redis (Shared Cache)                 │
     │  - JWT tokens                                   │
@@ -341,19 +342,23 @@ Ver [academic-service.md](./services/academic-service.md)
 ## Hoja de Ruta
 
 ### Sprint 1 (Actual)
+
 - ✅ Auth Service (Completo)
 - ✅ Academic Service (Completo)
 
 ### Sprint 2
+
 - 🔧 User Service
 - 🔧 Analytics Service
 - 🔧 API Gateway
 
 ### Sprint 3
+
 - 🔧 Prediction Service con recomendaciones
 - 🔧 Event Bus / Message Queue
 
 ### Sprint 4
+
 - 🔧 Distributed Tracing
 - 🔧 Monitoring
 

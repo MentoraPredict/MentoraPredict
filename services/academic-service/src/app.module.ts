@@ -143,8 +143,14 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
         if (privateKey && publicKey) {
           return {
             privateKey,
@@ -176,10 +182,19 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
     { provide: "IEnrollmentRepository", useClass: EnrollmentRepository },
     { provide: "IGradeRepository", useClass: GradeRepository },
-    { provide: "IAcademicPeriodRepository", useClass: AcademicPeriodRepository },
-    { provide: "ISubjectTeacherRepository", useClass: SubjectTeacherRepository },
+    {
+      provide: "IAcademicPeriodRepository",
+      useClass: AcademicPeriodRepository,
+    },
+    {
+      provide: "ISubjectTeacherRepository",
+      useClass: SubjectTeacherRepository,
+    },
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
-    { provide: "ITeacherObservationRepository", useClass: TeacherObservationRepository },
+    {
+      provide: "ITeacherObservationRepository",
+      useClass: TeacherObservationRepository,
+    },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
     RecordGradeUseCase,
     RegisterGradeUseCase,
