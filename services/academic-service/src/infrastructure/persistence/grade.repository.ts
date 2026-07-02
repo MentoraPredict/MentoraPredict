@@ -33,6 +33,13 @@ export class GradeRepository implements IGradeRepository {
     return o ? this.toDomain(o) : null;
   }
 
+  async findAllByStudentAndSubject(
+    studentId: string,
+    subjectId: string,
+  ): Promise<GradeEntity[]> {
+    return (await this.repo.find({ where: { studentId, subjectId } })).map(this.toDomain);
+  }
+
   async findByStudentId(studentId: string): Promise<GradeEntity[]> {
     return (await this.repo.find({ where: { studentId } })).map(this.toDomain);
   }

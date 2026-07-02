@@ -36,9 +36,10 @@ FROM node:22-alpine AS runner
 WORKDIR /app/services/academic-service
 COPY --from=builder /app/services/academic-service/dist ./dist
 COPY --from=builder /app/services/academic-service/package.json ./
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=prod-deps /app/services/academic-service/node_modules ./node_modules
-USER node
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/services/academic-service/node_modules ./node_modules
+RUN mkdir -p uploads/subjects uploads/topics && chown -R nestjs:nodejs uploads
+USER nestjs
 ENV NODE_ENV=production
 EXPOSE 3003
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

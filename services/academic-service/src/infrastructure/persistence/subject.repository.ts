@@ -85,6 +85,7 @@ export class SubjectRepository implements ISubjectRepository {
       o.isActive,
       o.createdAt,
       o.updatedAt,
+      o.imageUrl,
     );
 
   private toOrm(d: SubjectEntity): SubjectOrmEntity {
@@ -101,6 +102,7 @@ export class SubjectRepository implements ISubjectRepository {
     o.isActive = d.isActive;
     o.createdAt = d.createdAt;
     o.updatedAt = d.updatedAt;
+    o.imageUrl = d.imageUrl;
     return o;
   }
 }

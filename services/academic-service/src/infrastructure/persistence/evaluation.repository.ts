@@ -27,7 +27,21 @@ export class EvaluationRepository implements IEvaluationRepository {
     return parseFloat(res.total ?? '0');
   }
 
+  async getTotalWeightExcluding(subjectId: string, excludeId: string): Promise<number> {
+    const res = await this.repo
+      .createQueryBuilder('e')
+      .select('COALESCE(SUM(e.weight), 0)', 'total')
+      .where('e.subject_id = :subjectId AND e.is_active = true AND e.id != :excludeId', { subjectId, excludeId })
+      .getRawOne();
+    return parseFloat(res.total ?? '0');
+  }
+
   async save(e: EvaluationEntity): Promise<EvaluationEntity> {
+    const saved = await this.repo.save(this.toOrm(e));
+    return this.toDomain(saved);
+  }
+
+  async update(e: EvaluationEntity): Promise<EvaluationEntity> {
     const saved = await this.repo.save(this.toOrm(e));
     return this.toDomain(saved);
   }

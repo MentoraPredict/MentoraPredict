@@ -6,15 +6,19 @@ import { JwtModule } from "@nestjs/jwt";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
-import { MetricsController } from "./infrastructure/controllers/metrics.controller";
+import { NotificationsController } from "./infrastructure/controllers/notifications.controller";
 import { InternalAnalyticsController } from "./infrastructure/controllers/internal-analytics.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
 import { StudentMetricsOrmEntity } from "./infrastructure/persistence/student-metrics.orm-entity";
 import { AlertOrmEntity } from "./infrastructure/persistence/alert.orm-entity";
+import { StudentSubjectMetricsOrmEntity } from "./infrastructure/persistence/student-subject-metrics.orm-entity";
+import { NotificationOrmEntity } from "./infrastructure/persistence/notification.orm-entity";
 import { StudentMetricsRepository } from "./infrastructure/persistence/student-metrics.repository";
 import { AlertRepository } from "./infrastructure/persistence/alert.repository";
+import { StudentSubjectMetricsRepository } from "./infrastructure/persistence/student-subject-metrics.repository";
+import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
 import {
   DatasetVersion,
   DatasetVersionSchema,
@@ -24,8 +28,10 @@ import { DatasetVersionRepository } from "./infrastructure/persistence/dataset-v
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { MetricsCacheAdapter } from "./infrastructure/cache/metrics-cache.adapter";
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
+import { PredictionHttpClient } from "./infrastructure/adapters/prediction-http.client";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
+import { RolesGuard } from "./infrastructure/guards/roles.guard";
 
 import { CalculateAverageUseCase } from "./application/use-cases/calculate-average.use-case";
 import { CalculateTrendUseCase } from "./application/use-cases/calculate-trend.use-case";
@@ -37,7 +43,16 @@ import { GetStudentDashboardUseCase } from "./application/use-cases/get-student-
 import { GetTeacherDashboardUseCase } from "./application/use-cases/get-teacher-dashboard.use-case";
 import { GetAdminDashboardUseCase } from "./application/use-cases/get-admin-dashboard.use-case";
 import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapshot.use-case";
-import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggregated-metrics.use-case";
+import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalculate-student-metrics.use-case";
+import { GetStudentSubjectMetricsUseCase } from "./application/use-cases/get-student-subject-metrics.use-case";
+import { GetSubjectMetricsSummaryUseCase } from "./application/use-cases/get-subject-metrics-summary.use-case";
+import { GetLatestSubjectMetricUseCase } from "./application/use-cases/get-latest-subject-metric.use-case";
+import { GetSubjectRiskUseCase } from "./application/use-cases/get-subject-risk.use-case";
+import { GetSubjectAlertsUseCase } from "./application/use-cases/get-subject-alerts.use-case";
+import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-case";
+import { GetMyNotificationsUseCase } from "./application/use-cases/get-my-notifications.use-case";
+import { MarkNotificationReadUseCase } from "./application/use-cases/mark-notification-read.use-case";
+import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-all-notifications-read.use-case";
 
 @Module({
   imports: [
@@ -52,11 +67,21 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
         username: cfg.get("POSTGRES_USER", "mp_user"),
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
-        entities: [StudentMetricsOrmEntity, AlertOrmEntity],
+        entities: [
+          StudentMetricsOrmEntity,
+          AlertOrmEntity,
+          StudentSubjectMetricsOrmEntity,
+          NotificationOrmEntity,
+        ],
         synchronize: cfg.get("NODE_ENV") !== "production",
       }),
     }),
-    TypeOrmModule.forFeature([StudentMetricsOrmEntity, AlertOrmEntity]),
+    TypeOrmModule.forFeature([
+      StudentMetricsOrmEntity,
+      AlertOrmEntity,
+      StudentSubjectMetricsOrmEntity,
+      NotificationOrmEntity,
+    ]),
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
@@ -71,8 +96,14 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
         if (privateKey && publicKey) {
           return {
             privateKey,
@@ -87,7 +118,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
   controllers: [
     AnalyticsController,
     AlertsController,
-    MetricsController,
+    NotificationsController,
     InternalAnalyticsController,
     HealthController,
     RootController,
@@ -95,12 +126,19 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
   providers: [
     RedisClient,
     InternalJwtService,
+    RolesGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
+    { provide: "IPredictionClientPort", useClass: PredictionHttpClient },
     {
       provide: "IStudentMetricsRepository",
       useClass: StudentMetricsRepository,
     },
+    {
+      provide: "IStudentSubjectMetricsRepository",
+      useClass: StudentSubjectMetricsRepository,
+    },
     { provide: "IAlertRepository", useClass: AlertRepository },
+    { provide: "INotificationRepository", useClass: NotificationRepository },
     {
       provide: "IDatasetVersionRepository",
       useClass: DatasetVersionRepository,
@@ -128,7 +166,16 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     GetTeacherDashboardUseCase,
     GetAdminDashboardUseCase,
     GetRiskSnapshotUseCase,
-    GetAggregatedMetricsUseCase,
+    RecalculateStudentMetricsUseCase,
+    GetStudentSubjectMetricsUseCase,
+    GetSubjectMetricsSummaryUseCase,
+    GetLatestSubjectMetricUseCase,
+    GetSubjectRiskUseCase,
+    GetSubjectAlertsUseCase,
+    ResolveAlertUseCase,
+    GetMyNotificationsUseCase,
+    MarkNotificationReadUseCase,
+    MarkAllNotificationsReadUseCase,
   ],
 })
 export class AppModule {}
