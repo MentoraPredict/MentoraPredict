@@ -269,6 +269,20 @@ jobs:
 
             echo "WEB_PORT=80" >> .env
 
+            PGADMIN_DEFAULT_EMAIL_VALUE="${{ secrets.PGADMIN_DEFAULT_EMAIL }}"
+            PGADMIN_DEFAULT_PASSWORD_VALUE="${{ secrets.PGADMIN_DEFAULT_PASSWORD }}"
+
+            if [ -z "$PGADMIN_DEFAULT_EMAIL_VALUE" ]; then
+              PGADMIN_DEFAULT_EMAIL_VALUE="admin@mentorapredict.local"
+            fi
+
+            if [ -z "$PGADMIN_DEFAULT_PASSWORD_VALUE" ]; then
+              PGADMIN_DEFAULT_PASSWORD_VALUE="admin"
+            fi
+
+            echo "PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL_VALUE}" >> .env
+            echo "PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD_VALUE}" >> .env
+
             if docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:${IMAGE_TAG} &>/dev/null; then
               echo "[TAG] Using build tag: ${IMAGE_TAG}"
             else
@@ -293,6 +307,19 @@ jobs:
               echo "waiting postgres..."
               sleep 3
             done
+
+            echo "[CLEANUP] Docker disk usage before cleanup"
+            docker system df
+            df -h
+
+            echo "[CLEANUP] Removing stopped containers, old images, and old build cache"
+            docker container prune -f
+            docker image prune -af --filter "until=24h"
+            docker builder prune -af --filter "until=24h"
+
+            echo "[CLEANUP] Docker disk usage after cleanup"
+            docker system df
+            df -h
 
             echo "[PULL IMAGES] Changed: $CHANGED_SERVICES"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull $SERVICES_LIST
