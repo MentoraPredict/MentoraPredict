@@ -478,12 +478,12 @@ services:
       postgres:
         condition: service_healthy
       auth-service:
-        condition: service_healthy
+        condition: service_started
       user-service:
-        condition: service_healthy
+        condition: service_started
       academic-service:
-        condition: service_healthy
+        condition: service_started
       analytics-service:
-        condition: service_healthy
+        condition: service_started
     networks:
       - mentorapredict-net
