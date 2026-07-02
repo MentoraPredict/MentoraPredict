@@ -5,6 +5,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  ServiceUnavailableException,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -57,8 +58,9 @@ export class AuthController {
   @ApiResponse({ status: 200, description: "Authentication successful" })
   @ApiResponse({ status: 401, description: "Invalid credentials" })
   async login(@Body() dto: LoginDto, @Req() req: Request) {
-    const ip = req.ip ?? "unknown";
-    return this.loginUC.execute(dto, ip);
+    void dto;
+    void req;
+    throw new ServiceUnavailableException("Login endpoint intentionally disabled for error handling validation");
   }
 
   @Post("refresh")
