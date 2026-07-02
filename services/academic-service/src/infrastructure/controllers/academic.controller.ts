@@ -117,6 +117,15 @@ import { ImportSubjectGradesUseCase } from "../../application/use-cases/import-s
 import { ListGradeImportsUseCase } from "../../application/use-cases/list-grade-imports.use-case";
 import { GetGradeImportUseCase } from "../../application/use-cases/get-grade-import.use-case";
 
+// Weekly check-ins (Phase 5)
+import { GetCurrentCheckInUseCase } from "../../application/use-cases/get-current-check-in.use-case";
+import { UpsertCheckInUseCase } from "../../application/use-cases/upsert-check-in.use-case";
+import { UpdateCheckInUseCase } from "../../application/use-cases/update-check-in.use-case";
+import { ListCheckInsUseCase } from "../../application/use-cases/list-check-ins.use-case";
+import { GetCheckInsSummaryUseCase } from "../../application/use-cases/get-check-ins-summary.use-case";
+import { CreateCheckInDto } from "../../application/dtos/create-check-in.dto";
+import { UpdateCheckInDto } from "../../application/dtos/update-check-in.dto";
+
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 import { RolesGuard, Roles } from "../guards/roles.guard";
 
@@ -176,6 +185,12 @@ export class AcademicController {
     private readonly importSubjectGradesUC: ImportSubjectGradesUseCase,
     private readonly listGradeImportsUC: ListGradeImportsUseCase,
     private readonly getGradeImportUC: GetGradeImportUseCase,
+    // Weekly check-ins (Phase 5)
+    private readonly getCurrentCheckInUC: GetCurrentCheckInUseCase,
+    private readonly upsertCheckInUC: UpsertCheckInUseCase,
+    private readonly updateCheckInUC: UpdateCheckInUseCase,
+    private readonly listCheckInsUC: ListCheckInsUseCase,
+    private readonly getCheckInsSummaryUC: GetCheckInsSummaryUseCase,
   ) {}
 
   // ─── Enrollments ──────────────────────────────────────────────────────────────
@@ -273,6 +288,82 @@ export class AcademicController {
       { periodId, status },
       { page: parseInt(page ?? "1", 10), limit: parseInt(limit ?? "20", 10) },
     );
+  }
+
+  // ─── Weekly check-ins (Phase 5) ─────────────────────────────────────────────
+
+  @Get("students/me/subjects/:subjectId/check-ins/current")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "Get the authenticated student's check-in for the current academic week" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
+  async getCurrentCheckIn(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.getCurrentCheckInUC.execute(studentId, subjectId);
+  }
+
+  @Post("students/me/subjects/:subjectId/check-ins")
+  @Roles("STUDENT")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Create or update (upsert) the current week's check-in" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
+  @ApiResponse({ status: 409, description: "No active academic period" })
+  async upsertCheckIn(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: CreateCheckInDto,
+    @Req() req: JwtRequest,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.upsertCheckInUC.execute(studentId, subjectId, dto);
+  }
+
+  @Put("students/me/subjects/:subjectId/check-ins/:checkInId")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "Update an existing check-in owned by the authenticated student" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Check-in does not belong to this student" })
+  @ApiResponse({ status: 404 })
+  async updateCheckIn(
+    @Param("checkInId") checkInId: string,
+    @Body() dto: UpdateCheckInDto,
+    @Req() req: JwtRequest,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.updateCheckInUC.execute(checkInId, studentId, dto);
+  }
+
+  @Get("students/me/subjects/:subjectId/check-ins")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "List the authenticated student's check-in history for a subject" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
+  async listCheckIns(
+    @Param("subjectId") subjectId: string,
+    @Req() req: JwtRequest,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.listCheckInsUC.execute(studentId, subjectId, {
+      page: parseInt(page ?? "1", 10),
+      limit: parseInt(limit ?? "20", 10),
+    });
+  }
+
+  @Get("subjects/:subjectId/check-ins/summary")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Aggregated weekly check-in averages for a subject (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  async getCheckInsSummary(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.getCheckInsSummaryUC.execute(subjectId, teacherId);
   }
 
   // ─── Evaluations ──────────────────────────────────────────────────────────────

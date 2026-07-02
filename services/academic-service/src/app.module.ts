@@ -20,6 +20,7 @@ import { GradeOrmEntity } from "./infrastructure/persistence/grade.orm-entity";
 import { GradeHistoryOrmEntity } from "./infrastructure/persistence/grade-history.orm-entity";
 import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-teacher.orm-entity";
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
+import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
 import {
   TeacherObservationDoc,
   TeacherObservationSchema,
@@ -35,6 +36,7 @@ import { AcademicPeriodRepository } from "./infrastructure/persistence/academic-
 import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-teacher.repository";
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
 import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
+import { WeeklyCheckInRepository } from "./infrastructure/persistence/weekly-check-in.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
@@ -105,6 +107,13 @@ import { UpdateEvaluationUseCase } from "./application/use-cases/update-evaluati
 import { ArchiveEvaluationUseCase } from "./application/use-cases/archive-evaluation.use-case";
 import { GetWeightSummaryUseCase } from "./application/use-cases/get-weight-summary.use-case";
 import { GetSubjectEvaluationWeightsUseCase } from "./application/use-cases/get-subject-evaluation-weights.use-case";
+// Weekly check-ins (Phase 5)
+import { GetCurrentCheckInUseCase } from "./application/use-cases/get-current-check-in.use-case";
+import { UpsertCheckInUseCase } from "./application/use-cases/upsert-check-in.use-case";
+import { UpdateCheckInUseCase } from "./application/use-cases/update-check-in.use-case";
+import { ListCheckInsUseCase } from "./application/use-cases/list-check-ins.use-case";
+import { GetCheckInsSummaryUseCase } from "./application/use-cases/get-check-ins-summary.use-case";
+import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
 
 @Module({
   imports: [
@@ -130,6 +139,7 @@ import { GetSubjectEvaluationWeightsUseCase } from "./application/use-cases/get-
           GradeHistoryOrmEntity,
           SubjectTeacherOrmEntity,
           GradeImportOrmEntity,
+          WeeklyCheckInOrmEntity,
         ],
         synchronize: cfg.get("NODE_ENV") !== "production",
         logging: cfg.get("NODE_ENV") === "development",
@@ -147,6 +157,7 @@ import { GetSubjectEvaluationWeightsUseCase } from "./application/use-cases/get-
       GradeHistoryOrmEntity,
       SubjectTeacherOrmEntity,
       GradeImportOrmEntity,
+      WeeklyCheckInOrmEntity,
     ]),
 
     MongooseModule.forRootAsync({
@@ -199,6 +210,7 @@ import { GetSubjectEvaluationWeightsUseCase } from "./application/use-cases/get-
     { provide: "ISubjectTeacherRepository", useClass: SubjectTeacherRepository },
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
     { provide: "IGradeImportRepository", useClass: GradeImportRepository },
+    { provide: "IWeeklyCheckInRepository", useClass: WeeklyCheckInRepository },
     { provide: "ITeacherObservationRepository", useClass: TeacherObservationRepository },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
@@ -258,6 +270,13 @@ import { GetSubjectEvaluationWeightsUseCase } from "./application/use-cases/get-
     ArchiveEvaluationUseCase,
     GetWeightSummaryUseCase,
     GetSubjectEvaluationWeightsUseCase,
+    // Weekly check-ins (Phase 5)
+    GetCurrentCheckInUseCase,
+    UpsertCheckInUseCase,
+    UpdateCheckInUseCase,
+    ListCheckInsUseCase,
+    GetCheckInsSummaryUseCase,
+    GetLatestCheckInUseCase,
   ],
 })
 export class AppModule {}
