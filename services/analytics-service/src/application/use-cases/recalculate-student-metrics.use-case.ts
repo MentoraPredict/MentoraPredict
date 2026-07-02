@@ -8,6 +8,8 @@ import { StudentSubjectMetricsEntity, SubjectRiskLevel } from '../../domain/enti
 import { IAlertRepository } from '../../domain/ports/i-alert.repository';
 import { AlertEntity, AlertSeverity } from '../../domain/entities/alert.entity';
 import { IPredictionClientPort } from '../../domain/ports/i-prediction-client.port';
+import { INotificationRepository } from '../../domain/ports/i-notification.repository';
+import { NotificationEntity } from '../../domain/entities/notification.entity';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 
 const PASSING_GRADE = 7;
@@ -37,6 +39,10 @@ const RISK_RANK: Record<SubjectRiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2
  *       POST prediction-service/internal/recalculate, which itself pulls
  *       riskLevel/trendSlope/factors back from this same metrics/latest
  *       endpoint — this use-case never pushes already-computed data to it.
+ *   → notifyEscalation                       (await, own try/catch) — Fase 9:
+ *       persists a STUDENT + TEACHER notification, but ONLY the first time
+ *       an alert is CREATED (never on re-escalation of an already-ACTIVE
+ *       alert, never on resolve). See handleAlertTransition.
  *
  * There is no cron, no queue, no periodic retry. If any call in this chain
  * fails for a given student, that student's row simply stays stale until the
@@ -55,6 +61,7 @@ export class RecalculateStudentMetricsUseCase {
     private readonly subjectMetricsRepo: IStudentSubjectMetricsRepository,
     @Inject('IAlertRepository') private readonly alertRepo: IAlertRepository,
     @Inject('IPredictionClientPort') private readonly predictionClient: IPredictionClientPort,
+    @Inject('INotificationRepository') private readonly notificationRepo: INotificationRepository,
   ) {}
 
   async execute(
@@ -212,11 +219,12 @@ export class RecalculateStudentMetricsUseCase {
       const reason = `Riesgo escaló de ${fromLabel} a ${riskLevel} — promedio ${avgLabel}, cumplimiento de tareas ${complianceLabel}`;
 
       const existing = await this.alertRepo.findActiveByStudentAndSubject(studentId, subjectId);
+      let alert: AlertEntity;
       if (existing) {
         existing.escalate(riskLevel as AlertSeverity, reason, now);
-        await this.alertRepo.update(existing);
+        alert = await this.alertRepo.update(existing);
       } else {
-        const alert = new AlertEntity(
+        alert = new AlertEntity(
           randomUUID(),
           studentId,
           'RISK_ESCALATION',
@@ -233,6 +241,21 @@ export class RecalculateStudentMetricsUseCase {
         );
         await this.alertRepo.save(alert);
       }
+
+      // Fase 9 — notify only when a brand-new alert row was just created
+      // (no pre-existing ACTIVE alert), never on a re-escalation of one that
+      // was already active. A notification failure must not undo the
+      // metrics/alert work already persisted above, so it gets its own
+      // try/catch instead of bubbling to the per-student loop's catch.
+      if (!existing) {
+        try {
+          await this.notifyEscalation(studentId, subjectId, periodId, riskLevel, reason, alert.id, now);
+        } catch (err) {
+          this.logger.error(
+            `Notification creation failed for student ${studentId}/${subjectId}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
     } else if (rank < prevRank) {
       const existing = await this.alertRepo.findActiveByStudentAndSubject(studentId, subjectId);
       if (existing) {
@@ -241,6 +264,62 @@ export class RecalculateStudentMetricsUseCase {
       }
     }
     // rank === prevRank: no change, leave any existing alert as-is.
+  }
+
+  // Fase 9 — one notification for the affected student, one for the
+  // subject's teacher (if any is assigned). Reuses the alert's own `reason`
+  // text instead of composing a new message from scratch.
+  private async notifyEscalation(
+    studentId: string,
+    subjectId: string,
+    periodId: string,
+    riskLevel: SubjectRiskLevel,
+    reason: string,
+    alertId: string,
+    now: Date,
+  ): Promise<void> {
+    // Degrades to a generic label instead of failing the whole notification
+    // if academic-service is briefly unreachable — same resilience pattern
+    // as getLatestSubjectMetric elsewhere in this chain.
+    const subject = await this.academic.getSubjectDetails(subjectId).catch(() => null);
+    const subjectName = subject?.name ?? 'la materia';
+
+    const studentNotification = new NotificationEntity(
+      randomUUID(),
+      studentId,
+      'STUDENT',
+      'RISK_ESCALATION',
+      alertId,
+      subjectId,
+      studentId,
+      periodId,
+      `Tu riesgo académico en ${subjectName} aumentó a ${riskLevel}`,
+      reason,
+      'UNREAD',
+      now,
+      null,
+    );
+    await this.notificationRepo.save(studentNotification);
+
+    const teacherId = subject?.teacherId ?? null;
+    if (!teacherId) return; // no teacher assigned — skip without failing
+
+    const teacherNotification = new NotificationEntity(
+      randomUUID(),
+      teacherId,
+      'TEACHER',
+      'RISK_ESCALATION',
+      alertId,
+      subjectId,
+      studentId,
+      periodId,
+      `Un estudiante de ${subjectName} escaló a riesgo ${riskLevel}`,
+      `Estudiante ${studentId}: ${reason}`,
+      'UNREAD',
+      now,
+      null,
+    );
+    await this.notificationRepo.save(teacherNotification);
   }
 
   private computeLinearSlope(values: number[]): number {

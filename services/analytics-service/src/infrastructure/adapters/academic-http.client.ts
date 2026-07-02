@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { CheckInSummary, EvaluationWeight, IAcademicServiceClient, SubjectOwnership } from '../../domain/ports/i-academic-service.client';
+import { CheckInSummary, EvaluationWeight, IAcademicServiceClient, SubjectDetails, SubjectOwnership } from '../../domain/ports/i-academic-service.client';
 import { Grade } from '../../domain/entities/grade.vo';
 import { Enrollment } from '../../domain/entities/enrollment.vo';
 import { InternalJwtService } from '../auth/internal-jwt.service';
@@ -63,6 +63,18 @@ export class AcademicHttpClient implements IAcademicServiceClient {
       `/api/v1/academic/internal/subjects/${subjectId}/teachers/${teacherId}/is-owner`,
       correlationId,
     );
+  }
+
+  async getSubjectDetails(subjectId: string, correlationId?: string): Promise<SubjectDetails | null> {
+    try {
+      return await this.request<SubjectDetails>(
+        `/api/v1/academic/internal/subjects/${subjectId}`,
+        correlationId,
+      );
+    } catch (err) {
+      this.logger.warn(`getSubjectDetails failed for ${subjectId}: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
   }
 
   private async request<T>(path: string, correlationId?: string): Promise<T> {

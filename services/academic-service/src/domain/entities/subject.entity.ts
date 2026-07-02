@@ -12,6 +12,7 @@ export class SubjectEntity {
     public isActive: boolean,
     public readonly createdAt: Date,
     public updatedAt: Date,
+    public imageUrl: string | null = null,
   ) {}
 
   assignTeacher(teacherId: string): void {
@@ -21,6 +22,16 @@ export class SubjectEntity {
 
   deactivate(): void {
     this.isActive = false;
+    this.updatedAt = new Date();
+  }
+
+  setImage(url: string): void {
+    this.imageUrl = url;
+    this.updatedAt = new Date();
+  }
+
+  clearImage(): void {
+    this.imageUrl = null;
     this.updatedAt = new Date();
   }
 }

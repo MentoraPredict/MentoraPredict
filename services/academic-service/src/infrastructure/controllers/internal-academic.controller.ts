@@ -5,6 +5,7 @@ import { GetStudentEnrollmentsUseCase } from '../../application/use-cases/get-st
 import { GetSubjectEvaluationWeightsUseCase } from '../../application/use-cases/get-subject-evaluation-weights.use-case';
 import { GetLatestCheckInUseCase } from '../../application/use-cases/get-latest-check-in.use-case';
 import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-subject-ownership.use-case';
+import { GetSubjectUseCase } from '../../application/use-cases/get-subject.use-case';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 @ApiTags('academic-internal')
@@ -17,6 +18,7 @@ export class InternalAcademicController {
     private readonly getEvalWeightsUC: GetSubjectEvaluationWeightsUseCase,
     private readonly getLatestCheckInUC: GetLatestCheckInUseCase,
     private readonly checkOwnershipUC: CheckSubjectOwnershipUseCase,
+    private readonly getSubjectUC: GetSubjectUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
@@ -51,5 +53,11 @@ export class InternalAcademicController {
   @ApiOperation({ summary: 'Internal: check whether a teacher owns a subject in its current academic period' })
   isOwner(@Param('subjectId') subjectId: string, @Param('teacherId') teacherId: string) {
     return this.checkOwnershipUC.execute(subjectId, teacherId);
+  }
+
+  @Get('subjects/:subjectId')
+  @ApiOperation({ summary: 'Internal: subject details (name, assigned teacherId) for cross-service lookups' })
+  subjectDetails(@Param('subjectId') subjectId: string) {
+    return this.getSubjectUC.execute(subjectId);
   }
 }

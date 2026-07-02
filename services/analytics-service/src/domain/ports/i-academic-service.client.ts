@@ -18,6 +18,12 @@ export interface SubjectOwnership {
   isOwner: boolean;
 }
 
+export interface SubjectDetails {
+  id: string;
+  name: string;
+  teacherId: string | null;
+}
+
 export interface IAcademicServiceClient {
   getGradesByStudent(studentId: string, periodId: string, correlationId?: string): Promise<Grade[]>;
   getEnrollmentsByStudent(studentId: string, correlationId?: string): Promise<Enrollment[]>;
@@ -33,4 +39,5 @@ export interface IAcademicServiceClient {
     subjectId: string,
     correlationId?: string,
   ): Promise<SubjectOwnership>;
+  getSubjectDetails(subjectId: string, correlationId?: string): Promise<SubjectDetails | null>;
 }

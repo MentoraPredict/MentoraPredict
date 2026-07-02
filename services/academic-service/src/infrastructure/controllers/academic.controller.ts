@@ -13,6 +13,7 @@ import {
   HttpStatus,
   UseInterceptors,
   UseGuards,
+  UseFilters,
   UploadedFile,
   BadRequestException,
   UnauthorizedException,
@@ -26,6 +27,8 @@ import {
   ApiConsumes,
   ApiBody,
 } from "@nestjs/swagger";
+import { MulterExceptionFilter } from "../filters/multer-exception.filter";
+import { MAX_IMAGE_BYTES, MAX_TOPIC_FILE_BYTES } from "../storage/upload.util";
 
 type MulterUploadedFile = {
   fieldname: string;
@@ -116,6 +119,16 @@ import { GetWeightSummaryUseCase } from "../../application/use-cases/get-weight-
 import { ImportSubjectGradesUseCase } from "../../application/use-cases/import-subject-grades.use-case";
 import { ListGradeImportsUseCase } from "../../application/use-cases/list-grade-imports.use-case";
 import { GetGradeImportUseCase } from "../../application/use-cases/get-grade-import.use-case";
+import { UploadSubjectImageUseCase } from "../../application/use-cases/upload-subject-image.use-case";
+import { DeleteSubjectImageUseCase } from "../../application/use-cases/delete-subject-image.use-case";
+import { CreateTopicUseCase } from "../../application/use-cases/create-topic.use-case";
+import { ListTopicsUseCase } from "../../application/use-cases/list-topics.use-case";
+import { UpdateTopicUseCase } from "../../application/use-cases/update-topic.use-case";
+import { DeleteTopicUseCase } from "../../application/use-cases/delete-topic.use-case";
+import { UploadTopicFileUseCase } from "../../application/use-cases/upload-topic-file.use-case";
+import { DeleteTopicFileUseCase } from "../../application/use-cases/delete-topic-file.use-case";
+import { CreateTopicDto } from "../../application/dtos/create-topic.dto";
+import { UpdateTopicDto } from "../../application/dtos/update-topic.dto";
 
 // Weekly check-ins (Phase 5)
 import { GetCurrentCheckInUseCase } from "../../application/use-cases/get-current-check-in.use-case";
@@ -191,6 +204,16 @@ export class AcademicController {
     private readonly updateCheckInUC: UpdateCheckInUseCase,
     private readonly listCheckInsUC: ListCheckInsUseCase,
     private readonly getCheckInsSummaryUC: GetCheckInsSummaryUseCase,
+    // File storage (Phase 10)
+    private readonly uploadSubjectImageUC: UploadSubjectImageUseCase,
+    private readonly deleteSubjectImageUC: DeleteSubjectImageUseCase,
+    // Temario (Phase 10b)
+    private readonly createTopicUC: CreateTopicUseCase,
+    private readonly listTopicsUC: ListTopicsUseCase,
+    private readonly updateTopicUC: UpdateTopicUseCase,
+    private readonly deleteTopicUC: DeleteTopicUseCase,
+    private readonly uploadTopicFileUC: UploadTopicFileUseCase,
+    private readonly deleteTopicFileUC: DeleteTopicFileUseCase,
   ) {}
 
   // ─── Enrollments ──────────────────────────────────────────────────────────────
@@ -859,5 +882,134 @@ export class AcademicController {
   @ApiResponse({ status: 404 })
   async deleteSubject(@Param("id") id: string) {
     return this.deleteSubjectUC.execute(id);
+  }
+
+  // ─── Subject image (Phase 10) ──────────────────────────────────────────
+
+  @Post("subjects/:subjectId/image")
+  @Roles("TEACHER")
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace a subject's cover image (TEACHER owner, jpg/jpeg/png, max 2MB)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  async uploadSubjectImage(
+    @Param("subjectId") subjectId: string,
+    @UploadedFile() file: MulterUploadedFile,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.uploadSubjectImageUC.execute(subjectId, teacherId, file);
+  }
+
+  @Delete("subjects/:subjectId/image")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove a subject's cover image (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  async deleteSubjectImage(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.deleteSubjectImageUC.execute(subjectId, teacherId);
+  }
+
+  // ─── Temario / Topics (Phase 10b) ────────────────────────────────────────
+
+  @Get("subjects/:subjectId/topics")
+  @Roles("TEACHER", "STUDENT")
+  @ApiOperation({ summary: "List a subject's topics, ordered (TEACHER owner or STUDENT actively enrolled)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async listTopics(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const requesterId = req.user?.sub ?? "";
+    const requesterRole = req.user?.role ?? "";
+    return this.listTopicsUC.execute(subjectId, requesterId, requesterRole);
+  }
+
+  @Post("subjects/:subjectId/topics")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a topic for a subject, without a file yet (TEACHER owner)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  async createTopic(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: CreateTopicDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.createTopicUC.execute(subjectId, teacherId, dto);
+  }
+
+  @Put("topics/:topicId")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Update a topic's title/description/order (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async updateTopic(
+    @Param("topicId") topicId: string,
+    @Body() dto: UpdateTopicDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.updateTopicUC.execute(topicId, teacherId, dto);
+  }
+
+  @Delete("topics/:topicId")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete a topic and its physical file, if any (TEACHER owner)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async deleteTopic(@Param("topicId") topicId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    await this.deleteTopicUC.execute(topicId, teacherId);
+  }
+
+  @Post("topics/:topicId/file")
+  @Roles("TEACHER")
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_TOPIC_FILE_BYTES } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace a topic's file (TEACHER owner, image 2MB or pdf/docx/pptx/xlsx 10MB)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  async uploadTopicFile(
+    @Param("topicId") topicId: string,
+    @UploadedFile() file: MulterUploadedFile,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.uploadTopicFileUC.execute(topicId, teacherId, file);
+  }
+
+  @Delete("topics/:topicId/file")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove a topic's file, keeping the topic itself (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async deleteTopicFile(@Param("topicId") topicId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.deleteTopicFileUC.execute(topicId, teacherId);
   }
 }

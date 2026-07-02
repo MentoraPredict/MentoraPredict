@@ -7,6 +7,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { AcademicController } from "./infrastructure/controllers/academic.controller";
 import { InternalAcademicController } from "./infrastructure/controllers/internal-academic.controller";
 import { ObservationsController } from "./infrastructure/controllers/observations.controller";
+import { UploadsController } from "./infrastructure/controllers/uploads.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
@@ -21,6 +22,7 @@ import { GradeHistoryOrmEntity } from "./infrastructure/persistence/grade-histor
 import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-teacher.orm-entity";
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
+import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
 import {
   TeacherObservationDoc,
   TeacherObservationSchema,
@@ -37,6 +39,7 @@ import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-t
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
 import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
 import { WeeklyCheckInRepository } from "./infrastructure/persistence/weekly-check-in.repository";
+import { TopicRepository } from "./infrastructure/persistence/topic.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
@@ -115,6 +118,16 @@ import { ListCheckInsUseCase } from "./application/use-cases/list-check-ins.use-
 import { GetCheckInsSummaryUseCase } from "./application/use-cases/get-check-ins-summary.use-case";
 import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
 import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subject-ownership.use-case";
+// File storage (Phase 10)
+import { UploadSubjectImageUseCase } from "./application/use-cases/upload-subject-image.use-case";
+import { DeleteSubjectImageUseCase } from "./application/use-cases/delete-subject-image.use-case";
+// Temario (Phase 10b)
+import { CreateTopicUseCase } from "./application/use-cases/create-topic.use-case";
+import { ListTopicsUseCase } from "./application/use-cases/list-topics.use-case";
+import { UpdateTopicUseCase } from "./application/use-cases/update-topic.use-case";
+import { DeleteTopicUseCase } from "./application/use-cases/delete-topic.use-case";
+import { UploadTopicFileUseCase } from "./application/use-cases/upload-topic-file.use-case";
+import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-file.use-case";
 
 @Module({
   imports: [
@@ -141,6 +154,7 @@ import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subj
           SubjectTeacherOrmEntity,
           GradeImportOrmEntity,
           WeeklyCheckInOrmEntity,
+          TopicOrmEntity,
         ],
         synchronize: cfg.get("NODE_ENV") !== "production",
         logging: cfg.get("NODE_ENV") === "development",
@@ -159,6 +173,7 @@ import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subj
       SubjectTeacherOrmEntity,
       GradeImportOrmEntity,
       WeeklyCheckInOrmEntity,
+      TopicOrmEntity,
     ]),
 
     MongooseModule.forRootAsync({
@@ -191,6 +206,7 @@ import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subj
     AcademicController,
     InternalAcademicController,
     ObservationsController,
+    UploadsController,
     HealthController,
     RootController,
   ],
@@ -212,6 +228,7 @@ import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subj
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
     { provide: "IGradeImportRepository", useClass: GradeImportRepository },
     { provide: "IWeeklyCheckInRepository", useClass: WeeklyCheckInRepository },
+    { provide: "ITopicRepository", useClass: TopicRepository },
     { provide: "ITeacherObservationRepository", useClass: TeacherObservationRepository },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
@@ -279,6 +296,16 @@ import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subj
     GetCheckInsSummaryUseCase,
     GetLatestCheckInUseCase,
     CheckSubjectOwnershipUseCase,
+    // File storage (Phase 10)
+    UploadSubjectImageUseCase,
+    DeleteSubjectImageUseCase,
+    // Temario (Phase 10b)
+    CreateTopicUseCase,
+    ListTopicsUseCase,
+    UpdateTopicUseCase,
+    DeleteTopicUseCase,
+    UploadTopicFileUseCase,
+    DeleteTopicFileUseCase,
   ],
 })
 export class AppModule {}

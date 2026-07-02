@@ -26,4 +26,6 @@ export class SubjectOrmEntity {
   createdAt!: Date;
   @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
   updatedAt!: Date;
+  @Column({ name: "image_url", type: "varchar", length: 500, nullable: true })
+  imageUrl!: string | null;
 }

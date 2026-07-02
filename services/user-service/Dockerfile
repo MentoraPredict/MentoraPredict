@@ -26,6 +26,7 @@ COPY --from=builder /app/services/user-service/dist ./dist
 COPY --from=builder /app/services/user-service/package.json ./
 COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app/services/user-service/node_modules ./node_modules
+RUN mkdir -p uploads/avatars && chown -R nestjs:nodejs uploads
 USER nestjs
 ENV NODE_ENV=production
 EXPOSE 3002

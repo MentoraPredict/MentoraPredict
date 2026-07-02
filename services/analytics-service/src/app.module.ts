@@ -6,6 +6,7 @@ import { JwtModule } from "@nestjs/jwt";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
+import { NotificationsController } from "./infrastructure/controllers/notifications.controller";
 import { InternalAnalyticsController } from "./infrastructure/controllers/internal-analytics.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
@@ -13,9 +14,11 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { StudentMetricsOrmEntity } from "./infrastructure/persistence/student-metrics.orm-entity";
 import { AlertOrmEntity } from "./infrastructure/persistence/alert.orm-entity";
 import { StudentSubjectMetricsOrmEntity } from "./infrastructure/persistence/student-subject-metrics.orm-entity";
+import { NotificationOrmEntity } from "./infrastructure/persistence/notification.orm-entity";
 import { StudentMetricsRepository } from "./infrastructure/persistence/student-metrics.repository";
 import { AlertRepository } from "./infrastructure/persistence/alert.repository";
 import { StudentSubjectMetricsRepository } from "./infrastructure/persistence/student-subject-metrics.repository";
+import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
 import {
   DatasetVersion,
   DatasetVersionSchema,
@@ -47,6 +50,9 @@ import { GetLatestSubjectMetricUseCase } from "./application/use-cases/get-lates
 import { GetSubjectRiskUseCase } from "./application/use-cases/get-subject-risk.use-case";
 import { GetSubjectAlertsUseCase } from "./application/use-cases/get-subject-alerts.use-case";
 import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-case";
+import { GetMyNotificationsUseCase } from "./application/use-cases/get-my-notifications.use-case";
+import { MarkNotificationReadUseCase } from "./application/use-cases/mark-notification-read.use-case";
+import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-all-notifications-read.use-case";
 
 @Module({
   imports: [
@@ -61,11 +67,11 @@ import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-c
         username: cfg.get("POSTGRES_USER", "mp_user"),
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
-        entities: [StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity],
+        entities: [StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity, NotificationOrmEntity],
         synchronize: cfg.get("NODE_ENV") !== "production",
       }),
     }),
-    TypeOrmModule.forFeature([StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity]),
+    TypeOrmModule.forFeature([StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity, NotificationOrmEntity]),
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
@@ -96,6 +102,7 @@ import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-c
   controllers: [
     AnalyticsController,
     AlertsController,
+    NotificationsController,
     InternalAnalyticsController,
     HealthController,
     RootController,
@@ -115,6 +122,7 @@ import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-c
       useClass: StudentSubjectMetricsRepository,
     },
     { provide: "IAlertRepository", useClass: AlertRepository },
+    { provide: "INotificationRepository", useClass: NotificationRepository },
     {
       provide: "IDatasetVersionRepository",
       useClass: DatasetVersionRepository,
@@ -149,6 +157,9 @@ import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-c
     GetSubjectRiskUseCase,
     GetSubjectAlertsUseCase,
     ResolveAlertUseCase,
+    GetMyNotificationsUseCase,
+    MarkNotificationReadUseCase,
+    MarkAllNotificationsReadUseCase,
   ],
 })
 export class AppModule {}
