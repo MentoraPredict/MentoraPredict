@@ -39,19 +39,9 @@ export class CreateSubjectDto {
   @IsNotEmpty()
   careerId!: string;
 
-  @ApiProperty({ example: 'uuid-of-period' })
-  @IsUUID()
-  @IsNotEmpty()
-  academicPeriodId!: string;
-
   @ApiPropertyOptional({ example: 30, minimum: 1 })
   @IsInt()
   @Min(1)
   @IsOptional()
   maxCapacity?: number;
-
-  @ApiPropertyOptional({ example: 'uuid-of-teacher' })
-  @IsUUID()
-  @IsOptional()
-  teacherId?: string;
 }

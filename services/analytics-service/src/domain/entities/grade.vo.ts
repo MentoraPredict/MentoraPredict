@@ -6,4 +6,5 @@ export interface Grade {
   subjectCredits: number;
   value: number;
   periodId: string;
+  evaluationId: string | null;
 }

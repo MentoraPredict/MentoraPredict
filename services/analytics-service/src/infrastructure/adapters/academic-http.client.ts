@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { IAcademicServiceClient } from '../../domain/ports/i-academic-service.client';
+import { EvaluationWeight, IAcademicServiceClient } from '../../domain/ports/i-academic-service.client';
 import { Grade } from '../../domain/entities/grade.vo';
 import { Enrollment } from '../../domain/entities/enrollment.vo';
 import { InternalJwtService } from '../auth/internal-jwt.service';
@@ -31,6 +31,13 @@ export class AcademicHttpClient implements IAcademicServiceClient {
   getEnrollmentsByStudent(studentId: string, correlationId?: string): Promise<Enrollment[]> {
     return this.request<Enrollment[]>(
       `/api/v1/academic/internal/students/${studentId}/enrollments`,
+      correlationId,
+    );
+  }
+
+  getEvaluationsBySubject(subjectId: string, correlationId?: string): Promise<EvaluationWeight[]> {
+    return this.request<EvaluationWeight[]>(
+      `/api/v1/academic/internal/subjects/${subjectId}/evaluations`,
       correlationId,
     );
   }

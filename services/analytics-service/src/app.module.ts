@@ -36,6 +36,7 @@ import { GetStudentDashboardUseCase } from "./application/use-cases/get-student-
 import { GetTeacherDashboardUseCase } from "./application/use-cases/get-teacher-dashboard.use-case";
 import { GetAdminDashboardUseCase } from "./application/use-cases/get-admin-dashboard.use-case";
 import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapshot.use-case";
+import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalculate-student-metrics.use-case";
 
 @Module({
   imports: [
@@ -125,6 +126,7 @@ import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapsho
     GetTeacherDashboardUseCase,
     GetAdminDashboardUseCase,
     GetRiskSnapshotUseCase,
+    RecalculateStudentMetricsUseCase,
   ],
 })
 export class AppModule {}

@@ -11,6 +11,7 @@ export interface StudentGradeView {
   subjectCredits: number;
   value: number;
   periodId: string;
+  evaluationId: string | null;
 }
 
 @Injectable()
@@ -24,21 +25,25 @@ export class GetStudentGradesUseCase {
   async execute(studentId: string, periodId: string): Promise<StudentGradeView[]> {
     const enrollments = await this.enrollRepo.findByStudentId(studentId);
     const active = enrollments.filter((e) => e.periodId === periodId && e.status === 'ACTIVE');
+
     const views: StudentGradeView[] = [];
 
     for (const enrollment of active) {
-      const grade = await this.gradeRepo.findByStudentAndSubject(studentId, enrollment.subjectId);
-      if (!grade) continue;
       const subject = await this.subjectRepo.findById(enrollment.subjectId);
-      views.push({
-        id: grade.id,
-        studentId,
-        subjectId: enrollment.subjectId,
-        subjectName: subject?.name ?? '',
-        subjectCredits: subject?.credits ?? 1,
-        value: grade.value,
-        periodId,
-      });
+      // Return ALL grades per subject (one per evaluation) so analytics can compute weighted averages
+      const grades = await this.gradeRepo.findAllByStudentAndSubject(studentId, enrollment.subjectId);
+      for (const grade of grades) {
+        views.push({
+          id: grade.id,
+          studentId,
+          subjectId: enrollment.subjectId,
+          subjectName: subject?.name ?? '',
+          subjectCredits: subject?.credits ?? 1,
+          value: grade.value,
+          periodId,
+          evaluationId: grade.evaluationId,
+        });
+      }
     }
 
     return views;

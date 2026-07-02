@@ -19,6 +19,7 @@ import { EnrollmentOrmEntity } from "./infrastructure/persistence/enrollment.orm
 import { GradeOrmEntity } from "./infrastructure/persistence/grade.orm-entity";
 import { GradeHistoryOrmEntity } from "./infrastructure/persistence/grade-history.orm-entity";
 import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-teacher.orm-entity";
+import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import {
   TeacherObservationDoc,
   TeacherObservationSchema,
@@ -33,8 +34,10 @@ import { GradeRepository } from "./infrastructure/persistence/grade.repository";
 import { AcademicPeriodRepository } from "./infrastructure/persistence/academic-period.repository";
 import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-teacher.repository";
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
+import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
+import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
@@ -87,6 +90,21 @@ import { ListSubjectsUseCase } from "./application/use-cases/list-subjects.use-c
 import { UpdateSubjectUseCase } from "./application/use-cases/update-subject.use-case";
 import { ChangeSubjectStatusUseCase } from "./application/use-cases/change-subject-status.use-case";
 import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use-case";
+import { GetTeacherSubjectsUseCase } from "./application/use-cases/get-teacher-subjects.use-case";
+import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
+import { BatchEnrollStudentsUseCase } from "./application/use-cases/batch-enroll-students.use-case";
+import { UpdateEnrollmentStatusUseCase } from "./application/use-cases/update-enrollment-status.use-case";
+import { GetStudentSubjectsUseCase } from "./application/use-cases/get-student-subjects.use-case";
+import { UserProfileAdapter } from "./infrastructure/adapters/user-profile.adapter";
+// Phase 4 use-cases
+import { ImportSubjectGradesUseCase } from "./application/use-cases/import-subject-grades.use-case";
+import { ListGradeImportsUseCase } from "./application/use-cases/list-grade-imports.use-case";
+import { GetGradeImportUseCase } from "./application/use-cases/get-grade-import.use-case";
+import { ListEvaluationsUseCase } from "./application/use-cases/list-evaluations.use-case";
+import { UpdateEvaluationUseCase } from "./application/use-cases/update-evaluation.use-case";
+import { ArchiveEvaluationUseCase } from "./application/use-cases/archive-evaluation.use-case";
+import { GetWeightSummaryUseCase } from "./application/use-cases/get-weight-summary.use-case";
+import { GetSubjectEvaluationWeightsUseCase } from "./application/use-cases/get-subject-evaluation-weights.use-case";
 
 @Module({
   imports: [
@@ -111,6 +129,7 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
           GradeOrmEntity,
           GradeHistoryOrmEntity,
           SubjectTeacherOrmEntity,
+          GradeImportOrmEntity,
         ],
         synchronize: cfg.get("NODE_ENV") !== "production",
         logging: cfg.get("NODE_ENV") === "development",
@@ -127,6 +146,7 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
       GradeOrmEntity,
       GradeHistoryOrmEntity,
       SubjectTeacherOrmEntity,
+      GradeImportOrmEntity,
     ]),
 
     MongooseModule.forRootAsync({
@@ -178,8 +198,11 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
     { provide: "IAcademicPeriodRepository", useClass: AcademicPeriodRepository },
     { provide: "ISubjectTeacherRepository", useClass: SubjectTeacherRepository },
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
+    { provide: "IGradeImportRepository", useClass: GradeImportRepository },
     { provide: "ITeacherObservationRepository", useClass: TeacherObservationRepository },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
+    { provide: "IUserProfilePort", useClass: UserProfileAdapter },
+    { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },
     RecordGradeUseCase,
     RegisterGradeUseCase,
     UpdateGradeUseCase,
@@ -220,6 +243,21 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
     UpdateSubjectUseCase,
     ChangeSubjectStatusUseCase,
     DeleteSubjectUseCase,
+    GetTeacherSubjectsUseCase,
+    // Enrollment use-cases (Phase 3)
+    GetSubjectEnrollmentsUseCase,
+    BatchEnrollStudentsUseCase,
+    UpdateEnrollmentStatusUseCase,
+    GetStudentSubjectsUseCase,
+    // Grade import + Evaluation CRUD (Phase 4)
+    ImportSubjectGradesUseCase,
+    ListGradeImportsUseCase,
+    GetGradeImportUseCase,
+    ListEvaluationsUseCase,
+    UpdateEvaluationUseCase,
+    ArchiveEvaluationUseCase,
+    GetWeightSummaryUseCase,
+    GetSubjectEvaluationWeightsUseCase,
   ],
 })
 export class AppModule {}

@@ -1,9 +1,16 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { SubjectEntity } from '../../domain/entities/subject.entity';
+import { SubjectTeacherEntity } from '../../domain/entities/subject-teacher.entity';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { ICareerRepository } from '../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
+import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
 
 export interface CreateSubjectDto {
   name: string;
@@ -11,9 +18,7 @@ export interface CreateSubjectDto {
   description?: string;
   credits: number;
   careerId: string;
-  academicPeriodId: string;
   maxCapacity?: number;
-  teacherId?: string;
 }
 
 @Injectable()
@@ -25,22 +30,26 @@ export class CreateSubjectUseCase {
     private readonly careerRepo: ICareerRepository,
     @Inject('IAcademicPeriodRepository')
     private readonly periodRepo: IAcademicPeriodRepository,
+    @Inject('ISubjectTeacherRepository')
+    private readonly subjectTeacherRepo: ISubjectTeacherRepository,
   ) {}
 
-  async execute(dto: CreateSubjectDto): Promise<SubjectEntity> {
+  async execute(dto: CreateSubjectDto, teacherId: string): Promise<SubjectEntity> {
+    const activePeriod = await this.periodRepo.findActive();
+    if (!activePeriod) {
+      throw new ConflictException(
+        'No hay un periodo académico activo. Contacta al administrador.',
+      );
+    }
+
     const career = await this.careerRepo.findById(dto.careerId);
     if (!career) {
       throw new NotFoundException(`Career with id '${dto.careerId}' not found`);
     }
 
-    const period = await this.periodRepo.findById(dto.academicPeriodId);
-    if (!period || period.status !== 'ACTIVE') {
-      throw new BadRequestException('Academic period not found or not active');
-    }
-
     const existingByNamePeriod = await this.subjectRepo.findByNameAndPeriod(
       dto.name,
-      dto.academicPeriodId,
+      activePeriod.id,
     );
     if (existingByNamePeriod) {
       throw new ConflictException(
@@ -61,14 +70,20 @@ export class CreateSubjectUseCase {
       dto.code,
       dto.credits,
       dto.careerId,
-      dto.academicPeriodId,
+      activePeriod.id,
       dto.maxCapacity ?? 30,
-      dto.teacherId ?? null,
+      teacherId,
       true,
       now,
       now,
     );
 
-    return this.subjectRepo.save(subject);
+    const saved = await this.subjectRepo.save(subject);
+
+    await this.subjectTeacherRepo.save(
+      new SubjectTeacherEntity(saved.id, teacherId, activePeriod.id),
+    );
+
+    return saved;
   }
 }

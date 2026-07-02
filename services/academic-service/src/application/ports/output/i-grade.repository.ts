@@ -10,6 +10,10 @@ export interface IGradeRepository {
     studentId: string,
     subjectId: string,
   ): Promise<GradeEntity | null>;
+  findAllByStudentAndSubject(
+    studentId: string,
+    subjectId: string,
+  ): Promise<GradeEntity[]>;
   findByStudentId(studentId: string): Promise<GradeEntity[]>;
   findByEvaluationId(evaluationId: string): Promise<GradeEntity[]>;
   save(grade: GradeEntity): Promise<GradeEntity>;
