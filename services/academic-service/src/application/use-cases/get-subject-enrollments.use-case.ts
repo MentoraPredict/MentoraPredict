@@ -8,7 +8,7 @@ import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
 import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { IUserProfilePort } from '../ports/output/i-user-profile.port';
-import { IGradeRepository } from '../ports/output/i-grade.repository';
+import { IAnalyticsClientPort } from '../ports/output/i-analytics-client.port';
 
 @Injectable()
 export class GetSubjectEnrollmentsUseCase {
@@ -21,8 +21,8 @@ export class GetSubjectEnrollmentsUseCase {
     private readonly enrollmentRepo: IEnrollmentRepository,
     @Inject('IUserProfilePort')
     private readonly userProfilePort: IUserProfilePort,
-    @Inject('IGradeRepository')
-    private readonly gradeRepo: IGradeRepository,
+    @Inject('IAnalyticsClientPort')
+    private readonly analyticsClient: IAnalyticsClientPort,
   ) {}
 
   async execute(
@@ -55,9 +55,9 @@ export class GetSubjectEnrollmentsUseCase {
 
     const enriched = await Promise.all(
       items.map(async (e) => {
-        const [profile, grade] = await Promise.all([
+        const [profile, metric] = await Promise.all([
           this.userProfilePort.getProfile(e.studentId),
-          this.gradeRepo.findByStudentAndSubject(e.studentId, subjectId),
+          this.analyticsClient.getLatestSubjectMetric(e.studentId, subjectId),
         ]);
         return {
           enrollmentId: e.id,
@@ -67,7 +67,8 @@ export class GetSubjectEnrollmentsUseCase {
           email: profile?.email ?? null,
           status: e.status,
           enrolledAt: e.enrolledAt,
-          currentAverage: grade?.value ?? null,
+          currentAverage: metric?.averageGrade ?? null,
+          riskLevel: metric?.riskLevel ?? null,
         };
       }),
     );

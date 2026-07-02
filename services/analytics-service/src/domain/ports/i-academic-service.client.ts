@@ -11,6 +11,11 @@ export interface CheckInSummary {
   attendance: boolean;
   taskCompletion: number;
   studyHours: number;
+  generalComprehension: number;
+}
+
+export interface SubjectOwnership {
+  isOwner: boolean;
 }
 
 export interface IAcademicServiceClient {
@@ -23,4 +28,9 @@ export interface IAcademicServiceClient {
     periodId: string,
     correlationId?: string,
   ): Promise<CheckInSummary | null>;
+  getSubjectOwnership(
+    teacherId: string,
+    subjectId: string,
+    correlationId?: string,
+  ): Promise<SubjectOwnership>;
 }

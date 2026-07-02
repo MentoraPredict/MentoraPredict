@@ -4,6 +4,7 @@ import { GetStudentGradesUseCase } from '../../application/use-cases/get-student
 import { GetStudentEnrollmentsUseCase } from '../../application/use-cases/get-student-enrollments.use-case';
 import { GetSubjectEvaluationWeightsUseCase } from '../../application/use-cases/get-subject-evaluation-weights.use-case';
 import { GetLatestCheckInUseCase } from '../../application/use-cases/get-latest-check-in.use-case';
+import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-subject-ownership.use-case';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 @ApiTags('academic-internal')
@@ -15,6 +16,7 @@ export class InternalAcademicController {
     private readonly getEnrollmentsUC: GetStudentEnrollmentsUseCase,
     private readonly getEvalWeightsUC: GetSubjectEvaluationWeightsUseCase,
     private readonly getLatestCheckInUC: GetLatestCheckInUseCase,
+    private readonly checkOwnershipUC: CheckSubjectOwnershipUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
@@ -43,5 +45,11 @@ export class InternalAcademicController {
     @Query('periodId') periodId: string,
   ) {
     return this.getLatestCheckInUC.execute(studentId, subjectId, periodId);
+  }
+
+  @Get('subjects/:subjectId/teachers/:teacherId/is-owner')
+  @ApiOperation({ summary: 'Internal: check whether a teacher owns a subject in its current academic period' })
+  isOwner(@Param('subjectId') subjectId: string, @Param('teacherId') teacherId: string) {
+    return this.checkOwnershipUC.execute(subjectId, teacherId);
   }
 }

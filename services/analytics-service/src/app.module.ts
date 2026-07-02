@@ -12,8 +12,10 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 
 import { StudentMetricsOrmEntity } from "./infrastructure/persistence/student-metrics.orm-entity";
 import { AlertOrmEntity } from "./infrastructure/persistence/alert.orm-entity";
+import { StudentSubjectMetricsOrmEntity } from "./infrastructure/persistence/student-subject-metrics.orm-entity";
 import { StudentMetricsRepository } from "./infrastructure/persistence/student-metrics.repository";
 import { AlertRepository } from "./infrastructure/persistence/alert.repository";
+import { StudentSubjectMetricsRepository } from "./infrastructure/persistence/student-subject-metrics.repository";
 import {
   DatasetVersion,
   DatasetVersionSchema,
@@ -25,6 +27,7 @@ import { MetricsCacheAdapter } from "./infrastructure/cache/metrics-cache.adapte
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
+import { RolesGuard } from "./infrastructure/guards/roles.guard";
 
 import { CalculateAverageUseCase } from "./application/use-cases/calculate-average.use-case";
 import { CalculateTrendUseCase } from "./application/use-cases/calculate-trend.use-case";
@@ -37,6 +40,12 @@ import { GetTeacherDashboardUseCase } from "./application/use-cases/get-teacher-
 import { GetAdminDashboardUseCase } from "./application/use-cases/get-admin-dashboard.use-case";
 import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapshot.use-case";
 import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalculate-student-metrics.use-case";
+import { GetStudentSubjectMetricsUseCase } from "./application/use-cases/get-student-subject-metrics.use-case";
+import { GetSubjectMetricsSummaryUseCase } from "./application/use-cases/get-subject-metrics-summary.use-case";
+import { GetLatestSubjectMetricUseCase } from "./application/use-cases/get-latest-subject-metric.use-case";
+import { GetSubjectRiskUseCase } from "./application/use-cases/get-subject-risk.use-case";
+import { GetSubjectAlertsUseCase } from "./application/use-cases/get-subject-alerts.use-case";
+import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-case";
 
 @Module({
   imports: [
@@ -51,11 +60,11 @@ import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalc
         username: cfg.get("POSTGRES_USER", "mp_user"),
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
-        entities: [StudentMetricsOrmEntity, AlertOrmEntity],
+        entities: [StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity],
         synchronize: cfg.get("NODE_ENV") !== "production",
       }),
     }),
-    TypeOrmModule.forFeature([StudentMetricsOrmEntity, AlertOrmEntity]),
+    TypeOrmModule.forFeature([StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity]),
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
@@ -93,10 +102,15 @@ import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalc
   providers: [
     RedisClient,
     InternalJwtService,
+    RolesGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
     {
       provide: "IStudentMetricsRepository",
       useClass: StudentMetricsRepository,
+    },
+    {
+      provide: "IStudentSubjectMetricsRepository",
+      useClass: StudentSubjectMetricsRepository,
     },
     { provide: "IAlertRepository", useClass: AlertRepository },
     {
@@ -127,6 +141,12 @@ import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalc
     GetAdminDashboardUseCase,
     GetRiskSnapshotUseCase,
     RecalculateStudentMetricsUseCase,
+    GetStudentSubjectMetricsUseCase,
+    GetSubjectMetricsSummaryUseCase,
+    GetLatestSubjectMetricUseCase,
+    GetSubjectRiskUseCase,
+    GetSubjectAlertsUseCase,
+    ResolveAlertUseCase,
   ],
 })
 export class AppModule {}

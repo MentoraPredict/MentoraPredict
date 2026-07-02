@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { CheckInSummary, EvaluationWeight, IAcademicServiceClient } from '../../domain/ports/i-academic-service.client';
+import { CheckInSummary, EvaluationWeight, IAcademicServiceClient, SubjectOwnership } from '../../domain/ports/i-academic-service.client';
 import { Grade } from '../../domain/entities/grade.vo';
 import { Enrollment } from '../../domain/entities/enrollment.vo';
 import { InternalJwtService } from '../auth/internal-jwt.service';
@@ -50,6 +50,17 @@ export class AcademicHttpClient implements IAcademicServiceClient {
   ): Promise<CheckInSummary | null> {
     return this.request<CheckInSummary | null>(
       `/api/v1/academic/internal/students/${studentId}/check-ins/latest?subjectId=${subjectId}&periodId=${periodId}`,
+      correlationId,
+    );
+  }
+
+  getSubjectOwnership(
+    teacherId: string,
+    subjectId: string,
+    correlationId?: string,
+  ): Promise<SubjectOwnership> {
+    return this.request<SubjectOwnership>(
+      `/api/v1/academic/internal/subjects/${subjectId}/teachers/${teacherId}/is-owner`,
       correlationId,
     );
   }

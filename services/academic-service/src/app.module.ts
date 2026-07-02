@@ -114,6 +114,7 @@ import { UpdateCheckInUseCase } from "./application/use-cases/update-check-in.us
 import { ListCheckInsUseCase } from "./application/use-cases/list-check-ins.use-case";
 import { GetCheckInsSummaryUseCase } from "./application/use-cases/get-check-ins-summary.use-case";
 import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
+import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subject-ownership.use-case";
 
 @Module({
   imports: [
@@ -277,6 +278,7 @@ import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-chec
     ListCheckInsUseCase,
     GetCheckInsSummaryUseCase,
     GetLatestCheckInUseCase,
+    CheckSubjectOwnershipUseCase,
   ],
 })
 export class AppModule {}

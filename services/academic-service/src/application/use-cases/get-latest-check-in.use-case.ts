@@ -5,6 +5,7 @@ export interface LatestCheckInSummary {
   attendance: boolean;
   taskCompletion: number;
   studyHours: number;
+  generalComprehension: number;
 }
 
 @Injectable()
@@ -24,6 +25,7 @@ export class GetLatestCheckInUseCase {
       attendance: checkIn.attendance,
       taskCompletion: checkIn.taskCompletion,
       studyHours: checkIn.studyHours,
+      generalComprehension: checkIn.generalComprehension,
     };
   }
 }

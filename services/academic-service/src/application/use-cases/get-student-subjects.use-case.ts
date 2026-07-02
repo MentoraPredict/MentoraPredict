@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { IUserProfilePort } from '../ports/output/i-user-profile.port';
-import { IGradeRepository } from '../ports/output/i-grade.repository';
+import { IAnalyticsClientPort } from '../ports/output/i-analytics-client.port';
 
 @Injectable()
 export class GetStudentSubjectsUseCase {
@@ -10,8 +10,8 @@ export class GetStudentSubjectsUseCase {
     private readonly enrollmentRepo: IEnrollmentRepository,
     @Inject('IUserProfilePort')
     private readonly userProfilePort: IUserProfilePort,
-    @Inject('IGradeRepository')
-    private readonly gradeRepo: IGradeRepository,
+    @Inject('IAnalyticsClientPort')
+    private readonly analyticsClient: IAnalyticsClientPort,
   ) {}
 
   async execute(
@@ -31,10 +31,10 @@ export class GetStudentSubjectsUseCase {
       ...new Set(items.map((r) => r.teacherId).filter((id): id is string => !!id)),
     ];
 
-    const [teacherProfiles, grades] = await Promise.all([
+    const [teacherProfiles, metrics] = await Promise.all([
       Promise.all(uniqueTeacherIds.map((id) => this.userProfilePort.getProfile(id))),
       Promise.all(
-        items.map((r) => this.gradeRepo.findByStudentAndSubject(studentId, r.subjectId)),
+        items.map((r) => this.analyticsClient.getLatestSubjectMetric(studentId, r.subjectId)),
       ),
     ]);
 
@@ -44,7 +44,7 @@ export class GetStudentSubjectsUseCase {
 
     const data = items.map((row, i) => {
       const teacher = row.teacherId ? teacherMap.get(row.teacherId) : null;
-      const grade = grades[i];
+      const metric = metrics[i];
       return {
         enrollmentId: row.enrollmentId,
         subjectId: row.subjectId,
@@ -63,8 +63,8 @@ export class GetStudentSubjectsUseCase {
         careerName: row.careerName,
         status: row.status,
         enrolledAt: row.enrolledAt,
-        currentAverage: grade?.value ?? null,
-        riskLevel: null,
+        currentAverage: metric?.averageGrade ?? null,
+        riskLevel: metric?.riskLevel ?? null,
       };
     });
 
