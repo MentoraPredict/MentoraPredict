@@ -223,9 +223,7 @@ export class AcademicController {
 
   @Post("enrollments")
   @Roles("TEACHER")
-  @ApiOperation({
-    summary: "RF-007: Enroll a student in a subject (TEACHER only)",
-  })
+  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (TEACHER only)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 409, description: "Already enrolled or no capacity" })
@@ -262,9 +260,7 @@ export class AcademicController {
   @Post("subjects/:subjectId/enrollments/batch")
   @Roles("TEACHER")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: "Batch enroll multiple students in a subject (TEACHER only)",
-  })
+  @ApiOperation({ summary: "Batch enroll multiple students in a subject (TEACHER only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 404 })
@@ -280,9 +276,7 @@ export class AcademicController {
 
   @Patch("enrollments/:enrollmentId/status")
   @Roles("TEACHER", "ADMIN")
-  @ApiOperation({
-    summary: "Change enrollment status (TEACHER: own courses only)",
-  })
+  @ApiOperation({ summary: "Change enrollment status (TEACHER: own courses only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
@@ -326,19 +320,10 @@ export class AcademicController {
 
   @Get("students/me/subjects/:subjectId/check-ins/current")
   @Roles("STUDENT")
-  @ApiOperation({
-    summary:
-      "Get the authenticated student's check-in for the current academic week",
-  })
+  @ApiOperation({ summary: "Get the authenticated student's check-in for the current academic week" })
   @ApiResponse({ status: 200 })
-  @ApiResponse({
-    status: 403,
-    description: "Student is not actively enrolled in this subject",
-  })
-  async getCurrentCheckIn(
-    @Param("subjectId") subjectId: string,
-    @Req() req: JwtRequest,
-  ) {
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
+  async getCurrentCheckIn(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
     const studentId = req.user?.sub;
     if (!studentId) throw new UnauthorizedException("Missing student identity");
     return this.getCurrentCheckInUC.execute(studentId, subjectId);
@@ -347,14 +332,9 @@ export class AcademicController {
   @Post("students/me/subjects/:subjectId/check-ins")
   @Roles("STUDENT")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: "Create or update (upsert) the current week's check-in",
-  })
+  @ApiOperation({ summary: "Create or update (upsert) the current week's check-in" })
   @ApiResponse({ status: 200 })
-  @ApiResponse({
-    status: 403,
-    description: "Student is not actively enrolled in this subject",
-  })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
   @ApiResponse({ status: 409, description: "No active academic period" })
   async upsertCheckIn(
     @Param("subjectId") subjectId: string,
@@ -368,14 +348,9 @@ export class AcademicController {
 
   @Put("students/me/subjects/:subjectId/check-ins/:checkInId")
   @Roles("STUDENT")
-  @ApiOperation({
-    summary: "Update an existing check-in owned by the authenticated student",
-  })
+  @ApiOperation({ summary: "Update an existing check-in owned by the authenticated student" })
   @ApiResponse({ status: 200 })
-  @ApiResponse({
-    status: 403,
-    description: "Check-in does not belong to this student",
-  })
+  @ApiResponse({ status: 403, description: "Check-in does not belong to this student" })
   @ApiResponse({ status: 404 })
   async updateCheckIn(
     @Param("checkInId") checkInId: string,
@@ -389,14 +364,9 @@ export class AcademicController {
 
   @Get("students/me/subjects/:subjectId/check-ins")
   @Roles("STUDENT")
-  @ApiOperation({
-    summary: "List the authenticated student's check-in history for a subject",
-  })
+  @ApiOperation({ summary: "List the authenticated student's check-in history for a subject" })
   @ApiResponse({ status: 200 })
-  @ApiResponse({
-    status: 403,
-    description: "Student is not actively enrolled in this subject",
-  })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
   async listCheckIns(
     @Param("subjectId") subjectId: string,
     @Req() req: JwtRequest,
@@ -413,16 +383,10 @@ export class AcademicController {
 
   @Get("subjects/:subjectId/check-ins/summary")
   @Roles("TEACHER")
-  @ApiOperation({
-    summary:
-      "Aggregated weekly check-in averages for a subject (TEACHER owner)",
-  })
+  @ApiOperation({ summary: "Aggregated weekly check-in averages for a subject (TEACHER owner)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
-  async getCheckInsSummary(
-    @Param("subjectId") subjectId: string,
-    @Req() req: JwtRequest,
-  ) {
+  async getCheckInsSummary(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
     return this.getCheckInsSummaryUC.execute(subjectId, teacherId);
@@ -476,10 +440,7 @@ export class AcademicController {
 
   @Post("evaluations")
   @Roles("TEACHER", "ADMIN")
-  @ApiOperation({
-    summary:
-      "RF-008: Create evaluation for a subject (legacy — subjectId in body)",
-  })
+  @ApiOperation({ summary: "RF-008: Create evaluation for a subject (legacy — subjectId in body)" })
   @ApiResponse({ status: 201 })
   async createEvaluation(@Body() dto: CreateEvaluationDto) {
     return this.createEvaluationUC.execute(dto);
@@ -497,10 +458,7 @@ export class AcademicController {
 
   @Get("subjects/:subjectId/evaluations")
   @Roles("TEACHER", "ADMIN", "STUDENT")
-  @ApiOperation({
-    summary:
-      "List evaluations for a subject (STUDENT requires active enrollment)",
-  })
+  @ApiOperation({ summary: "List evaluations for a subject (STUDENT requires active enrollment)" })
   @ApiResponse({ status: 200 })
   async listEvaluations(
     @Param("subjectId") subjectId: string,
@@ -508,20 +466,13 @@ export class AcademicController {
   ) {
     const requesterId = req.user?.sub ?? "";
     const requesterRole = req.user?.role ?? "";
-    return this.listEvaluationsUC.execute(
-      subjectId,
-      requesterId,
-      requesterRole,
-    );
+    return this.listEvaluationsUC.execute(subjectId, requesterId, requesterRole);
   }
 
   @Post("subjects/:subjectId/evaluations")
   @Roles("TEACHER")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary:
-      "Create evaluation for a subject (TEACHER owner, subjectId from URL)",
-  })
+  @ApiOperation({ summary: "Create evaluation for a subject (TEACHER owner, subjectId from URL)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 400, description: "Weight would exceed 100%" })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
@@ -540,9 +491,7 @@ export class AcademicController {
 
   @Put("evaluations/:evaluationId")
   @Roles("TEACHER")
-  @ApiOperation({
-    summary: "Update evaluation name/weight/dueDate (TEACHER owner)",
-  })
+  @ApiOperation({ summary: "Update evaluation name/weight/dueDate (TEACHER owner)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 400, description: "Weight would exceed 100%" })
   @ApiResponse({ status: 403 })
@@ -559,10 +508,7 @@ export class AcademicController {
 
   @Patch("evaluations/:evaluationId/status")
   @Roles("TEACHER")
-  @ApiOperation({
-    summary:
-      "Archive or reactivate an evaluation (TEACHER owner, no grade deletion)",
-  })
+  @ApiOperation({ summary: "Archive or reactivate an evaluation (TEACHER owner, no grade deletion)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
@@ -573,21 +519,14 @@ export class AcademicController {
   ) {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
-    return this.archiveEvaluationUC.execute(
-      evaluationId,
-      teacherId,
-      dto.isActive,
-    );
+    return this.archiveEvaluationUC.execute(evaluationId, teacherId, dto.isActive);
   }
 
   // ─── Grade import (Phase 4) ────────────────────────────────────────────────
 
   @Post("subjects/:subjectId/grade-imports")
   @Roles("TEACHER")
-  @ApiOperation({
-    summary:
-      "Import grades from XLSX/CSV for a specific subject (TEACHER owner)",
-  })
+  @ApiOperation({ summary: "Import grades from XLSX/CSV for a specific subject (TEACHER owner)" })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -939,15 +878,13 @@ export class AcademicController {
   @ApiResponse({ status: 409 })
   async createSubject(@Body() dto: CreateSubjectDto, @Req() req: JwtRequest) {
     const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    if (!teacherId) throw new UnauthorizedException('Missing teacher identity');
     return this.createSubjectUC.execute(dto, teacherId);
   }
 
   @Get("teachers/me/subjects")
   @Roles("TEACHER")
-  @ApiOperation({
-    summary: "Get authenticated teacher's subjects with pagination",
-  })
+  @ApiOperation({ summary: "Get authenticated teacher's subjects with pagination" })
   @ApiResponse({ status: 200 })
   async getMySubjects(
     @Req() req: JwtRequest,
@@ -957,11 +894,11 @@ export class AcademicController {
     @Query("limit") limit?: string,
   ) {
     const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    if (!teacherId) throw new UnauthorizedException('Missing teacher identity');
     return this.getTeacherSubjectsUC.execute(
       teacherId,
       { periodId, status },
-      { page: parseInt(page ?? "1", 10), limit: parseInt(limit ?? "20", 10) },
+      { page: parseInt(page ?? '1', 10), limit: parseInt(limit ?? '20', 10) },
     );
   }
 
@@ -1002,20 +939,10 @@ export class AcademicController {
   @Post("subjects/:subjectId/image")
   @Roles("TEACHER")
   @UseFilters(MulterExceptionFilter)
-  @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }),
-  )
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
   @ApiConsumes("multipart/form-data")
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: { file: { type: "string", format: "binary" } },
-    },
-  })
-  @ApiOperation({
-    summary:
-      "Upload/replace a subject's cover image (TEACHER owner, jpg/jpeg/png, max 2MB)",
-  })
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace a subject's cover image (TEACHER owner, jpg/jpeg/png, max 2MB)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 413, description: "File too large" })
@@ -1036,10 +963,7 @@ export class AcademicController {
   @ApiOperation({ summary: "Remove a subject's cover image (TEACHER owner)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
-  async deleteSubjectImage(
-    @Param("subjectId") subjectId: string,
-    @Req() req: JwtRequest,
-  ) {
+  async deleteSubjectImage(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
     return this.deleteSubjectImageUC.execute(subjectId, teacherId);
@@ -1049,17 +973,11 @@ export class AcademicController {
 
   @Get("subjects/:subjectId/topics")
   @Roles("TEACHER", "STUDENT")
-  @ApiOperation({
-    summary:
-      "List a subject's topics, ordered (TEACHER owner or STUDENT actively enrolled)",
-  })
+  @ApiOperation({ summary: "List a subject's topics, ordered (TEACHER owner or STUDENT actively enrolled)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
-  async listTopics(
-    @Param("subjectId") subjectId: string,
-    @Req() req: JwtRequest,
-  ) {
+  async listTopics(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
     const requesterId = req.user?.sub ?? "";
     const requesterRole = req.user?.role ?? "";
     return this.listTopicsUC.execute(subjectId, requesterId, requesterRole);
@@ -1068,9 +986,7 @@ export class AcademicController {
   @Post("subjects/:subjectId/topics")
   @Roles("TEACHER")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: "Create a topic for a subject, without a file yet (TEACHER owner)",
-  })
+  @ApiOperation({ summary: "Create a topic for a subject, without a file yet (TEACHER owner)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 404 })
@@ -1086,9 +1002,7 @@ export class AcademicController {
 
   @Put("topics/:topicId")
   @Roles("TEACHER")
-  @ApiOperation({
-    summary: "Update a topic's title/description/order (TEACHER owner)",
-  })
+  @ApiOperation({ summary: "Update a topic's title/description/order (TEACHER owner)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
@@ -1105,9 +1019,7 @@ export class AcademicController {
   @Delete("topics/:topicId")
   @Roles("TEACHER")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({
-    summary: "Delete a topic and its physical file, if any (TEACHER owner)",
-  })
+  @ApiOperation({ summary: "Delete a topic and its physical file, if any (TEACHER owner)" })
   @ApiResponse({ status: 204 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
@@ -1120,20 +1032,10 @@ export class AcademicController {
   @Post("topics/:topicId/file")
   @Roles("TEACHER")
   @UseFilters(MulterExceptionFilter)
-  @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: MAX_TOPIC_FILE_BYTES } }),
-  )
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_TOPIC_FILE_BYTES } }))
   @ApiConsumes("multipart/form-data")
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: { file: { type: "string", format: "binary" } },
-    },
-  })
-  @ApiOperation({
-    summary:
-      "Upload/replace a topic's file (TEACHER owner, image 2MB or pdf/docx/pptx/xlsx 10MB)",
-  })
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace a topic's file (TEACHER owner, image 2MB or pdf/docx/pptx/xlsx 10MB)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 413, description: "File too large" })
@@ -1151,16 +1053,11 @@ export class AcademicController {
   @Delete("topics/:topicId/file")
   @Roles("TEACHER")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: "Remove a topic's file, keeping the topic itself (TEACHER owner)",
-  })
+  @ApiOperation({ summary: "Remove a topic's file, keeping the topic itself (TEACHER owner)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
-  async deleteTopicFile(
-    @Param("topicId") topicId: string,
-    @Req() req: JwtRequest,
-  ) {
+  async deleteTopicFile(@Param("topicId") topicId: string, @Req() req: JwtRequest) {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
     return this.deleteTopicFileUC.execute(topicId, teacherId);

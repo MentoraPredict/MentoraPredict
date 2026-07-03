@@ -36,9 +36,10 @@ FROM node:22-alpine AS runner
 WORKDIR /app/services/academic-service
 COPY --from=builder /app/services/academic-service/dist ./dist
 COPY --from=builder /app/services/academic-service/package.json ./
-COPY --from=builder /app/node_modules /app/node_modules
-COPY --from=builder /app/services/academic-service/node_modules ./node_modules
-RUN mkdir -p uploads/subjects uploads/topics && chown -R node:node uploads
+COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY --from=prod-deps /app/services/academic-service/node_modules ./node_modules
+RUN mkdir -p uploads/subjects uploads/topics \
+    && chown -R node:node uploads
 USER node
 ENV NODE_ENV=production
 EXPOSE 3003

@@ -309,6 +309,28 @@ services:
               limit_by: ip
               fault_tolerant: true
 
+  - name: pgadmin
+    url: http://pgadmin:80
+    routes:
+      - name: pgadmin-route
+        paths:
+          - /pgadmin
+        strip_path: false
+        regex_priority: 300
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-Script-Name:/pgadmin
+                  - X-Forwarded-Prefix:/pgadmin
+          - name: rate-limiting
+            config:
+              minute: 60
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
   - name: web
     url: http://web:80
     routes:

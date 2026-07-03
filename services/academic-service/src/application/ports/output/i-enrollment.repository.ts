@@ -1,4 +1,23 @@
-import { EnrollmentEntity } from "../../../domain/entities/enrollment.entity";
+import { EnrollmentEntity } from '../../../domain/entities/enrollment.entity';
+
+export interface StudentSubjectRawRow {
+  enrollmentId: string;
+  studentId: string;
+  status: string;
+  enrolledAt: Date;
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  subjectDescription: string;
+  credits: number;
+  maxCapacity: number;
+  teacherId: string | null;
+  careerId: string;
+  careerName: string;
+  periodId: string;
+  periodName: string;
+  periodStatus: string;
+}
 
 export interface StudentSubjectRawRow {
   enrollmentId: string;
@@ -48,5 +67,5 @@ export interface IEnrollmentRepository {
   saveWithCapacityCheck(
     enrollment: EnrollmentEntity,
     maxCapacity: number,
-  ): Promise<"enrolled" | "at_capacity" | "already_enrolled">;
+  ): Promise<'enrolled' | 'at_capacity' | 'already_enrolled'>;
 }
