@@ -5,12 +5,17 @@ import type { CourseEnrolledStudent } from "@/types/course";
 
 interface TeacherCourseStudentsTableRowProps {
   student: CourseEnrolledStudent;
-  onUnenrollStudent: (studentId: string) => void;
+  isUpdating?: boolean;
+  onEnrollmentStatusChange?: (
+    enrollmentId: string,
+    isCurrentlyEnrolled: boolean,
+  ) => void;
 }
 
 export default function TeacherCourseStudentsTableRow({
   student,
-  onUnenrollStudent,
+  isUpdating,
+  onEnrollmentStatusChange,
 }: TeacherCourseStudentsTableRowProps) {
   return (
     <tr
@@ -32,19 +37,24 @@ export default function TeacherCourseStudentsTableRow({
       </td>
 
       <td className="px-6 py-4">
-        <Text variant="small">{student.average}/20</Text>
+        <Text variant="small">
+          {student.average === null ? "-" : `${student.average}/20`}
+        </Text>
       </td>
 
       <td className="px-6 py-4">
-        <Text variant="small">{student.attendance}%</Text>
+        <Text variant="small">
+          {student.attendance === null ? "-" : `${student.attendance}%`}
+        </Text>
       </td>
 
       <td className="px-6 py-4">
         <StudentEnrollmentCell
           isEnrolled={student.isEnrolled}
-          onUnenroll={() => {
-            onUnenrollStudent(student.id);
-          }}
+          isUpdating={isUpdating}
+          onStatusChange={() =>
+            onEnrollmentStatusChange?.(student.id, student.isEnrolled)
+          }
         />
       </td>
     </tr>

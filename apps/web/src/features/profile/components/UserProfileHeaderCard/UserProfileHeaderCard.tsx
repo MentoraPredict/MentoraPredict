@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
@@ -10,6 +10,7 @@ interface UserProfileHeaderCardProps {
   lastName?: string;
   imageUrl?: string;
   onChangeImage?: (file: File) => void;
+  resetToken?: number;
 }
 
 export default function UserProfileHeaderCard({
@@ -17,8 +18,13 @@ export default function UserProfileHeaderCard({
   lastName,
   imageUrl,
   onChangeImage,
+  resetToken = 0,
 }: UserProfileHeaderCardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(imageUrl);
+
+  useEffect(() => {
+    setPreviewUrl(imageUrl);
+  }, [imageUrl, resetToken]);
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ");
 

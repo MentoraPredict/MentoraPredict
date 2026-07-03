@@ -52,7 +52,7 @@ export class GradeImportRepository implements IGradeImportRepository {
       o.unchangedRows,
       o.failedRows,
       o.status as GradeImportStatus,
-      o.errors as GradeImportError[],
+      o.errors as unknown as GradeImportError[],
       o.createdAt,
     );
 
@@ -69,7 +69,7 @@ export class GradeImportRepository implements IGradeImportRepository {
     o.unchangedRows = d.unchangedRows;
     o.failedRows = d.failedRows;
     o.status = d.status;
-    o.errors = d.errors as Record<string, unknown>[];
+    o.errors = d.errors as unknown as Record<string, unknown>[];
     return o;
   }
 }

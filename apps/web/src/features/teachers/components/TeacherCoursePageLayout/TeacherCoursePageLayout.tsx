@@ -22,6 +22,8 @@ interface TeacherCoursePageActions {
     payload: UpdateTeacherCoursePayload,
   ) => Promise<void>;
   updatingCourseId: string | null;
+  uploadCourseImage: (courseId: string, file: File) => Promise<string | undefined>;
+  removeCourseImage: (courseId: string) => Promise<void>;
 }
 
 function getTeacherDisplayName(user: ReturnType<typeof useAuthStore.getState>["user"]) {
@@ -37,7 +39,15 @@ export default function TeacherCoursePageLayout({
   const user = useAuthStore((state) => state.user);
   const teacherName = useMemo(() => getTeacherDisplayName(user), [user]);
 
-  const { courses, isLoading, error, updateCourse, updatingCourseId } = useTeacherCourses(
+  const {
+    courses,
+    isLoading,
+    error,
+    updateCourse,
+    updatingCourseId,
+    uploadCourseImage,
+    removeCourseImage,
+  } = useTeacherCourses(
     user?.id,
     teacherName
   );
@@ -73,7 +83,12 @@ export default function TeacherCoursePageLayout({
         </div>
       ) : activeCourse ? (
         typeof children === "function" ? (
-          children(activeCourse, { updateCourse, updatingCourseId })
+          children(activeCourse, {
+            updateCourse,
+            updatingCourseId,
+            uploadCourseImage,
+            removeCourseImage,
+          })
         ) : (
           children
         )

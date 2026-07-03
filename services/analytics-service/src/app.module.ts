@@ -67,11 +67,21 @@ import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-al
         username: cfg.get("POSTGRES_USER", "mp_user"),
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
-        entities: [StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity, NotificationOrmEntity],
+        entities: [
+          StudentMetricsOrmEntity,
+          AlertOrmEntity,
+          StudentSubjectMetricsOrmEntity,
+          NotificationOrmEntity,
+        ],
         synchronize: cfg.get("NODE_ENV") !== "production",
       }),
     }),
-    TypeOrmModule.forFeature([StudentMetricsOrmEntity, AlertOrmEntity, StudentSubjectMetricsOrmEntity, NotificationOrmEntity]),
+    TypeOrmModule.forFeature([
+      StudentMetricsOrmEntity,
+      AlertOrmEntity,
+      StudentSubjectMetricsOrmEntity,
+      NotificationOrmEntity,
+    ]),
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
@@ -86,8 +96,14 @@ import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-al
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
         if (privateKey && publicKey) {
           return {
             privateKey,

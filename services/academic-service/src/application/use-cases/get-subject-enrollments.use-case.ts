@@ -73,6 +73,11 @@ export class GetSubjectEnrollmentsUseCase {
       }),
     );
 
-    return { data: enriched, total, page: pagination.page, limit: pagination.limit };
+    return {
+      data: enriched,
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+    };
   }
 }

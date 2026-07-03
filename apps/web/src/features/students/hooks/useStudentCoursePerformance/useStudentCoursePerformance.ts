@@ -1,93 +1,44 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-import {
-  getActiveAcademicPeriod,
-  getStudentPerformanceDashboard,
-  type ActiveAcademicPeriod,
-  type StudentPerformanceMetrics,
-} from "@/services/student-performance.service";
-import { useAuthStore } from "@/store/auth.store";
+import { getStudentSubjectAnalytics } from "@/services/course-analytics.service";
 
-interface StudentCoursePerformanceState {
-  period: ActiveAcademicPeriod | null;
-  metrics: StudentPerformanceMetrics | null;
-  isLoading: boolean;
-  error: string | null;
-}
+type StudentAnalytics = Awaited<ReturnType<typeof getStudentSubjectAnalytics>>;
 
 function getErrorMessage(error: unknown) {
   if (axios.isAxiosError<{ message?: string | string[] }>(error)) {
     const message = error.response?.data?.message;
-
     if (Array.isArray(message)) return message.join(". ");
     if (message) return message;
   }
-
-  return "No fue posible cargar el rendimiento académico.";
+  return "No fue posible cargar las métricas de la materia.";
 }
 
 export default function useStudentCoursePerformance(courseId: string) {
-  const studentId = useAuthStore((state) => state.user?.id);
-  const [state, setState] = useState<StudentCoursePerformanceState>({
-    period: null,
-    metrics: null,
-    isLoading: true,
-    error: null,
-  });
+  const [data, setData] = useState<StudentAnalytics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
+    setIsLoading(true);
+    setError(null);
 
-    async function loadPerformance() {
-      if (!studentId) {
-        setState({
-          period: null,
-          metrics: null,
-          isLoading: false,
-          error: "No se pudo identificar al estudiante autenticado.",
-        });
-        return;
-      }
-
-      setState((current) => ({ ...current, isLoading: true, error: null }));
-
-      try {
-        const period = await getActiveAcademicPeriod();
-        const dashboard = await getStudentPerformanceDashboard(
-          studentId,
-          period.id,
-        );
-
-        if (!isCancelled) {
-          setState({
-            period,
-            metrics: dashboard.metrics,
-            isLoading: false,
-            error: null,
-          });
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          setState({
-            period: null,
-            metrics: null,
-            isLoading: false,
-            error: getErrorMessage(error),
-          });
-        }
-      }
-    }
-
-    void loadPerformance();
+    getStudentSubjectAnalytics(courseId)
+      .then((response) => {
+        if (!isCancelled) setData(response);
+      })
+      .catch((requestError) => {
+        if (!isCancelled) setError(getErrorMessage(requestError));
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoading(false);
+      });
 
     return () => {
       isCancelled = true;
     };
-  }, [studentId, courseId]);
+  }, [courseId]);
 
-  return {
-    ...state,
-    subjectAverage: state.metrics?.subjectAverages[courseId] ?? null,
-  };
+  return { data, isLoading, error };
 }

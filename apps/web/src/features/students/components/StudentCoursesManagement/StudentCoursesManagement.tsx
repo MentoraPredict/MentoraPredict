@@ -9,12 +9,10 @@ import StudentCoursesEmptyState from "@/features/students/components/StudentCour
 import useStudentCourses from "@/features/students/hooks/useStudentCourses";
 
 import { getStudentCoursePerformancePath } from "@/routes/paths";
-import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentCoursesManagement() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const { courses, isLoading, error } = useStudentCourses(user?.id);
+  const { courses, isLoading, error } = useStudentCourses();
 
   return (
     <section className="py-8">

@@ -18,6 +18,8 @@ interface UserApiResponse {
     is_active?: boolean;
     status?: UserStatus;
     photo?: string | null;
+    avatarUrl?: string | null;
+    avatar_url?: string | null;
     createdAt?: string;
     created_at?: string;
     updatedAt?: string;
@@ -60,6 +62,7 @@ function toAppUser(user: UserApiResponse): AppUser {
         isActive,
         createdAt: user.createdAt ?? user.created_at,
         updatedAt: user.updatedAt ?? user.updated_at,
+        avatarUrl: user.avatarUrl ?? user.avatar_url ?? user.photo,
     };
 }
 
@@ -75,6 +78,21 @@ export async function getUsers(): Promise<AppUser[]> {
     const response = await api.get<UserApiResponse[]>(endpoints.users.list);
 
     return response.data.map(toAppUser);
+}
+
+export async function uploadCurrentUserAvatar(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<AuthSessionUser>(
+        endpoints.users.avatar,
+        formData,
+    );
+    return response.data;
+}
+
+export async function deleteCurrentUserAvatar() {
+    const response = await api.delete<AuthSessionUser>(endpoints.users.avatar);
+    return response.data;
 }
 
 export async function getStudents(): Promise<AppUser[]> {

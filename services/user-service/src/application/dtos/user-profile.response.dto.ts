@@ -3,6 +3,7 @@ export class UserProfileResponseDto {
 
   // USER-SERVICE (perfil)
   photo?: string | null;
+  avatarUrl?: string | null;
   bio?: string | null;
   cedula!: string;
   role!: string;

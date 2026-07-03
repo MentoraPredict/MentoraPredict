@@ -108,6 +108,7 @@ export class EnrollmentRepository implements IEnrollmentRepository {
         s.name AS "subjectName",
         s.code AS "subjectCode",
         s.description AS "subjectDescription",
+        s.image_url AS "subjectImageUrl",
         s.credits,
         s.max_capacity AS "maxCapacity",
         s.teacher_id AS "teacherId",
@@ -127,7 +128,9 @@ export class EnrollmentRepository implements IEnrollmentRepository {
 
     const [countResult, items] = await Promise.all([
       this.repo.manager.query(countSql, params) as Promise<{ total: number }[]>,
-      this.repo.manager.query(dataSql, dataParams) as Promise<StudentSubjectRawRow[]>,
+      this.repo.manager.query(dataSql, dataParams) as Promise<
+        StudentSubjectRawRow[]
+      >,
     ]);
 
     return { items, total: countResult[0]?.total ?? 0 };
@@ -146,9 +149,9 @@ export class EnrollmentRepository implements IEnrollmentRepository {
   async saveWithCapacityCheck(
     enrollment: EnrollmentEntity,
     maxCapacity: number,
-  ): Promise<'enrolled' | 'at_capacity' | 'already_enrolled'> {
+  ): Promise<"enrolled" | "at_capacity" | "already_enrolled"> {
     return this.repo.manager.transaction(async (em) => {
-      await em.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+      await em.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
         enrollment.subjectId,
       ]);
 
@@ -158,14 +161,14 @@ export class EnrollmentRepository implements IEnrollmentRepository {
         [enrollment.subjectId],
       )) as { count: number }[];
 
-      if (count >= maxCapacity) return 'at_capacity';
+      if (count >= maxCapacity) return "at_capacity";
 
       const existing = await em.query(
         `SELECT id FROM enrollments
          WHERE student_id = $1 AND subject_id = $2 AND period_id = $3 AND status = 'ACTIVE'`,
         [enrollment.studentId, enrollment.subjectId, enrollment.periodId],
       );
-      if (existing.length > 0) return 'already_enrolled';
+      if (existing.length > 0) return "already_enrolled";
 
       await em.query(
         `INSERT INTO enrollments (id, student_id, subject_id, period_id, status, enrolled_at, created_at)
@@ -181,7 +184,7 @@ export class EnrollmentRepository implements IEnrollmentRepository {
         ],
       );
 
-      return 'enrolled';
+      return "enrolled";
     });
   }
 

@@ -5,12 +5,10 @@ import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalytics
 import CourseSidebar from "@/features/courses/components/CourseSidebar";
 import StudentCoursePerformance from "@/features/students/components/StudentCoursePerformance";
 import useStudentCourses from "@/features/students/hooks/useStudentCourses";
-import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentCoursePerformancePage() {
   const { courseId } = useParams();
-  const user = useAuthStore((state) => state.user);
-  const { courses, isLoading, error } = useStudentCourses(user?.id);
+  const { courses, isLoading, error } = useStudentCourses();
   const activeCourse =
     courses.find((course) => course.id === courseId) ?? courses[0] ?? null;
   const activeCourseId = activeCourse?.id ?? courseId ?? "";

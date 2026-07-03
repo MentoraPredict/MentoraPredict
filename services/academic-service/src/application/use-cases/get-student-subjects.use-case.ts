@@ -51,6 +51,7 @@ export class GetStudentSubjectsUseCase {
         name: row.subjectName,
         code: row.subjectCode,
         description: row.subjectDescription,
+        imageUrl: row.subjectImageUrl,
         credits: row.credits,
         maxCapacity: row.maxCapacity,
         teacherId: row.teacherId,

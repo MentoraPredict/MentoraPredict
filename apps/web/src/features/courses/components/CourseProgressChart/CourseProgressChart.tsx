@@ -24,6 +24,7 @@ export default function CourseProgressChart({
   title = "Progreso",
   subtitle = "Promedio general del curso por semana",
 }: CourseProgressChartProps) {
+  const hasProjection = data.some((point) => point.projection !== undefined);
   return (
     <section
       className="
@@ -52,10 +53,12 @@ export default function CourseProgressChart({
             <Text variant="caption">Actual</Text>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-cyan-400" />
-            <Text variant="caption">Proyección</Text>
-          </div>
+          {hasProjection ? (
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-cyan-400" />
+              <Text variant="caption">Proyección</Text>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -66,7 +69,7 @@ export default function CourseProgressChart({
 
             <XAxis dataKey="week" tickLine={false} axisLine={false} />
 
-            <YAxis domain={[0, 20]} tickLine={false} axisLine={false} />
+            <YAxis domain={[0, 10]} tickLine={false} axisLine={false} />
 
             <Tooltip />
 
@@ -78,14 +81,16 @@ export default function CourseProgressChart({
               dot={false}
             />
 
-            <Line
-              type="monotone"
-              dataKey="projection"
-              stroke="var(--color-tertiary-500)"
-              strokeWidth={3}
-              strokeDasharray="6 6"
-              dot={false}
-            />
+            {hasProjection ? (
+              <Line
+                type="monotone"
+                dataKey="projection"
+                stroke="var(--color-tertiary-500)"
+                strokeWidth={3}
+                strokeDasharray="6 6"
+                dot={false}
+              />
+            ) : null}
           </LineChart>
         </ResponsiveContainer>
       </div>

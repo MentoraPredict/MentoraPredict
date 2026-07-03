@@ -6,6 +6,7 @@ import TeacherCourseStudentsToolbar from "@/features/teachers/components/Teacher
 import {
   enrollStudentsInCourse,
   getCourseEnrolledStudents,
+  updateCourseEnrollmentStatus,
 } from "@/services/academic.service";
 import { getStudents } from "@/services/users/users.service";
 
@@ -28,6 +29,9 @@ export default function TeacherCourseStudents({
   >([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
   const [isAddingStudents, setIsAddingStudents] = useState(false);
+  const [updatingEnrollmentId, setUpdatingEnrollmentId] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -40,10 +44,7 @@ export default function TeacherCourseStudents({
 
       try {
         const students = await getStudents();
-        const courseStudents = await getCourseEnrolledStudents(
-          courseId,
-          students,
-        );
+        const courseStudents = await getCourseEnrolledStudents(courseId);
 
         if (isMounted) {
           setAvailableStudents(students);
@@ -148,20 +149,15 @@ export default function TeacherCourseStudents({
       (student) => !failedStudentIds.includes(student.id),
     );
 
-    const newEnrolledStudents: CourseEnrolledStudent[] = successfulStudents.map(
-      (student) => ({
-        id: crypto.randomUUID(),
-        user: student,
-        average: 0,
-        attendance: 0,
-        isEnrolled: true,
-      }),
-    );
-
-    setEnrolledStudents((currentStudents) => [
-      ...currentStudents,
-      ...newEnrolledStudents,
-    ]);
+    if (successfulStudents.length > 0) {
+      try {
+        setEnrolledStudents(await getCourseEnrolledStudents(courseId));
+      } catch {
+        setError(
+          "Los estudiantes fueron matriculados, pero no se pudo actualizar la lista.",
+        );
+      }
+    }
 
     if (failedStudentIds.length > 0) {
       setError(
@@ -181,10 +177,35 @@ export default function TeacherCourseStudents({
     setIsAddingStudents(false);
   };
 
-  const handleUnenrollStudent = (studentId: string) => {
-    setEnrolledStudents((currentStudents) =>
-      currentStudents.filter((student) => student.id !== studentId),
-    );
+  const handleEnrollmentStatusChange = async (
+    enrollmentId: string,
+    isCurrentlyEnrolled: boolean,
+  ) => {
+    const nextStatus = isCurrentlyEnrolled ? "WITHDRAWN" : "ACTIVE";
+
+    setUpdatingEnrollmentId(enrollmentId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await updateCourseEnrollmentStatus(enrollmentId, nextStatus);
+      setEnrolledStudents((currentStudents) =>
+        currentStudents.map((student) =>
+          student.id === enrollmentId
+            ? { ...student, isEnrolled: nextStatus === "ACTIVE" }
+            : student,
+        ),
+      );
+      setSuccessMessage(
+        nextStatus === "ACTIVE"
+          ? "Estudiante matriculado nuevamente."
+          : "Estudiante retirado del curso.",
+      );
+    } catch {
+      setError("No se pudo actualizar el estado de la matrícula.");
+    } finally {
+      setUpdatingEnrollmentId(null);
+    }
   };
 
   return (
@@ -221,7 +242,8 @@ export default function TeacherCourseStudents({
 
       <TeacherCourseStudentsTable
         students={enrolledStudents}
-        onUnenrollStudent={handleUnenrollStudent}
+        updatingEnrollmentId={updatingEnrollmentId}
+        onEnrollmentStatusChange={handleEnrollmentStatusChange}
       />
     </div>
   );

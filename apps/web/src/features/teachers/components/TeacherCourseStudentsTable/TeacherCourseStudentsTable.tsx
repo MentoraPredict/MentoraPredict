@@ -5,12 +5,17 @@ import type { CourseEnrolledStudent } from "@/types/course";
 
 interface TeacherCourseStudentsTableProps {
   students: CourseEnrolledStudent[];
-  onUnenrollStudent: (studentId: string) => void;
+  updatingEnrollmentId?: string | null;
+  onEnrollmentStatusChange?: (
+    enrollmentId: string,
+    isCurrentlyEnrolled: boolean,
+  ) => void;
 }
 
 export default function TeacherCourseStudentsTable({
   students,
-  onUnenrollStudent,
+  updatingEnrollmentId,
+  onEnrollmentStatusChange,
 }: TeacherCourseStudentsTableProps) {
   return (
     <div
@@ -79,7 +84,8 @@ export default function TeacherCourseStudentsTable({
               <TeacherCourseStudentsTableRow
                 key={student.id}
                 student={student}
-                onUnenrollStudent={onUnenrollStudent}
+                isUpdating={updatingEnrollmentId === student.id}
+                onEnrollmentStatusChange={onEnrollmentStatusChange}
               />
             ))}
 

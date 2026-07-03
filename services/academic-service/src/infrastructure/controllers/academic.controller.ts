@@ -17,6 +17,7 @@ import {
   UploadedFile,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
@@ -49,7 +50,6 @@ import { RegisterGradeUseCase } from "../../application/use-cases/register-grade
 import { UpdateGradeUseCase } from "../../application/use-cases/update-grade.use-case";
 import { EnrollStudentUseCase } from "../../application/use-cases/enroll-student.use-case";
 import { GetStudentEnrollmentsUseCase } from "../../application/use-cases/get-student-enrollments.use-case";
-import { GetSubjectEnrollmentsUseCase } from "../../application/use-cases/get-subject-enrollments.use-case";
 import { CreateEvaluationUseCase } from "../../application/use-cases/create-evaluation.use-case";
 import { AssignTeacherUseCase } from "../../application/use-cases/assign-teacher.use-case";
 import { ImportGradesUseCase } from "../../application/use-cases/import-grades.use-case";
@@ -155,7 +155,6 @@ export class AcademicController {
     private readonly updateGradeUC: UpdateGradeUseCase,
     private readonly enrollStudentUC: EnrollStudentUseCase,
     private readonly getStudentEnrollmentsUC: GetStudentEnrollmentsUseCase,
-    private readonly getSubjectEnrollmentsUC: GetSubjectEnrollmentsUseCase,
     private readonly createEvaluationUC: CreateEvaluationUseCase,
     private readonly assignTeacherUC: AssignTeacherUseCase,
     private readonly importGradesUC: ImportGradesUseCase,
@@ -403,20 +402,31 @@ export class AcademicController {
     @Query("subjectId") subjectId?: string,
   ) {
     const caller = req.user;
-    if (!caller?.sub) throw new UnauthorizedException("Invalid authorization token");
+    if (!caller?.sub)
+      throw new UnauthorizedException("Invalid authorization token");
 
     if (subjectId) {
       if (caller.role === "STUDENT") {
-        throw new ForbiddenException("Students cannot list subject enrollments");
+        throw new ForbiddenException(
+          "Students cannot list subject enrollments",
+        );
       }
 
-      return this.getSubjectEnrollmentsUC.execute(subjectId);
+      return this.getSubjectEnrollmentsUC.execute(
+        subjectId,
+        caller.sub,
+        caller.role ?? "",
+        {},
+        { page: 1, limit: 20 },
+      );
     }
 
     const targetStudentId = studentId ?? caller.sub;
 
     if (caller.role === "STUDENT" && targetStudentId !== caller.sub) {
-      throw new ForbiddenException("Students can only list their own enrollments");
+      throw new ForbiddenException(
+        "Students can only list their own enrollments",
+      );
     }
 
     if (!targetStudentId) {
@@ -748,7 +758,10 @@ export class AcademicController {
   @ApiOperation({ summary: "Update academic period (ADMIN only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 404 })
-  async updatePeriod(@Param("id") id: string, @Body() dto: UpdateAcademicPeriodDto) {
+  async updatePeriod(
+    @Param("id") id: string,
+    @Body() dto: UpdateAcademicPeriodDto,
+  ) {
     return this.updateAcademicPeriodUC.execute(id, dto);
   }
 

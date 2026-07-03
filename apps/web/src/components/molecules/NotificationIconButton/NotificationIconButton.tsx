@@ -1,19 +1,22 @@
-import { useState } from "react";
+import { type MouseEvent, useState } from "react";
 import { FiBell } from "react-icons/fi";
 
 import IconButton from "@/components/atoms/IconButton";
 
 interface NotificationIconButtonProps {
   hasUnread?: boolean;
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export default function NotificationIconButton({
   hasUnread = true,
+  onClick,
 }: NotificationIconButtonProps) {
   const [isPressed, setIsPressed] = useState(false);
 
-  const handleClick = () => {
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     setIsPressed(true);
+    onClick?.(event);
 
     window.setTimeout(() => {
       setIsPressed(false);

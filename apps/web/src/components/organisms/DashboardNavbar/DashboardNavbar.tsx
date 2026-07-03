@@ -7,12 +7,12 @@ import IconButton from "@/components/atoms/IconButton";
 
 import HelpDialog from "@/components/molecules/HelpDialog";
 import LogoLink from "@/components/molecules/LogoLink";
-import NotificationIconButton from "@/components/molecules/NotificationIconButton";
 import ProfileDropdown from "@/components/molecules/ProfileDropdown";
 import RouterNavItem from "@/components/molecules/RouterNavItem";
 import UserWelcomeMessage from "@/components/molecules/UserWelcomeMessage";
 
 import useLogout from "@/hooks/useLogout";
+import NotificationsMenu from "@/features/notifications/components/NotificationsMenu";
 import { useAuthStore } from "@/store/auth.store";
 
 import { APP_PATHS } from "@/routes/paths";
@@ -125,7 +125,7 @@ export default function DashboardNavbar({
                 <FiHelpCircle size={18} />
               </IconButton>
 
-              <NotificationIconButton />
+              <NotificationsMenu />
 
               <div className="h-8 w-px bg-[var(--color-border-soft)]" />
 
@@ -133,6 +133,7 @@ export default function DashboardNavbar({
                 firstName={user?.firstName}
                 lastName={user?.lastName}
                 role={user?.role}
+                imageUrl={user?.avatarUrl ?? undefined}
                 profilePath={profilePath}
                 isLoggingOut={isLoggingOut}
                 onLogout={handleLogout}

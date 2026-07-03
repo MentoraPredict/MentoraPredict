@@ -9,4 +9,5 @@ export interface AppUser {
     isActive?: boolean;
     createdAt?: string;
     updatedAt?: string;
+    avatarUrl?: string | null;
 }
