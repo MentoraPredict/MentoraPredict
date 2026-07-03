@@ -101,7 +101,13 @@ export default function TeacherCourseStudents({
           student.email.toLowerCase().includes(normalizedSearch))
       );
     });
-  }, [availableStudents, enrolledUserIds, search, selectedUserIds, showResults]);
+  }, [
+    availableStudents,
+    enrolledUserIds,
+    search,
+    selectedUserIds,
+    showResults,
+  ]);
 
   const handleSearch = () => {
     setShowResults(true);

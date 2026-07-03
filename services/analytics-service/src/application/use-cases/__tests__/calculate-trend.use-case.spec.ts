@@ -6,7 +6,9 @@ import { StudentMetricsEntity } from '../../../domain/entities/student-metrics.e
 
 const mockMetricsRepo = (): jest.Mocked<IStudentMetricsRepository> => ({
   findByStudentAndPeriod: jest.fn(),
+  findLatestByStudent: jest.fn(),
   findByPeriod: jest.fn(),
+  findLatestPerStudent: jest.fn(),
   save: jest.fn(),
 });
 
