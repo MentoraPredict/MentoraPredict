@@ -1,4 +1,4 @@
-import { EnrollmentEntity } from '../../../domain/entities/enrollment.entity';
+import { EnrollmentEntity } from "../../../domain/entities/enrollment.entity";
 
 export interface StudentSubjectRawRow {
   enrollmentId: string;
@@ -32,9 +32,6 @@ export interface IEnrollmentRepository {
   ): Promise<EnrollmentEntity | null>;
   countActiveBySubject(subjectId: string): Promise<number>;
   findByStudentId(studentId: string): Promise<EnrollmentEntity[]>;
-<<<<<<< HEAD
-  findBySubjectId(subjectId: string): Promise<EnrollmentEntity[]>;
-=======
   findBySubjectIdPaginated(
     subjectId: string,
     filters: { status?: string },
@@ -45,11 +42,10 @@ export interface IEnrollmentRepository {
     filters: { periodId?: string; status?: string },
     pagination: { page: number; limit: number },
   ): Promise<{ items: StudentSubjectRawRow[]; total: number }>;
->>>>>>> 6fbfc654b87912088a0bf73dfa007cc83d423cbf
   save(enrollment: EnrollmentEntity): Promise<EnrollmentEntity>;
   update(enrollment: EnrollmentEntity): Promise<EnrollmentEntity>;
   saveWithCapacityCheck(
     enrollment: EnrollmentEntity,
     maxCapacity: number,
-  ): Promise<'enrolled' | 'at_capacity' | 'already_enrolled'>;
+  ): Promise<"enrolled" | "at_capacity" | "already_enrolled">;
 }

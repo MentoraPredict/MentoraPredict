@@ -46,6 +46,26 @@ interface StudentEnrollmentApiResponse {
   status?: string;
 }
 
+interface StudentSubjectApiResponse {
+  enrollmentId: string;
+  subjectId: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  credits: number;
+  maxCapacity: number;
+  teacherId?: string | null;
+  teacherName?: string | null;
+  periodId: string;
+  periodName: string;
+  careerId: string;
+  careerName: string;
+  status: string;
+  enrolledAt: string;
+  currentAverage?: number | null;
+  riskLevel?: "HIGH" | "MEDIUM" | "LOW" | null;
+}
+
 interface SubjectEnrollmentApiResponse {
   id: string;
   studentId?: string;
@@ -290,41 +310,28 @@ export async function getTeacherCourses(
   );
 }
 
-export async function getStudentCourses(studentId: string): Promise<Course[]> {
-  const [enrollmentsResponse, periods] = await Promise.all([
-    api.get<StudentEnrollmentApiResponse[] | MaybeWrappedArray<StudentEnrollmentApiResponse>>(
-      endpoints.academic.enrollments,
-      {
-        params: {
-          studentId,
-        },
-      }
-    ),
-    getPeriods(),
-  ]);
+export async function getStudentCourses(): Promise<Course[]> {
+  const response = await api.get<
+    StudentSubjectApiResponse[] | MaybeWrappedArray<StudentSubjectApiResponse>
+  >(endpoints.academic.studentSubjects, {
+    params: {
+      status: "ACTIVE",
+      page: 1,
+      limit: 100,
+    },
+  });
 
-  const periodsById = new Map(periods.map((period) => [period.id, period]));
-
-  return unwrapArray(enrollmentsResponse.data)
-    .filter((enrollment) => !enrollment.status || enrollment.status === "ACTIVE")
-    .map((enrollment) => {
-      const subjectId = enrollment.subjectId ?? enrollment.subject_id ?? enrollment.id;
-      const periodId = enrollment.periodId ?? enrollment.period_id ?? "";
-      const period = periodsById.get(periodId);
-
-      return {
-        id: subjectId,
-        name:
-          enrollment.subjectName ??
-          enrollment.subject_name ??
-          "Curso sin nombre",
-        teacherName: "Docente asignado",
-        semester: period?.name ?? period?.code ?? "Periodo no asignado",
-        description: "Curso matriculado actualmente.",
-        riskLevel: "LOW",
-        riskLabel: "Curso activo",
-      };
-    });
+  return unwrapArray(response.data).map((subject) => ({
+    id: subject.subjectId,
+    name: subject.name,
+    teacherName: subject.teacherName ?? "Docente sin asignar",
+    semester: subject.periodName,
+    description: subject.description ?? "Sin descripción registrada.",
+    riskLevel: subject.riskLevel ?? "UNKNOWN",
+    riskLabel: subject.riskLevel
+      ? `Riesgo ${subject.riskLevel.toLowerCase()}`
+      : "Sin datos de riesgo",
+  }));
 }
 
 export async function getCourseCreationOptions(): Promise<{

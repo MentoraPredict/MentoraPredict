@@ -20,6 +20,7 @@ export const endpoints = {
         activePeriod: "/v1/academic/periods/active",
         careers: "/v1/academic/careers",
         enrollments: "/v1/academic/enrollments",
+        studentSubjects: "/v1/academic/students/me/subjects",
         importGrades: "/v1/academic/import/grades",
     },
     analytics: {

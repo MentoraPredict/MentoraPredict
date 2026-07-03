@@ -60,7 +60,6 @@ import { AssignTeacherUseCase } from "./application/use-cases/assign-teacher.use
 import { ImportGradesUseCase } from "./application/use-cases/import-grades.use-case";
 import { GetStudentGradesUseCase } from "./application/use-cases/get-student-grades.use-case";
 import { GetStudentEnrollmentsUseCase } from "./application/use-cases/get-student-enrollments.use-case";
-import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
 import { CreateObservationUseCase } from "./application/use-cases/create-observation.use-case";
 import { GetObservationsByStudentUseCase } from "./application/use-cases/get-observations-by-student.use-case";
 
@@ -190,8 +189,14 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
         if (privateKey && publicKey) {
           return {
             privateKey,
@@ -224,13 +229,22 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
     { provide: "IEnrollmentRepository", useClass: EnrollmentRepository },
     { provide: "IGradeRepository", useClass: GradeRepository },
-    { provide: "IAcademicPeriodRepository", useClass: AcademicPeriodRepository },
-    { provide: "ISubjectTeacherRepository", useClass: SubjectTeacherRepository },
+    {
+      provide: "IAcademicPeriodRepository",
+      useClass: AcademicPeriodRepository,
+    },
+    {
+      provide: "ISubjectTeacherRepository",
+      useClass: SubjectTeacherRepository,
+    },
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
     { provide: "IGradeImportRepository", useClass: GradeImportRepository },
     { provide: "IWeeklyCheckInRepository", useClass: WeeklyCheckInRepository },
     { provide: "ITopicRepository", useClass: TopicRepository },
-    { provide: "ITeacherObservationRepository", useClass: TeacherObservationRepository },
+    {
+      provide: "ITeacherObservationRepository",
+      useClass: TeacherObservationRepository,
+    },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
     { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },

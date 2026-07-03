@@ -170,7 +170,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
       Number(o.studyHours),
       o.emotionalState as EmotionalState,
       o.generalComprehension,
-      o.topicResponses as TopicResponse[],
+      o.topicResponses as unknown as TopicResponse[],
       o.notes,
       o.createdAt,
       o.updatedAt,

@@ -1,59 +1,27 @@
-<<<<<<< HEAD
-import { Inject, Injectable } from "@nestjs/common";
-import { EnrollmentStatus } from "../../domain/entities/enrollment.entity";
-import { IEnrollmentRepository } from "../ports/output/i-enrollment.repository";
-
-export interface SubjectEnrollmentView {
-  id: string;
-  studentId: string;
-  subjectId: string;
-  periodId: string;
-  status: EnrollmentStatus;
-  enrolledAt: Date;
-}
-=======
 import {
   ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { ISubjectRepository } from '../ports/output/i-subject.repository';
-import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
-import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
-import { IUserProfilePort } from '../ports/output/i-user-profile.port';
-import { IAnalyticsClientPort } from '../ports/output/i-analytics-client.port';
->>>>>>> 6fbfc654b87912088a0bf73dfa007cc83d423cbf
+} from "@nestjs/common";
+import { ISubjectRepository } from "../ports/output/i-subject.repository";
+import { ISubjectTeacherRepository } from "../ports/output/i-subject-teacher.repository";
+import { IEnrollmentRepository } from "../ports/output/i-enrollment.repository";
+import { IUserProfilePort } from "../ports/output/i-user-profile.port";
+import { IAnalyticsClientPort } from "../ports/output/i-analytics-client.port";
 
 @Injectable()
 export class GetSubjectEnrollmentsUseCase {
   constructor(
-<<<<<<< HEAD
-    @Inject("IEnrollmentRepository")
-    private readonly enrollRepo: IEnrollmentRepository,
-  ) {}
-
-  async execute(subjectId: string): Promise<SubjectEnrollmentView[]> {
-    const enrollments = await this.enrollRepo.findBySubjectId(subjectId);
-
-    return enrollments.map((enrollment) => ({
-      id: enrollment.id,
-      studentId: enrollment.studentId,
-      subjectId: enrollment.subjectId,
-      periodId: enrollment.periodId,
-      status: enrollment.status,
-      enrolledAt: enrollment.enrolledAt,
-    }));
-=======
-    @Inject('ISubjectRepository')
+    @Inject("ISubjectRepository")
     private readonly subjectRepo: ISubjectRepository,
-    @Inject('ISubjectTeacherRepository')
+    @Inject("ISubjectTeacherRepository")
     private readonly subjectTeacherRepo: ISubjectTeacherRepository,
-    @Inject('IEnrollmentRepository')
+    @Inject("IEnrollmentRepository")
     private readonly enrollmentRepo: IEnrollmentRepository,
-    @Inject('IUserProfilePort')
+    @Inject("IUserProfilePort")
     private readonly userProfilePort: IUserProfilePort,
-    @Inject('IAnalyticsClientPort')
+    @Inject("IAnalyticsClientPort")
     private readonly analyticsClient: IAnalyticsClientPort,
   ) {}
 
@@ -65,20 +33,21 @@ export class GetSubjectEnrollmentsUseCase {
     pagination: { page: number; limit: number },
   ) {
     const subject = await this.subjectRepo.findById(subjectId);
-    if (!subject) throw new NotFoundException('Subject not found');
+    if (!subject) throw new NotFoundException("Subject not found");
 
-    if (requesterRole === 'TEACHER') {
-      const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
-        subjectId,
-        requesterId,
-        subject.academicPeriodId,
-      );
+    if (requesterRole === "TEACHER") {
+      const assignment =
+        await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
+          subjectId,
+          requesterId,
+          subject.academicPeriodId,
+        );
       if (!assignment) {
-        throw new ForbiddenException('No tienes acceso a este curso');
+        throw new ForbiddenException("No tienes acceso a este curso");
       }
     }
 
-    const statusFilter = filters.status ?? 'ACTIVE';
+    const statusFilter = filters.status ?? "ACTIVE";
     const { items, total } = await this.enrollmentRepo.findBySubjectIdPaginated(
       subjectId,
       { status: statusFilter },
@@ -105,7 +74,11 @@ export class GetSubjectEnrollmentsUseCase {
       }),
     );
 
-    return { data: enriched, total, page: pagination.page, limit: pagination.limit };
->>>>>>> 6fbfc654b87912088a0bf73dfa007cc83d423cbf
+    return {
+      data: enriched,
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+    };
   }
 }

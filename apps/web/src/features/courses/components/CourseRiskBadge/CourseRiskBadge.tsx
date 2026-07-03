@@ -24,6 +24,10 @@ const riskConfig: Record<
     label: "Casi nadie en riesgo",
     className: "bg-green-700 text-white",
   },
+  UNKNOWN: {
+    label: "Sin datos de riesgo",
+    className: "bg-gray-200 text-gray-700",
+  },
 };
 
 export default function CourseRiskBadge({
