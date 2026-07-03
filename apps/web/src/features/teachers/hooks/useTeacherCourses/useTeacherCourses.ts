@@ -8,6 +8,8 @@ import {
   getCourseCreationOptions,
   getTeacherCourses,
   updateTeacherCourse,
+  uploadTeacherCourseImage,
+  deleteTeacherCourseImage,
   type CourseCareerOption,
   type CourseFacultyOption,
   type CoursePeriodOption,
@@ -227,6 +229,25 @@ export default function useTeacherCourses(
     []
   );
 
+  const uploadCourseImage = useCallback(async (courseId: string, file: File) => {
+    const imageUrl = await uploadTeacherCourseImage(courseId, file);
+    setCourses((currentCourses) =>
+      currentCourses.map((course) =>
+        course.id === courseId ? { ...course, imageUrl } : course,
+      ),
+    );
+    return imageUrl;
+  }, []);
+
+  const removeCourseImage = useCallback(async (courseId: string) => {
+    await deleteTeacherCourseImage(courseId);
+    setCourses((currentCourses) =>
+      currentCourses.map((course) =>
+        course.id === courseId ? { ...course, imageUrl: undefined } : course,
+      ),
+    );
+  }, []);
+
   return {
     courses,
     faculties,
@@ -243,5 +264,7 @@ export default function useTeacherCourses(
     createCourse,
     deleteCourse,
     updateCourse,
+    uploadCourseImage,
+    removeCourseImage,
   };
 }

@@ -12,6 +12,7 @@ export class GetUserMapper {
 
       // profile (user-service)
       photo: profile.photo,
+      avatarUrl: profile.avatarUrl,
       bio: profile.bio,
       cedula: profile.cedula ?? "",
       role: profile.role,

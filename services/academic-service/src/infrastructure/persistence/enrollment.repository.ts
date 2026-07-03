@@ -108,6 +108,7 @@ export class EnrollmentRepository implements IEnrollmentRepository {
         s.name AS "subjectName",
         s.code AS "subjectCode",
         s.description AS "subjectDescription",
+        s.image_url AS "subjectImageUrl",
         s.credits,
         s.max_capacity AS "maxCapacity",
         s.teacher_id AS "teacherId",

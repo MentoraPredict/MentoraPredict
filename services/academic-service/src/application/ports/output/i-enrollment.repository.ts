@@ -9,6 +9,7 @@ export interface StudentSubjectRawRow {
   subjectName: string;
   subjectCode: string;
   subjectDescription: string;
+  subjectImageUrl: string | null;
   credits: number;
   maxCapacity: number;
   teacherId: string | null;
