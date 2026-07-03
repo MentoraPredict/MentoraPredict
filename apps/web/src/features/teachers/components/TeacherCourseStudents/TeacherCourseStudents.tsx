@@ -3,42 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import Text from "@/components/atoms/Text";
 import TeacherCourseStudentsTable from "@/features/teachers/components/TeacherCourseStudentsTable";
 import TeacherCourseStudentsToolbar from "@/features/teachers/components/TeacherCourseStudentsToolbar";
-import { enrollStudentsInCourse } from "@/services/academic.service";
+import {
+  enrollStudentsInCourse,
+  getCourseEnrolledStudents,
+} from "@/services/academic.service";
 import { getStudents } from "@/services/users/users.service";
 
 import type { CourseEnrolledStudent } from "@/types/course";
 import type { AppUser } from "@/types/user/user.types";
-
-const initialEnrolledStudents: CourseEnrolledStudent[] = [
-  {
-    id: "enrolled-1",
-    user: {
-      id: "1",
-      firstName: "Franco",
-      lastName: "Paredes",
-      email: "franco.paredes@uce.edu.ec",
-      role: "STUDENT",
-      isActive: true,
-    },
-    average: 14,
-    attendance: 92,
-    isEnrolled: true,
-  },
-  {
-    id: "enrolled-2",
-    user: {
-      id: "2",
-      firstName: "Daniela",
-      lastName: "Morales",
-      email: "daniela.morales@uce.edu.ec",
-      role: "STUDENT",
-      isActive: true,
-    },
-    average: 17,
-    attendance: 96,
-    isEnrolled: true,
-  },
-];
 
 interface TeacherCourseStudentsProps {
   courseId: string;
@@ -53,7 +25,7 @@ export default function TeacherCourseStudents({
   const [selectedStudents, setSelectedStudents] = useState<AppUser[]>([]);
   const [enrolledStudents, setEnrolledStudents] = useState<
     CourseEnrolledStudent[]
-  >(initialEnrolledStudents);
+  >([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
   const [isAddingStudents, setIsAddingStudents] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,12 +40,18 @@ export default function TeacherCourseStudents({
 
       try {
         const students = await getStudents();
+        const courseStudents = await getCourseEnrolledStudents(
+          courseId,
+          students,
+        );
+
         if (isMounted) {
           setAvailableStudents(students);
+          setEnrolledStudents(courseStudents);
         }
       } catch {
         if (isMounted) {
-          setError("No se pudieron cargar los estudiantes disponibles.");
+          setError("No se pudieron cargar los estudiantes del curso.");
         }
       } finally {
         if (isMounted) {
@@ -87,7 +65,7 @@ export default function TeacherCourseStudents({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [courseId]);
 
   const enrolledUserIds = useMemo(
     () =>
@@ -123,7 +101,13 @@ export default function TeacherCourseStudents({
           student.email.toLowerCase().includes(normalizedSearch))
       );
     });
-  }, [availableStudents, enrolledUserIds, search, selectedUserIds, showResults]);
+  }, [
+    availableStudents,
+    enrolledUserIds,
+    search,
+    selectedUserIds,
+    showResults,
+  ]);
 
   const handleSearch = () => {
     setShowResults(true);

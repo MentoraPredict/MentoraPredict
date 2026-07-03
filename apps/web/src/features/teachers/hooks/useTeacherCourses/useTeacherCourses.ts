@@ -51,6 +51,16 @@ function getDeleteErrorMessage(error: unknown) {
   return `No se pudo eliminar el curso. Codigo HTTP: ${status ?? "desconocido"}.`;
 }
 
+function getCreationDataErrorMessage(error: unknown) {
+  if (error instanceof AxiosError) {
+    return `Los cursos se cargaron, pero no se pudieron cargar los datos para crear cursos. Codigo HTTP: ${
+      error.response?.status ?? "desconocido"
+    }.`;
+  }
+
+  return "Los cursos se cargaron, pero no se pudieron cargar los datos para crear cursos.";
+}
+
 function isUuid(value?: string) {
   return !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
@@ -70,6 +80,7 @@ export default function useTeacherCourses(
   const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
   const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [creationDataError, setCreationDataError] = useState<string | null>(null);
 
   const loadCourses = useCallback(async () => {
     if (!teacherId) {
@@ -81,23 +92,38 @@ export default function useTeacherCourses(
 
     setIsLoading(true);
     setError(null);
+    setCreationDataError(null);
 
     try {
+      const loadedCourses = await getTeacherCourses(teacherId, teacherName);
+      setCourses(loadedCourses);
+
       if (includeCreationData) {
-        const [loadedCourses, creationOptions, loadedStudents] =
-          await Promise.all([
-            getTeacherCourses(teacherId, teacherName),
+        const [creationOptionsResult, studentsResult] =
+          await Promise.allSettled([
             getCourseCreationOptions(),
             getStudents(),
           ]);
 
-        setCourses(loadedCourses);
-        setFaculties(creationOptions.faculties);
-        setCareers(creationOptions.careers);
-        setPeriods(creationOptions.periods);
-        setStudents(loadedStudents);
-      } else {
-        setCourses(await getTeacherCourses(teacherId, teacherName));
+        if (creationOptionsResult.status === "fulfilled") {
+          setFaculties(creationOptionsResult.value.faculties);
+          setCareers(creationOptionsResult.value.careers);
+          setPeriods(creationOptionsResult.value.periods);
+        } else {
+          setFaculties([]);
+          setCareers([]);
+          setPeriods([]);
+          setCreationDataError(
+            getCreationDataErrorMessage(creationOptionsResult.reason)
+          );
+        }
+
+        if (studentsResult.status === "fulfilled") {
+          setStudents(studentsResult.value);
+        } else {
+          setStudents([]);
+          setCreationDataError(getCreationDataErrorMessage(studentsResult.reason));
+        }
       }
     } catch (requestError) {
       setError(getErrorMessage(requestError));
@@ -212,6 +238,7 @@ export default function useTeacherCourses(
     deletingCourseId,
     updatingCourseId,
     error,
+    creationDataError,
     reload: loadCourses,
     createCourse,
     deleteCourse,

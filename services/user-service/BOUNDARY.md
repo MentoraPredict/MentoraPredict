@@ -9,7 +9,7 @@ Inputs:
 
 Outputs:
 - DTOs de usuario (`UserDto`) y listas paginadas.
-- Eventos de cambio de rol/usuario (opcional) hacia `analytics-service` o `metrics-service`.
+- Eventos de cambio de rol/usuario (opcional) hacia `analytics-service`.
 
 Datos que gestiona (ownership):
 - `users`, `roles`, `user_roles` (PostgreSQL).

@@ -7,7 +7,7 @@ Context
 
 Decision
 - Use PostgreSQL as primary relational DB (ACID guarantees) for user, academic, metrics data.
-- Use MongoDB for prediction-service and recommendation-service to store model outputs, feature vectors, session artifacts, and non-relational documents.
+- Use MongoDB for prediction-service to store prediction outputs, generated recommendation plans, feature snapshots, session artifacts, and non-relational documents.
 - Use Redis for caching, short-lived refresh token store, and rate limiting.
 
 Consequences

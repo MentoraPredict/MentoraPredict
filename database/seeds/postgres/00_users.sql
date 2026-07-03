@@ -55,7 +55,16 @@ BEGIN
             first_names[i],
             last_names[i],
             NOW(), NOW()
-        );
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            email = EXCLUDED.email,
+            password_hash = EXCLUDED.password_hash,
+            role = EXCLUDED.role,
+            is_active = EXCLUDED.is_active,
+            is_verified = EXCLUDED.is_verified,
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            updated_at = NOW();
 
         INSERT INTO user_profiles (
             id, photo, bio, cedula,
@@ -72,7 +81,16 @@ BEGIN
             'ACTIVE',
             NULL,
             NOW(), NOW()
-        );
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            photo = EXCLUDED.photo,
+            bio = EXCLUDED.bio,
+            cedula = EXCLUDED.cedula,
+            auth_provider = EXCLUDED.auth_provider,
+            role = EXCLUDED.role,
+            status = EXCLUDED.status,
+            deleted_at = EXCLUDED.deleted_at,
+            updated_at = NOW();
     END LOOP;
 
     -- =====================================================
@@ -94,7 +112,16 @@ BEGIN
             first_names[(i % array_length(first_names,1)) + 1],
             last_names[(i % array_length(last_names,1)) + 1],
             NOW(), NOW()
-        );
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            email = EXCLUDED.email,
+            password_hash = EXCLUDED.password_hash,
+            role = EXCLUDED.role,
+            is_active = EXCLUDED.is_active,
+            is_verified = EXCLUDED.is_verified,
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            updated_at = NOW();
 
         INSERT INTO user_profiles (
             id, photo, bio, cedula,
@@ -111,7 +138,16 @@ BEGIN
             'ACTIVE',
             NULL,
             NOW(), NOW()
-        );
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            photo = EXCLUDED.photo,
+            bio = EXCLUDED.bio,
+            cedula = EXCLUDED.cedula,
+            auth_provider = EXCLUDED.auth_provider,
+            role = EXCLUDED.role,
+            status = EXCLUDED.status,
+            deleted_at = EXCLUDED.deleted_at,
+            updated_at = NOW();
     END LOOP;
 
     -- =====================================================
@@ -133,7 +169,16 @@ BEGIN
             first_names[(i % array_length(first_names,1)) + 1],
             last_names[(i % array_length(last_names,1)) + 1],
             NOW(), NOW()
-        );
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            email = EXCLUDED.email,
+            password_hash = EXCLUDED.password_hash,
+            role = EXCLUDED.role,
+            is_active = EXCLUDED.is_active,
+            is_verified = EXCLUDED.is_verified,
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            updated_at = NOW();
 
         INSERT INTO user_profiles (
             id, photo, bio, cedula,
@@ -150,7 +195,16 @@ BEGIN
             'ACTIVE',
             NULL,
             NOW(), NOW()
-        );
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            photo = EXCLUDED.photo,
+            bio = EXCLUDED.bio,
+            cedula = EXCLUDED.cedula,
+            auth_provider = EXCLUDED.auth_provider,
+            role = EXCLUDED.role,
+            status = EXCLUDED.status,
+            deleted_at = EXCLUDED.deleted_at,
+            updated_at = NOW();
     END LOOP;
 
 END $$;

@@ -8,6 +8,7 @@ import {
   UserProfileEntity,
 } from "../../../domain/entities/user-profile.entity";
 import { IAuthServiceClient } from "../../ports/output/i-auth-service.client";
+import { IAuthSyncClient } from "../../ports/output/i-auth-sync.client";
 
 const makeProfile = (id = "uid-1") =>
   new UserProfileEntity(
@@ -35,6 +36,11 @@ const mockAuthClient = (): jest.Mocked<IAuthServiceClient> => ({
   getUserById: jest.fn(),
 });
 
+const mockAuthSyncClient = (): jest.Mocked<IAuthSyncClient> => ({
+  syncRole: jest.fn().mockResolvedValue(undefined),
+  syncStatus: jest.fn().mockResolvedValue(undefined),
+});
+
 // ─── UpdateUserUseCase ───────────────────────────────────────────────────────
 
 describe("UpdateUserUseCase", () => {
@@ -45,10 +51,13 @@ describe("UpdateUserUseCase", () => {
     repo.findById.mockResolvedValue(original);
     repo.update.mockResolvedValue(updated);
 
-    const useCase = new UpdateUserUseCase(repo);
+    const authSync = mockAuthSyncClient();
+    const useCase = new UpdateUserUseCase(repo, authSync);
     const result = await useCase.execute("uid-1", { bio: "Nueva bio" });
 
     expect(repo.update).toHaveBeenCalledWith("uid-1", { bio: "Nueva bio" });
+    expect(authSync.syncRole).not.toHaveBeenCalled();
+    expect(authSync.syncStatus).not.toHaveBeenCalled();
     expect(result.bio).toBe("Nueva bio");
   });
 
@@ -56,7 +65,7 @@ describe("UpdateUserUseCase", () => {
     const repo = mockRepo();
     repo.findById.mockResolvedValue(null);
 
-    const useCase = new UpdateUserUseCase(repo);
+    const useCase = new UpdateUserUseCase(repo, mockAuthSyncClient());
     await expect(useCase.execute("missing", { bio: "x" })).rejects.toThrow(
       NotFoundException,
     );

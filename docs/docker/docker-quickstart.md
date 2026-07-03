@@ -40,22 +40,6 @@ docker build \
   -t mentorapredict/academic-service .
 ```
 
-### Metrics Service
-
-```bash
-docker build \
-  -f services/metrics-service/Dockerfile \
-  -t mentorapredict/metrics-service .
-```
-
-### Recommendation Service
-
-```bash
-docker build \
-  -f services/recommendation-service/Dockerfile \
-  -t mentorapredict/recommendation-service .
-```
-
 ### Analytics Service
 
 ```bash

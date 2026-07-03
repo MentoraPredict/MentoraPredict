@@ -68,4 +68,11 @@ INSERT INTO careers (id, faculty_id, name, code, description, status, duration_s
 -- =====================================================
 ('caaaaaaa-1111-4111-8111-111111111111', 'faaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Arquitectura', 'ARQ', 'Diseño arquitectónico y urbano', 'ACTIVE', 10, NOW(), NOW())
 
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    faculty_id = EXCLUDED.faculty_id,
+    name = EXCLUDED.name,
+    code = EXCLUDED.code,
+    description = EXCLUDED.description,
+    status = EXCLUDED.status,
+    duration_semesters = EXCLUDED.duration_semesters,
+    updated_at = NOW();

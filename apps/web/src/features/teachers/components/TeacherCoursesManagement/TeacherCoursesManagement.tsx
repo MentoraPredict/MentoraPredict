@@ -37,6 +37,7 @@ export default function TeacherCoursesManagement() {
     isCreating,
     deletingCourseId,
     error,
+    creationDataError,
     createCourse,
     deleteCourse,
   } = useTeacherCourses(user?.id, teacherName, true);
@@ -84,6 +85,14 @@ export default function TeacherCoursesManagement() {
               <div className="mb-6 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
                 <Text variant="small" className="font-medium text-red-700">
                   {error}
+                </Text>
+              </div>
+            ) : null}
+
+            {creationDataError ? (
+              <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4">
+                <Text variant="small" className="font-medium text-amber-700">
+                  {creationDataError}
                 </Text>
               </div>
             ) : null}

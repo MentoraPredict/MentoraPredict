@@ -539,19 +539,42 @@ paths:
         "202": { description: Ingestion job accepted }
 
 # ─────────────────────────────────────────────────────────────
-# 4. METRICS-SERVICE  (port 3004)
+# 4. ANALYTICS METRICS  (analytics-service)
 # ─────────────────────────────────────────────────────────────
 # Covers: RF-015, RF-016, RF-017
 # ─────────────────────────────────────────────────────────────
 
-  /api/v1/metrics/students/{studentId}:
+  /api/v1/analytics/metrics/overview:
     get:
-      tags: [metrics-service]
-      summary: "RF-015/016/017: Full academic metrics for a student"
+      tags: [analytics-service]
+      summary: "RF-015/016/017: Institution-wide aggregated academic metrics"
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: periodId
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Aggregated metrics overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  periodId:                 { type: string, format: uuid }
+                  totalStudentsWithMetrics: { type: integer }
+                  institutionalAverage:     { type: number, example: 7.4 }
+                  subjectCount:             { type: integer }
+                  generatedAt:              { type: string, format: date-time }
+
+  /api/v1/analytics/metrics/users/{userId}:
+    get:
+      tags: [analytics-service]
+      summary: "RF-015/016/017: Latest or period-specific metrics for a user"
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
-          name: studentId
+          name: userId
           required: true
           schema: { type: string, format: uuid }
         - in: query
@@ -559,28 +582,31 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         "200":
-          description: Student metrics
+          description: User metrics
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  studentId:       { type: string, format: uuid }
+                  userId:          { type: string, format: uuid }
                   periodId:        { type: string, format: uuid }
-                  average:         { type: number, example: 7.4 }
-                  trend:           { type: string, enum: [IMPROVING, STABLE, DECLINING] }
-                  complianceIndex: { type: number, minimum: 0, maximum: 100, example: 82.5 }
-                  computedAt:      { type: string, format: date-time }
+                  globalAverage:   { type: number, example: 7.4 }
+                  subjectAverages: { type: object, additionalProperties: { type: number } }
+                  calculatedAt:    { type: string, format: date-time }
+                  version:         { type: integer }
 
-  /api/v1/metrics/subjects/{subjectId}:
+  /api/v1/analytics/metrics/subjects/{subjectId}:
     get:
-      tags: [metrics-service]
-      summary: "RF-015: Subject-level metrics (TEACHER/ADMIN)"
+      tags: [analytics-service]
+      summary: "RF-015: Subject-level aggregated metrics (TEACHER/ADMIN)"
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
           name: subjectId
           required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: periodId
           schema: { type: string, format: uuid }
       responses:
         "200":
@@ -590,13 +616,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  subjectId:     { type: string, format: uuid }
-                  classAverage:  { type: number }
-                  passRate:      { type: number }
-                  atRiskCount:   { type: integer }
+                  subjectId:           { type: string, format: uuid }
+                  periodId:            { type: string, format: uuid }
+                  studentsWithMetrics: { type: integer }
+                  classAverage:        { type: number }
+                  passRate:            { type: number }
+                  atRiskCount:         { type: integer }
+                  generatedAt:         { type: string, format: date-time }
 
 # ─────────────────────────────────────────────────────────────
-# 5. ANALYTICS-SERVICE  (port 3005)
+# 5. ANALYTICS-SERVICE  (port 3004)
 # ─────────────────────────────────────────────────────────────
 # Covers: RF-018, RF-021, RF-023, RF-024, RF-025
 # ─────────────────────────────────────────────────────────────
@@ -687,127 +716,62 @@ paths:
       security: [{ BearerAuth: [] }]
 
 # ─────────────────────────────────────────────────────────────
-# 6. PREDICTION-SERVICE  (port 3006) — Python FastAPI
+# 6. PREDICTION-SERVICE  (port 3006)
 # ─────────────────────────────────────────────────────────────
-# Covers: RF-019
-# ─────────────────────────────────────────────────────────────
-
-  /api/v1/predict/risk:
-    post:
-      tags: [prediction-service]
-      summary: "RF-019: Run failure-risk prediction (logistic regression)"
-      description: "Internal service call. Uses x-api-key or internal JWT."
-      parameters:
-        - in: header
-          name: x-api-key
-          required: true
-          schema: { type: string }
-        - in: header
-          name: x-correlation-id
-          schema: { type: string, format: uuid }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [anonymousStudentId, features]
-              properties:
-                anonymousStudentId: { type: string, format: uuid, description: "Anonymized — no PII" }
-                features:
-                  type: object
-                  properties:
-                    average:         { type: number }
-                    trend:           { type: string }
-                    complianceIndex: { type: number }
-                    missedEvals:     { type: integer }
-                    attendanceRate:  { type: number }
-      responses:
-        "200":
-          description: Risk prediction result
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  anonymousStudentId: { type: string, format: uuid }
-                  riskScore:          { type: number, minimum: 0, maximum: 100 }
-                  riskLevel:          { $ref: '#/components/schemas/RiskLevel' }
-                  modelName:          { type: string, example: "logistic-regression-v1" }
-                  modelVersion:       { type: string, example: "1.0.0" }
-                  confidenceScore:    { type: number, example: 0.87 }
-                  inferenceDate:      { type: string, format: date-time }
-
-# ─────────────────────────────────────────────────────────────
-# 7. RECOMMENDATION-SERVICE  (port 3007)
-# ─────────────────────────────────────────────────────────────
-# Covers: RF-020, RF-022
+# Covers: RF-019, RF-020
 # ─────────────────────────────────────────────────────────────
 
-  /api/v1/recommendations/generate:
-    post:
-      tags: [recommendation-service]
-      summary: "RF-020: Generate personalized improvement plan via OpenAI"
-      security: [{ BearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [studentId, context]
-              properties:
-                studentId: { type: string, format: uuid }
-                context:
-                  type: object
-                  description: "Aggregated metrics (no PII per RNF-042)"
-                  properties:
-                    riskLevel:       { $ref: '#/components/schemas/RiskLevel' }
-                    weakSubjects:    { type: array, items: { type: string } }
-                    complianceIndex: { type: number }
-                    trend:           { type: string }
-      responses:
-        "201":
-          description: Recommendation generated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:          { type: string, format: uuid }
-                  studentId:   { type: string, format: uuid }
-                  plan:        { type: string, description: "NL improvement plan from GPT" }
-                  actions:     { type: array, items: { type: string } }
-                  generatedAt: { type: string, format: date-time }
-
-  /api/v1/recommendations/students/{studentId}:
+  /api/v1/prediction/students/{studentId}/periods/{periodId}:
     get:
-      tags: [recommendation-service]
-      summary: "RF-020: Get recommendation history for student"
+      tags: [prediction-service]
+      summary: "RF-019/RF-020: Generate risk prediction and recommendations"
+      description: "Uses deterministic risk from analytics-service and academic context from academic-service. OpenAI only generates the natural-language summary and recommendation plan."
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
           name: studentId
           required: true
           schema: { type: string, format: uuid }
+        - in: path
+          name: periodId
+          required: true
+          schema: { type: string, format: uuid }
       responses:
-        "200": { description: Recommendation history }
+        "200":
+          description: Prediction result with recommendation plan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studentId:       { type: string, format: uuid }
+                  periodId:        { type: string, format: uuid }
+                  risk:            { type: object }
+                  summary:         { type: string }
+                  recommendations: { type: array, items: { type: object } }
+                  modelVersion:    { type: string, example: "gpt-recommendation-v1" }
+                  generatedAt:     { type: string, format: date-time }
 
-  /api/v1/observations:
-    post:
-      tags: [recommendation-service]
-      summary: "RF-022: Teacher adds observation for a student"
+  /api/v1/prediction/students/{studentId}/history:
+    get:
+      tags: [prediction-service]
+      summary: "RF-020: List prediction and recommendation history for a student"
       security: [{ BearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [studentId, subjectId, text]
-              properties:
-                studentId: { type: string, format: uuid }
-                subjectId: { type: string, format: uuid }
-                text:      { type: string, maxLength: 1000 }
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer }
       responses:
-        "201": { description: Observation saved }
+        "200":
+          description: Prediction history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object

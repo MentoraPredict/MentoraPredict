@@ -33,4 +33,12 @@ INSERT INTO academic_periods (id, name, code, description, start_date, end_date,
 
 ('bbbbbbbb-2028-4111-8111-111111111111', '2028-B', '2028B', 'Periodo académico segundo semestre 2028', '2028-09-01', '2029-02-28', 'PLANNED', 'SEMESTER', NOW(), NOW())
 
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    code = EXCLUDED.code,
+    description = EXCLUDED.description,
+    start_date = EXCLUDED.start_date,
+    end_date = EXCLUDED.end_date,
+    status = EXCLUDED.status,
+    type = EXCLUDED.type,
+    updated_at = NOW();

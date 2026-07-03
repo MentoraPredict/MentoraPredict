@@ -12,6 +12,8 @@ networks:
 volumes:
   postgres_data:
     name: mp_dev_postgres_data
+  pgadmin_data:
+    name: mp_dev_pgadmin_data
   mongo_data:
     name: mp_dev_mongo_data
   redis_data:
@@ -47,6 +49,30 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    container_name: mp_dev_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      SCRIPT_NAME: /pgadmin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_CONFIG_PROXY_X_HOST_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_PORT_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_PROTO_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_PREFIX_COUNT: "1"
+    expose:
+      - "80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - mentorapredict-net
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   mongo:
     image: mongo:7.0
@@ -162,13 +188,26 @@ services:
       - mentorapredict-net
     depends_on:
       auth-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
+      user-service:
+        condition: service_started
+        restart: true
       academic-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
       analytics-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
       prediction-service:
-        condition: service_healthy
+        condition: service_started
+        restart: true
+      pgadmin:
+        condition: service_started
+        restart: true
+      web:
+        condition: service_started
+        restart: true
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
@@ -225,11 +264,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -279,11 +313,6 @@ services:
       - user_uploads_data:/app/services/user-service/uploads
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -339,15 +368,6 @@ services:
       - academic_uploads_data:/app/services/academic-service/uploads
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -403,15 +423,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      academic-service:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -459,11 +470,6 @@ services:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      mongo:
-        condition: service_healthy
-      analytics-service:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -492,8 +498,6 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
     networks:
       - mentorapredict-net
-    depends_on:
-      - kong
 
   seed-loader:
     build:
@@ -511,12 +515,12 @@ services:
       postgres:
         condition: service_healthy
       auth-service:
-        condition: service_healthy
+        condition: service_started
       user-service:
-        condition: service_healthy
+        condition: service_started
       academic-service:
-        condition: service_healthy
+        condition: service_started
       analytics-service:
-        condition: service_healthy
+        condition: service_started
     networks:
       - mentorapredict-net
