@@ -18,6 +18,10 @@ volumes:
     name: mp_dev_mongo_data
   redis_data:
     name: mp_dev_redis_data
+  academic_uploads_data:
+    name: mp_dev_academic_uploads_data
+  user_uploads_data:
+    name: mp_dev_user_uploads_data
 
 services:
   postgres:
@@ -303,8 +307,10 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
+      UPLOADS_DIR: /app/services/user-service/uploads
     volumes:
       - ../keys:/secrets:ro
+      - user_uploads_data:/app/services/user-service/uploads
     networks:
       - mentorapredict-net
     healthcheck:
@@ -356,8 +362,10 @@ services:
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      UPLOADS_DIR: /app/services/academic-service/uploads
     volumes:
       - ../keys:/secrets:ro
+      - academic_uploads_data:/app/services/academic-service/uploads
     networks:
       - mentorapredict-net
     healthcheck:

@@ -7,6 +7,12 @@ networks:
     name: mp_network
     external: true
 
+volumes:
+  academic_uploads_data:
+    name: mp_academic_uploads_data
+  user_uploads_data:
+    name: mp_user_uploads_data
+
 services:
   kong:
     image: kong:3.6
@@ -109,8 +115,10 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
+      UPLOADS_DIR: /app/services/user-service/uploads
     volumes:
       - ../keys:/secrets:ro
+      - user_uploads_data:/app/services/user-service/uploads
     networks:
       - mentorapredict-net
 
@@ -143,10 +151,12 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://mp_user_service:3002}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      UPLOADS_DIR: /app/services/academic-service/uploads
     networks:
       - mentorapredict-net
     volumes:
       - ../keys:/secrets:ro
+      - academic_uploads_data:/app/services/academic-service/uploads
 
   analytics-service:
     image: ${DOCKERHUB_USERNAME}/analytics-service:${IMAGE_TAG:-main-latest}

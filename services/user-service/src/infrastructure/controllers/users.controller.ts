@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Put,
+  Post,
   Delete,
   Param,
   Body,
@@ -10,14 +11,21 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseFilters,
+  UseInterceptors,
+  UploadedFile,
   ForbiddenException,
   UnauthorizedException,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiTags,
   ApiOperation,
   ApiQuery,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+  ApiResponse,
 } from "@nestjs/swagger";
 import { UpdateUserUseCase } from "../../application/use-cases/update-user.use-case";
 import { SoftDeleteUserUseCase } from "../../application/use-cases/soft-delete-user.use-case";
@@ -26,6 +34,20 @@ import { UpdateUserDto } from "../../application/dtos/update-user.dto";
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 import { RolesGuard, Roles } from "../guards/roles.guard";
 import { GetUserUseCase } from "../../application/use-cases/get-user.use-case";
+import { UploadAvatarUseCase } from "../../application/use-cases/upload-avatar.use-case";
+import { DeleteAvatarUseCase } from "../../application/use-cases/delete-avatar.use-case";
+import { MulterExceptionFilter } from "../filters/multer-exception.filter";
+import { MAX_IMAGE_BYTES } from "../storage/upload.util";
+
+type MulterUploadedFile = {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  buffer: Buffer;
+  size: number;
+  [key: string]: unknown;
+};
 
 interface AuthenticatedRequest {
   user?: {
@@ -44,6 +66,8 @@ export class UsersController {
     private readonly updateUserUC: UpdateUserUseCase,
     private readonly softDeleteUserUC: SoftDeleteUserUseCase,
     private readonly listUsersUC: ListUsersUseCase,
+    private readonly uploadAvatarUC: UploadAvatarUseCase,
+    private readonly deleteAvatarUC: DeleteAvatarUseCase,
   ) {}
 
   @Get()
@@ -78,6 +102,31 @@ export class UsersController {
     const userId = req.user?.sub;
     if (!userId) throw new UnauthorizedException("Invalid authorization token");
     return this.getUserUC.execute(userId);
+  }
+
+  @Post("me/avatar")
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace the authenticated user's avatar (jpg/jpeg/png, max 2MB)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  uploadAvatar(@UploadedFile() file: MulterUploadedFile, @Req() req: AuthenticatedRequest) {
+    const userId = req.user?.sub;
+    if (!userId) throw new UnauthorizedException("Invalid authorization token");
+    return this.uploadAvatarUC.execute(userId, file);
+  }
+
+  @Delete("me/avatar")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove the authenticated user's avatar" })
+  @ApiResponse({ status: 200 })
+  deleteAvatar(@Req() req: AuthenticatedRequest) {
+    const userId = req.user?.sub;
+    if (!userId) throw new UnauthorizedException("Invalid authorization token");
+    return this.deleteAvatarUC.execute(userId);
   }
 
   @Get(":id")
