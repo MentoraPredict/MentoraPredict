@@ -332,7 +332,7 @@ services:
               fault_tolerant: true
 
   - name: web
-    url: http://web:80
+    url: http://web:__WEB_UPSTREAM_PORT__
     routes:
       - name: web-route
         paths:

@@ -273,7 +273,7 @@ jobs:
             PGADMIN_DEFAULT_PASSWORD_VALUE="${{ secrets.PGADMIN_DEFAULT_PASSWORD }}"
 
             if [ -z "$PGADMIN_DEFAULT_EMAIL_VALUE" ]; then
-              PGADMIN_DEFAULT_EMAIL_VALUE="admin@mentorapredict.local"
+              PGADMIN_DEFAULT_EMAIL_VALUE="admin@mentorapredict.com"
             fi
 
             if [ -z "$PGADMIN_DEFAULT_PASSWORD_VALUE" ]; then

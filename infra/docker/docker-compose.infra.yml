@@ -46,7 +46,7 @@ services:
     restart: unless-stopped
     profiles: ["qa-tools"]
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
       SCRIPT_NAME: /pgadmin
       PGADMIN_CONFIG_SERVER_MODE: "False"
