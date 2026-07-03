@@ -58,9 +58,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: "Authentication successful" })
   @ApiResponse({ status: 401, description: "Invalid credentials" })
   async login(@Body() dto: LoginDto, @Req() req: Request) {
-    void dto;
-    void req;
-    throw new ServiceUnavailableException("Login endpoint intentionally disabled for error handling validation");
+    const ip = req.ip ?? "unknown";
+    return this.loginUC.execute(dto, ip);
   }
 
   @Post("refresh")
@@ -75,7 +74,12 @@ export class AuthController {
   @ApiOperation({ summary: "RF-004: Request password reset email" })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     const result = await this.forgotPasswordUC.execute(dto);
-    return result || { message: "If the email is registered, you will receive a reset link shortly" };
+    return (
+      result || {
+        message:
+          "If the email is registered, you will receive a reset link shortly",
+      }
+    );
   }
 
   @Post("reset-password")
