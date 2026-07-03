@@ -29,7 +29,6 @@ WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app .
 COPY services/academic-service ./services/academic-service
-COPY packages ./packages
 RUN pnpm --filter @mentorapredict/academic-service build
 
 FROM node:22-alpine AS runner

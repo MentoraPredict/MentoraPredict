@@ -22,6 +22,11 @@ services:
     image: postgres:16-alpine
     container_name: mp_dev_postgres
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mp_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
@@ -48,6 +53,11 @@ services:
     image: mongo:7.0
     container_name: mp_dev_mongo
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mp_mongo_user}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
@@ -69,6 +79,11 @@ services:
     image: mongo-express:1.0.2-20
     container_name: mp_mongo_ui
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     profiles: ["tools"]
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
@@ -88,6 +103,11 @@ services:
     image: redis:7.2-alpine
     container_name: mp_dev_redis
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
     command: >
       redis-server
       --requirepass ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
@@ -118,6 +138,11 @@ services:
     image: rediscommander/redis-commander:0.7.2
     container_name: mp_redis_ui
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     profiles: ["tools"]
     environment:
       REDIS_HOSTS: "local:redis:6379:0:${REDIS_PASSWORD}"
@@ -135,6 +160,11 @@ services:
     image: kong:3.6
     container_name: mp_dev_kong
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
@@ -186,6 +216,11 @@ services:
     image: pantsel/konga:0.14.9
     container_name: mp_dev_konga
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     profiles: ["tools"]
     environment:
       NODE_ENV: development
@@ -206,6 +241,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/auth-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_auth_service
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3001:3001"
     environment:
@@ -253,6 +293,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/user-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_user_service
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3002:3002"
     environment:
@@ -300,6 +345,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/academic-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_academic_service
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3003:3003"
     environment:
@@ -353,6 +403,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/analytics-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_analytics_service
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3004:3004"
     environment:
@@ -408,6 +463,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/prediction-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_prediction_service
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3006:3006"
     environment:
@@ -455,6 +515,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/web:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_web
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
     expose:
       - "80"
     environment:
