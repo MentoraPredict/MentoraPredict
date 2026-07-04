@@ -227,6 +227,10 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -327,6 +331,10 @@ services:
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -382,6 +390,10 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -429,6 +441,10 @@ services:
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
