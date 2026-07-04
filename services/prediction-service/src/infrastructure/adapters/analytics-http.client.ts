@@ -1,7 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { IAnalyticsClient } from '../../application/ports/output/i-analytics.client';
+import { IAnalyticsClient, LatestSubjectMetric } from '../../application/ports/output/i-analytics.client';
 import { RiskSnapshot } from '../../domain/entities/prediction-result.entity';
 import { InternalJwtService } from '../auth/internal-jwt.service';
 
@@ -46,6 +46,36 @@ export class AnalyticsHttpClient implements IAnalyticsClient {
     } catch (err) {
       clearTimeout(timer);
       this.logger.error(`getRiskSnapshot failed for ${studentId}`, err as Error);
+      throw new ServiceUnavailableException('analytics-service is unreachable');
+    }
+  }
+
+  async getLatestSubjectMetric(studentId: string, subjectId: string): Promise<LatestSubjectMetric | null> {
+    const url = `${this.baseUrl}/api/v1/analytics/internal/students/${studentId}/subjects/${subjectId}/metrics/latest`;
+    const corrId = randomUUID();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+          'x-correlation-id': corrId,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (!res.ok) {
+        throw new ServiceUnavailableException(
+          `analytics-service responded ${res.status} fetching latest metric for ${studentId}/${subjectId}`,
+        );
+      }
+
+      return (await res.json()) as LatestSubjectMetric | null;
+    } catch (err) {
+      clearTimeout(timer);
+      this.logger.error(`getLatestSubjectMetric failed for ${studentId}/${subjectId}`, err as Error);
       throw new ServiceUnavailableException('analytics-service is unreachable');
     }
   }

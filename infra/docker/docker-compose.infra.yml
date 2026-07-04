@@ -42,7 +42,7 @@ services:
           "CMD-SHELL",
           "pg_isready -U ${POSTGRES_USER:-mp_user} -d ${POSTGRES_DB:-mentorapredict}",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -53,7 +53,7 @@ services:
     restart: unless-stopped
     profiles: ["qa-tools"]
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
       SCRIPT_NAME: /pgadmin
       PGADMIN_CONFIG_SERVER_MODE: "False"
@@ -92,7 +92,11 @@ services:
     networks:
       - mentorapredict-net
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

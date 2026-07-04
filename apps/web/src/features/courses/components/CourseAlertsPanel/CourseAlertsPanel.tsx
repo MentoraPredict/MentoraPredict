@@ -10,6 +10,7 @@ interface CourseAlertsPanelProps {
 }
 
 const severityStyles: Record<CourseAlert["severity"], string> = {
+  CRITICAL: "border-red-800 bg-red-100 text-red-900",
   HIGH: "border-red-600 bg-red-50 text-red-700",
   MEDIUM: "border-orange-500 bg-orange-50 text-orange-700",
   LOW: "border-gray-400 bg-gray-100 text-gray-700",

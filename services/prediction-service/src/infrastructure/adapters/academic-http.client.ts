@@ -1,7 +1,12 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { IAcademicContextClient, AcademicContext } from '../../application/ports/output/i-academic-context.client';
+import {
+  IAcademicContextClient,
+  AcademicContext,
+  EnrollmentView,
+  SubjectOwnership,
+} from '../../application/ports/output/i-academic-context.client';
 import { InternalJwtService } from '../auth/internal-jwt.service';
 
 const TIMEOUT_MS = 5000;
@@ -61,6 +66,43 @@ export class AcademicHttpClient implements IAcademicContextClient {
     } catch (err) {
       clearTimeout(timer);
       this.logger.error(`getStudentContext failed for ${studentId}`, err as Error);
+      throw new ServiceUnavailableException('academic-service is unreachable');
+    }
+  }
+
+  async getEnrollmentsByStudent(studentId: string): Promise<EnrollmentView[]> {
+    const url = `${this.baseUrl}/api/v1/academic/internal/students/${studentId}/enrollments`;
+    return this.get<EnrollmentView[]>(url, `getEnrollmentsByStudent failed for ${studentId}`);
+  }
+
+  async getSubjectOwnership(teacherId: string, subjectId: string): Promise<SubjectOwnership> {
+    const url = `${this.baseUrl}/api/v1/academic/internal/subjects/${subjectId}/teachers/${teacherId}/is-owner`;
+    return this.get<SubjectOwnership>(url, `getSubjectOwnership failed for ${teacherId}/${subjectId}`);
+  }
+
+  private async get<T>(url: string, errorContext: string): Promise<T> {
+    const corrId = randomUUID();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+          'x-correlation-id': corrId,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (!res.ok) {
+        throw new ServiceUnavailableException(`academic-service responded ${res.status}: ${errorContext}`);
+      }
+
+      return (await res.json()) as T;
+    } catch (err) {
+      clearTimeout(timer);
+      this.logger.error(errorContext, err as Error);
       throw new ServiceUnavailableException('academic-service is unreachable');
     }
   }

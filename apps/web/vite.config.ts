@@ -12,9 +12,10 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   server: {
+    allowedHosts: process.env.VITE_ALLOW_ALL_HOSTS === "true" ? true : ["localhost", "127.0.0.1", "web"],
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
         changeOrigin: true,
       },
     },

@@ -26,6 +26,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       photo: null,
       bio: null,
       cedula: profile.cedula ?? null,
+      avatarUrl: null,
       authProvider: 'LOCAL',
       status: 'ACTIVE',
     });
@@ -45,6 +46,7 @@ export class UserProfileRepository implements IUserProfileRepository {
     if (data.photo !== undefined) orm.photo = data.photo;
     if (data.bio !== undefined) orm.bio = data.bio;
     if (data.cedula !== undefined) orm.cedula = data.cedula;
+    if (data.avatarUrl !== undefined) orm.avatarUrl = data.avatarUrl;
     if (data.authProvider !== undefined) orm.authProvider = data.authProvider;
     if (data.role !== undefined) orm.role = data.role;
     if (data.status !== undefined) orm.status = data.status;
@@ -82,6 +84,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       orm.deletedAt,
       orm.createdAt,
       orm.updatedAt,
+      orm.avatarUrl,
     );
   }
 }

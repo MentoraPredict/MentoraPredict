@@ -83,6 +83,17 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
+      - name: auth-internal-routes
+        paths:
+          - /api/v1/auth/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: auth-routes
         paths:
           - /api/v1/auth
@@ -131,6 +142,14 @@ services:
               allow:
                 - 127.0.0.1
                 - 172.16.0.0/12
+      - name: user-uploads
+        paths:
+          - /api/v1/users/uploads
+        strip_path: false
+        methods:
+          - GET
+        regex_priority: 200
+        plugins: []
       - name: user-routes
         paths:
           - /api/v1/users
@@ -169,6 +188,14 @@ services:
               allow:
                 - 127.0.0.1
                 - 172.16.0.0/12
+      - name: academic-uploads
+        paths:
+          - /api/v1/academic/uploads
+        strip_path: false
+        methods:
+          - GET
+        regex_priority: 200
+        plugins: []
       - name: academic-routes
         paths:
           - /api/v1/academic
@@ -196,6 +223,17 @@ services:
           - /api/v1/analytics/docs
         strip_path: false
         regex_priority: 200
+      - name: analytics-internal-routes
+        paths:
+          - /api/v1/analytics/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: analytics-routes
         paths:
           - /api/v1/analytics
@@ -214,9 +252,9 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
-      - name: analytics-alerts
+      - name: notifications-routes
         paths:
-          - /api/v1/analytics/alerts
+          - /api/v1/notifications
         strip_path: false
         regex_priority: 100
         plugins:
@@ -241,6 +279,17 @@ services:
           - /api/v1/prediction/docs
         strip_path: false
         regex_priority: 200
+      - name: prediction-internal-routes
+        paths:
+          - /api/v1/prediction/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: prediction-routes
         paths:
           - /api/v1/prediction
@@ -283,7 +332,7 @@ services:
               fault_tolerant: true
 
   - name: web
-    url: http://web:80
+    url: http://web:__WEB_UPSTREAM_PORT__
     routes:
       - name: web-route
         paths:

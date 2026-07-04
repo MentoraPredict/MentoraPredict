@@ -5,7 +5,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ServiceUnavailableException,
   UseGuards,
 } from "@nestjs/common";
 import {

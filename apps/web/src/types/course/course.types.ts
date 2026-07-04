@@ -1,4 +1,4 @@
-export type CourseRiskLevel = "HIGH" | "MEDIUM" | "LOW";
+export type CourseRiskLevel = "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
 
 export interface Course {
   id: string;

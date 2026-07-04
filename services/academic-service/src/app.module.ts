@@ -8,6 +8,7 @@ import { ClientsModule, Transport } from "@nestjs/microservices";
 import { AcademicController } from "./infrastructure/controllers/academic.controller";
 import { InternalAcademicController } from "./infrastructure/controllers/internal-academic.controller";
 import { ObservationsController } from "./infrastructure/controllers/observations.controller";
+import { UploadsController } from "./infrastructure/controllers/uploads.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
@@ -20,6 +21,9 @@ import { EnrollmentOrmEntity } from "./infrastructure/persistence/enrollment.orm
 import { GradeOrmEntity } from "./infrastructure/persistence/grade.orm-entity";
 import { GradeHistoryOrmEntity } from "./infrastructure/persistence/grade-history.orm-entity";
 import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-teacher.orm-entity";
+import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
+import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
+import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
 import {
   TeacherObservationDoc,
   TeacherObservationSchema,
@@ -34,8 +38,12 @@ import { GradeRepository } from "./infrastructure/persistence/grade.repository";
 import { AcademicPeriodRepository } from "./infrastructure/persistence/academic-period.repository";
 import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-teacher.repository";
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
+import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
+import { WeeklyCheckInRepository } from "./infrastructure/persistence/weekly-check-in.repository";
+import { TopicRepository } from "./infrastructure/persistence/topic.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
+import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
@@ -53,7 +61,6 @@ import { AssignTeacherUseCase } from "./application/use-cases/assign-teacher.use
 import { ImportGradesUseCase } from "./application/use-cases/import-grades.use-case";
 import { GetStudentGradesUseCase } from "./application/use-cases/get-student-grades.use-case";
 import { GetStudentEnrollmentsUseCase } from "./application/use-cases/get-student-enrollments.use-case";
-import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
 import { CreateObservationUseCase } from "./application/use-cases/create-observation.use-case";
 import { GetObservationsByStudentUseCase } from "./application/use-cases/get-observations-by-student.use-case";
 
@@ -89,6 +96,39 @@ import { ListSubjectsUseCase } from "./application/use-cases/list-subjects.use-c
 import { UpdateSubjectUseCase } from "./application/use-cases/update-subject.use-case";
 import { ChangeSubjectStatusUseCase } from "./application/use-cases/change-subject-status.use-case";
 import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use-case";
+import { GetTeacherSubjectsUseCase } from "./application/use-cases/get-teacher-subjects.use-case";
+import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
+import { BatchEnrollStudentsUseCase } from "./application/use-cases/batch-enroll-students.use-case";
+import { UpdateEnrollmentStatusUseCase } from "./application/use-cases/update-enrollment-status.use-case";
+import { GetStudentSubjectsUseCase } from "./application/use-cases/get-student-subjects.use-case";
+import { UserProfileAdapter } from "./infrastructure/adapters/user-profile.adapter";
+// Phase 4 use-cases
+import { ImportSubjectGradesUseCase } from "./application/use-cases/import-subject-grades.use-case";
+import { ListGradeImportsUseCase } from "./application/use-cases/list-grade-imports.use-case";
+import { GetGradeImportUseCase } from "./application/use-cases/get-grade-import.use-case";
+import { ListEvaluationsUseCase } from "./application/use-cases/list-evaluations.use-case";
+import { UpdateEvaluationUseCase } from "./application/use-cases/update-evaluation.use-case";
+import { ArchiveEvaluationUseCase } from "./application/use-cases/archive-evaluation.use-case";
+import { GetWeightSummaryUseCase } from "./application/use-cases/get-weight-summary.use-case";
+import { GetSubjectEvaluationWeightsUseCase } from "./application/use-cases/get-subject-evaluation-weights.use-case";
+// Weekly check-ins (Phase 5)
+import { GetCurrentCheckInUseCase } from "./application/use-cases/get-current-check-in.use-case";
+import { UpsertCheckInUseCase } from "./application/use-cases/upsert-check-in.use-case";
+import { UpdateCheckInUseCase } from "./application/use-cases/update-check-in.use-case";
+import { ListCheckInsUseCase } from "./application/use-cases/list-check-ins.use-case";
+import { GetCheckInsSummaryUseCase } from "./application/use-cases/get-check-ins-summary.use-case";
+import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
+import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subject-ownership.use-case";
+// File storage (Phase 10)
+import { UploadSubjectImageUseCase } from "./application/use-cases/upload-subject-image.use-case";
+import { DeleteSubjectImageUseCase } from "./application/use-cases/delete-subject-image.use-case";
+// Temario (Phase 10b)
+import { CreateTopicUseCase } from "./application/use-cases/create-topic.use-case";
+import { ListTopicsUseCase } from "./application/use-cases/list-topics.use-case";
+import { UpdateTopicUseCase } from "./application/use-cases/update-topic.use-case";
+import { DeleteTopicUseCase } from "./application/use-cases/delete-topic.use-case";
+import { UploadTopicFileUseCase } from "./application/use-cases/upload-topic-file.use-case";
+import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-file.use-case";
 
 import { GradeEventProducer } from "./infrastructure/messaging/grade-event.producer";
 
@@ -115,6 +155,9 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
           GradeOrmEntity,
           GradeHistoryOrmEntity,
           SubjectTeacherOrmEntity,
+          GradeImportOrmEntity,
+          WeeklyCheckInOrmEntity,
+          TopicOrmEntity,
         ],
         synchronize: cfg.get("NODE_ENV") !== "production",
         logging: cfg.get("NODE_ENV") === "development",
@@ -131,6 +174,9 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
       GradeOrmEntity,
       GradeHistoryOrmEntity,
       SubjectTeacherOrmEntity,
+      GradeImportOrmEntity,
+      WeeklyCheckInOrmEntity,
+      TopicOrmEntity,
     ]),
 
     MongooseModule.forRootAsync({
@@ -146,8 +192,14 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const privateKey = decodeJwtKey(cfg.get<string>("JWT_PRIVATE_KEY") || cfg.get<string>("JWT_PRIVATE_KEY_PATH"));
-        const publicKey = decodeJwtKey(cfg.get<string>("JWT_PUBLIC_KEY") || cfg.get<string>("JWT_PUBLIC_KEY_PATH"));
+        const privateKey = decodeJwtKey(
+          cfg.get<string>("JWT_PRIVATE_KEY") ||
+            cfg.get<string>("JWT_PRIVATE_KEY_PATH"),
+        );
+        const publicKey = decodeJwtKey(
+          cfg.get<string>("JWT_PUBLIC_KEY") ||
+            cfg.get<string>("JWT_PUBLIC_KEY_PATH"),
+        );
         if (privateKey && publicKey) {
           return {
             privateKey,
@@ -181,6 +233,7 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
     AcademicController,
     InternalAcademicController,
     ObservationsController,
+    UploadsController,
     HealthController,
     RootController,
   ],
@@ -197,11 +250,25 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
     { provide: "IEnrollmentRepository", useClass: EnrollmentRepository },
     { provide: "IGradeRepository", useClass: GradeRepository },
-    { provide: "IAcademicPeriodRepository", useClass: AcademicPeriodRepository },
-    { provide: "ISubjectTeacherRepository", useClass: SubjectTeacherRepository },
+    {
+      provide: "IAcademicPeriodRepository",
+      useClass: AcademicPeriodRepository,
+    },
+    {
+      provide: "ISubjectTeacherRepository",
+      useClass: SubjectTeacherRepository,
+    },
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
-    { provide: "ITeacherObservationRepository", useClass: TeacherObservationRepository },
+    { provide: "IGradeImportRepository", useClass: GradeImportRepository },
+    { provide: "IWeeklyCheckInRepository", useClass: WeeklyCheckInRepository },
+    { provide: "ITopicRepository", useClass: TopicRepository },
+    {
+      provide: "ITeacherObservationRepository",
+      useClass: TeacherObservationRepository,
+    },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
+    { provide: "IUserProfilePort", useClass: UserProfileAdapter },
+    { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },
     RecordGradeUseCase,
     RegisterGradeUseCase,
     UpdateGradeUseCase,
@@ -243,6 +310,39 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
     UpdateSubjectUseCase,
     ChangeSubjectStatusUseCase,
     DeleteSubjectUseCase,
+    GetTeacherSubjectsUseCase,
+    // Enrollment use-cases (Phase 3)
+    GetSubjectEnrollmentsUseCase,
+    BatchEnrollStudentsUseCase,
+    UpdateEnrollmentStatusUseCase,
+    GetStudentSubjectsUseCase,
+    // Grade import + Evaluation CRUD (Phase 4)
+    ImportSubjectGradesUseCase,
+    ListGradeImportsUseCase,
+    GetGradeImportUseCase,
+    ListEvaluationsUseCase,
+    UpdateEvaluationUseCase,
+    ArchiveEvaluationUseCase,
+    GetWeightSummaryUseCase,
+    GetSubjectEvaluationWeightsUseCase,
+    // Weekly check-ins (Phase 5)
+    GetCurrentCheckInUseCase,
+    UpsertCheckInUseCase,
+    UpdateCheckInUseCase,
+    ListCheckInsUseCase,
+    GetCheckInsSummaryUseCase,
+    GetLatestCheckInUseCase,
+    CheckSubjectOwnershipUseCase,
+    // File storage (Phase 10)
+    UploadSubjectImageUseCase,
+    DeleteSubjectImageUseCase,
+    // Temario (Phase 10b)
+    CreateTopicUseCase,
+    ListTopicsUseCase,
+    UpdateTopicUseCase,
+    DeleteTopicUseCase,
+    UploadTopicFileUseCase,
+    DeleteTopicFileUseCase,
     GradeEventProducer,
   ],
   exports: [GradeEventProducer],
