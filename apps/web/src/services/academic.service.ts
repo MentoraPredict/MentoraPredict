@@ -303,28 +303,49 @@ export async function getTeacherCourses(
 }
 
 export async function getStudentCourses(): Promise<Course[]> {
-  const response = await api.get<
-    StudentSubjectApiResponse[] | MaybeWrappedArray<StudentSubjectApiResponse>
-  >(endpoints.academic.studentSubjects, {
-    params: {
-      status: "ACTIVE",
-      page: 1,
-      limit: 100,
-    },
-  });
+  const [response, careers, faculties] = await Promise.all([
+    api.get<
+      StudentSubjectApiResponse[] | MaybeWrappedArray<StudentSubjectApiResponse>
+    >(endpoints.academic.studentSubjects, {
+      params: {
+        status: "ACTIVE",
+        page: 1,
+        limit: 100,
+      },
+    }),
+    getCareers(),
+    getFaculties(),
+  ]);
 
-  return unwrapArray(response.data).map((subject) => ({
-    id: subject.subjectId,
-    name: subject.name,
-    teacherName: subject.teacherName ?? "Docente sin asignar",
-    semester: subject.periodName,
-    description: subject.description ?? "Sin descripción registrada.",
-    imageUrl: subject.imageUrl ?? undefined,
-    riskLevel: subject.riskLevel ?? "UNKNOWN",
-    riskLabel: subject.riskLevel
-      ? `Riesgo ${subject.riskLevel.toLowerCase()}`
-      : "Sin datos de riesgo",
-  }));
+  const careersById = new Map(careers.map((career) => [career.id, career]));
+  const facultiesById = new Map(
+    faculties.map((faculty) => [faculty.id, faculty])
+  );
+
+  return unwrapArray(response.data).map((subject) => {
+    const career = careersById.get(subject.careerId);
+    const facultyId = career?.facultyId ?? career?.faculty_id;
+    const faculty = facultyId ? facultiesById.get(facultyId) : undefined;
+
+    return {
+      id: subject.subjectId,
+      name: subject.name,
+      teacherName: subject.teacherName ?? "Docente sin asignar",
+      semester: subject.periodName,
+      description: subject.description ?? "Sin descripcion registrada.",
+      imageUrl: subject.imageUrl ?? undefined,
+      riskLevel: subject.riskLevel ?? "UNKNOWN",
+      riskLabel: subject.riskLevel
+        ? `Riesgo ${subject.riskLevel.toLowerCase()}`
+        : "Sin datos de riesgo",
+      credits: subject.credits,
+      careerId: subject.careerId,
+      careerName: career?.name ?? subject.careerName,
+      facultyId,
+      facultyName: faculty?.name,
+      currentAverage: subject.currentAverage ?? null,
+    };
+  });
 }
 
 interface EnrichedSubjectEnrollmentApiResponse {

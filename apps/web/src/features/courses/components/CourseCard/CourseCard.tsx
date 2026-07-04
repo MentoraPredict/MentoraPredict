@@ -161,6 +161,54 @@ export default function CourseCard({
           </Text>
         </div>
 
+        {course.careerName ||
+        course.credits ||
+        typeof course.currentAverage === "number" ? (
+          <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 sm:grid-cols-3">
+            {course.careerName ? (
+              <div>
+                <Text
+                  variant="caption"
+                  className="font-bold uppercase text-gray-500"
+                >
+                  Carrera
+                </Text>
+                <Text variant="small" className="mt-1 text-gray-800">
+                  {course.careerName}
+                </Text>
+              </div>
+            ) : null}
+
+            {course.credits ? (
+              <div>
+                <Text
+                  variant="caption"
+                  className="font-bold uppercase text-gray-500"
+                >
+                  Creditos
+                </Text>
+                <Text variant="small" className="mt-1 text-gray-800">
+                  {course.credits}
+                </Text>
+              </div>
+            ) : null}
+
+            {typeof course.currentAverage === "number" ? (
+              <div>
+                <Text
+                  variant="caption"
+                  className="font-bold uppercase text-gray-500"
+                >
+                  Promedio
+                </Text>
+                <Text variant="small" className="mt-1 text-gray-800">
+                  {course.currentAverage.toFixed(2)}
+                </Text>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div>
           <Text
             variant="caption"
