@@ -29,7 +29,6 @@ WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app .
 COPY services/analytics-service ./services/analytics-service
-COPY packages ./packages
 RUN pnpm --filter @mentorapredict/analytics-service build
 
 FROM node:22-alpine AS runner

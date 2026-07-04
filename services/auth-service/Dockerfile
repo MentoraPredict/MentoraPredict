@@ -29,7 +29,6 @@ WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app .
 COPY services/auth-service ./services/auth-service
-COPY packages ./packages
 RUN pnpm --filter @mentorapredict/auth-service build
 
 FROM node:22-alpine AS runner
