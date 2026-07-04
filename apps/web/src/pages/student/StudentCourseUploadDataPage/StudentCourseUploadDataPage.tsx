@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiBarChart2 } from "react-icons/fi";
 
 import Button from "@/components/atoms/Button";
 import Text from "@/components/atoms/Text";
@@ -8,7 +8,7 @@ import CourseSidebar from "@/features/courses/components/CourseSidebar";
 import StudentCourseUploadData from "@/features/students/components/StudentCourseUploadData";
 import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
 import useStudentCourses from "@/features/students/hooks/useStudentCourses";
-import { APP_PATHS } from "@/routes/paths";
+import { getStudentCoursePerformancePath } from "@/routes/paths";
 
 export default function StudentCourseUploadDataPage() {
   const navigate = useNavigate();
@@ -29,18 +29,20 @@ export default function StudentCourseUploadDataPage() {
         />
       }
     >
-      <div className="mb-5">
-        <Button
-          type="button"
-          variant="outline"
-          className="gap-2 px-4 py-2 text-sm"
-          onClick={() => {
-            navigate(APP_PATHS.student.dashboard);
-          }}
-        >
-          <FiArrowLeft size={16} />
-          Regresar al panel
-        </Button>
+      <div className="mb-5 flex flex-wrap gap-3">
+        {activeCourse ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2 px-4 py-2 text-sm"
+            onClick={() => {
+              navigate(getStudentCoursePerformancePath(activeCourse.id));
+            }}
+          >
+            <FiBarChart2 size={16} />
+            Ver rendimiento de materia
+          </Button>
+        ) : null}
       </div>
 
       {isLoading ? (

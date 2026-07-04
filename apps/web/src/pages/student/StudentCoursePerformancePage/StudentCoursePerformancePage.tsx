@@ -1,14 +1,12 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { FiArrowLeft } from "react-icons/fi";
 
-import Button from "@/components/atoms/Button";
 import Text from "@/components/atoms/Text";
 import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalyticsLayout";
 import CourseSidebar from "@/features/courses/components/CourseSidebar";
 import StudentCoursePerformance from "@/features/students/components/StudentCoursePerformance";
 import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
 import useStudentCourses from "@/features/students/hooks/useStudentCourses";
-import { APP_PATHS } from "@/routes/paths";
+import { getStudentCourseUploadDataPath } from "@/routes/paths";
 
 export default function StudentCoursePerformancePage() {
   const navigate = useNavigate();
@@ -29,20 +27,6 @@ export default function StudentCoursePerformancePage() {
         />
       }
     >
-      <div className="mb-5">
-        <Button
-          type="button"
-          variant="outline"
-          className="gap-2 px-4 py-2 text-sm"
-          onClick={() => {
-            navigate(APP_PATHS.student.dashboard);
-          }}
-        >
-          <FiArrowLeft size={16} />
-          Regresar al panel
-        </Button>
-      </div>
-
       {isLoading ? (
         <StudentPerformanceUnavailableCard
           title="Cargando rendimiento"
@@ -57,6 +41,9 @@ export default function StudentCoursePerformancePage() {
         <StudentCoursePerformance
           courseId={activeCourse.id}
           course={activeCourse}
+          onRegisterAdvance={() => {
+            navigate(getStudentCourseUploadDataPath(activeCourse.id));
+          }}
         />
       ) : (
         <Text variant="small">No se encontro el curso seleccionado.</Text>

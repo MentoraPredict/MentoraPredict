@@ -28,6 +28,10 @@ export const endpoints = {
         batchEnrollments: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/enrollments/batch`,
         studentSubjects: "/v1/academic/students/me/subjects",
+        studentCurrentCheckIn: (subjectId: string) =>
+            `/v1/academic/students/me/subjects/${subjectId}/check-ins/current`,
+        studentCheckIns: (subjectId: string) =>
+            `/v1/academic/students/me/subjects/${subjectId}/check-ins`,
         subjectImage: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/image`,
         importGrades: "/v1/academic/import/grades",

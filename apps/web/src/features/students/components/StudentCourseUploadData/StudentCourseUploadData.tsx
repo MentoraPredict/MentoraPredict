@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiCalendar, FiCheckCircle, FiRotateCcw } from "react-icons/fi";
 
 import Badge from "@/components/atoms/Badge";
@@ -11,6 +11,11 @@ import Text from "@/components/atoms/Text";
 import StudentCourseMetricsPanel from "@/features/students/components/StudentCourseMetricsPanel";
 import StudentStudyHabitsPanel from "@/features/students/components/StudentStudyHabitsPanel";
 import StudentSyllabusSurveyPanel from "@/features/students/components/StudentSyllabusSurveyPanel";
+import {
+  getCurrentStudentCheckIn,
+  saveStudentCheckIn,
+  type StudentCheckInEmotionalState,
+} from "@/services/academic.service";
 
 import type { Course, StudentTopicSurveyItem } from "@/types/course";
 
@@ -36,6 +41,31 @@ const initialTopics: StudentTopicSurveyItem[] = [
   },
 ];
 
+const emotionalStateByRating: Record<number, StudentCheckInEmotionalState> = {
+  1: "CRITICAL",
+  2: "BAD",
+  3: "NEUTRAL",
+  4: "GOOD",
+  5: "GREAT",
+};
+
+const ratingByEmotionalState: Record<StudentCheckInEmotionalState, 1 | 2 | 3 | 4 | 5> = {
+  CRITICAL: 1,
+  BAD: 2,
+  NEUTRAL: 3,
+  GOOD: 4,
+  GREAT: 5,
+};
+
+function ratingToPercent(value: number) {
+  return Math.min(100, Math.max(0, value * 20));
+}
+
+function percentToRating(value: number): 1 | 2 | 3 | 4 | 5 {
+  const rating = Math.round(value / 20);
+  return Math.min(5, Math.max(1, rating)) as 1 | 2 | 3 | 4 | 5;
+}
+
 export default function StudentCourseUploadData({
   course,
 }: StudentCourseUploadDataProps) {
@@ -47,8 +77,71 @@ export default function StudentCourseUploadData({
   const [skillsText, setSkillsText] = useState("");
   const [comprehensionLevel, setComprehensionLevel] = useState(4);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<"success" | "info" | "error">(
+    "info"
+  );
+  const [isLoadingCheckIn, setIsLoadingCheckIn] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [topics, setTopics] = useState<StudentTopicSurveyItem[]>(initialTopics);
+
+  useEffect(() => {
+    if (!course?.id) {
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingCheckIn(true);
+
+    getCurrentStudentCheckIn(course.id)
+      .then((checkIn) => {
+        if (isCancelled || !checkIn) {
+          return;
+        }
+
+        setAttendance(checkIn.attendance ? 100 : 0);
+        setTaskCompletion(checkIn.taskCompletion);
+        setStudyHours(Number(checkIn.studyHours));
+        setEmotionalState(ratingByEmotionalState[checkIn.emotionalState]);
+        setComprehensionLevel(percentToRating(checkIn.generalComprehension));
+        setSkillsText(checkIn.notes ?? "");
+        setTopics((currentTopics) =>
+          currentTopics.map((topic) => {
+            const savedTopic = checkIn.topicResponses?.find(
+              (response) => response.topicId === topic.topicId
+            );
+
+            return savedTopic
+              ? {
+                  ...topic,
+                  comprehensionLevel: percentToRating(
+                    savedTopic.comprehension
+                  ),
+                }
+              : topic;
+          })
+        );
+        setMessage("Se cargo tu registro semanal actual.");
+        setMessageTone("info");
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setMessage(
+            "No se pudo cargar el registro semanal actual. Puedes completar uno nuevo."
+          );
+          setMessageTone("info");
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoadingCheckIn(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [course?.id]);
 
   const handleChangeTopicLevel = (
     topicId: string,
@@ -75,23 +168,45 @@ export default function StudentCourseUploadData({
     setComprehensionLevel(4);
     setTopics(initialTopics);
     setMessage("Formulario restaurado a los valores iniciales.");
+    setMessageTone("info");
   };
 
-  const handleSave = () => {
-    console.log({
-      courseId: course?.id,
-      attendance,
-      taskCompletion,
-      studyHours,
-      emotionalState,
-      skillsText,
-      comprehensionLevel,
-      topics,
-    });
+  const handleSave = async () => {
+    if (!course?.id) {
+      setMessage("No se encontro la materia seleccionada para guardar.");
+      setMessageTone("error");
+      return;
+    }
 
-    setMessage(
-      "Registro preparado. Cuando el endpoint este activo, estos datos alimentaran el seguimiento semanal."
-    );
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      await saveStudentCheckIn(course.id, {
+        attendance: attendance >= 50,
+        taskCompletion,
+        studyHours,
+        emotionalState: emotionalStateByRating[emotionalState],
+        generalComprehension: ratingToPercent(comprehensionLevel),
+        topicResponses: topics.map((topic) => ({
+          topicId: topic.topicId,
+          comprehension: ratingToPercent(topic.comprehensionLevel),
+        })),
+        notes: skillsText.trim() || undefined,
+      });
+
+      setMessage(
+        "Registro semanal guardado. La analitica de la materia se recalculara automaticamente."
+      );
+      setMessageTone("success");
+    } catch {
+      setMessage(
+        "No se pudo guardar el registro semanal. Revisa tu sesion e intenta nuevamente."
+      );
+      setMessageTone("error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -162,7 +277,7 @@ export default function StudentCourseUploadData({
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
           <FeedbackMessage
             message={message}
-            tone={message.startsWith("Registro") ? "success" : "info"}
+            tone={messageTone}
           />
         </div>
       ) : null}
@@ -181,10 +296,11 @@ export default function StudentCourseUploadData({
         <Button
           type="button"
           onClick={handleSave}
+          disabled={isSaving || isLoadingCheckIn}
           className="min-w-36 gap-2"
         >
           <FiCheckCircle size={16} />
-          Guardar
+          {isSaving ? "Guardando" : "Guardar"}
         </Button>
 
         <div className="flex items-center gap-2 text-sm text-gray-500">

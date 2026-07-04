@@ -1,6 +1,7 @@
 import {
   FiBarChart2,
   FiBookOpen,
+  FiGrid,
   FiEdit3,
   FiUploadCloud,
   FiUsers,
@@ -36,15 +37,18 @@ export default function CourseSidebar({
   return (
     <aside
       className="
+                sticky
+                top-0
                 hidden
-                min-h-screen
+                h-screen
                 w-64
                 shrink-0
+                overflow-y-auto
                 bg-blue-950
                 px-5
                 py-6
                 text-white
-                lg:block
+                md:block
             "
     >
       <div className="mb-10">
@@ -64,19 +68,18 @@ export default function CourseSidebar({
       </div>
 
       <nav className="space-y-2">
-        <CourseSidebarNavItem
-          to={`${basePath}/courses/${activeCourseId}/performance`}
-          icon={<FiBarChart2 size={18} />}
-          label="Rendimiento"
-        />
-        <CourseSidebarNavItem
-          to={`${basePath}/courses/${activeCourseId}/upload-data`}
-          icon={<FiUploadCloud size={18} />}
-          label="Subir Datos"
-        />
-
         {isTeacher ? (
           <>
+            <CourseSidebarNavItem
+              to={`${basePath}/courses/${activeCourseId}/performance`}
+              icon={<FiBarChart2 size={18} />}
+              label="Rendimiento"
+            />
+            <CourseSidebarNavItem
+              to={`${basePath}/courses/${activeCourseId}/upload-data`}
+              icon={<FiUploadCloud size={18} />}
+              label="Subir Datos"
+            />
             <CourseSidebarNavItem
               to={`${basePath}/courses/${activeCourseId}/students`}
               icon={<FiUsers size={18} />}
@@ -89,7 +92,13 @@ export default function CourseSidebar({
               label="Editar Curso"
             />
           </>
-        ) : null}
+        ) : (
+          <CourseSidebarNavItem
+            to={`${basePath}/courses`}
+            icon={<FiGrid size={18} />}
+            label="Panel academico"
+          />
+        )}
       </nav>
 
       <div className="mt-10">
@@ -102,7 +111,7 @@ export default function CourseSidebar({
                         text-white
                     "
         >
-          Mis cursos
+          {isTeacher ? "Mis cursos" : "Mis materias"}
         </Text>
 
         <div className="space-y-2">

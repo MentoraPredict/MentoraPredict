@@ -24,9 +24,12 @@ export default function useStudentCourses() {
     setError(null);
 
     try {
-      setCourses(await getStudentCourses());
+      const loadedCourses = await getStudentCourses();
+      setCourses(loadedCourses);
+      return loadedCourses;
     } catch (requestError) {
       setError(getErrorMessage(requestError));
+      return [];
     } finally {
       setIsLoading(false);
     }

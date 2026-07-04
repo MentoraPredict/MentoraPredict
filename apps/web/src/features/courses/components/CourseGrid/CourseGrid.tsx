@@ -8,6 +8,8 @@ interface CourseGridProps {
   isDeleteMode?: boolean;
   deletingCourseId?: string | null;
   onCourseClick?: (courseId: string) => void;
+  onSecondaryCourseAction?: (courseId: string) => void;
+  secondaryCourseActionLabel?: string;
   onDeleteCourse?: (courseId: string) => void;
   onCancelDeleteMode?: () => void;
 }
@@ -17,6 +19,8 @@ export default function CourseGrid({
   isDeleteMode = false,
   deletingCourseId,
   onCourseClick,
+  onSecondaryCourseAction,
+  secondaryCourseActionLabel,
   onDeleteCourse,
   onCancelDeleteMode,
 }: CourseGridProps) {
@@ -54,6 +58,8 @@ export default function CourseGrid({
           isDeleteMode={isDeleteMode}
           isDeleting={deletingCourseId === course.id}
           onClick={onCourseClick}
+          onSecondaryAction={onSecondaryCourseAction}
+          secondaryActionLabel={secondaryCourseActionLabel}
           onDelete={onDeleteCourse}
           onCancelDelete={onCancelDeleteMode}
         />

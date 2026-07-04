@@ -116,6 +116,38 @@ export interface ImportGradesResponse {
   grades: unknown[];
 }
 
+export type StudentCheckInEmotionalState =
+  | "GREAT"
+  | "GOOD"
+  | "NEUTRAL"
+  | "BAD"
+  | "CRITICAL";
+
+export interface StudentCheckInPayload {
+  attendance: boolean;
+  taskCompletion: number;
+  studyHours: number;
+  emotionalState: StudentCheckInEmotionalState;
+  generalComprehension: number;
+  topicResponses?: Array<{
+    topicId: string;
+    comprehension: number;
+  }>;
+  notes?: string;
+}
+
+export interface StudentCheckInResponse extends StudentCheckInPayload {
+  id: string;
+  studentId: string;
+  subjectId: string;
+  periodId: string;
+  academicWeek: number;
+  academicYear: number;
+  checkInDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface CareerApiResponse {
   id: string;
   name: string;
@@ -150,6 +182,13 @@ const subjectsCache: RequestCache<SubjectApiResponse[]> = {};
 const periodsCache: RequestCache<AcademicPeriodApiResponse[]> = {};
 const facultiesCache: RequestCache<FacultyApiResponse[]> = {};
 const careersCache: RequestCache<CareerApiResponse[]> = {};
+
+const studentRiskLabels = {
+  HIGH: "Riesgo alto",
+  MEDIUM: "Riesgo medio",
+  LOW: "Riesgo bajo",
+  UNKNOWN: "Sin datos de riesgo",
+};
 
 function loadCached<T>(
   cache: RequestCache<T>,
@@ -335,9 +374,7 @@ export async function getStudentCourses(): Promise<Course[]> {
       description: subject.description ?? "Sin descripcion registrada.",
       imageUrl: subject.imageUrl ?? undefined,
       riskLevel: subject.riskLevel ?? "UNKNOWN",
-      riskLabel: subject.riskLevel
-        ? `Riesgo ${subject.riskLevel.toLowerCase()}`
-        : "Sin datos de riesgo",
+      riskLabel: studentRiskLabels[subject.riskLevel ?? "UNKNOWN"],
       credits: subject.credits,
       careerId: subject.careerId,
       careerName: career?.name ?? subject.careerName,
@@ -545,6 +582,28 @@ export async function importGradesFile(
   const response = await api.post<ImportGradesResponse>(
     endpoints.academic.importGrades,
     formData
+  );
+
+  return response.data;
+}
+
+export async function getCurrentStudentCheckIn(
+  subjectId: string
+): Promise<StudentCheckInResponse | null> {
+  const response = await api.get<StudentCheckInResponse | null>(
+    endpoints.academic.studentCurrentCheckIn(subjectId)
+  );
+
+  return response.data;
+}
+
+export async function saveStudentCheckIn(
+  subjectId: string,
+  payload: StudentCheckInPayload
+): Promise<StudentCheckInResponse> {
+  const response = await api.post<StudentCheckInResponse>(
+    endpoints.academic.studentCheckIns(subjectId),
+    payload
   );
 
   return response.data;
