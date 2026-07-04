@@ -7,37 +7,23 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
     PNPM_HOME="/root/.pnpm"
 RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY services/auth-service/package.json ./services/auth-service/package.json
-COPY services/user-service/package.json ./services/user-service/package.json
 COPY services/academic-service/package.json ./services/academic-service/package.json
-COPY services/analytics-service/package.json ./services/analytics-service/package.json
-COPY services/prediction-service/package.json ./services/prediction-service/package.json
-COPY apps/web/package.json ./apps/web/package.json
-COPY packages/hooks/package.json ./packages/hooks/package.json
-COPY packages/services/package.json ./packages/services/package.json
-COPY packages/shared-config/package.json ./packages/shared-config/package.json
-COPY packages/shared-types/package.json ./packages/shared-types/package.json
-COPY packages/shared-utils/package.json ./packages/shared-utils/package.json
-COPY packages/ui/package.json ./packages/ui/package.json
 RUN pnpm install --frozen-lockfile
-
-FROM deps AS prod-deps
-RUN CI=true pnpm install --prod --frozen-lockfile
 
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app .
 COPY services/academic-service ./services/academic-service
-COPY packages ./packages
 RUN pnpm --filter @mentorapredict/academic-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/services/academic-service
 COPY --from=builder /app/services/academic-service/dist ./dist
 COPY --from=builder /app/services/academic-service/package.json ./
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=prod-deps /app/services/academic-service/node_modules ./node_modules
+COPY --from=deps /app/node_modules /app/node_modules
+COPY --from=deps /app/services/academic-service/node_modules ./node_modules
+RUN pnpm prune --prod
 USER node
 ENV NODE_ENV=production
 EXPOSE 3003

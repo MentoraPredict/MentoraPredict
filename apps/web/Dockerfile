@@ -2,7 +2,6 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY tsconfig*.json ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 COPY packages/hooks/package.json ./packages/hooks/package.json
@@ -16,7 +15,6 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app .
-COPY packages ./packages
 COPY apps/web/ ./apps/web/
 RUN pnpm --filter @mentorapredict/web build
 
