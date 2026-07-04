@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { GradeEventConsumer } from "./infrastructure/messaging/grade-event.consumer";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
@@ -176,6 +177,8 @@ import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-al
     GetMyNotificationsUseCase,
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,
+    GetAggregatedMetricsUseCase,
+    GradeEventConsumer,
   ],
 })
 export class AppModule {}

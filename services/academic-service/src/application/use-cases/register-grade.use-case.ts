@@ -12,6 +12,7 @@ import { IEnrollmentRepository } from "../ports/output/i-enrollment.repository";
 import { ISubjectRepository } from "../ports/output/i-subject.repository";
 import { IAcademicPeriodRepository } from "../ports/output/i-academic-period.repository";
 import { RegisterGradeDto } from "../dtos/register-grade.dto";
+import { GradeEventProducer } from "../../infrastructure/messaging/grade-event.producer";
 
 @Injectable()
 export class RegisterGradeUseCase {
@@ -23,6 +24,7 @@ export class RegisterGradeUseCase {
     private readonly subjectRepo: ISubjectRepository,
     @Inject("IAcademicPeriodRepository")
     private readonly periodRepo: IAcademicPeriodRepository,
+    private readonly eventProducer: GradeEventProducer,
   ) {}
 
   async execute(
@@ -77,6 +79,16 @@ export class RegisterGradeUseCase {
       now,
     );
 
-    return this.gradeRepo.save(grade);
+    const saved = await this.gradeRepo.save(grade);
+
+    await this.eventProducer.gradeRecorded({
+      studentId: dto.studentId,
+      subjectId: dto.subjectId,
+      value: dto.grade,
+      recordedBy: registeredBy,
+      timestamp: now,
+    });
+
+    return saved;
   }
 }

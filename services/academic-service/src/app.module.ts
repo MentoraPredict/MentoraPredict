@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { ClientsModule, Transport } from "@nestjs/microservices";
 
 import { AcademicController } from "./infrastructure/controllers/academic.controller";
 import { InternalAcademicController } from "./infrastructure/controllers/internal-academic.controller";
@@ -129,6 +130,8 @@ import { DeleteTopicUseCase } from "./application/use-cases/delete-topic.use-cas
 import { UploadTopicFileUseCase } from "./application/use-cases/upload-topic-file.use-case";
 import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-file.use-case";
 
+import { GradeEventProducer } from "./infrastructure/messaging/grade-event.producer";
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -207,6 +210,24 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
         return { secret: cfg.get("JWT_SECRET", "dev-secret-change-in-prod") };
       },
     }),
+
+    ClientsModule.registerAsync([
+      {
+        name: 'RABBITMQ_CLIENT',
+        inject: [ConfigService],
+        useFactory: (cfg: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [
+              `amqp://${cfg.get('RABBITMQ_USER', 'mp_rabbit')}:${cfg.get('RABBITMQ_PASSWORD', 'mp_rabbit_secret')}@${cfg.get('RABBITMQ_HOST', 'localhost')}:${cfg.get('RABBITMQ_PORT', '5672')}`,
+            ],
+            queue: 'academic-events',
+            queueOptions: { durable: true },
+            persistent: true,
+          },
+        }),
+      },
+    ]),
   ],
   controllers: [
     AcademicController,
@@ -322,7 +343,9 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     DeleteTopicUseCase,
     UploadTopicFileUseCase,
     DeleteTopicFileUseCase,
+    GradeEventProducer,
   ],
+  exports: [GradeEventProducer],
 })
 export class AppModule {}
 
