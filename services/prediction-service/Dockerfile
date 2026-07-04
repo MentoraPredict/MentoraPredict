@@ -7,7 +7,19 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
     PNPM_HOME="/root/.pnpm"
 RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY services/academic-service/package.json ./services/academic-service/package.json
+COPY services/analytics-service/package.json ./services/analytics-service/package.json
+COPY services/auth-service/package.json ./services/auth-service/package.json
 COPY services/prediction-service/package.json ./services/prediction-service/package.json
+COPY services/user-service/package.json ./services/user-service/package.json
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/event-contracts/package.json ./packages/event-contracts/package.json
+COPY packages/hooks/package.json ./packages/hooks/package.json
+COPY packages/services/package.json ./packages/services/package.json
+COPY packages/shared-config/package.json ./packages/shared-config/package.json
+COPY packages/shared-types/package.json ./packages/shared-types/package.json
+COPY packages/shared-utils/package.json ./packages/shared-utils/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-alpine AS builder
