@@ -22,20 +22,23 @@ COPY packages/shared-utils/package.json ./packages/shared-utils/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 RUN pnpm install --frozen-lockfile
 
+FROM deps AS prod-deps
+RUN CI=true pnpm install --prod --frozen-lockfile
+
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app .
 COPY services/auth-service ./services/auth-service
+COPY packages ./packages
 RUN pnpm --filter @mentorapredict/auth-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/services/auth-service
 COPY --from=builder /app/services/auth-service/dist ./dist
 COPY --from=builder /app/services/auth-service/package.json ./
-COPY --from=deps /app/node_modules /app/node_modules
-COPY --from=deps /app/services/auth-service/node_modules ./node_modules
-RUN pnpm prune --prod
+COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY --from=prod-deps /app/services/auth-service/node_modules ./node_modules
 USER node
 ENV NODE_ENV=production
 EXPOSE 3001

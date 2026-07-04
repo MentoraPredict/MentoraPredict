@@ -5,6 +5,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  ServiceUnavailableException,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -73,7 +74,12 @@ export class AuthController {
   @ApiOperation({ summary: "RF-004: Request password reset email" })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     const result = await this.forgotPasswordUC.execute(dto);
-    return result || { message: "If the email is registered, you will receive a reset link shortly" };
+    return (
+      result || {
+        message:
+          "If the email is registered, you will receive a reset link shortly",
+      }
+    );
   }
 
   @Post("reset-password")
