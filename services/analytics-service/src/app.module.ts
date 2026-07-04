@@ -54,6 +54,7 @@ import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-c
 import { GetMyNotificationsUseCase } from "./application/use-cases/get-my-notifications.use-case";
 import { MarkNotificationReadUseCase } from "./application/use-cases/mark-notification-read.use-case";
 import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-all-notifications-read.use-case";
+import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggregated-metrics.use-case";
 
 @Module({
   imports: [
