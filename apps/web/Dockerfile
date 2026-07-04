@@ -16,6 +16,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app .
+COPY packages ./packages
 COPY apps/web/ ./apps/web/
 RUN pnpm --filter @mentorapredict/web build
 

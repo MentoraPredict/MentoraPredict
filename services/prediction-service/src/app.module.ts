@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { GradeEventConsumer } from "./infrastructure/messaging/grade-event.consumer";
 
 import { PredictionController } from "./infrastructure/controllers/prediction.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
@@ -64,6 +65,7 @@ import { GetPredictionHistoryUseCase } from "./application/use-cases/get-predict
     { provide: PREDICTION_LOG_REPO, useClass: PredictionLogRepository },
     GeneratePredictionUseCase,
     GetPredictionHistoryUseCase,
+    GradeEventConsumer,
   ],
 })
 export class AppModule {}

@@ -12,6 +12,8 @@ volumes:
     name: mp_mongo_data
   redis_data:
     name: mp_redis_data
+  rabbitmq_data:
+    name: mp_rabbitmq_data
 
 services:
   postgres:
@@ -177,3 +179,23 @@ services:
       redis:
         condition: service_healthy
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: mp_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mentorapredict-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
