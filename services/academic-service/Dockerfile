@@ -31,12 +31,15 @@ RUN corepack enable
 COPY --from=deps /app .
 COPY services/academic-service ./services/academic-service
 COPY packages ./packages
-RUN pnpm --filter @mentorapredict/academic-service build
+RUN pnpm --filter @mentorapredict/event-contracts build \
+    && pnpm --filter @mentorapredict/academic-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/services/academic-service
 COPY --from=builder /app/services/academic-service/dist ./dist
 COPY --from=builder /app/services/academic-service/package.json ./
+COPY --from=builder /app/packages/event-contracts/package.json /app/packages/event-contracts/package.json
+COPY --from=builder /app/packages/event-contracts/dist /app/packages/event-contracts/dist
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=prod-deps /app/services/academic-service/node_modules ./node_modules
 RUN mkdir -p uploads/subjects uploads/topics \

@@ -31,12 +31,15 @@ RUN corepack enable
 COPY --from=deps /app .
 COPY services/analytics-service ./services/analytics-service
 COPY packages ./packages
-RUN pnpm --filter @mentorapredict/analytics-service build
+RUN pnpm --filter @mentorapredict/event-contracts build \
+    && pnpm --filter @mentorapredict/analytics-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/services/analytics-service
 COPY --from=builder /app/services/analytics-service/dist ./dist
 COPY --from=builder /app/services/analytics-service/package.json ./
+COPY --from=builder /app/packages/event-contracts/package.json /app/packages/event-contracts/package.json
+COPY --from=builder /app/packages/event-contracts/dist /app/packages/event-contracts/dist
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=prod-deps /app/services/analytics-service/node_modules ./node_modules
 USER node

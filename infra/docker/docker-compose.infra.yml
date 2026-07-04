@@ -76,6 +76,7 @@ services:
     image: mongo:7.0
     container_name: mp_mongo
     restart: unless-stopped
+    command: ["mongod", "--quiet"]
     deploy:
       resources:
         limits:
@@ -95,12 +96,12 @@ services:
       test:
         [
           "CMD-SHELL",
-          "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep 1",
+          'mongosh --quiet --username "$${MONGO_INITDB_ROOT_USERNAME}" --password "$${MONGO_INITDB_ROOT_PASSWORD}" --authenticationDatabase admin --eval "db.adminCommand(''ping'').ok" | grep 1',
         ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 3
+      start_period: 30s
 
   mongo-express:
     image: mongo-express:1.0.2-20

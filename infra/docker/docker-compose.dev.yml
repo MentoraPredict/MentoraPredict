@@ -2,19 +2,21 @@
 # Usage:
 # 1. cp ../.env.example ../.env
 # 2. (optional en caso de tener los archivos .pem) bash infra/kong/generate-keys.sh
-# 3. Primera vez o si cambias dependencias:
-#    docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build
+# 3. Levantar todo el stack reconstruyendo imagenes:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build
 #
-# Hot reload:
-# - En uso diario solo edita el codigo y guarda el archivo. El contenedor toma los cambios automaticamente.
-# - No reconstruyas la imagen por cambios normales en apps/web/src, services/*/src o packages.
-# - Vuelve a usar --build solo si cambias package.json, pnpm-lock.yaml, pnpm-workspace.yaml,
-#   infra/docker/Dockerfile.dev o si agregas dependencias con pnpm add.
-#        Comando: docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build
+# Este compose usa imagenes compiladas, sin hot reload.
+# La compilacion ocurre durante el build de la imagen; los contenedores ejecutan dist/main.js o nginx.
 #
-# Reiniciar un servicio puntual si queda en estado raro:
-# docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env restart academic-service
-# docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env restart web
+# Si cambias codigo o dependencias, reconstruye el servicio afectado:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build web kong
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build academic-service
+#
+# Si solo quieres recrear contenedores sin reconstruir imagenes:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --force-recreate
+#
+# Ejecutar semillas cuando los servicios esten healthy:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up --force-recreate seed-loader
 
 networks:
   mentorapredict-net:
@@ -30,6 +32,8 @@ volumes:
     name: mp_dev_mongo_data
   redis_data:
     name: mp_dev_redis_data
+  rabbitmq_data:
+    name: mp_dev_rabbitmq_data
   academic_uploads_data:
     name: mp_dev_academic_uploads_data
   user_uploads_data:
@@ -95,6 +99,7 @@ services:
     image: mongo:7.0
     container_name: mp_dev_mongo
     restart: unless-stopped
+    command: ["mongod", "--quiet"]
     deploy:
       resources:
         limits:
@@ -104,8 +109,8 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mp_mongo_user}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
       MONGO_INITDB_DATABASE: ${MONGO_DB:-mentorapredict_nosql}
-    ports:
-      - "${MONGO_PORT:-27017}:27017"
+    expose:
+      - "27017"
     volumes:
       - mongo_data:/data/db
     networks:
@@ -114,12 +119,12 @@ services:
       test:
         [
           "CMD-SHELL",
-          "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep 1",
+          'mongosh --quiet --username "$${MONGO_INITDB_ROOT_USERNAME}" --password "$${MONGO_INITDB_ROOT_PASSWORD}" --authenticationDatabase admin --eval "db.adminCommand(''ping'').ok" | grep 1',
         ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 3
+      start_period: 30s
 
   mongo-express:
     image: mongo-express:1.0.2-20
@@ -180,6 +185,33 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: mp_dev_rabbitmq
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mentorapredict-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
   redis-commander:
     image: rediscommander/redis-commander:0.7.2
     container_name: mp_redis_ui
@@ -206,11 +238,12 @@ services:
     image: kong:3.6
     container_name: mp_dev_kong
     restart: unless-stopped
+    init: true
     deploy:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 1G
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
@@ -222,7 +255,7 @@ services:
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
-      WEB_UPSTREAM_PORT: ${WEB_UPSTREAM_PORT:-5173}
+      WEB_UPSTREAM_PORT: ${WEB_UPSTREAM_PORT:-80}
     ports:
       - "${KONG_PROXY_PORT:-8000}:8000"
       - "${KONG_ADMIN_PORT:-8001}:8001"
@@ -234,24 +267,6 @@ services:
     networks:
       - mentorapredict-net
     depends_on:
-      auth-service:
-        condition: service_started
-        restart: true
-      user-service:
-        condition: service_started
-        restart: true
-      academic-service:
-        condition: service_started
-        restart: true
-      analytics-service:
-        condition: service_started
-        restart: true
-      prediction-service:
-        condition: service_started
-        restart: true
-      pgadmin:
-        condition: service_started
-        restart: true
       web:
         condition: service_started
         restart: true
@@ -287,11 +302,11 @@ services:
   auth-service:
     build:
       context: ../..
-      dockerfile: infra/docker/Dockerfile.dev
+      dockerfile: services/auth-service/Dockerfile
     image: ${DOCKERHUB_USERNAME}/auth-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_auth_service
     restart: unless-stopped
-    command: pnpm --filter @mentorapredict/auth-service dev
+    init: true
     deploy:
       resources:
         limits:
@@ -300,11 +315,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      SERVICE_PACKAGE: "@mentorapredict/auth-service"
       NODE_ENV: ${NODE_ENV:-development}
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-      TSC_WATCHFILE: DynamicPriorityPolling
       APP_PORT: ${AUTH_SERVICE_PORT:-3001}
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -328,10 +339,11 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
-      - ../../services/auth-service/src:/app/services/auth-service/src
-      - ../../packages:/app/packages
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -342,19 +354,19 @@ services:
           "--spider",
           "http://localhost:3001/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   user-service:
     build:
       context: ../..
-      dockerfile: infra/docker/Dockerfile.dev
+      dockerfile: services/user-service/Dockerfile
     image: ${DOCKERHUB_USERNAME}/user-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_user_service
     restart: unless-stopped
-    command: pnpm --filter @mentorapredict/user-service dev
+    init: true
     deploy:
       resources:
         limits:
@@ -363,11 +375,7 @@ services:
     ports:
       - "3002:3002"
     environment:
-      SERVICE_PACKAGE: "@mentorapredict/user-service"
       NODE_ENV: ${NODE_ENV:-development}
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-      TSC_WATCHFILE: DynamicPriorityPolling
       APP_PORT: ${USER_SERVICE_PORT:-3002}
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -388,8 +396,6 @@ services:
       UPLOADS_DIR: /app/services/user-service/uploads
     volumes:
       - ../keys:/secrets:ro
-      - ../../services/user-service/src:/app/services/user-service/src
-      - ../../packages:/app/packages
       - user_uploads_data:/app/services/user-service/uploads
     networks:
       - mentorapredict-net
@@ -403,19 +409,19 @@ services:
           "--spider",
           "http://localhost:3002/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   academic-service:
     build:
       context: ../..
-      dockerfile: infra/docker/Dockerfile.dev
+      dockerfile: services/academic-service/Dockerfile
     image: ${DOCKERHUB_USERNAME}/academic-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_academic_service
     restart: unless-stopped
-    command: pnpm --filter @mentorapredict/academic-service dev
+    init: true
     deploy:
       resources:
         limits:
@@ -424,11 +430,7 @@ services:
     ports:
       - "3003:3003"
     environment:
-      SERVICE_PACKAGE: "@mentorapredict/academic-service"
       NODE_ENV: ${NODE_ENV:-development}
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-      TSC_WATCHFILE: DynamicPriorityPolling
       APP_PORT: ${ACADEMIC_SERVICE_PORT:-3003}
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -459,11 +461,12 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
-      - ../../services/academic-service/src:/app/services/academic-service/src
-      - ../../packages:/app/packages
       - academic_uploads_data:/app/services/academic-service/uploads
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -474,32 +477,28 @@ services:
           "--spider",
           "http://localhost:3003/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   analytics-service:
     build:
       context: ../..
-      dockerfile: infra/docker/Dockerfile.dev
+      dockerfile: services/analytics-service/Dockerfile
     image: ${DOCKERHUB_USERNAME}/analytics-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_analytics_service
     restart: unless-stopped
-    command: pnpm --filter @mentorapredict/analytics-service dev
+    init: true
     deploy:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 1G
     ports:
       - "3004:3004"
     environment:
-      SERVICE_PACKAGE: "@mentorapredict/analytics-service"
       NODE_ENV: ${NODE_ENV:-development}
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-      TSC_WATCHFILE: DynamicPriorityPolling
       APP_PORT: ${ANALYTICS_SERVICE_PORT:-3004}
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -531,10 +530,11 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
-      - ../../services/analytics-service/src:/app/services/analytics-service/src
-      - ../../packages:/app/packages
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -545,19 +545,19 @@ services:
           "--spider",
           "http://localhost:3004/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   prediction-service:
     build:
       context: ../..
-      dockerfile: infra/docker/Dockerfile.dev
+      dockerfile: services/prediction-service/Dockerfile
     image: ${DOCKERHUB_USERNAME}/prediction-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_prediction_service
     restart: unless-stopped
-    command: pnpm --filter @mentorapredict/prediction-service dev
+    init: true
     deploy:
       resources:
         limits:
@@ -566,11 +566,7 @@ services:
     ports:
       - "3006:3006"
     environment:
-      SERVICE_PACKAGE: "@mentorapredict/prediction-service"
       NODE_ENV: ${NODE_ENV:-development}
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-      TSC_WATCHFILE: DynamicPriorityPolling
       APP_PORT: ${PREDICTION_SERVICE_PORT:-3006}
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -599,10 +595,11 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
-      - ../../services/prediction-service/src:/app/services/prediction-service/src
-      - ../../packages:/app/packages
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -613,44 +610,30 @@ services:
           "--spider",
           "http://localhost:3006/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   web:
     build:
       context: ../..
-      dockerfile: infra/docker/Dockerfile.dev
+      dockerfile: apps/web/Dockerfile
     image: ${DOCKERHUB_USERNAME}/web:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_web
     restart: unless-stopped
-    command: pnpm --filter @mentorapredict/web dev --host 0.0.0.0 --port 5173
+    init: true
     ports:
-      - "5173:5173"
+      - "${WEB_PORT:-3000}:80"
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: 128M
+          cpus: "0.5"
+          memory: 512M
     expose:
-      - "5173"
+      - "80"
     environment:
-      SERVICE_PACKAGE: "@mentorapredict/web"
       NODE_ENV: ${NODE_ENV:-development}
-      VITE_ALLOW_ALL_HOSTS: "true"
-      VITE_API_PROXY_TARGET: http://kong:8000
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-    volumes:
-      - ../../apps/web/vite.config.ts:/app/apps/web/vite.config.ts
-      - ../../apps/web/index.html:/app/apps/web/index.html
-      - ../../apps/web/tsconfig.json:/app/apps/web/tsconfig.json
-      - ../../apps/web/tsconfig.app.json:/app/apps/web/tsconfig.app.json
-      - ../../apps/web/tsconfig.node.json:/app/apps/web/tsconfig.node.json
-      - ../../apps/web/src:/app/apps/web/src
-      - ../../apps/web/public:/app/apps/web/public
-      - ../../packages:/app/packages
     networks:
       - mentorapredict-net
 
@@ -660,6 +643,7 @@ services:
       dockerfile: database/Dockerfile.seed
     container_name: mp_dev_seed_loader
     restart: "no"
+    init: true
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -670,12 +654,12 @@ services:
       postgres:
         condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
       user-service:
-        condition: service_started
+        condition: service_healthy
       academic-service:
-        condition: service_started
+        condition: service_healthy
       analytics-service:
-        condition: service_started
+        condition: service_healthy
     networks:
       - mentorapredict-net
