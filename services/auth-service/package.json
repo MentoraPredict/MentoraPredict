@@ -19,7 +19,6 @@
     "@mentorapredict/event-contracts": "workspace:*",
     "amqp-connection-manager": "^4.1.0",
     "amqplib": "^0.10.0",
-    "express": "^5.2.1",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/swagger": "^7.3.0",
