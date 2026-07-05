@@ -10,4 +10,7 @@ export interface AppUser {
     createdAt?: string;
     updatedAt?: string;
     avatarUrl?: string | null;
+    facultyName?: string;
+    careerName?: string;
+    semester?: string;
 }

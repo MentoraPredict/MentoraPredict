@@ -8,12 +8,14 @@ import type { CourseRecommendation } from "@/types/course";
 
 interface CourseRecommendationsPanelProps {
   recommendations: CourseRecommendation[];
+  showDescription?: boolean;
   showReportButton?: boolean;
   onGenerateReport?: () => void;
 }
 
 export default function CourseRecommendationsPanel({
   recommendations,
+  showDescription = true,
   showReportButton = false,
   onGenerateReport,
 }: CourseRecommendationsPanelProps) {
@@ -49,6 +51,7 @@ export default function CourseRecommendationsPanel({
         </Heading>
       </div>
 
+      {showDescription ? (
       <Text
         variant="small"
         className="
@@ -61,6 +64,7 @@ export default function CourseRecommendationsPanel({
         Estas recomendaciones están basadas en los datos proporcionados
         previamente por el docente y los estudiantes de este curso.
       </Text>
+      ) : null}
 
       <div className="mt-6 space-y-4">
         {recommendations.map((recommendation, index) => (

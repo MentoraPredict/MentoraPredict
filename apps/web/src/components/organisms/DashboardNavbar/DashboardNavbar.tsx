@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { FiHelpCircle } from "react-icons/fi";
 
 import Container from "@/components/atoms/Container";
@@ -24,6 +24,7 @@ interface DashboardNavItem {
 
 interface DashboardNavbarProps {
   navItems?: DashboardNavItem[];
+  leadingAction?: ReactNode;
   showLogo?: boolean;
   title?: string;
   showWelcomeMessage?: boolean;
@@ -31,6 +32,7 @@ interface DashboardNavbarProps {
 
 export default function DashboardNavbar({
   navItems = [],
+  leadingAction,
   showLogo = true,
   title,
   showWelcomeMessage = true,
@@ -71,7 +73,11 @@ export default function DashboardNavbar({
                             gap-6
                         "
           >
-            <div className="flex items-center gap-6">
+            <div className="flex min-w-0 items-center gap-4">
+              {leadingAction ? (
+                <div className="shrink-0">{leadingAction}</div>
+              ) : null}
+
               {showLogo ? <LogoLink /> : null}
 
               {showLogo && showWelcomeMessage ? (
@@ -79,7 +85,7 @@ export default function DashboardNavbar({
               ) : null}
 
               {title ? (
-                <Heading as="h6" className="text-blue-700">
+                <Heading as="h6" className="truncate text-blue-700">
                   {title}
                 </Heading>
               ) : null}

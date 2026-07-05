@@ -9,4 +9,11 @@ export interface Course {
   riskLevel: CourseRiskLevel;
   imageUrl?: string;
   riskLabel?: string;
+  credits?: number;
+  careerId?: string;
+  careerName?: string;
+  facultyId?: string;
+  facultyName?: string;
+  currentAverage?: number | null;
+  enrolledCount?: number;
 }

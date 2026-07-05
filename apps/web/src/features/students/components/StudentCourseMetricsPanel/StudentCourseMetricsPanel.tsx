@@ -1,3 +1,4 @@
+import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 import RatingScale from "@/components/molecules/RatingScale";
 import StudentMetricCard from "@/features/students/components/StudentMetricCard";
@@ -20,16 +21,17 @@ export default function StudentCourseMetricsPanel({
   onChangeEmotionalState,
 }: StudentCourseMetricsPanelProps) {
   return (
-    <section
-      className="
-                rounded-2xl
-                border
-                border-gray-200
-                bg-white
-                p-6
-                shadow-sm
-            "
-    >
+    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mb-6">
+        <Heading as="h5" className="text-blue-700">
+          Asistencia y cumplimiento
+        </Heading>
+        <Text variant="small" className="mt-2 text-gray-600">
+          Registra indicadores semanales para mejorar el seguimiento de riesgo
+          academico.
+        </Text>
+      </div>
+
       <div className="space-y-7">
         <StudentMetricCard
           label="Asistencia considerada"
@@ -49,7 +51,7 @@ export default function StudentCourseMetricsPanel({
 
         <div>
           <Text variant="small" className="mb-4 font-semibold text-gray-900">
-            ¿Cómo te sientes con la materia?
+            Como te sientes con la materia
           </Text>
 
           <RatingScale

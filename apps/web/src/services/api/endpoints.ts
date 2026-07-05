@@ -21,13 +21,20 @@ export const endpoints = {
         activePeriod: "/v1/academic/periods/active",
         careers: "/v1/academic/careers",
         enrollments: "/v1/academic/enrollments",
+        studentEnrollments: (studentId: string) =>
+            `/v1/academic/enrollments?studentId=${studentId}`,
         subjectEnrollments: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/enrollments`,
+        teacherSubjects: "/v1/academic/teachers/me/subjects",
         enrollmentStatus: (enrollmentId: string) =>
             `/v1/academic/enrollments/${enrollmentId}/status`,
         batchEnrollments: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/enrollments/batch`,
         studentSubjects: "/v1/academic/students/me/subjects",
+        studentCurrentCheckIn: (subjectId: string) =>
+            `/v1/academic/students/me/subjects/${subjectId}/check-ins/current`,
+        studentCheckIns: (subjectId: string) =>
+            `/v1/academic/students/me/subjects/${subjectId}/check-ins`,
         subjectImage: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/image`,
         importGrades: "/v1/academic/import/grades",
@@ -50,6 +57,8 @@ export const endpoints = {
             `/v1/prediction/students/me/subjects/${subjectId}/prediction`,
         subject: (subjectId: string) =>
             `/v1/prediction/subjects/${subjectId}/predictions`,
+        teacherStudentSubject: (subjectId: string, studentId: string) =>
+            `/v1/prediction/subjects/${subjectId}/students/${studentId}/prediction`,
     },
     notifications: {
         mine: "/v1/notifications/me",

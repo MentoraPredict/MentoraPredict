@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getStudentSubjectAnalytics } from "@/services/course-analytics.service";
 
@@ -18,6 +18,22 @@ export default function useStudentCoursePerformance(courseId: string) {
   const [data, setData] = useState<StudentAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loadPerformance = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await getStudentSubjectAnalytics(courseId);
+      setData(response);
+      return response;
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [courseId]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -40,5 +56,5 @@ export default function useStudentCoursePerformance(courseId: string) {
     };
   }, [courseId]);
 
-  return { data, isLoading, error };
+  return { data, isLoading, error, reload: loadPerformance };
 }
