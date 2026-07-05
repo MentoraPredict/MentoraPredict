@@ -21,6 +21,8 @@ export const endpoints = {
         activePeriod: "/v1/academic/periods/active",
         careers: "/v1/academic/careers",
         enrollments: "/v1/academic/enrollments",
+        studentEnrollments: (studentId: string) =>
+            `/v1/academic/enrollments?studentId=${studentId}`,
         subjectEnrollments: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/enrollments`,
         teacherSubjects: "/v1/academic/teachers/me/subjects",

@@ -29,6 +29,7 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
 import { InternalUsersController } from "./infrastructure/controllers/internal-auth.controller";
 import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-case";
 import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-case";
+import { UpdateAuthUserUseCase } from "./application/use-cases/update-user.use-case";
 import { LoginEventProducer } from "./infrastructure/messaging/login-event.producer";
 
 @Module({
@@ -128,6 +129,7 @@ import { LoginEventProducer } from "./infrastructure/messaging/login-event.produ
     ResetPasswordUseCase,
     GetAuthUserUseCase,
     SyncAuthUserUseCase,
+    UpdateAuthUserUseCase,
   ],
 })
 export class AppModule {}

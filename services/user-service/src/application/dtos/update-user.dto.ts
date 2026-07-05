@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, ValidateIf } from "class-validator";
+import { IsEmail, IsEnum, IsOptional, IsString, ValidateIf } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import {
   AuthProvider,
@@ -6,6 +6,21 @@ import {
 } from "../../domain/entities/user-profile.entity";
 
 export class UpdateUserDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
   @ApiPropertyOptional()
   @ValidateIf((_, value) => value !== null)
   @IsOptional()

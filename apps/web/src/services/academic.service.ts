@@ -27,6 +27,21 @@ interface SubjectApiResponse {
   enrolled_count?: number;
 }
 
+interface StudentEnrollmentDetailApiResponse {
+  id: string;
+  studentId?: string;
+  student_id?: string;
+  subjectId?: string;
+  subject_id?: string;
+  subjectName?: string;
+  subject_name?: string;
+  subjectCredits?: number;
+  subject_credits?: number;
+  periodId?: string;
+  period_id?: string;
+  status?: string;
+}
+
 interface TeacherSubjectApiResponse {
   id: string;
   name: string;
@@ -107,6 +122,13 @@ export interface CoursePeriodOption {
   name: string;
   code?: string;
   status?: string;
+}
+
+export interface StudentAcademicContext {
+  facultyName?: string;
+  careerName?: string;
+  semester?: string;
+  activeEnrollments: number;
 }
 
 export interface CreateTeacherCoursePayload {
@@ -213,6 +235,8 @@ const studentRiskLabels = {
   LOW: "Riesgo bajo",
   UNKNOWN: "Sin datos de riesgo",
 };
+
+const studentAcademicContextCache = new Map<string, StudentAcademicContext>();
 
 function loadCached<T>(
   cache: RequestCache<T>,
@@ -362,6 +386,68 @@ async function getAcademicCourseData() {
     subjects,
     periodsById,
   };
+}
+
+export async function getStudentAcademicContext(
+  studentId: string
+): Promise<StudentAcademicContext | null> {
+  const cached = studentAcademicContextCache.get(studentId);
+
+  if (cached) {
+    return cached;
+  }
+
+  const response = await api.get<
+    StudentEnrollmentDetailApiResponse[] | MaybeWrappedArray<StudentEnrollmentDetailApiResponse>
+  >(endpoints.academic.enrollments, {
+    params: { studentId },
+  });
+
+  const enrollments = unwrapArray(response.data);
+  const activeEnrollment =
+    enrollments.find((enrollment) => enrollment.status === "ACTIVE") ??
+    enrollments[0];
+
+  if (!activeEnrollment?.subjectId) {
+    return null;
+  }
+
+  const [subjectResponse, careers, faculties, periods] = await Promise.all([
+    api.get<SubjectApiResponse>(endpoints.academic.subject(activeEnrollment.subjectId)),
+    getCareers(),
+    getFaculties(),
+    getPeriods(),
+  ]);
+
+  const subject = subjectResponse.data;
+  const careersById = new Map(careers.map((career) => [career.id, career]));
+  const facultiesById = new Map(
+    faculties.map((faculty) => [faculty.id, faculty])
+  );
+  const periodsById = new Map(periods.map((period) => [period.id, period]));
+
+  const careerId = subject.careerId ?? subject.career_id;
+  const academicPeriodId =
+    subject.academicPeriodId ?? subject.academic_period_id;
+  const career = careerId ? careersById.get(careerId) : undefined;
+  const facultyId = career?.facultyId ?? career?.faculty_id;
+  const faculty = facultyId ? facultiesById.get(facultyId) : undefined;
+  const period = academicPeriodId
+    ? periodsById.get(academicPeriodId)
+    : undefined;
+
+  const context: StudentAcademicContext = {
+    facultyName: faculty?.name,
+    careerName: career?.name,
+    semester: period?.name ?? period?.code,
+    activeEnrollments: enrollments.filter(
+      (enrollment) => enrollment.status === "ACTIVE"
+    ).length,
+  };
+
+  studentAcademicContextCache.set(studentId, context);
+
+  return context;
 }
 
 export async function getAdminCourses(): Promise<Course[]> {
