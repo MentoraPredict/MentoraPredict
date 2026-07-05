@@ -3,10 +3,18 @@ import CourseCard from "@/features/courses/components/CourseCard";
 
 import type { Course } from "@/types/course";
 
+type CourseCardMetrics = {
+  averageLabel: string;
+  enrolledCount: number;
+  statusLabel: string;
+};
+
 interface CourseGridProps {
   courses: Course[];
   isDeleteMode?: boolean;
   deletingCourseId?: string | null;
+  showTeacherDetails?: boolean;
+  getCourseMetrics?: (course: Course) => CourseCardMetrics | undefined;
   onCourseClick?: (courseId: string) => void;
   onSecondaryCourseAction?: (courseId: string) => void;
   secondaryCourseActionLabel?: string;
@@ -18,6 +26,8 @@ export default function CourseGrid({
   courses,
   isDeleteMode = false,
   deletingCourseId,
+  showTeacherDetails = true,
+  getCourseMetrics,
   onCourseClick,
   onSecondaryCourseAction,
   secondaryCourseActionLabel,
@@ -57,6 +67,8 @@ export default function CourseGrid({
           course={course}
           isDeleteMode={isDeleteMode}
           isDeleting={deletingCourseId === course.id}
+          showTeacherDetails={showTeacherDetails}
+          metrics={getCourseMetrics?.(course)}
           onClick={onCourseClick}
           onSecondaryAction={onSecondaryCourseAction}
           secondaryActionLabel={secondaryCourseActionLabel}

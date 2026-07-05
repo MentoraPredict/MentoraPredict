@@ -137,7 +137,7 @@ export class UsersController {
 
   @Put(":id")
   @ApiOperation({ summary: "Update user profile" })
-  update(
+  async update(
     @Param("id") id: string,
     @Body() dto: UpdateUserDto,
     @Req() req: AuthenticatedRequest,
@@ -154,7 +154,8 @@ export class UsersController {
       }
     }
 
-    return this.updateUserUC.execute(id, dto);
+    await this.updateUserUC.execute(id, dto);
+    return this.getUserUC.execute(id);
   }
 
   @Delete(":id")

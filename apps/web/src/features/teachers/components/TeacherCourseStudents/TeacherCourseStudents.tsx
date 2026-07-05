@@ -8,6 +8,11 @@ import {
   getCourseEnrolledStudents,
   updateCourseEnrollmentStatus,
 } from "@/services/academic.service";
+import {
+  getTeacherStudentSubjectPrediction,
+  getTeacherSubjectAnalytics,
+  type TeacherStudentPrediction,
+} from "@/services/course-analytics.service";
 import { getStudents } from "@/services/users/users.service";
 
 import type { CourseEnrolledStudent } from "@/types/course";
@@ -27,11 +32,16 @@ export default function TeacherCourseStudents({
   const [enrolledStudents, setEnrolledStudents] = useState<
     CourseEnrolledStudent[]
   >([]);
+  const [studentPredictions, setStudentPredictions] = useState<
+    TeacherStudentPrediction[]
+  >([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
   const [isAddingStudents, setIsAddingStudents] = useState(false);
   const [updatingEnrollmentId, setUpdatingEnrollmentId] = useState<
     string | null
   >(null);
+  const [regeneratingPredictionStudentId, setRegeneratingPredictionStudentId] =
+    useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -45,10 +55,14 @@ export default function TeacherCourseStudents({
       try {
         const students = await getStudents();
         const courseStudents = await getCourseEnrolledStudents(courseId);
+        const analytics = await getTeacherSubjectAnalytics(courseId).catch(
+          () => null,
+        );
 
         if (isMounted) {
           setAvailableStudents(students);
           setEnrolledStudents(courseStudents);
+          setStudentPredictions(analytics?.predictions ?? []);
         }
       } catch {
         if (isMounted) {
@@ -79,6 +93,16 @@ export default function TeacherCourseStudents({
   const selectedUserIds = useMemo(
     () => selectedStudents.map((student) => student.id),
     [selectedStudents],
+  );
+  const studentPredictionsById = useMemo(
+    () =>
+      new Map(
+        studentPredictions.map((prediction) => [
+          prediction.studentId,
+          prediction,
+        ]),
+      ),
+    [studentPredictions],
   );
 
   const searchResults = useMemo(() => {
@@ -208,6 +232,38 @@ export default function TeacherCourseStudents({
     }
   };
 
+  const handleRegeneratePrediction = async (studentId: string) => {
+    setRegeneratingPredictionStudentId(studentId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const prediction = await getTeacherStudentSubjectPrediction(
+        courseId,
+        studentId,
+      );
+
+      if (!prediction) {
+        setError(
+          "Prediction-service no devolvio una recomendacion para este estudiante.",
+        );
+        return;
+      }
+
+      setStudentPredictions((currentPredictions) => [
+        prediction,
+        ...currentPredictions.filter(
+          (currentPrediction) => currentPrediction.studentId !== studentId,
+        ),
+      ]);
+      setSuccessMessage("Recomendacion actualizada desde prediction-service.");
+    } catch {
+      setError("No se pudo actualizar la recomendacion desde prediction-service.");
+    } finally {
+      setRegeneratingPredictionStudentId(null);
+    }
+  };
+
   return (
     <div>
       {error ? (
@@ -242,8 +298,11 @@ export default function TeacherCourseStudents({
 
       <TeacherCourseStudentsTable
         students={enrolledStudents}
+        studentPredictionsById={studentPredictionsById}
         updatingEnrollmentId={updatingEnrollmentId}
+        regeneratingPredictionStudentId={regeneratingPredictionStudentId}
         onEnrollmentStatusChange={handleEnrollmentStatusChange}
+        onRegeneratePrediction={handleRegeneratePrediction}
       />
     </div>
   );

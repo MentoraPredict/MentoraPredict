@@ -16,6 +16,7 @@ export default function CourseAverageChart({
   title = "Promedio del curso",
   description = "El promedio actual se sitúa por debajo del umbral objetivo esperado para esta etapa.",
 }: CourseAverageChartProps) {
+  const formattedAverage = average.toFixed(2);
   const remaining = Math.max(maxAverage - average, 0);
   const performanceRatio = maxAverage > 0 ? average / maxAverage : 0;
   const performanceLabel =
@@ -81,7 +82,7 @@ export default function CourseAverageChart({
                     "
         >
           <Text variant="body" className="text-4xl font-bold text-blue-700">
-            {average}/{maxAverage}
+            {formattedAverage}/{maxAverage}
           </Text>
 
           <Text

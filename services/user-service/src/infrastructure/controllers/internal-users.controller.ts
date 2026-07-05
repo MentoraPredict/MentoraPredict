@@ -35,6 +35,8 @@ export class InternalUsersController {
 
   @Put("profiles/:id")
   update(@Param("id") id: string, @Body() dto: UpdateUserProfileDto) {
-    return this.updateProfileUC.execute(id, dto);
+    return this.updateProfileUC.executeWithOptions(id, dto, {
+      skipAuthSync: true,
+    });
   }
 }

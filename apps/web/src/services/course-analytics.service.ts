@@ -70,6 +70,8 @@ interface SubjectRiskSummary {
   unclassified: number;
 }
 
+export type TeacherStudentPrediction = PredictionResponse;
+
 export interface StudentSubjectAnalytics {
   average: number;
   progress: CourseProgressPoint[];
@@ -250,7 +252,24 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
 
   return {
     riskDistribution,
+    riskCounts: {
+      low: summary.LOW,
+      medium: summary.MEDIUM,
+      high: summary.HIGH + summary.CRITICAL,
+    },
     alerts: alertsResponse.data.data.map(toAlert),
     recommendations,
+    predictions: predictionsResponse.data.data,
   };
+}
+
+export async function getTeacherStudentSubjectPrediction(
+  subjectId: string,
+  studentId: string
+): Promise<TeacherStudentPrediction | null> {
+  const response = await api.get<TeacherStudentPrediction | null>(
+    endpoints.prediction.teacherStudentSubject(subjectId, studentId)
+  );
+
+  return response.data;
 }
