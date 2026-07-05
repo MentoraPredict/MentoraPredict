@@ -1,4 +1,7 @@
+import { useState } from "react";
+
 import Container from "@/components/atoms/Container";
+import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 import Pagination from "@/components/molecules/Pagination";
@@ -14,20 +17,35 @@ export default function AdminUsersManagement() {
   const {
     search,
     setSearch,
+    roleFilter,
+    setRoleFilter,
+    facultyFilter,
+    setFacultyFilter,
+    careerFilter,
+    setCareerFilter,
+    filterOptions,
     users,
     isLoading,
     error,
     clearSearch,
+    clearFilters,
     toggleStatus,
     toggleTeacherRole,
+    saveUserProfile,
   } = useAdminUsers();
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
   const {
     currentPage,
     paginatedItems: paginatedUsers,
     totalItems,
     totalPages,
     setCurrentPage,
-  } = usePagination(users, USERS_PER_PAGE, search);
+  } = usePagination(
+    users,
+    USERS_PER_PAGE,
+    `${search}-${roleFilter}-${facultyFilter}-${careerFilter}`
+  );
 
   return (
     <section className="py-8">
@@ -38,40 +56,47 @@ export default function AdminUsersManagement() {
           </Heading>
 
           <Text variant="small" className="mt-2 max-w-2xl">
-            Visualiza usuarios registrados, administra su estado de cuenta y
-            asigna o remueve el rol de docente.
+            Visualiza usuarios registrados, administra su estado de cuenta,
+            edita sus datos principales y filtra por contexto académico.
           </Text>
         </div>
 
-        <div
-          className="
-                        rounded-t-2xl
-                        border
-                        border-gray-200
-                        bg-white
-                        p-5
-                    "
-        >
-          <Text
-            variant="caption"
-            className="
-                            mb-3
-                            font-semibold
-                            uppercase
-                            tracking-[0.2em]
-                            text-gray-600
-                        "
-          >
-            Buscar usuarios
-          </Text>
+        <div className="rounded-t-2xl border border-gray-200 bg-white p-5">
+          <div className="mb-4">
+            <Text
+              variant="caption"
+              className="font-semibold uppercase tracking-[0.2em] text-gray-600"
+            >
+              Buscar usuarios
+            </Text>
+            <Text variant="small" className="mt-1 text-gray-600">
+              Edita nombres, apellidos y correo; el contexto académico se
+              muestra cuando el usuario tiene matrículas activas.
+            </Text>
+          </div>
 
-          <SearchBar
-            value={search}
-            placeholder="Buscar por nombres, apellidos o correo"
-            onChange={setSearch}
-            onClear={clearSearch}
-            onSearch={() => {}}
-          />
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="min-w-0 flex-1">
+              <SearchBar
+                value={search}
+                placeholder="Buscar por nombres, apellidos, correo o contexto académico"
+                onChange={setSearch}
+                onClear={clearSearch}
+                onSearch={() => {}}
+              />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="lg:min-w-28"
+              onClick={() => {
+                setIsFiltersOpen((current) => !current);
+              }}
+            >
+              Filtros
+            </Button>
+          </div>
         </div>
 
         {error ? (
@@ -89,8 +114,18 @@ export default function AdminUsersManagement() {
         ) : (
           <AdminUsersTable
             users={paginatedUsers}
+            isFiltersOpen={isFiltersOpen}
             onToggleStatus={toggleStatus}
             onToggleTeacherRole={toggleTeacherRole}
+            onSaveUserProfile={saveUserProfile}
+            roleFilter={roleFilter}
+            facultyFilter={facultyFilter}
+            careerFilter={careerFilter}
+            filterOptions={filterOptions}
+            onRoleFilterChange={setRoleFilter}
+            onFacultyFilterChange={setFacultyFilter}
+            onCareerFilterChange={setCareerFilter}
+            onClearFilters={clearFilters}
           />
         )}
 
