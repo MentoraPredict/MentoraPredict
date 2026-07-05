@@ -1,10 +1,6 @@
 import {
-  FiBarChart2,
   FiBookOpen,
   FiGrid,
-  FiEdit3,
-  FiUploadCloud,
-  FiUsers,
 } from "react-icons/fi";
 import { NavLink } from "react-router-dom";
 
@@ -19,7 +15,7 @@ type CourseSidebarMode = "teacher" | "student";
 interface CourseSidebarProps {
   mode: CourseSidebarMode;
   courses: Course[];
-  activeCourseId: string;
+  activeCourseId?: string;
 }
 
 function getBasePath(mode: CourseSidebarMode) {
@@ -29,7 +25,6 @@ function getBasePath(mode: CourseSidebarMode) {
 export default function CourseSidebar({
   mode,
   courses,
-  activeCourseId,
 }: CourseSidebarProps) {
   const basePath = getBasePath(mode);
   const isTeacher = mode === "teacher";
@@ -68,37 +63,11 @@ export default function CourseSidebar({
       </div>
 
       <nav className="space-y-2">
-        {isTeacher ? (
-          <>
-            <CourseSidebarNavItem
-              to={`${basePath}/courses/${activeCourseId}/performance`}
-              icon={<FiBarChart2 size={18} />}
-              label="Rendimiento"
-            />
-            <CourseSidebarNavItem
-              to={`${basePath}/courses/${activeCourseId}/upload-data`}
-              icon={<FiUploadCloud size={18} />}
-              label="Subir Datos"
-            />
-            <CourseSidebarNavItem
-              to={`${basePath}/courses/${activeCourseId}/students`}
-              icon={<FiUsers size={18} />}
-              label="Estudiantes matriculados"
-            />
-
-            <CourseSidebarNavItem
-              to={`${basePath}/courses/${activeCourseId}/edit`}
-              icon={<FiEdit3 size={18} />}
-              label="Editar Curso"
-            />
-          </>
-        ) : (
-          <CourseSidebarNavItem
-            to={`${basePath}/courses`}
-            icon={<FiGrid size={18} />}
-            label="Panel academico"
-          />
-        )}
+        <CourseSidebarNavItem
+          to={`${basePath}/courses`}
+          icon={<FiGrid size={18} />}
+          label={isTeacher ? "Panel docente" : "Panel academico"}
+        />
       </nav>
 
       <div className="mt-10">

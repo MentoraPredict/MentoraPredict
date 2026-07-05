@@ -24,7 +24,7 @@ export default function CourseAnalyticsLayout({
 
         <div className="flex min-h-screen flex-1 flex-col">
           <DashboardNavbar
-            showLogo={false}
+            showLogo
             showWelcomeMessage={false}
             title={title}
             leadingAction={

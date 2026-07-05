@@ -15,4 +15,5 @@ export interface Course {
   facultyId?: string;
   facultyName?: string;
   currentAverage?: number | null;
+  enrolledCount?: number;
 }

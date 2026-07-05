@@ -15,6 +15,12 @@ interface CourseCardProps {
   course: Course;
   isDeleteMode?: boolean;
   isDeleting?: boolean;
+  showTeacherDetails?: boolean;
+  metrics?: {
+    averageLabel: string;
+    enrolledCount: number;
+    statusLabel: string;
+  };
   onClick?: (courseId: string) => void;
   onSecondaryAction?: (courseId: string) => void;
   secondaryActionLabel?: string;
@@ -26,6 +32,8 @@ export default function CourseCard({
   course,
   isDeleteMode = false,
   isDeleting = false,
+  showTeacherDetails = true,
+  metrics,
   onClick,
   onSecondaryAction,
   secondaryActionLabel = "Accion",
@@ -148,6 +156,46 @@ export default function CourseCard({
           </div>
         </div>
 
+        {metrics ? (
+          <div className="grid grid-cols-2 gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <div>
+              <Text variant="caption" className="font-bold uppercase text-blue-700">
+                Curso
+              </Text>
+              <Text variant="small" className="mt-1 font-semibold text-gray-900">
+                {metrics.statusLabel}
+              </Text>
+            </div>
+
+            <div>
+              <Text variant="caption" className="font-bold uppercase text-blue-700">
+                Promedio
+              </Text>
+              <Text variant="small" className="mt-1 font-semibold text-gray-900">
+                {metrics.averageLabel}
+              </Text>
+            </div>
+
+            <div>
+              <Text variant="caption" className="font-bold uppercase text-blue-700">
+                Estudiantes
+              </Text>
+              <Text variant="small" className="mt-1 font-semibold text-gray-900">
+                {metrics.enrolledCount}
+              </Text>
+            </div>
+
+            <div>
+              <Text variant="caption" className="font-bold uppercase text-blue-700">
+                Semestre
+              </Text>
+              <Text variant="small" className="mt-1 font-semibold text-gray-900">
+                {course.semester}
+              </Text>
+            </div>
+          </div>
+        ) : null}
+
         <button
           type="button"
           onClick={(event) => {
@@ -164,17 +212,19 @@ export default function CourseCard({
 
         {showDetails ? (
           <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 sm:grid-cols-2">
-            <div>
-              <Text
-                variant="caption"
-                className="font-bold uppercase text-gray-500"
-              >
-                Docente
-              </Text>
-              <Text variant="small" className="mt-1 text-gray-800">
-                {course.teacherName}
-              </Text>
-            </div>
+            {showTeacherDetails ? (
+              <div>
+                <Text
+                  variant="caption"
+                  className="font-bold uppercase text-gray-500"
+                >
+                  Docente
+                </Text>
+                <Text variant="small" className="mt-1 text-gray-800">
+                  {course.teacherName}
+                </Text>
+              </div>
+            ) : null}
 
             <div>
               <Text

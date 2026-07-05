@@ -23,6 +23,27 @@ interface SubjectApiResponse {
   is_active?: boolean;
   imageUrl?: string | null;
   image_url?: string | null;
+  enrolledCount?: number;
+  enrolled_count?: number;
+}
+
+interface TeacherSubjectApiResponse {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  credits: number;
+  maxCapacity: number;
+  isActive: boolean;
+  career: { id: string; name: string; code: string };
+  faculty: { id: string; name: string; code: string };
+  period: {
+    id: string;
+    name: string;
+    code: string;
+    status: string;
+  };
+  enrolledCount: number;
 }
 
 interface AcademicPeriodApiResponse {
@@ -168,6 +189,9 @@ interface MaybeWrappedArray<T> {
   value?: T[];
   data?: T[];
   items?: T[];
+  total?: number;
+  page?: number;
+  limit?: number;
 }
 
 interface RequestCache<T> {
@@ -305,6 +329,28 @@ function toCourse(
     riskLevel: "LOW",
     riskLabel: isActive ? "Curso activo" : "Curso inactivo",
     imageUrl: subject.imageUrl ?? subject.image_url ?? undefined,
+    enrolledCount: subject.enrolledCount ?? subject.enrolled_count ?? 0,
+  };
+}
+
+function teacherSubjectToCourse(
+  subject: TeacherSubjectApiResponse,
+  teacherName?: string
+): Course {
+  return {
+    id: subject.id,
+    name: subject.name,
+    teacherName: teacherName ?? "Docente",
+    semester: subject.period.name ?? subject.period.code,
+    description: subject.description ?? "Sin descripcion registrada.",
+    riskLevel: "LOW",
+    riskLabel: subject.isActive ? "Curso activo" : "Curso inactivo",
+    credits: subject.credits,
+    careerId: subject.career.id,
+    careerName: subject.career.name,
+    facultyId: subject.faculty.id,
+    facultyName: subject.faculty.name,
+    enrolledCount: subject.enrolledCount,
   };
 }
 
@@ -328,6 +374,23 @@ export async function getTeacherCourses(
   teacherId: string,
   teacherName?: string
 ): Promise<Course[]> {
+  const response = await api.get<
+    TeacherSubjectApiResponse[] | MaybeWrappedArray<TeacherSubjectApiResponse>
+  >(endpoints.academic.teacherSubjects, {
+    params: {
+      page: 1,
+      limit: 100,
+    },
+  });
+
+  const teacherSubjects = unwrapArray(response.data);
+
+  if (teacherSubjects.length > 0) {
+    return teacherSubjects.map((subject) =>
+      teacherSubjectToCourse(subject, teacherName)
+    );
+  }
+
   const { subjects, periodsById } = await getAcademicCourseData();
 
   return subjects
@@ -336,9 +399,7 @@ export async function getTeacherCourses(
 
       return subjectTeacherId === teacherId;
     })
-    .map((subject) =>
-      toCourse(subject, periodsById, teacherName)
-  );
+    .map((subject) => toCourse(subject, periodsById, teacherName));
 }
 
 export async function getStudentCourses(): Promise<Course[]> {
