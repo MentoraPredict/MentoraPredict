@@ -56,3 +56,36 @@ pnpm --filter @mentorapredict/mobile exec expo start -c
 
 Use the direct override when testing with Expo Go on a physical phone, because
 `localhost` points to the phone itself, not to your development machine.
+
+## Build Android APK
+
+This project uses EAS Build to generate installable APK files without publishing
+to Play Store.
+
+Login to Expo:
+
+```powershell
+npx eas-cli login
+```
+
+Configure the project the first time:
+
+```powershell
+cd apps/mobile
+npx eas-cli build:configure
+```
+
+Build an internal QA APK:
+
+```powershell
+pnpm --filter @mentorapredict/mobile run build:android:apk
+```
+
+Build an internal production APK:
+
+```powershell
+pnpm --filter @mentorapredict/mobile run build:android:apk:prod
+```
+
+The generated APK can be downloaded from the EAS build link and installed
+manually on Android devices.

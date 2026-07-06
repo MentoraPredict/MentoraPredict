@@ -8,6 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:android:apk": "npx eas-cli build --platform android --profile apk",
+    "build:android:apk:prod": "npx eas-cli build --platform android --profile apk-prod",
     "lint": "expo lint"
   },
   "dependencies": {
