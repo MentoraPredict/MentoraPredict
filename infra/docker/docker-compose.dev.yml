@@ -637,6 +637,26 @@ services:
     networks:
       - mentorapredict-net
 
+  landing:
+    build:
+      context: ../..
+      dockerfile: apps/landing/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/landing:${DEV_IMAGE_TAG:-dev-latest}
+    container_name: mp_landing
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${LANDING_PORT:-4321}:80"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    expose:
+      - "80"
+    networks:
+      - mentorapredict-net
+
   seed-loader:
     build:
       context: ../..
