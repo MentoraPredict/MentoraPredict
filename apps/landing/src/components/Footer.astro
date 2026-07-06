@@ -1,0 +1,117 @@
+---
+import { SITE_CONFIG } from "../config/site";
+
+const footerSections = [
+  {
+    title: "Product",
+    links: [
+      { label: "Features", href: "#features" },
+      { label: "Data Security", href: "#features" },
+      { label: "Success Stories", href: "#stats" },
+      { label: "Developer API", href: "#footer" },
+    ],
+  },
+  {
+    title: "Technology",
+    links: [
+      { label: "Predictive Models", href: "#features" },
+      { label: "Cloud Machine Learning", href: "#features" },
+      { label: "LMS Integration", href: "#features" },
+      { label: "Infrastructure", href: "#stats" },
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      { label: "Documentation", href: "#footer" },
+      { label: "Help Center", href: "#footer" },
+      { label: "Webinars", href: "#footer" },
+      { label: "Contact", href: "#footer" },
+    ],
+  },
+];
+
+const legalLinks = [
+  { label: "Privacy", href: "#footer" },
+  { label: "Terms", href: "#footer" },
+  { label: "Cookies", href: "#footer" },
+];
+---
+
+<footer id="footer" class="scroll-mt-20 bg-primary-950 text-white">
+  <div class="mx-auto max-w-container py-14 sm:py-16">
+    <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.2fr_repeat(3,1fr)]">
+      <div class="max-w-xs">
+        <a href="/" class="flex items-center gap-2.5 text-lg font-bold tracking-tight text-white">
+          <svg
+            class="size-8"
+            viewBox="0 0 32 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <rect width="32" height="32" rx="8" fill="#fff" fill-opacity="0.15" />
+            <path d="M8 22V10l8 6-8 6z" fill="#fff" opacity="0.9" />
+            <path d="M16 22V10l8 6-8 6z" fill="#fff" opacity="0.5" />
+          </svg>
+          MentoraPredict
+        </a>
+        <p class="mt-6 font-medium leading-relaxed text-white">
+          Leading the revolution in preventive academic analytics through ethical artificial intelligence.
+        </p>
+        <div class="mt-6 flex gap-3">
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="grid size-8 place-items-center rounded-full bg-white/10 text-blue-100 transition-colors hover:bg-white hover:text-primary-700"
+            aria-label="GitHub"
+          >
+            <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+            </svg>
+          </a>
+          <a
+            href={`mailto:${SITE_CONFIG.contactEmail}`}
+            class="grid size-8 place-items-center rounded-full bg-white/10 text-blue-100 transition-colors hover:bg-white hover:text-primary-700"
+            aria-label="Email"
+          >
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M22 4L12 13 2 4" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      {footerSections.map((section) => (
+        <div>
+          <h4 class="text-sm font-bold uppercase tracking-wider text-white">{section.title}</h4>
+          <ul class="mt-4 space-y-3">
+            {section.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-sm text-blue-200/70 transition-colors hover:text-white"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+
+    <div class="mt-16 border-t border-white/15 pt-7 text-center text-sm text-blue-100/80">
+      <p>&copy; {new Date().getFullYear()} MentoraPredict S.A. All rights reserved.</p>
+      <nav aria-label="Legal" class="mt-2 flex flex-wrap justify-center gap-x-8 gap-y-2">
+        {legalLinks.map((link) => (
+          <a href={link.href} class="transition-colors hover:text-white">
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </div>
+</footer>

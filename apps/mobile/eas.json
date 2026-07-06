@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "version": ">= 14.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_ENV": "local"
+      }
+    },
+    "apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_ENV": "qa",
+        "EXPO_PUBLIC_API_BASE_URL": "https://mentorapredictqa.programacionwebuce.net/api"
+      }
+    },
+    "apk-prod": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_ENV": "prod",
+        "EXPO_PUBLIC_API_BASE_URL": "https://mentorapredictprod.programacionwebuce.net/api"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

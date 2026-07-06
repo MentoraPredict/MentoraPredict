@@ -9,3 +9,5 @@ allowBuilds:
   electron: true
   electron-winstaller: true
   esbuild: true
+  unrs-resolver: false
+  sharp: true
