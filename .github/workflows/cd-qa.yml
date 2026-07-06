@@ -309,12 +309,19 @@ jobs:
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
             echo "[INFRA] Starting infrastructure"
-            docker compose --profile qa-tools --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis pgadmin
+            docker compose --profile qa-tools --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis rabbitmq pgadmin
 
             echo "[WAIT DB READY]"
             for i in {1..20}; do
               docker exec $(docker ps -q --filter name=postgres) pg_isready && break
               echo "waiting postgres..."
+              sleep 3
+            done
+
+            echo "[WAIT RABBITMQ READY]"
+            for i in {1..20}; do
+              docker exec mp_rabbitmq rabbitmq-diagnostics check_port_connectivity && break
+              echo "waiting rabbitmq..."
               sleep 3
             done
 
@@ -325,7 +332,7 @@ jobs:
             echo "[CLEANUP] Removing stopped containers, old images, and old build cache"
             docker container prune -f
             docker image prune -af --filter "until=24h"
-            docker builder prune -af --filter "until=24h"
+            timeout 180 docker builder prune -af --filter "until=24h" || echo "[CLEANUP] Builder prune timed out, continuing deploy"
 
             echo "[CLEANUP] Docker disk usage after cleanup"
             docker system df
@@ -352,7 +359,12 @@ jobs:
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
 
             echo "[SEEDS] Running database seeds (idempotent safe mode)"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up --build --force-recreate seed-loader
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up \
+              --build \
+              --force-recreate \
+              --abort-on-container-exit \
+              --exit-code-from seed-loader \
+              seed-loader
 
             echo "[MONITORING] Starting monitoring stack"
             docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml --project-name mentorapredict up -d 2>&1 || echo "[MONITORING] Monitoring stack not available — skipping"
