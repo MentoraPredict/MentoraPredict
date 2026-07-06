@@ -1,0 +1,58 @@
+---
+import { SITE_CONFIG } from "../config/site";
+
+const navItems = [
+  { label: "Home", href: "#hero" },
+  { label: "Features", href: "#features" },
+  { label: "Benefits", href: "#stats" },
+  { label: "Downloads", href: "#downloads" },
+  { label: "Contact", href: "#footer" },
+];
+---
+
+<header
+  class="sticky top-0 z-[100] isolate border-b border-primary-900/10 bg-neutral-50/80 backdrop-blur"
+>
+  <div class="mx-auto flex h-[4.5rem] max-w-container items-center justify-between px-6">
+    <a href="/" class="flex items-center gap-2.5 text-lg font-bold tracking-tight text-primary-700">
+      <svg
+        class="size-8"
+        viewBox="0 0 32 32"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <rect width="32" height="32" rx="8" fill="#0f4f92" />
+        <path
+          d="M8 22V10l8 6-8 6z"
+          fill="#fff"
+          opacity="0.9"
+        />
+        <path
+          d="M16 22V10l8 6-8 6z"
+          fill="#fff"
+          opacity="0.5"
+        />
+      </svg>
+      MentoraPredict
+    </a>
+
+    <nav class="hidden gap-8 md:flex">
+      {navItems.map((item) => (
+        <a
+          href={item.href}
+          class="text-sm font-medium text-neutral-600 transition-colors hover:text-primary-700"
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+
+    <a
+      href={`${SITE_CONFIG.webAppUrl}/login`}
+      class="rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-800 hover:shadow-md"
+    >
+      Sign In
+    </a>
+  </div>
+</header>

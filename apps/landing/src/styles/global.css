@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #e3f2fd;
+  --color-primary-100: #bbdefb;
+  --color-primary-200: #90caf9;
+  --color-primary-300: #64b5f6;
+  --color-primary-400: #42a5f5;
+  --color-primary-500: #1565c0;
+  --color-primary-600: #125aa9;
+  --color-primary-700: #0f4f92;
+  --color-primary-800: #0d447b;
+  --color-primary-900: #0a3964;
+  --color-primary-950: #071e3a;
+
+  --color-neutral-50: #f5f7fa;
+  --color-neutral-100: #eef1f5;
+  --color-neutral-200: #dce3ea;
+  --color-neutral-300: #c8d0d9;
+  --color-neutral-400: #9ba6b2;
+  --color-neutral-500: #6f7a87;
+  --color-neutral-600: #4f5965;
+  --color-neutral-700: #39424c;
+  --color-neutral-800: #232a32;
+  --color-neutral-900: #101418;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --max-w-container: 1280px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: radial-gradient(
+      circle at top left,
+      rgba(21, 101, 192, 0.08),
+      transparent 34rem
+    ),
+    #f5f7fa;
+  color: #101828;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+picture,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:focus-visible {
+  outline: 3px solid rgba(21, 101, 192, 0.28);
+  outline-offset: 3px;
+}
