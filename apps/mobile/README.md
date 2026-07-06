@@ -78,7 +78,7 @@ npx eas-cli build:configure
 Build an internal QA APK:
 
 ```powershell
-pnpm --filter @mentorapredict/mobile run build:android:apk
+pnpm --filter @mentorapredict/mobile run build:android:apk:qa
 ```
 
 Build an internal production APK:

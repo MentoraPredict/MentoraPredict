@@ -1,5 +1,5 @@
 export const SITE_CONFIG = {
-  webAppUrl: import.meta.env.PUBLIC_WEB_APP_URL || "http://localhost:5173",
+  webAppUrl: import.meta.env.PUBLIC_WEB_APP_URL || "",
   contactEmail: "contacto@mentorapredict.com",
 } as const;
 
