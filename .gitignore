@@ -19,6 +19,7 @@
 # Build outputs
 dist/
 build/
+release/
 .turbo/
 
 # Dependencies
@@ -50,6 +51,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.desktop
 
 # Logs
 *.log
