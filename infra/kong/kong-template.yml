@@ -357,6 +357,37 @@ services:
               limit_by: ip
               fault_tolerant: true
 
+  - name: landing
+    url: http://landing:80
+    routes:
+      - name: landing-route
+        paths:
+          - /landing
+        strip_path: false
+        regex_priority: 20
+        plugins:
+          - name: cors
+            config:
+              origins:
+                - http://localhost
+                - http://mentorapredictqa.programacionwebuce.net
+                - https://mentorapredictqa.programacionwebuce.net
+                - http://mentorapredictprod.programacionwebuce.net
+                - https://mentorapredictprod.programacionwebuce.net
+              methods:
+                - GET
+                - OPTIONS
+              headers:
+                - Accept
+                - Content-Type
+              credentials: false
+          - name: rate-limiting
+            config:
+              minute: 300
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
   - name: web
     url: http://web:__WEB_UPSTREAM_PORT__
     routes:

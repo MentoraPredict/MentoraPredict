@@ -1,6 +1,8 @@
 ---
 import { SITE_CONFIG } from "../config/site";
 
+const basePath = import.meta.env.BASE_URL;
+
 const navItems = [
   { label: "Home", href: "#hero" },
   { label: "Features", href: "#features" },
@@ -14,7 +16,7 @@ const navItems = [
   class="sticky top-0 z-[100] isolate border-b border-primary-900/10 bg-neutral-50/80 backdrop-blur"
 >
   <div class="mx-auto flex h-[4.5rem] max-w-container items-center justify-between px-6">
-    <a href="/" class="flex items-center gap-2.5 text-lg font-bold tracking-tight text-primary-700">
+    <a href={basePath} class="flex items-center gap-2.5 text-lg font-bold tracking-tight text-primary-700">
       <svg
         class="size-8"
         viewBox="0 0 32 32"

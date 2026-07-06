@@ -52,6 +52,9 @@ dist/
 .env.*
 !.env.example
 !.env.desktop
+!.env.desktop.local
+!.env.desktop.qa
+!.env.desktop.prod
 
 # Logs
 *.log

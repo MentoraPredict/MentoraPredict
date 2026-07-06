@@ -7,6 +7,9 @@
     "dev": "concurrently -k \"pnpm --filter @mentorapredict/web dev\" \"tsc --watch --preserveWatchOutput\" \"wait-on http://localhost:5173 dist/main.js && electron .\"",
     "build": "tsc",
     "package": "pnpm --filter @mentorapredict/web build:desktop && pnpm build && electron-builder",
+    "package:local": "pnpm --filter @mentorapredict/web build:desktop:local && pnpm build && electron-builder",
+    "package:qa": "pnpm --filter @mentorapredict/web build:desktop:qa && pnpm build && electron-builder",
+    "package:prod": "pnpm --filter @mentorapredict/web build:desktop:prod && pnpm build && electron-builder",
     "clean": "rimraf dist release"
   },
   "devDependencies": {
