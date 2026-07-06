@@ -1,6 +1,7 @@
 import type { AuthTokens, LoginCredentials, SessionUser, UserRole } from '@/types/auth';
+import { API_BASE_URL, requestJson } from '@/services/api/client';
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8000/api';
+export { API_BASE_URL };
 
 interface JwtSessionPayload {
   sub?: string;
@@ -55,36 +56,8 @@ function buildUserFallback(accessToken: string): SessionUser | null {
     email: payload.email,
     role: payload.role,
     isActive: true,
+    avatarUrl: null,
   };
-}
-
-async function requestJson<T>(path: string, options: RequestInit = {}): Promise<T> {
-  let response: Response;
-
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
-  } catch {
-    throw new Error(
-      `No se pudo conectar con ${API_BASE_URL}. Verifica que Kong/backend este activo y que la URL sea accesible desde este dispositivo.`,
-    );
-  }
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    const message = Array.isArray(body?.message)
-      ? body.message.join('. ')
-      : body?.message || 'No se pudo completar la solicitud';
-
-    throw new Error(message);
-  }
-
-  return response.json() as Promise<T>;
 }
 
 export async function login(credentials: LoginCredentials) {
@@ -97,9 +70,7 @@ export async function login(credentials: LoginCredentials) {
 
   try {
     const profile = await requestJson<SessionUser>('/v1/users/me', {
-      headers: {
-        Authorization: `${tokens.tokenType} ${tokens.accessToken}`,
-      },
+      tokens,
     });
 
     return {

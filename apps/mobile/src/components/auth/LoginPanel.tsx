@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from "react-native";
 
-import { AppButton } from '@/components/ui/AppButton';
-import { FormField } from '@/components/ui/FormField';
+import { AppButton } from "@/components/ui/AppButton";
+import { FormField } from "@/components/ui/FormField";
 
 interface LoginPanelProps {
   apiBaseUrl: string;
+  apiEnvironment: string;
   email: string;
   isSubmitting: boolean;
   onChangeEmail: (value: string) => void;
@@ -16,6 +17,7 @@ interface LoginPanelProps {
 
 export function LoginPanel({
   apiBaseUrl,
+  apiEnvironment,
   email,
   isSubmitting,
   onChangeEmail,
@@ -36,7 +38,7 @@ export function LoginPanel({
           keyboardType="email-address"
           label="Correo institucional"
           onChangeText={onChangeEmail}
-          placeholder="correo@universidad.edu.ec"
+          placeholder="correo@mentorapredict.edu.ec"
           value={email}
         />
 
@@ -55,7 +57,13 @@ export function LoginPanel({
           Iniciar sesion
         </AppButton>
 
-        <Text style={styles.apiHint}>API: {apiBaseUrl}</Text>
+        <AppButton disabled variant="outline">
+          Continuar con Microsoft proximamente
+        </AppButton>
+
+        <Text style={styles.apiHint}>
+          Entorno {apiEnvironment.toUpperCase()} - {apiBaseUrl}
+        </Text>
       </View>
     </View>
   );
@@ -63,19 +71,19 @@ export function LoginPanel({
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
   panelTitle: {
-    color: '#0F172A',
+    color: "#0F172A",
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   panelDescription: {
-    color: '#64748B',
+    color: "#64748B",
     fontSize: 15,
     marginTop: 4,
   },
@@ -84,14 +92,14 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   error: {
-    color: '#B91C1C',
+    color: "#B91C1C",
     fontSize: 13,
     lineHeight: 18,
   },
   apiHint: {
-    color: '#64748B',
+    color: "#64748B",
     fontSize: 11,
     lineHeight: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

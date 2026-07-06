@@ -11,6 +11,8 @@ concurrency:
 env:
   REGISTRY: docker.io
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  EXPO_PUBLIC_API_ENV: qa
+  EXPO_PUBLIC_API_BASE_URL: https://mentorapredictqa.programacionwebuce.net/api
 
 jobs:
   detect-changes:
@@ -262,6 +264,8 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
             SWAGGER_SERVER_URL=${{ secrets.SWAGGER_SERVER_URL }}
+            EXPO_PUBLIC_API_ENV=qa
+            EXPO_PUBLIC_API_BASE_URL=https://mentorapredictqa.programacionwebuce.net/api
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
