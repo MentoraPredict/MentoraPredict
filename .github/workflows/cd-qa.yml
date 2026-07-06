@@ -48,6 +48,8 @@ jobs:
               - 'apps/web/**'
             mobile:
               - 'apps/mobile/**'
+            landing:
+              - 'apps/landing/**'
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
@@ -68,6 +70,7 @@ jobs:
           PREDICTION_CHANGED=${{ steps.filter.outputs.prediction-service }}
           WEB_CHANGED=${{ steps.filter.outputs.web }}
           MOBILE_CHANGED=${{ steps.filter.outputs.mobile }}
+          LANDING_CHANGED=${{ steps.filter.outputs.landing }}
           KONG_CHANGED=${{ steps.filter.outputs.kong }}
           MONITORING_CHANGED=${{ steps.filter.outputs.monitoring }}
           INFRA_CHANGED=${{ steps.filter.outputs.infra }}
@@ -81,6 +84,7 @@ jobs:
             PREDICTION_CHANGED="true"
             WEB_CHANGED="true"
             MOBILE_CHANGED="true"
+            LANDING_CHANGED="true"
             KONG_CHANGED="true"
             MONITORING_CHANGED="true"
           fi
@@ -92,6 +96,7 @@ jobs:
             --arg ANALYTICS "$ANALYTICS_CHANGED" \
             --arg PREDICTION "$PREDICTION_CHANGED" \
             --arg WEB "$WEB_CHANGED" \
+            --arg LANDING "$LANDING_CHANGED" \
             --arg KONG "$KONG_CHANGED" \
             '{
               "include": [
@@ -100,7 +105,8 @@ jobs:
                 if $USER == "true" then {"service":"user-service","type":"docker","dockerfile":"services/user-service/Dockerfile","changed":"true"} else empty end,
                 if $ANALYTICS == "true" then {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"} else empty end,
                 if $PREDICTION == "true" then {"service":"prediction-service","type":"docker","dockerfile":"services/prediction-service/Dockerfile","changed":"true"} else empty end,
-                if $WEB == "true" then {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile.qa","changed":"true"} else empty end,
+                if $WEB == "true" then {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"} else empty end,
+                if $LANDING == "true" then {"service":"landing","type":"docker","dockerfile":"apps/landing/Dockerfile","changed":"true"} else empty end,
                 if $KONG == "true" then {"service":"kong","type":"compose","changed":"true"} else empty end
               ]
             }' > matrix.json

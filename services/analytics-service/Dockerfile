@@ -13,6 +13,7 @@ COPY services/auth-service/package.json ./services/auth-service/package.json
 COPY services/prediction-service/package.json ./services/prediction-service/package.json
 COPY services/user-service/package.json ./services/user-service/package.json
 COPY apps/web/package.json ./apps/web/package.json
+COPY apps/landing/package.json ./apps/landing/package.json
 COPY packages/event-contracts/package.json ./packages/event-contracts/package.json
 COPY packages/hooks/package.json ./packages/hooks/package.json
 COPY packages/services/package.json ./packages/services/package.json
