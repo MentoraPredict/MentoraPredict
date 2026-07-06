@@ -6,7 +6,7 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
     NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=300000 \
     PNPM_HOME="/root/.pnpm"
 RUN corepack enable
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY services/user-service/package.json ./services/user-service/package.json
 RUN pnpm install --frozen-lockfile
 
