@@ -9,3 +9,4 @@ allowBuilds:
   electron: set this to true or false
   electron-winstaller: set this to true or false
   esbuild: true
+  unrs-resolver: false
