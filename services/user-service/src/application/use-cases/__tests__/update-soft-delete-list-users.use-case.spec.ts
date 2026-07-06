@@ -39,6 +39,7 @@ const mockAuthClient = (): jest.Mocked<IAuthServiceClient> => ({
 const mockAuthSyncClient = (): jest.Mocked<IAuthSyncClient> => ({
   syncRole: jest.fn().mockResolvedValue(undefined),
   syncStatus: jest.fn().mockResolvedValue(undefined),
+  syncProfile: jest.fn().mockResolvedValue(undefined),
 });
 
 // ─── UpdateUserUseCase ───────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ describe("UpdateUserUseCase", () => {
     expect(repo.update).toHaveBeenCalledWith("uid-1", { bio: "Nueva bio" });
     expect(authSync.syncRole).not.toHaveBeenCalled();
     expect(authSync.syncStatus).not.toHaveBeenCalled();
+    expect(authSync.syncProfile).not.toHaveBeenCalled();
     expect(result.bio).toBe("Nueva bio");
   });
 
