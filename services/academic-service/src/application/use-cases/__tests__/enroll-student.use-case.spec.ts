@@ -17,6 +17,7 @@ const subject = new SubjectEntity(
 );
 
 const mockEnrollRepo = (): jest.Mocked<IEnrollmentRepository> => ({
+  findById: jest.fn(),
   findByStudentAndSubject: jest.fn(),
   findByStudentSubjectAndPeriod: jest.fn(),
   countActiveBySubject: jest.fn(),
