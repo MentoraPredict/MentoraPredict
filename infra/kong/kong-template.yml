@@ -341,7 +341,8 @@ services:
       - name: landing-route
         paths:
           - /landing
-        strip_path: false
+        strip_path: true
+        preserve_host: true
         regex_priority: 20
         plugins:
           - name: cors
