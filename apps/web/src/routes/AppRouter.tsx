@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import {
   BrowserRouter,
+  HashRouter,
   Routes,
   Route,
   Navigate,
@@ -144,9 +145,11 @@ export default function AppRouter() {
     void useAuthStore.getState().hydrateSession();
   }, []);
 
+  const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       <AnimatedRoutes />
-    </BrowserRouter>
+    </Router>
   );
 }

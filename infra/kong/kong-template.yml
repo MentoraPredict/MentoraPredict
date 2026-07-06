@@ -210,9 +210,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
 
   - name: analytics-service
