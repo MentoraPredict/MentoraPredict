@@ -355,6 +355,31 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  landing:
+    image: ${DOCKERHUB_USERNAME}/landing:${IMAGE_TAG:-qa-latest}
+    container_name: mp_landing
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    expose:
+      - 80
+    networks:
+      - mentorapredict-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   seed-loader:
     build:
       context: ../..

@@ -15,6 +15,8 @@ plugins:
         - http://localhost:8000
         - http://mentorapredictqa.programacionwebuce.net
         - https://mentorapredictqa.programacionwebuce.net
+        - http://mentorapredictprod.programacionwebuce.net
+        - https://mentorapredictprod.programacionwebuce.net
       methods:
         - GET
         - POST
@@ -331,6 +333,28 @@ services:
               limit_by: ip
               fault_tolerant: true
 
+  - name: grafana
+    url: http://grafana:3000
+    routes:
+      - name: grafana-route
+        paths:
+          - /grafana
+        strip_path: false
+        regex_priority: 300
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-Script-Name:/grafana
+                  - X-Forwarded-Prefix:/grafana
+          - name: rate-limiting
+            config:
+              minute: 60
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
   - name: web
     url: http://web:__WEB_UPSTREAM_PORT__
     routes:
@@ -346,6 +370,8 @@ services:
                 - http://localhost
                 - http://mentorapredictqa.programacionwebuce.net
                 - https://mentorapredictqa.programacionwebuce.net
+                - http://mentorapredictprod.programacionwebuce.net
+                - https://mentorapredictprod.programacionwebuce.net
               methods:
                 - GET
                 - POST
