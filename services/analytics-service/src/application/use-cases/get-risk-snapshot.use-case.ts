@@ -13,18 +13,20 @@ export interface RiskSnapshotResult {
   trendSlope: number;
 }
 
-// Compliance, attendance and trend cannot be derived automatically yet —
-// the platform does not capture asistencia/tareas/participacion data points
-// anywhere (RF-017's CalculateComplianceUseCase requires them as manual
-// input, see analytics.controller.ts). Until that data exists, this
-// snapshot uses neutral midpoint values for those three components so the
-// risk score is not silently skewed by zeros, and documents the gap instead
-// of fabricating numbers.
-// C-09: complianceIndex/attendance/trendSlope con valores neutros (50) documentados con comentario.
-// La pendiente de la tendencia en 0 da un componente de tendencia neutro de 50 en la clasificación de riesgo.
+// Trend still has no real data source (no historical weekly grade series is
+// captured yet), so trendSlope stays neutral — that's still Fase 6/7 scope.
+// Compliance/attendance/studyHours now come from WeeklyCheckIn records
+// (academic-service, Fase 5) via getLatestCheckIn, averaged across the
+// student's ACTIVE enrollments for this period since this snapshot is a
+// global-per-period aggregate (subjectId is not part of its signature —
+// prediction-service calls GET /internal/risk-snapshot/:studentId/:periodId
+// and that contract is out of scope for this phase). Falls back to the
+// previous neutral midpoints when the student hasn't submitted any check-in
+// yet, so the score isn't silently skewed to zero.
 const NEUTRAL_COMPLIANCE = 50;
 const NEUTRAL_ATTENDANCE = 50;
 const NEUTRAL_TREND_SLOPE = 0;
+const NEUTRAL_STUDY_HOURS = 0;
 const PASSING_GRADE = 7;
 
 @Injectable()
@@ -36,28 +38,59 @@ export class GetRiskSnapshotUseCase {
   ) {}
 
   async execute(studentId: string, periodId: string, correlationId?: string): Promise<RiskSnapshotResult> {
-    const [metrics, grades] = await Promise.all([
+    const [metrics, grades, enrollments] = await Promise.all([
       this.calculateAverageUC.execute(studentId, periodId, correlationId),
       this.academic.getGradesByStudent(studentId, periodId, correlationId),
+      this.academic.getEnrollmentsByStudent(studentId, correlationId),
     ]);
 
     const failedEvaluations = grades.filter((g) => g.value < PASSING_GRADE).length;
 
+    const activeSubjectIds = enrollments
+      .filter((e) => e.periodId === periodId && e.status === 'ACTIVE')
+      .map((e) => e.subjectId);
+
+    const checkIns = await Promise.all(
+      activeSubjectIds.map((subjectId) =>
+        this.academic
+          .getLatestCheckIn(studentId, subjectId, periodId, correlationId)
+          .catch(() => null),
+      ),
+    );
+    const validCheckIns = checkIns.filter((c): c is NonNullable<typeof c> => c !== null);
+
+    const complianceIndex =
+      validCheckIns.length > 0
+        ? Math.round(
+            (validCheckIns.reduce((s, c) => s + c.taskCompletion, 0) / validCheckIns.length) * 100,
+          ) / 100
+        : NEUTRAL_COMPLIANCE;
+    const attendance =
+      validCheckIns.length > 0
+        ? Math.round(
+            (validCheckIns.filter((c) => c.attendance).length / validCheckIns.length) * 10000,
+          ) / 100
+        : NEUTRAL_ATTENDANCE;
+    const studyHours =
+      validCheckIns.length > 0
+        ? validCheckIns.reduce((s, c) => s + c.studyHours, 0)
+        : NEUTRAL_STUDY_HOURS;
+
     const { score, riskLevel } = this.classifyRiskUC.execute({
       globalAverage: metrics.globalAverage,
-      complianceIndex: NEUTRAL_COMPLIANCE,
-      attendance: NEUTRAL_ATTENDANCE,
+      complianceIndex,
+      attendance,
       failedEvaluations,
       trendSlope: NEUTRAL_TREND_SLOPE,
-      studyHours: 0,
+      studyHours,
     });
 
     return {
       riskLevel,
       score,
       globalAverage: metrics.globalAverage,
-      complianceIndex: NEUTRAL_COMPLIANCE,
-      attendance: NEUTRAL_ATTENDANCE,
+      complianceIndex,
+      attendance,
       failedEvaluations,
       trendSlope: NEUTRAL_TREND_SLOPE,
     };

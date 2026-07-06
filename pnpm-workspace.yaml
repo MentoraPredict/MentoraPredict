@@ -2,9 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
   - "services/*"
+  - "packages/event-contracts"
 allowBuilds:
   "@nestjs/core": true
   "@scarf/scarf": true
-  electron: set this to true or false
-  electron-winstaller: set this to true or false
+  electron: true
+  electron-winstaller: true
   esbuild: true
+  unrs-resolver: false
+  sharp: true

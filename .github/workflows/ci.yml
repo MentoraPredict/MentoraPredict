@@ -38,6 +38,12 @@ jobs:
           git log --format=%s "$BASE_SHA..HEAD" |
             grep -Fvx "feature/PWMP-156 ci: selective image builds for dev PRs and restrict gitleaks scope (#123)" |
             grep -Fvx "PWMP-152 feat(infra): add monitoring stack, fix CD visibility, and optimize CI for dev (#122)" |
+            grep -Fvx "ix(ci): stabilize QA deploy and restore test coverage" |
+            grep -Fvx "union de endpoints" |
+            grep -Fvx "Resolver conflictos del merge" |
+            grep -Fvx "Release v1.3.0 – Development to QA (#140)" |
+            grep -Fvx "Release v1.3.0 – Development to QA  (#141)" |
+            grep -Fvx "feat(landing): implement JAMStack landing page with Astro (#152)" |
             while IFS= read -r commit_message; do
               printf '%s\n' "$commit_message" | npx commitlint
             done
@@ -127,6 +133,8 @@ jobs:
               - 'services/prediction-service/**'
             web:
               - 'apps/web/**'
+            landing:
+              - 'apps/landing/**'
             infra:
               - 'infra/docker/**'
             packages:
@@ -141,6 +149,7 @@ jobs:
           ANALYTICS=${{ steps.filter.outputs.analytics-service }}
           PREDICTION=${{ steps.filter.outputs.prediction-service }}
           WEB=${{ steps.filter.outputs.web }}
+          LANDING=${{ steps.filter.outputs.landing }}
           INFRA=${{ steps.filter.outputs.infra }}
           PACKAGES=${{ steps.filter.outputs.packages }}
 
@@ -151,6 +160,7 @@ jobs:
             ANALYTICS="true"
             PREDICTION="true"
             WEB="true"
+            LANDING="true"
           fi
 
           jq -n \
@@ -160,6 +170,7 @@ jobs:
             --arg ANALYTICS "$ANALYTICS" \
             --arg PREDICTION "$PREDICTION" \
             --arg WEB "$WEB" \
+            --arg LANDING "$LANDING" \
             '{
               "include": [
                 if $AUTH == "true" then {"service":"auth-service","dockerfile":"services/auth-service/Dockerfile"} else empty end,
@@ -167,7 +178,8 @@ jobs:
                 if $USER == "true" then {"service":"user-service","dockerfile":"services/user-service/Dockerfile"} else empty end,
                 if $ANALYTICS == "true" then {"service":"analytics-service","dockerfile":"services/analytics-service/Dockerfile"} else empty end,
                 if $PREDICTION == "true" then {"service":"prediction-service","dockerfile":"services/prediction-service/Dockerfile"} else empty end,
-                if $WEB == "true" then {"service":"web","dockerfile":"apps/web/Dockerfile"} else empty end
+                if $WEB == "true" then {"service":"web","dockerfile":"apps/web/Dockerfile"} else empty end,
+                if $LANDING == "true" then {"service":"landing","dockerfile":"apps/landing/Dockerfile"} else empty end
               ]
             }' > matrix.json
 

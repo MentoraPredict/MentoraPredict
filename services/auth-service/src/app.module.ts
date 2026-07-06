@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { JwtModule } from "@nestjs/jwt";
+import { ClientsModule, Transport } from "@nestjs/microservices";
 
 import { AuthController } from "./infrastructure/controllers/auth.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
@@ -28,6 +29,8 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
 import { InternalUsersController } from "./infrastructure/controllers/internal-auth.controller";
 import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-case";
 import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-case";
+import { UpdateAuthUserUseCase } from "./application/use-cases/update-user.use-case";
+import { LoginEventProducer } from "./infrastructure/messaging/login-event.producer";
 
 @Module({
   imports: [
@@ -80,6 +83,24 @@ import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-
         };
       },
     }),
+
+    ClientsModule.registerAsync([
+      {
+        name: 'RABBITMQ_CLIENT',
+        inject: [ConfigService],
+        useFactory: (cfg: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [
+              `amqp://${cfg.get('RABBITMQ_USER', 'mp_rabbit')}:${cfg.get('RABBITMQ_PASSWORD', 'mp_rabbit_secret')}@${cfg.get('RABBITMQ_HOST', 'localhost')}:${cfg.get('RABBITMQ_PORT', '5672')}`,
+            ],
+            queue: 'auth-events',
+            queueOptions: { durable: true },
+            persistent: true,
+          },
+        }),
+      },
+    ]),
   ],
   controllers: [
     AuthController,
@@ -99,6 +120,7 @@ import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-
     InternalJwtService,
     InternalServiceGuard,
     { provide: "IUserProfileClient", useClass: UserProfileHttpClient },
+    LoginEventProducer,
     RegisterUserUseCase,
     LoginUserUseCase,
     LogoutUserUseCase,
@@ -107,6 +129,7 @@ import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-
     ResetPasswordUseCase,
     GetAuthUserUseCase,
     SyncAuthUserUseCase,
+    UpdateAuthUserUseCase,
   ],
 })
 export class AppModule {}

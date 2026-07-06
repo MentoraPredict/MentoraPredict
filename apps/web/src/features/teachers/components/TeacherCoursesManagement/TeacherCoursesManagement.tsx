@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Container from "@/components/atoms/Container";
 
@@ -8,24 +8,24 @@ import CreateCourseModal from "@/features/teachers/components/CreateCourseModal"
 import TeacherCoursesEmptyState from "@/features/teachers/components/TeacherCoursesEmptyState";
 import TeacherCoursesHeader from "@/features/teachers/components/TeacherCoursesHeader/TeacherCoursesHeader";
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
+import { getCourseEnrolledStudents } from "@/services/academic.service";
+import { getTeacherSubjectAnalytics } from "@/services/course-analytics.service";
 
-import { useAuthStore } from "@/store/auth.store";
 import Text from "@/components/atoms/Text";
 
 import { useNavigate } from "react-router-dom";
 import { getTeacherCoursePerformancePath } from "@/routes/paths";
 
-export default function TeacherCoursesManagement() {
+interface TeacherCoursesManagementProps {
+  teacherName: string;
+  courseState: ReturnType<typeof useTeacherCourses>;
+}
+
+export default function TeacherCoursesManagement({
+  teacherName,
+  courseState,
+}: TeacherCoursesManagementProps) {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-
-  const teacherName = useMemo(() => {
-    const fullName = [user?.firstName, user?.lastName]
-      .filter(Boolean)
-      .join(" ");
-
-    return fullName || user?.email || "Docente";
-  }, [user]);
 
   const {
     courses: backendCourses,
@@ -40,14 +40,78 @@ export default function TeacherCoursesManagement() {
     creationDataError,
     createCourse,
     deleteCourse,
-  } = useTeacherCourses(user?.id, teacherName, true);
+  } = courseState;
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [courseAnalytics, setCourseAnalytics] = useState<
+    Record<
+      string,
+      {
+        average: number;
+        riskCounts: {
+          low: number;
+          medium: number;
+          high: number;
+        };
+      }
+    >
+  >({});
 
   const courses = backendCourses;
 
   const hasCourses = courses.length > 0;
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCourseAnalytics() {
+      const entries = await Promise.all(
+        courses.map(async (course) => {
+          try {
+            const [analytics, enrolledStudents] = await Promise.all([
+              getTeacherSubjectAnalytics(course.id),
+              getCourseEnrolledStudents(course.id),
+            ]);
+            const averages = enrolledStudents
+              .filter((student) => student.isEnrolled && student.average !== null)
+              .map((student) => student.average as number);
+
+            return [
+              course.id,
+              {
+                average: averages.length > 0
+                  ? averages.reduce((sum, value) => sum + value, 0) / averages.length
+                  : 0,
+                riskCounts: analytics.riskCounts,
+              },
+            ] as const;
+          } catch {
+            return [
+              course.id,
+              {
+                average: course.currentAverage ?? 0,
+                riskCounts: { low: 0, medium: 0, high: 0 },
+              },
+            ] as const;
+          }
+        })
+      );
+
+      if (isMounted) {
+        setCourseAnalytics(Object.fromEntries(entries));
+      }
+    }
+
+    if (courses.length > 0) {
+      void loadCourseAnalytics();
+    } else {
+      setCourseAnalytics({});
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [courses]);
 
   const handleDeleteCourse = async (courseId: string) => {
     await deleteCourse(courseId);
@@ -106,6 +170,18 @@ export default function TeacherCoursesManagement() {
                 courses={courses}
                 isDeleteMode={isDeleteMode}
                 deletingCourseId={deletingCourseId}
+                showTeacherDetails={false}
+                getCourseMetrics={(course) => {
+                  const analytics = courseAnalytics[course.id];
+
+                  return {
+                    averageLabel: analytics
+                      ? `${analytics.average.toFixed(2)} / 10`
+                      : "Sin datos",
+                    enrolledCount: course.enrolledCount ?? 0,
+                    statusLabel: course.riskLabel ?? "Curso activo",
+                  };
+                }}
                 onCourseClick={(courseId) => {
                   navigate(getTeacherCoursePerformancePath(courseId));
                 }}

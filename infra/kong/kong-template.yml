@@ -12,9 +12,13 @@ plugins:
         - http://localhost:3003
         - http://localhost:3004
         - http://localhost:5173
+        - http://localhost:8081
+        - http://127.0.0.1:8081
         - http://localhost:8000
         - http://mentorapredictqa.programacionwebuce.net
         - https://mentorapredictqa.programacionwebuce.net
+        - http://mentorapredictprod.programacionwebuce.net
+        - https://mentorapredictprod.programacionwebuce.net
       methods:
         - GET
         - POST
@@ -83,6 +87,17 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
+      - name: auth-internal-routes
+        paths:
+          - /api/v1/auth/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: auth-routes
         paths:
           - /api/v1/auth
@@ -131,6 +146,14 @@ services:
               allow:
                 - 127.0.0.1
                 - 172.16.0.0/12
+      - name: user-uploads
+        paths:
+          - /api/v1/users/uploads
+        strip_path: false
+        methods:
+          - GET
+        regex_priority: 200
+        plugins: []
       - name: user-routes
         paths:
           - /api/v1/users
@@ -169,6 +192,14 @@ services:
               allow:
                 - 127.0.0.1
                 - 172.16.0.0/12
+      - name: academic-uploads
+        paths:
+          - /api/v1/academic/uploads
+        strip_path: false
+        methods:
+          - GET
+        regex_priority: 200
+        plugins: []
       - name: academic-routes
         paths:
           - /api/v1/academic
@@ -183,9 +214,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
 
   - name: analytics-service
@@ -196,6 +227,17 @@ services:
           - /api/v1/analytics/docs
         strip_path: false
         regex_priority: 200
+      - name: analytics-internal-routes
+        paths:
+          - /api/v1/analytics/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: analytics-routes
         paths:
           - /api/v1/analytics
@@ -214,9 +256,9 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
-      - name: analytics-alerts
+      - name: notifications-routes
         paths:
-          - /api/v1/analytics/alerts
+          - /api/v1/notifications
         strip_path: false
         regex_priority: 100
         plugins:
@@ -241,6 +283,17 @@ services:
           - /api/v1/prediction/docs
         strip_path: false
         regex_priority: 200
+      - name: prediction-internal-routes
+        paths:
+          - /api/v1/prediction/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: prediction-routes
         paths:
           - /api/v1/prediction
@@ -282,8 +335,61 @@ services:
               limit_by: ip
               fault_tolerant: true
 
+  - name: grafana
+    url: http://grafana:3000
+    routes:
+      - name: grafana-route
+        paths:
+          - /grafana
+        strip_path: false
+        regex_priority: 300
+        plugins:
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-Script-Name:/grafana
+                  - X-Forwarded-Prefix:/grafana
+          - name: rate-limiting
+            config:
+              minute: 60
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
+  - name: landing
+    url: http://landing:80
+    routes:
+      - name: landing-route
+        paths:
+          - /landing
+        strip_path: false
+        regex_priority: 20
+        plugins:
+          - name: cors
+            config:
+              origins:
+                - http://localhost
+                - http://mentorapredictqa.programacionwebuce.net
+                - https://mentorapredictqa.programacionwebuce.net
+                - http://mentorapredictprod.programacionwebuce.net
+                - https://mentorapredictprod.programacionwebuce.net
+              methods:
+                - GET
+                - OPTIONS
+              headers:
+                - Accept
+                - Content-Type
+              credentials: false
+          - name: rate-limiting
+            config:
+              minute: 300
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
   - name: web
-    url: http://web:80
+    url: http://web:__WEB_UPSTREAM_PORT__
     routes:
       - name: web-route
         paths:
@@ -295,8 +401,12 @@ services:
             config:
               origins:
                 - http://localhost
+                - http://localhost:8081
+                - http://127.0.0.1:8081
                 - http://mentorapredictqa.programacionwebuce.net
                 - https://mentorapredictqa.programacionwebuce.net
+                - http://mentorapredictprod.programacionwebuce.net
+                - https://mentorapredictprod.programacionwebuce.net
               methods:
                 - GET
                 - POST

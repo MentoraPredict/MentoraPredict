@@ -14,30 +14,26 @@ function getErrorMessage(error: unknown) {
   return "No se pudieron cargar tus cursos. Intenta nuevamente.";
 }
 
-export default function useStudentCourses(studentId?: string) {
+export default function useStudentCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadCourses = useCallback(async () => {
-    if (!studentId) {
-      setCourses([]);
-      setIsLoading(false);
-      setError("No se pudo identificar al estudiante autenticado.");
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
-      setCourses(await getStudentCourses(studentId));
+      const loadedCourses = await getStudentCourses();
+      setCourses(loadedCourses);
+      return loadedCourses;
     } catch (requestError) {
       setError(getErrorMessage(requestError));
+      return [];
     } finally {
       setIsLoading(false);
     }
-  }, [studentId]);
+  }, []);
 
   useEffect(() => {
     void loadCourses();

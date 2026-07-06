@@ -4,8 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 
+@Index('uq_one_active_period', ['status'], { unique: true, where: "status = 'ACTIVE'" })
 @Entity('academic_periods')
 export class AcademicPeriodOrmEntity {
   @PrimaryColumn('uuid') id!: string;

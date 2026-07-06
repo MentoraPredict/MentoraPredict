@@ -6,6 +6,7 @@ import { HttpModule } from "@nestjs/axios";
 
 import { UsersController } from "./infrastructure/controllers/users.controller";
 import { InternalUsersController } from "./infrastructure/controllers/internal-users.controller";
+import { UploadsController } from "./infrastructure/controllers/uploads.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 import { UserProfileOrmEntity } from "./infrastructure/persistence/user-profile.orm-entity";
@@ -20,6 +21,8 @@ import { RolesGuard } from "./infrastructure/guards/roles.guard";
 import { AuthHttpClient } from "./infrastructure/adapters/auth-http.client";
 import { AuthSyncClient } from "./infrastructure/adapters/auth-sync.client";
 import { GetUserUseCase } from "./application/use-cases/get-user.use-case";
+import { UploadAvatarUseCase } from "./application/use-cases/upload-avatar.use-case";
+import { DeleteAvatarUseCase } from "./application/use-cases/delete-avatar.use-case";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 
 @Module({
@@ -66,6 +69,7 @@ import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
   controllers: [
     UsersController,
     InternalUsersController,
+    UploadsController,
     HealthController,
     RootController,
   ],
@@ -78,6 +82,8 @@ import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
     SoftDeleteUserUseCase,
     ListUsersUseCase,
     CreateUserProfileUseCase,
+    UploadAvatarUseCase,
+    DeleteAvatarUseCase,
     InternalJwtService,
     InternalServiceGuard,
     RolesGuard,

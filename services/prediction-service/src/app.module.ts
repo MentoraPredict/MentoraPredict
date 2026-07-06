@@ -1,20 +1,27 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { GradeEventConsumer } from "./infrastructure/messaging/grade-event.consumer";
 
 import { PredictionController } from "./infrastructure/controllers/prediction.controller";
+import { InternalPredictionController } from "./infrastructure/controllers/internal-prediction.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
 import { PredictionLogDoc, PredictionLogSchema } from "./infrastructure/persistence/prediction-log.schema";
 import { PredictionLogRepository } from "./infrastructure/persistence/prediction-log.repository";
+import { StudentSubjectPredictionOrmEntity } from "./infrastructure/persistence/student-subject-prediction.orm-entity";
+import { StudentSubjectPredictionRepository } from "./infrastructure/persistence/student-subject-prediction.repository";
 
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
 import { OpenAiRecommendationProvider } from "./infrastructure/adapters/openai-recommendation.provider";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
+import { RolesGuard } from "./infrastructure/guards/roles.guard";
+import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 
 import {
   GeneratePredictionUseCase,
@@ -24,10 +31,36 @@ import {
   PREDICTION_LOG_REPO,
 } from "./application/use-cases/generate-prediction.use-case";
 import { GetPredictionHistoryUseCase } from "./application/use-cases/get-prediction-history.use-case";
+import {
+  RecalculateSubjectPredictionUseCase,
+  STUDENT_SUBJECT_PREDICTION_REPO,
+} from "./application/use-cases/recalculate-subject-prediction.use-case";
+import { GetMySubjectPredictionUseCase } from "./application/use-cases/get-my-subject-prediction.use-case";
+import { GetStudentSubjectPredictionUseCase } from "./application/use-cases/get-student-subject-prediction.use-case";
+import { ListSubjectPredictionsUseCase } from "./application/use-cases/list-subject-predictions.use-case";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
+    // Fase 8 — first Postgres connection in prediction-service, for
+    // student_subject_predictions (same shared "mentorapredict" database as
+    // academic-service/analytics-service). Everything else in this service
+    // stays on Mongo (prediction_logs).
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => ({
+        type: "postgres",
+        host: cfg.get("POSTGRES_HOST", "localhost"),
+        port: cfg.get<number>("POSTGRES_PORT", 5432),
+        username: cfg.get("POSTGRES_USER", "mp_user"),
+        password: cfg.get("POSTGRES_PASSWORD", ""),
+        database: cfg.get("POSTGRES_DB", "mentorapredict"),
+        entities: [StudentSubjectPredictionOrmEntity],
+        synchronize: cfg.get("NODE_ENV") !== "production",
+      }),
+    }),
+    TypeOrmModule.forFeature([StudentSubjectPredictionOrmEntity]),
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
@@ -55,15 +88,23 @@ import { GetPredictionHistoryUseCase } from "./application/use-cases/get-predict
       },
     }),
   ],
-  controllers: [PredictionController, HealthController, RootController],
+  controllers: [PredictionController, InternalPredictionController, HealthController, RootController],
   providers: [
     InternalJwtService,
+    RolesGuard,
+    InternalServiceGuard,
     { provide: ANALYTICS_CLIENT, useClass: AnalyticsHttpClient },
     { provide: ACADEMIC_CONTEXT_CLIENT, useClass: AcademicHttpClient },
     { provide: AI_PROVIDER, useClass: OpenAiRecommendationProvider },
     { provide: PREDICTION_LOG_REPO, useClass: PredictionLogRepository },
+    { provide: STUDENT_SUBJECT_PREDICTION_REPO, useClass: StudentSubjectPredictionRepository },
     GeneratePredictionUseCase,
     GetPredictionHistoryUseCase,
+    RecalculateSubjectPredictionUseCase,
+    GetMySubjectPredictionUseCase,
+    GetStudentSubjectPredictionUseCase,
+    ListSubjectPredictionsUseCase,
+    GradeEventConsumer,
   ],
 })
 export class AppModule {}

@@ -33,8 +33,8 @@ export default function MotionCard({
     onKeyDown,
     role,
     tabIndex,
-    whileHover: { scale: 1.01, y: -4 },
-    transition: { type: "spring" as const, stiffness: 350, damping: 25 },
+    whileHover: { scale: 1.003 },
+    transition: { duration: 0.12, ease: "easeOut" as const },
   };
 
   if (as === "article") {

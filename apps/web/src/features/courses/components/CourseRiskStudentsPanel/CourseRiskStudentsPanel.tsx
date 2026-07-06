@@ -6,10 +6,12 @@ import type { CourseRiskItem } from "@/types/course";
 
 interface CourseRiskStudentsPanelProps {
   students: CourseRiskItem[];
+  title?: string;
 }
 
 export default function CourseRiskStudentsPanel({
   students,
+  title = "Estudiantes con alto riesgo de pérdida",
 }: CourseRiskStudentsPanelProps) {
   return (
     <section
@@ -23,7 +25,7 @@ export default function CourseRiskStudentsPanel({
             "
     >
       <Heading as="h5" className="mb-6 text-gray-900">
-        Estudiantes con alto riesgo de pérdida
+        {title}
       </Heading>
 
       <CourseRiskBars items={students} />

@@ -7,12 +7,14 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
     PNPM_HOME="/root/.pnpm"
 RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY services/auth-service/package.json ./services/auth-service/package.json
-COPY services/user-service/package.json ./services/user-service/package.json
 COPY services/academic-service/package.json ./services/academic-service/package.json
 COPY services/analytics-service/package.json ./services/analytics-service/package.json
+COPY services/auth-service/package.json ./services/auth-service/package.json
 COPY services/prediction-service/package.json ./services/prediction-service/package.json
+COPY services/user-service/package.json ./services/user-service/package.json
 COPY apps/web/package.json ./apps/web/package.json
+COPY apps/landing/package.json ./apps/landing/package.json
+COPY packages/event-contracts/package.json ./packages/event-contracts/package.json
 COPY packages/hooks/package.json ./packages/hooks/package.json
 COPY packages/services/package.json ./packages/services/package.json
 COPY packages/shared-config/package.json ./packages/shared-config/package.json
@@ -30,12 +32,15 @@ RUN corepack enable
 COPY --from=deps /app .
 COPY services/auth-service ./services/auth-service
 COPY packages ./packages
-RUN pnpm --filter @mentorapredict/auth-service build
+RUN pnpm --filter @mentorapredict/event-contracts build \
+    && pnpm --filter @mentorapredict/auth-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app/services/auth-service
 COPY --from=builder /app/services/auth-service/dist ./dist
 COPY --from=builder /app/services/auth-service/package.json ./
+COPY --from=builder /app/packages/event-contracts/package.json /app/packages/event-contracts/package.json
+COPY --from=builder /app/packages/event-contracts/dist /app/packages/event-contracts/dist
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=prod-deps /app/services/auth-service/node_modules ./node_modules
 USER node

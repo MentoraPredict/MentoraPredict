@@ -28,6 +28,9 @@ else
     cp /etc/kong/kong-template.yml /etc/kong/kong.yml
 fi
 
+WEB_UPSTREAM_PORT="${WEB_UPSTREAM_PORT:-80}"
+sed -i "s/__WEB_UPSTREAM_PORT__/${WEB_UPSTREAM_PORT}/g" /etc/kong/kong.yml
+
 kong start
 
 echo 'Kong start exited with status:' $? && echo 'Keeping container alive.'

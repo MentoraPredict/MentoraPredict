@@ -27,7 +27,18 @@ export class AuthSyncClient implements IAuthSyncClient {
     await this.patch(`/api/v1/auth/internal/users/${userId}/status`, { status });
   }
 
-  private async patch(path: string, body: Record<string, string>): Promise<void> {
+  async syncProfile(
+    userId: string,
+    dto: {
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+    }
+  ): Promise<void> {
+    await this.patch(`/api/v1/auth/internal/users/${userId}/profile`, dto);
+  }
+
+  private async patch(path: string, body: Record<string, unknown>): Promise<void> {
     const url = `${this.baseUrl}${path}`;
     const corrId = randomUUID();
     let lastError: unknown;

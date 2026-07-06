@@ -7,6 +7,7 @@ import Input from "@/components/atoms/Input";
 import Label from "@/components/atoms/Label";
 import Text from "@/components/atoms/Text";
 import Textarea from "@/components/atoms/Textarea";
+import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
 import type { UpdateTeacherCoursePayload } from "@/services/academic.service";
 import type { Course } from "@/types/course";
 
@@ -14,6 +15,8 @@ interface TeacherCourseEditProps {
   course: Course;
   isSaving?: boolean;
   onSave: (payload: UpdateTeacherCoursePayload) => Promise<void>;
+  onUploadImage: (file: File) => Promise<string | undefined>;
+  onDeleteImage: () => Promise<void>;
 }
 
 function getSaveErrorMessage(error: unknown) {
@@ -30,12 +33,16 @@ export default function TeacherCourseEdit({
   course,
   isSaving = false,
   onSave,
+  onUploadImage,
+  onDeleteImage,
 }: TeacherCourseEditProps) {
   const [courseName, setCourseName] = useState(course.name);
   const [description, setDescription] = useState(course.description);
   const [isEditingName, setIsEditingName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState(course.imageUrl);
 
   const handleCancel = () => {
     setCourseName(course.name);
@@ -43,6 +50,8 @@ export default function TeacherCourseEdit({
     setIsEditingName(false);
     setError(null);
     setSuccessMessage(null);
+    setSelectedImage(null);
+    setImageUrl(course.imageUrl);
   };
 
   const handleSave = async () => {
@@ -61,6 +70,10 @@ export default function TeacherCourseEdit({
         name: normalizedName,
         description: description.trim(),
       });
+      if (selectedImage) {
+        setImageUrl(await onUploadImage(selectedImage));
+        setSelectedImage(null);
+      }
       setCourseName(normalizedName);
       setDescription(description.trim());
       setIsEditingName(false);
@@ -82,6 +95,33 @@ export default function TeacherCourseEdit({
             "
     >
       <div>
+        <ImageUploadPreview
+          imageUrl={imageUrl}
+          alt={`Portada de ${courseName}`}
+          helperText="Cambiar portada del curso"
+          onChangeImage={(file) => setSelectedImage(file)}
+        />
+        {imageUrl ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 px-4 py-2 text-sm"
+            disabled={isSaving}
+            onClick={async () => {
+              try {
+                await onDeleteImage();
+                setImageUrl(undefined);
+                setSelectedImage(null);
+                setSuccessMessage("Portada eliminada correctamente.");
+              } catch (deleteError) {
+                setError(getSaveErrorMessage(deleteError));
+              }
+            }}
+          >
+            Eliminar portada
+          </Button>
+        ) : null}
+
         <div className="pt-4">
           {isEditingName ? (
             <div className="max-w-md">

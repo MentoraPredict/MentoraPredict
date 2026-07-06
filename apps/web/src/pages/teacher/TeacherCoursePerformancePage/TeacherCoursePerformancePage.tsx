@@ -8,7 +8,7 @@ export default function TeacherCoursePerformancePage() {
 
   return (
     <TeacherCoursePageLayout courseId={courseId}>
-      <TeacherCoursePerformance />
+      {(course) => <TeacherCoursePerformance courseId={course.id} />}
     </TeacherCoursePageLayout>
   );
 }

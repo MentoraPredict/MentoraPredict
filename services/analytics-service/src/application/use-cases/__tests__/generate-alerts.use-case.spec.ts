@@ -3,7 +3,12 @@ import { IAlertRepository } from '../../../domain/ports/i-alert.repository';
 
 const mockAlertRepo = (): jest.Mocked<IAlertRepository> => ({
   save: jest.fn(),
+  update: jest.fn(),
+  findById: jest.fn(),
   findByStudentId: jest.fn(),
+  findActiveByStudentAndSubject: jest.fn(),
+  findByStudentPaginated: jest.fn(),
+  findBySubjectPaginated: jest.fn(),
 });
 
 describe('GenerateAlertsUseCase', () => {

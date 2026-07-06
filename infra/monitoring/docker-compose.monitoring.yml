@@ -16,6 +16,11 @@ services:
     image: prom/node-exporter:v1.7.0
     container_name: mp_node_exporter
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     command:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
@@ -34,6 +39,11 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: mp_cadvisor
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     security_opt:
       - apparmor:unconfined
     cap_add:
@@ -56,6 +66,11 @@ services:
     image: prom/prometheus:v2.52.0
     container_name: mp_prometheus
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -80,6 +95,11 @@ services:
     container_name: mp_loki
     user: "10001:10001"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     command:
       - -config.file=/etc/loki/loki-config.yml
     ports:
@@ -94,6 +114,11 @@ services:
     image: grafana/promtail:2.9.2
     container_name: mp_promtail
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     command:
       - -config.file=/etc/promtail/promtail-config.yml
     volumes:
@@ -110,6 +135,11 @@ services:
     container_name: mp_grafana
     user: "472:472"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}

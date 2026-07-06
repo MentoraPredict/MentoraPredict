@@ -2,7 +2,21 @@
 # Usage:
 # 1. cp ../.env.example ../.env
 # 2. (optional en caso de tener los archivos .pem) bash infra/kong/generate-keys.sh
-# 3. docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build
+# 3. Levantar todo el stack reconstruyendo imagenes:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build
+#
+# Este compose usa imagenes compiladas, sin hot reload.
+# La compilacion ocurre durante el build de la imagen; los contenedores ejecutan dist/main.js o nginx.
+#
+# Si cambias codigo o dependencias, reconstruye el servicio afectado:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build web kong
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --build academic-service
+#
+# Si solo quieres recrear contenedores sin reconstruir imagenes:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up -d --force-recreate
+#
+# Ejecutar semillas cuando los servicios esten healthy:
+#    docker-compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file .\infra\.env up --force-recreate seed-loader
 
 networks:
   mentorapredict-net:
@@ -18,12 +32,23 @@ volumes:
     name: mp_dev_mongo_data
   redis_data:
     name: mp_dev_redis_data
+  rabbitmq_data:
+    name: mp_dev_rabbitmq_data
+  academic_uploads_data:
+    name: mp_dev_academic_uploads_data
+  user_uploads_data:
+    name: mp_dev_user_uploads_data
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: mp_dev_postgres
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mp_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
@@ -41,7 +66,7 @@ services:
           "CMD-SHELL",
           "pg_isready -U ${POSTGRES_USER:-mp_user} -d ${POSTGRES_DB:-mentorapredict}",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -51,7 +76,7 @@ services:
     container_name: mp_dev_pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mentorapredict.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
       SCRIPT_NAME: /pgadmin
       PGADMIN_CONFIG_SERVER_MODE: "False"
@@ -74,27 +99,42 @@ services:
     image: mongo:7.0
     container_name: mp_dev_mongo
     restart: unless-stopped
+    command: ["mongod", "--quiet"]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mp_mongo_user}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
       MONGO_INITDB_DATABASE: ${MONGO_DB:-mentorapredict_nosql}
-    ports:
-      - "${MONGO_PORT:-27017}:27017"
+    expose:
+      - "27017"
     volumes:
       - mongo_data:/data/db
     networks:
       - mentorapredict-net
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
+      test:
+        [
+          "CMD-SHELL",
+          'mongosh --quiet --username "$${MONGO_INITDB_ROOT_USERNAME}" --password "$${MONGO_INITDB_ROOT_PASSWORD}" --authenticationDatabase admin --eval "db.adminCommand(''ping'').ok" | grep 1',
+        ]
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 3
+      start_period: 30s
 
   mongo-express:
     image: mongo-express:1.0.2-20
     container_name: mp_mongo_ui
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     profiles: ["tools"]
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
@@ -114,6 +154,11 @@ services:
     image: redis:7.2-alpine
     container_name: mp_dev_redis
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
     command: >
       redis-server
       --requirepass ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
@@ -140,10 +185,42 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: mp_dev_rabbitmq
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mentorapredict-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
   redis-commander:
     image: rediscommander/redis-commander:0.7.2
     container_name: mp_redis_ui
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     profiles: ["tools"]
     environment:
       REDIS_HOSTS: "local:redis:6379:0:${REDIS_PASSWORD}"
@@ -161,6 +238,12 @@ services:
     image: kong:3.6
     container_name: mp_dev_kong
     restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
@@ -172,6 +255,7 @@ services:
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
+      WEB_UPSTREAM_PORT: ${WEB_UPSTREAM_PORT:-80}
     ports:
       - "${KONG_PROXY_PORT:-8000}:8000"
       - "${KONG_ADMIN_PORT:-8001}:8001"
@@ -183,24 +267,6 @@ services:
     networks:
       - mentorapredict-net
     depends_on:
-      auth-service:
-        condition: service_started
-        restart: true
-      user-service:
-        condition: service_started
-        restart: true
-      academic-service:
-        condition: service_started
-        restart: true
-      analytics-service:
-        condition: service_started
-        restart: true
-      prediction-service:
-        condition: service_started
-        restart: true
-      pgadmin:
-        condition: service_started
-        restart: true
       web:
         condition: service_started
         restart: true
@@ -215,6 +281,11 @@ services:
     image: pantsel/konga:0.14.9
     container_name: mp_dev_konga
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     profiles: ["tools"]
     environment:
       NODE_ENV: development
@@ -235,6 +306,12 @@ services:
     image: ${DOCKERHUB_USERNAME}/auth-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_auth_service
     restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3001:3001"
     environment:
@@ -253,13 +330,20 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -270,10 +354,10 @@ services:
           "--spider",
           "http://localhost:3001/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   user-service:
     build:
@@ -282,6 +366,12 @@ services:
     image: ${DOCKERHUB_USERNAME}/user-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_user_service
     restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3002:3002"
     environment:
@@ -295,7 +385,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
@@ -303,8 +393,10 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
+      UPLOADS_DIR: /app/services/user-service/uploads
     volumes:
       - ../keys:/secrets:ro
+      - user_uploads_data:/app/services/user-service/uploads
     networks:
       - mentorapredict-net
     healthcheck:
@@ -317,10 +409,10 @@ services:
           "--spider",
           "http://localhost:3002/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   academic-service:
     build:
@@ -329,6 +421,12 @@ services:
     image: ${DOCKERHUB_USERNAME}/academic-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_academic_service
     restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3003:3003"
     environment:
@@ -347,7 +445,7 @@ services:
       MONGO_USER: ${MONGO_USER:-mp_mongo_user}
       MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
       MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
@@ -356,10 +454,19 @@ services:
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      UPLOADS_DIR: /app/services/academic-service/uploads
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
+      - academic_uploads_data:/app/services/academic-service/uploads
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -370,10 +477,10 @@ services:
           "--spider",
           "http://localhost:3003/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   analytics-service:
     build:
@@ -382,6 +489,12 @@ services:
     image: ${DOCKERHUB_USERNAME}/analytics-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_analytics_service
     restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
     ports:
       - "3004:3004"
     environment:
@@ -408,13 +521,20 @@ services:
       ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
       RISK_HIGH_THRESHOLD: ${RISK_HIGH_THRESHOLD:-40}
       RISK_CRITICAL_THRESHOLD: ${RISK_CRITICAL_THRESHOLD:-25}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -425,10 +545,10 @@ services:
           "--spider",
           "http://localhost:3004/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   prediction-service:
     build:
@@ -437,11 +557,22 @@ services:
     image: ${DOCKERHUB_USERNAME}/prediction-service:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_dev_prediction_service
     restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     ports:
       - "3006:3006"
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       APP_PORT: ${PREDICTION_SERVICE_PORT:-3006}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-mp_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
+      POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
       MONGO_HOST: ${MONGO_HOST:-mongo}
       MONGO_PORT: ${MONGO_PORT:-27017}
       MONGO_USER: ${MONGO_USER:-mp_mongo_user}
@@ -456,12 +587,19 @@ services:
       ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -472,10 +610,10 @@ services:
           "--spider",
           "http://localhost:3006/health",
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 90s
 
   web:
     build:
@@ -484,10 +622,38 @@ services:
     image: ${DOCKERHUB_USERNAME}/web:${DEV_IMAGE_TAG:-dev-latest}
     container_name: mp_web
     restart: unless-stopped
+    init: true
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     expose:
       - "80"
     environment:
       NODE_ENV: ${NODE_ENV:-development}
+    networks:
+      - mentorapredict-net
+
+  landing:
+    build:
+      context: ../..
+      dockerfile: apps/landing/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/landing:${DEV_IMAGE_TAG:-dev-latest}
+    container_name: mp_landing
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${LANDING_PORT:-4321}:80"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    expose:
+      - "80"
     networks:
       - mentorapredict-net
 
@@ -497,6 +663,7 @@ services:
       dockerfile: database/Dockerfile.seed
     container_name: mp_dev_seed_loader
     restart: "no"
+    init: true
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -507,12 +674,12 @@ services:
       postgres:
         condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
       user-service:
-        condition: service_started
+        condition: service_healthy
       academic-service:
-        condition: service_started
+        condition: service_healthy
       analytics-service:
-        condition: service_started
+        condition: service_healthy
     networks:
       - mentorapredict-net

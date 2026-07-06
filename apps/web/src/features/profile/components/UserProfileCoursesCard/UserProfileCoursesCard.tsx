@@ -7,6 +7,10 @@ import Text from "@/components/atoms/Text";
 interface UserProfileCourseSummary {
   id: string;
   name: string;
+  semester?: string;
+  careerName?: string;
+  credits?: number;
+  currentAverage?: number | null;
 }
 
 interface UserProfileCoursesCardProps {
@@ -65,6 +69,35 @@ export default function UserProfileCoursesCard({
               <Text variant="small" className="font-semibold text-gray-900">
                 {course.name}
               </Text>
+
+              <div className="mt-2 flex flex-wrap gap-2">
+                {course.semester ? (
+                  <Text
+                    variant="caption"
+                    className="rounded-full bg-white px-3 py-1 text-gray-600"
+                  >
+                    {course.semester}
+                  </Text>
+                ) : null}
+
+                {course.careerName ? (
+                  <Text
+                    variant="caption"
+                    className="rounded-full bg-white px-3 py-1 text-gray-600"
+                  >
+                    {course.careerName}
+                  </Text>
+                ) : null}
+
+                {typeof course.currentAverage === "number" ? (
+                  <Text
+                    variant="caption"
+                    className="rounded-full bg-blue-50 px-3 py-1 font-semibold text-blue-700"
+                  >
+                    Promedio {course.currentAverage.toFixed(2)}
+                  </Text>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>

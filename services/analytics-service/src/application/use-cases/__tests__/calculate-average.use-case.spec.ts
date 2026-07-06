@@ -5,13 +5,17 @@ import { IMetricsCachePort } from '../../../domain/ports/i-metrics-cache.port';
 import { Grade } from '../../../domain/entities/grade.vo';
 
 const grades: Grade[] = [
-  { id: 'g1', studentId: 's1', subjectId: 'sub1', subjectCredits: 3, value: 8, periodId: 'p1' },
-  { id: 'g2', studentId: 's1', subjectId: 'sub2', subjectCredits: 2, value: 6, periodId: 'p1' },
+  { id: 'g1', studentId: 's1', subjectId: 'sub1', subjectCredits: 3, value: 8, periodId: 'p1', evaluationId: null },
+  { id: 'g2', studentId: 's1', subjectId: 'sub2', subjectCredits: 2, value: 6, periodId: 'p1', evaluationId: null },
 ];
 
 const mockAcademic = (): jest.Mocked<IAcademicServiceClient> => ({
   getGradesByStudent: jest.fn(),
   getEnrollmentsByStudent: jest.fn(),
+  getEvaluationsBySubject: jest.fn(),
+  getLatestCheckIn: jest.fn(),
+  getSubjectOwnership: jest.fn(),
+  getSubjectDetails: jest.fn(),
 });
 
 const mockMetricsRepo = (): jest.Mocked<IStudentMetricsRepository> => ({

@@ -28,9 +28,6 @@ type RetriableRequestConfig = NonNullable<
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        "Content-Type": "application/json",
-    },
 });
 
 api.interceptors.request.use((config) => {
@@ -77,10 +74,7 @@ function shouldRefreshToken(error: AxiosError<ApiErrorResponse>) {
         return false;
     }
 
-    return (
-        (status === 401 && response?.exp === "token expired") ||
-        status === 403
-    );
+    return status === 401 && response?.exp === "token expired";
 }
 
 api.interceptors.response.use(

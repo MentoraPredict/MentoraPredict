@@ -1,5 +1,6 @@
 import api from "@/services/api";
 import { endpoints } from "@/services/api/endpoints";
+import { getStudentAcademicContext } from "@/services/academic.service";
 import type { AuthSessionUser } from "@/types/auth/auth.types";
 import type { AppUser } from "@/types/user/user.types";
 import type { UserRole } from "@/types/user/role.types";
@@ -18,6 +19,8 @@ interface UserApiResponse {
     is_active?: boolean;
     status?: UserStatus;
     photo?: string | null;
+    avatarUrl?: string | null;
+    avatar_url?: string | null;
     createdAt?: string;
     created_at?: string;
     updatedAt?: string;
@@ -25,6 +28,9 @@ interface UserApiResponse {
 }
 
 interface UpdateUserPayload {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
     role?: UserRole;
     status?: UserStatus;
 }
@@ -60,7 +66,31 @@ function toAppUser(user: UserApiResponse): AppUser {
         isActive,
         createdAt: user.createdAt ?? user.created_at,
         updatedAt: user.updatedAt ?? user.updated_at,
+        avatarUrl: user.avatarUrl ?? user.avatar_url ?? user.photo,
     };
+}
+
+async function enrichStudentContext(user: AppUser): Promise<AppUser> {
+    if (user.role !== "STUDENT") {
+        return user;
+    }
+
+    try {
+        const context = await getStudentAcademicContext(user.id);
+
+        if (!context) {
+            return user;
+        }
+
+        return {
+            ...user,
+            facultyName: context.facultyName,
+            careerName: context.careerName,
+            semester: context.semester,
+        };
+    } catch {
+        return user;
+    }
 }
 
 export async function getCurrentUser() {
@@ -74,7 +104,23 @@ export async function getCurrentUser() {
 export async function getUsers(): Promise<AppUser[]> {
     const response = await api.get<UserApiResponse[]>(endpoints.users.list);
 
-    return response.data.map(toAppUser);
+    const loadedUsers = response.data.map(toAppUser);
+    return Promise.all(loadedUsers.map((user) => enrichStudentContext(user)));
+}
+
+export async function uploadCurrentUserAvatar(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<AuthSessionUser>(
+        endpoints.users.avatar,
+        formData,
+    );
+    return response.data;
+}
+
+export async function deleteCurrentUserAvatar() {
+    const response = await api.delete<AuthSessionUser>(endpoints.users.avatar);
+    return response.data;
 }
 
 export async function getStudents(): Promise<AppUser[]> {

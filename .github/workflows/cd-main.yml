@@ -13,6 +13,8 @@ concurrency:
 env:
   REGISTRY: docker.io
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  EXPO_PUBLIC_API_ENV: prod
+  EXPO_PUBLIC_API_BASE_URL: https://mentorapredictprod.programacionwebuce.net/api
 
 jobs:
   detect-changes:
@@ -45,6 +47,8 @@ jobs:
               - 'services/prediction-service/**'
             web:
               - 'apps/web/**'
+            landing:
+              - 'apps/landing/**'
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
@@ -64,6 +68,7 @@ jobs:
           ANALYTICS_CHANGED=${{ steps.filter.outputs.analytics-service }}
           PREDICTION_CHANGED=${{ steps.filter.outputs.prediction-service }}
           WEB_CHANGED=${{ steps.filter.outputs.web }}
+          LANDING_CHANGED=${{ steps.filter.outputs.landing }}
           KONG_CHANGED=${{ steps.filter.outputs.kong }}
           MONITORING_CHANGED=${{ steps.filter.outputs.monitoring }}
           INFRA_CHANGED=${{ steps.filter.outputs.infra }}
@@ -76,6 +81,7 @@ jobs:
             ANALYTICS_CHANGED="true"
             PREDICTION_CHANGED="true"
             WEB_CHANGED="true"
+            LANDING_CHANGED="true"
             KONG_CHANGED="true"
             MONITORING_CHANGED="true"
           fi
@@ -87,6 +93,7 @@ jobs:
             --arg ANALYTICS "$ANALYTICS_CHANGED" \
             --arg PREDICTION "$PREDICTION_CHANGED" \
             --arg WEB "$WEB_CHANGED" \
+            --arg LANDING "$LANDING_CHANGED" \
             --arg KONG "$KONG_CHANGED" \
             '{
               "include": [
@@ -96,6 +103,7 @@ jobs:
                 if $ANALYTICS == "true" then {"service":"analytics-service","type":"docker","dockerfile":"services/analytics-service/Dockerfile","changed":"true"} else empty end,
                 if $PREDICTION == "true" then {"service":"prediction-service","type":"docker","dockerfile":"services/prediction-service/Dockerfile","changed":"true"} else empty end,
                 if $WEB == "true" then {"service":"web","type":"docker","dockerfile":"apps/web/Dockerfile","changed":"true"} else empty end,
+                if $LANDING == "true" then {"service":"landing","type":"docker","dockerfile":"apps/landing/Dockerfile","changed":"true"} else empty end,
                 if $KONG == "true" then {"service":"kong","type":"compose","changed":"true"} else empty end
               ]
             }' > matrix.json
@@ -265,6 +273,8 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
             SWAGGER_SERVER_URL=${{ secrets.SWAGGER_SERVER_URL }}
+            EXPO_PUBLIC_API_ENV=prod
+            EXPO_PUBLIC_API_BASE_URL=https://mentorapredictprod.programacionwebuce.net/api
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
