@@ -41,7 +41,7 @@ describe('LoginUserUseCase', () => {
       hasher,
       tokenGen,
       cache,
-      eventProducer as LoginEventProducer,
+      eventProducer as unknown as LoginEventProducer,
     );
   });
 
