@@ -21,8 +21,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.35"
+          memory: 320M
     logging:
       driver: "json-file"
       options:
@@ -62,8 +62,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.25"
+          memory: 256M
     profiles: ["tools"]
     environment:
       NODE_ENV: development
@@ -84,8 +84,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.25"
+          memory: 320M
     expose:
       - "3001"
     environment:
@@ -132,8 +132,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.25"
+          memory: 320M
     expose:
       - "3002"
     environment:
@@ -180,8 +180,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.35"
+          memory: 448M
     expose:
       - "3003"
     environment:
@@ -236,7 +236,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
+          cpus: "0.35"
           memory: 512M
     expose:
       - "3004"
@@ -292,8 +292,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.35"
+          memory: 448M
     expose:
       - "3006"
     environment:
@@ -392,6 +392,11 @@ services:
       context: ../..
       dockerfile: database/Dockerfile.seed
     container_name: mp_seed_loader
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     restart: "no"
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
