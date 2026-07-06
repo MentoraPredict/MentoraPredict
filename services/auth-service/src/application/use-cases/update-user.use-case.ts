@@ -8,6 +8,7 @@ export class UpdateAuthUserUseCase {
   private readonly logger = new Logger(UpdateAuthUserUseCase.name);
 
   constructor(
+    @Inject("IUserRepository")
     private readonly repo: IUserRepository,
 
     @Inject("IUserProfileClient")
