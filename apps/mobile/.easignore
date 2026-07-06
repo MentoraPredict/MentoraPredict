@@ -1,0 +1,12 @@
+# Mobile build uploads should not include local install artifacts.
+node_modules
+.expo
+.expo-shared
+dist
+build
+coverage
+
+# Local environment and logs.
+.env
+.env.*
+*.log
