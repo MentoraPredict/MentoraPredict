@@ -112,6 +112,7 @@ jobs:
       has_changes: ${{ steps.generate-matrix.outputs.has_changes }}
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       mobile_changed: ${{ steps.filter.outputs.mobile }}
+      desktop_changed: ${{ steps.filter.outputs.desktop }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -138,6 +139,9 @@ jobs:
               - 'apps/landing/**'
             mobile:
               - 'apps/mobile/**'
+            desktop:
+              - 'apps/desktop/**'
+              - 'apps/web/**'
             infra:
               - 'infra/docker/**'
             packages:
@@ -306,4 +310,38 @@ jobs:
         with:
           name: mentorapredict-dev-apk
           path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 14
+
+  build-desktop-app-dev:
+    name: Build Desktop App (Dev validation)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    needs: [commitlint, detect-dev-changes]
+    if: >
+      github.base_ref == 'dev' &&
+      needs.detect-dev-changes.outputs.desktop_changed == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package desktop app
+        working-directory: apps/desktop
+        run: pnpm package:qa
+
+      - name: Upload desktop installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentorapredict-desktop-dev
+          path: apps/desktop/release/*.exe
           retention-days: 14
