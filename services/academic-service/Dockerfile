@@ -14,23 +14,22 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS prod-deps
 RUN CI=true pnpm install --prod --frozen-lockfile
 
-FROM node:22-alpine AS builder
+FROM deps AS builder
 WORKDIR /app
-RUN corepack enable
-COPY --from=deps /app .
+ENV CI=true \
+    PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
+    PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 COPY services/academic-service ./services/academic-service
-COPY packages ./packages
+COPY packages/event-contracts ./packages/event-contracts
 RUN pnpm --filter @mentorapredict/event-contracts build \
     && pnpm --filter @mentorapredict/academic-service build
 
-FROM node:22-alpine AS runner
+FROM prod-deps AS runner
 WORKDIR /app/services/academic-service
 COPY --from=builder /app/services/academic-service/dist ./dist
 COPY --from=builder /app/services/academic-service/package.json ./
 COPY --from=builder /app/packages/event-contracts/package.json /app/packages/event-contracts/package.json
 COPY --from=builder /app/packages/event-contracts/dist /app/packages/event-contracts/dist
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=prod-deps /app/services/academic-service/node_modules ./node_modules
 RUN mkdir -p uploads/subjects uploads/topics \
     && chown -R node:node uploads
 USER node

@@ -25,6 +25,7 @@ jobs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       docker_matrix: ${{ steps.generate-matrix.outputs.docker_matrix }}
       changed_services: ${{ steps.generate-matrix.outputs.changed_services }}
+      mobile_changed: ${{ steps.filter.outputs.mobile }}
 
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +50,8 @@ jobs:
               - 'apps/web/**'
             landing:
               - 'apps/landing/**'
+            mobile:
+              - 'apps/mobile/**'
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
@@ -203,6 +206,77 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  build-mobile-apk:
+    name: Build Mobile APK (Production)
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    timeout-minutes: 30
+    if: >
+      needs.detect-changes.outputs.mobile_changed == 'true' &&
+      github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Prebuild native Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android
+
+      - name: Configure release signing
+        working-directory: apps/mobile/android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/mentorapredict-release.jks
+          cat >> app/build.gradle << 'EOF'
+
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file(MENTORAPREDICT_RELEASE_STORE_FILE)
+                      storePassword MENTORAPREDICT_RELEASE_STORE_PASSWORD
+                      keyAlias MENTORAPREDICT_RELEASE_KEY_ALIAS
+                      keyPassword MENTORAPREDICT_RELEASE_KEY_PASSWORD
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
+
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        env:
+          ORG_GRADLE_PROJECT_MENTORAPREDICT_RELEASE_STORE_FILE: mentorapredict-release.jks
+          ORG_GRADLE_PROJECT_MENTORAPREDICT_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_MENTORAPREDICT_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_MENTORAPREDICT_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentorapredict-prod-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
 
   deploy-to-prod:
     name: Deploy to EC2 Production
