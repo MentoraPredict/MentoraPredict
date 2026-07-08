@@ -11,6 +11,8 @@ concurrency:
 env:
   REGISTRY: docker.io
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  EXPO_PUBLIC_API_ENV: qa
+  EXPO_PUBLIC_API_BASE_URL: https://mentorapredictqa.programacionwebuce.net/api
 
 jobs:
   detect-changes:
@@ -268,26 +270,14 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
             SWAGGER_SERVER_URL=${{ secrets.SWAGGER_SERVER_URL }}
+            EXPO_PUBLIC_API_ENV=qa
+            EXPO_PUBLIC_API_BASE_URL=https://mentorapredictqa.programacionwebuce.net/api
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
             echo "JWT_PUBLIC_KEY=$(printf '%s' '${{ secrets.JWT_PUBLIC_KEY }}' | base64 -w0)" >> .env
 
             echo "WEB_PORT=80" >> .env
-
-            PGADMIN_DEFAULT_EMAIL_VALUE="${{ secrets.PGADMIN_DEFAULT_EMAIL }}"
-            PGADMIN_DEFAULT_PASSWORD_VALUE="${{ secrets.PGADMIN_DEFAULT_PASSWORD }}"
-
-            if [ -z "$PGADMIN_DEFAULT_EMAIL_VALUE" ]; then
-              PGADMIN_DEFAULT_EMAIL_VALUE="admin@mentorapredict.com"
-            fi
-
-            if [ -z "$PGADMIN_DEFAULT_PASSWORD_VALUE" ]; then
-              PGADMIN_DEFAULT_PASSWORD_VALUE="admin"
-            fi
-
-            echo "PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL_VALUE}" >> .env
-            echo "PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD_VALUE}" >> .env
 
             if docker pull ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:${IMAGE_TAG} &>/dev/null; then
               echo "[TAG] Using build tag: ${IMAGE_TAG}"
@@ -305,12 +295,19 @@ jobs:
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
             echo "[INFRA] Starting infrastructure"
-            docker compose --profile qa-tools --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis pgadmin
+            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis rabbitmq
 
             echo "[WAIT DB READY]"
             for i in {1..20}; do
               docker exec $(docker ps -q --filter name=postgres) pg_isready && break
               echo "waiting postgres..."
+              sleep 3
+            done
+
+            echo "[WAIT RABBITMQ READY]"
+            for i in {1..20}; do
+              docker exec mp_rabbitmq rabbitmq-diagnostics check_port_connectivity && break
+              echo "waiting rabbitmq..."
               sleep 3
             done
 
@@ -321,7 +318,7 @@ jobs:
             echo "[CLEANUP] Removing stopped containers, old images, and old build cache"
             docker container prune -f
             docker image prune -af --filter "until=24h"
-            docker builder prune -af --filter "until=24h"
+            timeout 180 docker builder prune -af --filter "until=24h" || echo "[CLEANUP] Builder prune timed out, continuing deploy"
 
             echo "[CLEANUP] Docker disk usage after cleanup"
             docker system df
@@ -348,7 +345,12 @@ jobs:
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
 
             echo "[SEEDS] Running database seeds (idempotent safe mode)"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up --build --force-recreate seed-loader
+            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up \
+              --build \
+              --force-recreate \
+              --abort-on-container-exit \
+              --exit-code-from seed-loader \
+              seed-loader
 
             echo "[MONITORING] Starting monitoring stack"
             docker compose --env-file .env -f infra/monitoring/docker-compose.monitoring.yml --project-name mentorapredict up -d 2>&1 || echo "[MONITORING] Monitoring stack not available — skipping"
@@ -359,7 +361,7 @@ jobs:
             echo ""
             echo "[STATUS] Final services status:"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml ps -a
-            docker compose --profile qa-tools --env-file .env -f infra/docker/docker-compose.infra.yml ps -a
+            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml ps -a
 
       - name: Deployment Summary
         run: |

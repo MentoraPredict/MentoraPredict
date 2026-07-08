@@ -36,6 +36,7 @@ const mockGradeRepo = (): jest.Mocked<IGradeRepository> => ({
   findById: jest.fn(),
   findByStudentAndEvaluation: jest.fn(),
   findByStudentAndSubject: jest.fn(),
+  findAllByStudentAndSubject: jest.fn(),
   findByStudentId: jest.fn(),
   findByEvaluationId: jest.fn(),
   save: jest.fn(),
@@ -45,15 +46,21 @@ const mockEvalRepo = (): jest.Mocked<IEvaluationRepository> => ({
   findById: jest.fn(),
   findBySubjectId: jest.fn(),
   getTotalWeightForSubject: jest.fn(),
+  getTotalWeightExcluding: jest.fn(),
   save: jest.fn(),
+  update: jest.fn(),
 });
 const mockEnrollRepo = (): jest.Mocked<IEnrollmentRepository> => ({
+  findById: jest.fn(),
   findByStudentAndSubject: jest.fn(),
   findByStudentSubjectAndPeriod: jest.fn(),
   countActiveBySubject: jest.fn(),
   findByStudentId: jest.fn(),
-  findBySubjectId: jest.fn(),
+  findBySubjectIdPaginated: jest.fn(),
+  findByStudentIdWithDetails: jest.fn(),
   save: jest.fn(),
+  update: jest.fn(),
+  saveWithCapacityCheck: jest.fn(),
 });
 
 describe("RecordGradeUseCase", () => {

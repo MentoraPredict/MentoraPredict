@@ -3,9 +3,10 @@ import { EnrollStudentUseCase } from '../enroll-student.use-case';
 import { IEnrollmentRepository } from '../../ports/output/i-enrollment.repository';
 import { ISubjectRepository } from '../../ports/output/i-subject.repository';
 import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.repository';
+import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
+import { IUserProfilePort } from '../../ports/output/i-user-profile.port';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
-import { EnrollmentEntity } from '../../../domain/entities/enrollment.entity';
 
 const period = new AcademicPeriodEntity(
   'period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'ACTIVE', 'SEMESTER', new Date(), new Date(),
@@ -16,12 +17,16 @@ const subject = new SubjectEntity(
 );
 
 const mockEnrollRepo = (): jest.Mocked<IEnrollmentRepository> => ({
+  findById: jest.fn(),
   findByStudentAndSubject: jest.fn(),
   findByStudentSubjectAndPeriod: jest.fn(),
   countActiveBySubject: jest.fn(),
   findByStudentId: jest.fn(),
-  findBySubjectId: jest.fn(),
+  findBySubjectIdPaginated: jest.fn(),
+  findByStudentIdWithDetails: jest.fn(),
   save: jest.fn(),
+  update: jest.fn(),
+  saveWithCapacityCheck: jest.fn(),
 });
 
 const mockSubjectRepo = (): jest.Mocked<ISubjectRepository> => ({
@@ -49,27 +54,56 @@ const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
   delete: jest.fn(),
 });
 
+const mockSubjectTeacherRepo = (): jest.Mocked<ISubjectTeacherRepository> => ({
+  findBySubjectTeacherAndPeriod: jest.fn(),
+  save: jest.fn(),
+  findByTeacherIdWithDetails: jest.fn(),
+});
+
+const mockUserProfilePort = (): jest.Mocked<IUserProfilePort> => ({
+  getProfile: jest.fn(),
+});
+
+const studentProfile = {
+  id: 'stud-1',
+  firstName: 'Ada',
+  lastName: 'Lovelace',
+  email: 'ada@example.com',
+  role: 'STUDENT',
+  status: 'ACTIVE',
+};
+
 describe('EnrollStudentUseCase', () => {
   let useCase: EnrollStudentUseCase;
   let enrollRepo: jest.Mocked<IEnrollmentRepository>;
   let subjectRepo: jest.Mocked<ISubjectRepository>;
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
+  let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
+  let userProfilePort: jest.Mocked<IUserProfilePort>;
 
   beforeEach(() => {
     enrollRepo = mockEnrollRepo();
     subjectRepo = mockSubjectRepo();
     periodRepo = mockPeriodRepo();
-    useCase = new EnrollStudentUseCase(enrollRepo, subjectRepo, periodRepo);
+    subjectTeacherRepo = mockSubjectTeacherRepo();
+    userProfilePort = mockUserProfilePort();
+    useCase = new EnrollStudentUseCase(
+      enrollRepo,
+      subjectRepo,
+      periodRepo,
+      subjectTeacherRepo,
+      userProfilePort,
+    );
   });
 
   it('enrolls student when period is active and capacity available', async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(period);
-    enrollRepo.countActiveBySubject.mockResolvedValue(5);
-    enrollRepo.findByStudentSubjectAndPeriod.mockResolvedValue(null);
-    enrollRepo.save.mockImplementation(async (e) => e);
+    subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);
+    userProfilePort.getProfile.mockResolvedValue(studentProfile);
+    enrollRepo.saveWithCapacityCheck.mockResolvedValue('enrolled');
 
-    const result = await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' });
+    const result = await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1');
 
     expect(result.studentId).toBe('stud-1');
     expect(result.periodId).toBe('period-1');
@@ -79,7 +113,7 @@ describe('EnrollStudentUseCase', () => {
   it('throws when subject is inactive', async () => {
     subjectRepo.findById.mockResolvedValue(null);
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -89,28 +123,29 @@ describe('EnrollStudentUseCase', () => {
       new AcademicPeriodEntity('period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'PLANNED', 'SEMESTER', new Date(), new Date()),
     );
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
     ).rejects.toThrow(BadRequestException);
   });
 
   it('throws when capacity is full', async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(period);
-    enrollRepo.countActiveBySubject.mockResolvedValue(30);
+    subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);
+    userProfilePort.getProfile.mockResolvedValue(studentProfile);
+    enrollRepo.saveWithCapacityCheck.mockResolvedValue('at_capacity');
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
     ).rejects.toThrow(BadRequestException);
   });
 
   it('throws on duplicate active enrollment', async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(period);
-    enrollRepo.countActiveBySubject.mockResolvedValue(1);
-    enrollRepo.findByStudentSubjectAndPeriod.mockResolvedValue(
-      new EnrollmentEntity('e1', 'stud-1', 'subj-1', 'period-1', 'ACTIVE', new Date(), new Date()),
-    );
+    subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);
+    userProfilePort.getProfile.mockResolvedValue(studentProfile);
+    enrollRepo.saveWithCapacityCheck.mockResolvedValue('already_enrolled');
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
     ).rejects.toThrow(ConflictException);
   });
 });

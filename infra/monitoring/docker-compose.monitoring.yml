@@ -19,8 +19,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: 256M
+          cpus: "0.05"
+          memory: 96M
     command:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
@@ -42,8 +42,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: 256M
+          cpus: "0.20"
+          memory: 192M
     security_opt:
       - apparmor:unconfined
     cap_add:
@@ -69,8 +69,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.30"
+          memory: 320M
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -98,8 +98,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.25"
+          memory: 256M
     command:
       - -config.file=/etc/loki/loki-config.yml
     ports:
@@ -117,8 +117,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: 256M
+          cpus: "0.10"
+          memory: 96M
     command:
       - -config.file=/etc/promtail/promtail-config.yml
     volumes:
@@ -138,8 +138,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.30"
+          memory: 320M
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
@@ -157,4 +157,3 @@ services:
     depends_on:
       - prometheus
       - loki
-

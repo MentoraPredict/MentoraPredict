@@ -17,8 +17,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.35"
+          memory: 320M
     logging:
       driver: "json-file"
       options:
@@ -58,8 +58,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.25"
+          memory: 256M
     profiles: ["tools"]
     environment:
       NODE_ENV: development
@@ -80,8 +80,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.25"
+          memory: 320M
     expose:
       - 3001
     environment:
@@ -128,8 +128,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.25"
+          memory: 320M
     expose:
       - 3002
     environment:
@@ -176,8 +176,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.35"
+          memory: 448M
     expose:
       - 3003
     environment:
@@ -231,7 +231,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
+          cpus: "0.35"
           memory: 512M
     expose:
       - 3004
@@ -285,13 +285,18 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "0.35"
+          memory: 448M
     expose:
       - 3006
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3006
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       MONGO_HOST: ${MONGO_HOST:-mongo}
       MONGO_PORT: 27017
       MONGO_USER: ${MONGO_USER}
@@ -355,11 +360,41 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  landing:
+    image: ${DOCKERHUB_USERNAME}/landing:${IMAGE_TAG:-qa-latest}
+    container_name: mp_landing
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    expose:
+      - 80
+    networks:
+      - mentorapredict-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   seed-loader:
     build:
       context: ../..
       dockerfile: database/Dockerfile.seed
     container_name: mp_seed_loader
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
     restart: "no"
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}

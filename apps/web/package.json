@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:desktop": "tsc && vite build --mode desktop",
+    "build:desktop:local": "tsc && vite build --mode desktop.local",
+    "build:desktop:qa": "tsc && vite build --mode desktop.qa",
+    "build:desktop:prod": "tsc && vite build --mode desktop.prod",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "storybook": "storybook dev -p 6006",

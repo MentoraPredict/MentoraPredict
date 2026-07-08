@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CreateSubjectUseCase } from '../create-subject.use-case';
 import { ISubjectRepository } from '../../ports/output/i-subject.repository';
 import { ICareerRepository } from '../../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.repository';
+import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { CareerEntity } from '../../../domain/entities/career.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
@@ -43,6 +44,12 @@ const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
   delete: jest.fn(),
 });
 
+const mockSubjectTeacherRepo = (): jest.Mocked<ISubjectTeacherRepository> => ({
+  findBySubjectTeacherAndPeriod: jest.fn(),
+  save: jest.fn(),
+  findByTeacherIdWithDetails: jest.fn(),
+});
+
 const makeCareer = () =>
   new CareerEntity('career-1', 'Ing. Sistemas', 'IS', '', 'ACTIVE', 'faculty-1', 10, new Date(), new Date());
 
@@ -69,22 +76,25 @@ describe('CreateSubjectUseCase', () => {
   let subjectRepo: jest.Mocked<ISubjectRepository>;
   let careerRepo: jest.Mocked<ICareerRepository>;
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
+  let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
 
   beforeEach(() => {
     subjectRepo = mockSubjectRepo();
     careerRepo = mockCareerRepo();
     periodRepo = mockPeriodRepo();
-    useCase = new CreateSubjectUseCase(subjectRepo, careerRepo, periodRepo);
+    subjectTeacherRepo = mockSubjectTeacherRepo();
+    useCase = new CreateSubjectUseCase(subjectRepo, careerRepo, periodRepo, subjectTeacherRepo);
   });
 
   it('creates subject correctly when career and period are valid', async () => {
     careerRepo.findById.mockResolvedValue(makeCareer());
-    periodRepo.findById.mockResolvedValue(makePeriod('ACTIVE'));
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectRepo.findByNameAndPeriod.mockResolvedValue(null);
     subjectRepo.findByCode.mockResolvedValue(null);
     subjectRepo.save.mockImplementation(async (s) => s);
+    subjectTeacherRepo.save.mockImplementation(async (a) => a);
 
-    const result = await useCase.execute(validDto);
+    const result = await useCase.execute(validDto, 'teacher-1');
 
     expect(result.name).toBe('Prog Web');
     expect(result.code).toBe('PW-701');
@@ -95,26 +105,26 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('throws NotFoundException when career does not exist', async () => {
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     careerRepo.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute(validDto)).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(NotFoundException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 
-  it('throws BadRequestException when period is not active', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
-    periodRepo.findById.mockResolvedValue(makePeriod('PLANNED'));
+  it('throws ConflictException when there is no active period', async () => {
+    periodRepo.findActive.mockResolvedValue(null);
 
-    await expect(useCase.execute(validDto)).rejects.toThrow(BadRequestException);
+    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(ConflictException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 
   it('throws ConflictException when subject with same name already exists in period', async () => {
     careerRepo.findById.mockResolvedValue(makeCareer());
-    periodRepo.findById.mockResolvedValue(makePeriod('ACTIVE'));
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectRepo.findByNameAndPeriod.mockResolvedValue(makeExistingSubject());
 
-    await expect(useCase.execute(validDto)).rejects.toThrow(ConflictException);
+    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(ConflictException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 });

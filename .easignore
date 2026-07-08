@@ -1,0 +1,29 @@
+# Keep EAS mobile build uploads small from the monorepo root.
+.git
+.github
+.agents
+.codex
+
+# Non-mobile workspaces and infrastructure are not needed to build the APK.
+apps/web
+services
+packages
+infra
+database
+
+# Local dependencies, caches, and build outputs.
+node_modules
+**/node_modules
+.pnpm-store
+.turbo
+dist
+build
+coverage
+storybook-static
+
+# Local files.
+.env
+.env.*
+*.log
+*.pem
+keys

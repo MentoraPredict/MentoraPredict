@@ -12,9 +12,13 @@ plugins:
         - http://localhost:3003
         - http://localhost:3004
         - http://localhost:5173
+        - http://localhost:8081
+        - http://127.0.0.1:8081
         - http://localhost:8000
         - http://mentorapredictqa.programacionwebuce.net
         - https://mentorapredictqa.programacionwebuce.net
+        - http://mentorapredictprod.programacionwebuce.net
+        - https://mentorapredictprod.programacionwebuce.net
       methods:
         - GET
         - POST
@@ -210,9 +214,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
 
   - name: analytics-service
@@ -309,12 +313,12 @@ services:
               limit_by: ip
               fault_tolerant: true
 
-  - name: pgadmin
-    url: http://pgadmin:80
+  - name: grafana
+    url: http://grafana:3000
     routes:
-      - name: pgadmin-route
+      - name: grafana-route
         paths:
-          - /pgadmin
+          - /grafana
         strip_path: false
         regex_priority: 300
         plugins:
@@ -322,11 +326,43 @@ services:
             config:
               add:
                 headers:
-                  - X-Script-Name:/pgadmin
-                  - X-Forwarded-Prefix:/pgadmin
+                  - X-Script-Name:/grafana
+                  - X-Forwarded-Prefix:/grafana
           - name: rate-limiting
             config:
               minute: 60
+              policy: local
+              limit_by: ip
+              fault_tolerant: true
+
+  - name: landing
+    url: http://landing:80
+    routes:
+      - name: landing-route
+        paths:
+          - /landing
+        strip_path: true
+        preserve_host: true
+        regex_priority: 20
+        plugins:
+          - name: cors
+            config:
+              origins:
+                - http://localhost
+                - http://mentorapredictqa.programacionwebuce.net
+                - https://mentorapredictqa.programacionwebuce.net
+                - http://mentorapredictprod.programacionwebuce.net
+                - https://mentorapredictprod.programacionwebuce.net
+              methods:
+                - GET
+                - OPTIONS
+              headers:
+                - Accept
+                - Content-Type
+              credentials: false
+          - name: rate-limiting
+            config:
+              minute: 300
               policy: local
               limit_by: ip
               fault_tolerant: true
@@ -344,8 +380,12 @@ services:
             config:
               origins:
                 - http://localhost
+                - http://localhost:8081
+                - http://127.0.0.1:8081
                 - http://mentorapredictqa.programacionwebuce.net
                 - https://mentorapredictqa.programacionwebuce.net
+                - http://mentorapredictprod.programacionwebuce.net
+                - https://mentorapredictprod.programacionwebuce.net
               methods:
                 - GET
                 - POST

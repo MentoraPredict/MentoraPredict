@@ -2,9 +2,48 @@
   "name": "@mentorapredict/desktop",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "echo desktop: placeholder - implement after",
-    "build": "echo desktop: placeholder - implement after",
-    "clean": "rm -rf dist"
+    "dev": "concurrently -k \"pnpm --filter @mentorapredict/web dev\" \"tsc --watch --preserveWatchOutput\" \"wait-on http://localhost:5173 dist/main.js && electron .\"",
+    "build": "tsc",
+    "package": "pnpm --filter @mentorapredict/web build:desktop && pnpm build && electron-builder",
+    "package:local": "pnpm --filter @mentorapredict/web build:desktop:local && pnpm build && electron-builder",
+    "package:qa": "pnpm --filter @mentorapredict/web build:desktop:qa && pnpm build && electron-builder",
+    "package:prod": "pnpm --filter @mentorapredict/web build:desktop:prod && pnpm build && electron-builder",
+    "clean": "rimraf dist release"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.0",
+    "concurrently": "^9.0.0",
+    "electron": "37.10.3",
+    "electron-builder": "^26.0.0",
+    "rimraf": "^6.0.0",
+    "typescript": "^5.4.0",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.mentorapredict.desktop",
+    "productName": "MentoraPredict",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "web",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

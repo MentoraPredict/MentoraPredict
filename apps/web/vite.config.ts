@@ -10,6 +10,7 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig(({ mode }) => ({
+  base: mode.startsWith("desktop") ? "./" : "/",
   plugins: [react(), tailwindcss()],
   server: {
     allowedHosts: process.env.VITE_ALLOW_ALL_HOSTS === "true" ? true : ["localhost", "127.0.0.1", "web"],
