@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { GetMyNotificationsUseCase } from '../../application/use-cases/get-my-notifications.use-case';
 import { MarkNotificationReadUseCase } from '../../application/use-cases/mark-notification-read.use-case';
 import { MarkAllNotificationsReadUseCase } from '../../application/use-cases/mark-all-notifications-read.use-case';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../infrastructure/guards/jwt-auth.guard';
 
 interface JwtRequest {
   user?: { sub?: string; role?: string };

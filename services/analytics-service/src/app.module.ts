@@ -3,11 +3,9 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
-import { GradeEventConsumer } from "./infrastructure/messaging/grade-event.consumer";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
-import { NotificationsController } from "./infrastructure/controllers/notifications.controller";
 import { InternalAnalyticsController } from "./infrastructure/controllers/internal-analytics.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
@@ -15,11 +13,9 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { StudentMetricsOrmEntity } from "./infrastructure/persistence/student-metrics.orm-entity";
 import { AlertOrmEntity } from "./infrastructure/persistence/alert.orm-entity";
 import { StudentSubjectMetricsOrmEntity } from "./infrastructure/persistence/student-subject-metrics.orm-entity";
-import { NotificationOrmEntity } from "./infrastructure/persistence/notification.orm-entity";
 import { StudentMetricsRepository } from "./infrastructure/persistence/student-metrics.repository";
 import { AlertRepository } from "./infrastructure/persistence/alert.repository";
 import { StudentSubjectMetricsRepository } from "./infrastructure/persistence/student-subject-metrics.repository";
-import { NotificationRepository } from "./infrastructure/persistence/notification.repository";
 import {
   DatasetVersion,
   DatasetVersionSchema,
@@ -33,6 +29,21 @@ import { PredictionHttpClient } from "./infrastructure/adapters/prediction-http.
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 import { RolesGuard } from "./infrastructure/guards/roles.guard";
+
+// Notifications — self-contained module (domain/application/infrastructure),
+// kept inside analytics-service to avoid standing up a new deployable
+// service, but isolated so its logic never mixes with analytics' own
+// risk/metrics domain. See docs/adr/0003-messaging-and-notifications.md.
+import { NotificationsController } from "./notifications/infrastructure/controllers/notifications.controller";
+import { InternalNotificationsController } from "./notifications/infrastructure/controllers/internal-notifications.controller";
+import { NotificationOrmEntity } from "./notifications/infrastructure/persistence/notification.orm-entity";
+import { NotificationRepository } from "./notifications/infrastructure/persistence/notification.repository";
+import { UserHttpClient } from "./notifications/infrastructure/adapters/user-http.client";
+import { NotificationsGateway } from "./notifications/infrastructure/gateways/notifications.gateway";
+import { GetMyNotificationsUseCase } from "./notifications/application/use-cases/get-my-notifications.use-case";
+import { MarkNotificationReadUseCase } from "./notifications/application/use-cases/mark-notification-read.use-case";
+import { MarkAllNotificationsReadUseCase } from "./notifications/application/use-cases/mark-all-notifications-read.use-case";
+import { CreateNotificationUseCase } from "./notifications/application/use-cases/create-notification.use-case";
 
 import { CalculateAverageUseCase } from "./application/use-cases/calculate-average.use-case";
 import { CalculateTrendUseCase } from "./application/use-cases/calculate-trend.use-case";
@@ -51,9 +62,6 @@ import { GetLatestSubjectMetricUseCase } from "./application/use-cases/get-lates
 import { GetSubjectRiskUseCase } from "./application/use-cases/get-subject-risk.use-case";
 import { GetSubjectAlertsUseCase } from "./application/use-cases/get-subject-alerts.use-case";
 import { ResolveAlertUseCase } from "./application/use-cases/resolve-alert.use-case";
-import { GetMyNotificationsUseCase } from "./application/use-cases/get-my-notifications.use-case";
-import { MarkNotificationReadUseCase } from "./application/use-cases/mark-notification-read.use-case";
-import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-all-notifications-read.use-case";
 import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggregated-metrics.use-case";
 
 @Module({
@@ -122,6 +130,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     AlertsController,
     NotificationsController,
     InternalAnalyticsController,
+    InternalNotificationsController,
     HealthController,
     RootController,
   ],
@@ -131,6 +140,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     RolesGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
     { provide: "IPredictionClientPort", useClass: PredictionHttpClient },
+    { provide: "IUserServiceClient", useClass: UserHttpClient },
     {
       provide: "IStudentMetricsRepository",
       useClass: StudentMetricsRepository,
@@ -146,6 +156,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
       useClass: DatasetVersionRepository,
     },
     { provide: "IMetricsCachePort", useClass: MetricsCacheAdapter },
+    NotificationsGateway,
     {
       provide: "RISK_HIGH_THRESHOLD",
       inject: [ConfigService],
@@ -179,7 +190,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,
     GetAggregatedMetricsUseCase,
-    GradeEventConsumer,
+    CreateNotificationUseCase,
   ],
 })
 export class AppModule {}

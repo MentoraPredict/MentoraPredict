@@ -11,6 +11,7 @@ import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { ICareerRepository } from '../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
+import { INotificationClientPort } from '../ports/output/i-notification-client.port';
 
 export interface CreateSubjectDto {
   name: string;
@@ -32,6 +33,8 @@ export class CreateSubjectUseCase {
     private readonly periodRepo: IAcademicPeriodRepository,
     @Inject('ISubjectTeacherRepository')
     private readonly subjectTeacherRepo: ISubjectTeacherRepository,
+    @Inject('INotificationClientPort')
+    private readonly notificationClient: INotificationClientPort,
   ) {}
 
   async execute(dto: CreateSubjectDto, teacherId: string): Promise<SubjectEntity> {
@@ -83,6 +86,13 @@ export class CreateSubjectUseCase {
     await this.subjectTeacherRepo.save(
       new SubjectTeacherEntity(saved.id, teacherId, activePeriod.id),
     );
+
+    void this.notificationClient.notify({
+      broadcastToRole: 'ADMIN',
+      type: 'COURSE_CREATED',
+      title: 'Nuevo curso creado',
+      message: `Se creó el curso ${saved.name}.`,
+    });
 
     return saved;
   }

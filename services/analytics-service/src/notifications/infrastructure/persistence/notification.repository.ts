@@ -65,15 +65,15 @@ export class NotificationRepository implements INotificationRepository {
       o.recipientId,
       o.recipientRole as NotificationRecipientRole,
       o.type as NotificationType,
-      o.relatedAlertId,
-      o.subjectId,
-      o.studentId,
-      o.periodId,
       o.title,
       o.message,
       o.status as NotificationStatus,
       o.createdAt,
       o.readAt,
+      o.relatedAlertId,
+      o.subjectId,
+      o.studentId,
+      o.periodId,
     );
   }
 

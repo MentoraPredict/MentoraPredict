@@ -4,6 +4,7 @@ import { ISubjectRepository } from '../../ports/output/i-subject.repository';
 import { ICareerRepository } from '../../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
+import { INotificationClientPort } from '../../ports/output/i-notification-client.port';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { CareerEntity } from '../../../domain/entities/career.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
@@ -50,6 +51,10 @@ const mockSubjectTeacherRepo = (): jest.Mocked<ISubjectTeacherRepository> => ({
   findByTeacherIdWithDetails: jest.fn(),
 });
 
+const mockNotificationClient = (): jest.Mocked<INotificationClientPort> => ({
+  notify: jest.fn().mockResolvedValue(undefined),
+});
+
 const makeCareer = () =>
   new CareerEntity('career-1', 'Ing. Sistemas', 'IS', '', 'ACTIVE', 'faculty-1', 10, new Date(), new Date());
 
@@ -77,13 +82,21 @@ describe('CreateSubjectUseCase', () => {
   let careerRepo: jest.Mocked<ICareerRepository>;
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
   let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
+  let notificationClient: jest.Mocked<INotificationClientPort>;
 
   beforeEach(() => {
     subjectRepo = mockSubjectRepo();
     careerRepo = mockCareerRepo();
     periodRepo = mockPeriodRepo();
     subjectTeacherRepo = mockSubjectTeacherRepo();
-    useCase = new CreateSubjectUseCase(subjectRepo, careerRepo, periodRepo, subjectTeacherRepo);
+    notificationClient = mockNotificationClient();
+    useCase = new CreateSubjectUseCase(
+      subjectRepo,
+      careerRepo,
+      periodRepo,
+      subjectTeacherRepo,
+      notificationClient,
+    );
   });
 
   it('creates subject correctly when career and period are valid', async () => {

@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
-import { GradeEventConsumer } from "./infrastructure/messaging/grade-event.consumer";
 
 import { PredictionController } from "./infrastructure/controllers/prediction.controller";
 import { InternalPredictionController } from "./infrastructure/controllers/internal-prediction.controller";
@@ -104,7 +103,6 @@ import { ListSubjectPredictionsUseCase } from "./application/use-cases/list-subj
     GetMySubjectPredictionUseCase,
     GetStudentSubjectPredictionUseCase,
     ListSubjectPredictionsUseCase,
-    GradeEventConsumer,
   ],
 })
 export class AppModule {}

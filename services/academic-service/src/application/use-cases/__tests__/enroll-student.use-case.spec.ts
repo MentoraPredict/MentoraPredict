@@ -5,6 +5,7 @@ import { ISubjectRepository } from '../../ports/output/i-subject.repository';
 import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
 import { IUserProfilePort } from '../../ports/output/i-user-profile.port';
+import { INotificationClientPort } from '../../ports/output/i-notification-client.port';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
 
@@ -64,6 +65,10 @@ const mockUserProfilePort = (): jest.Mocked<IUserProfilePort> => ({
   getProfile: jest.fn(),
 });
 
+const mockNotificationClient = (): jest.Mocked<INotificationClientPort> => ({
+  notify: jest.fn().mockResolvedValue(undefined),
+});
+
 const studentProfile = {
   id: 'stud-1',
   firstName: 'Ada',
@@ -80,6 +85,7 @@ describe('EnrollStudentUseCase', () => {
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
   let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
   let userProfilePort: jest.Mocked<IUserProfilePort>;
+  let notificationClient: jest.Mocked<INotificationClientPort>;
 
   beforeEach(() => {
     enrollRepo = mockEnrollRepo();
@@ -87,12 +93,14 @@ describe('EnrollStudentUseCase', () => {
     periodRepo = mockPeriodRepo();
     subjectTeacherRepo = mockSubjectTeacherRepo();
     userProfilePort = mockUserProfilePort();
+    notificationClient = mockNotificationClient();
     useCase = new EnrollStudentUseCase(
       enrollRepo,
       subjectRepo,
       periodRepo,
       subjectTeacherRepo,
       userProfilePort,
+      notificationClient,
     );
   });
 

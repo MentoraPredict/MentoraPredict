@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
-import { ClientsModule, Transport } from "@nestjs/microservices";
 
 import { AcademicController } from "./infrastructure/controllers/academic.controller";
 import { InternalAcademicController } from "./infrastructure/controllers/internal-academic.controller";
@@ -44,6 +43,7 @@ import { TopicRepository } from "./infrastructure/persistence/topic.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
+import { NotificationHttpClient } from "./infrastructure/adapters/notification-http.client";
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
@@ -130,8 +130,6 @@ import { DeleteTopicUseCase } from "./application/use-cases/delete-topic.use-cas
 import { UploadTopicFileUseCase } from "./application/use-cases/upload-topic-file.use-case";
 import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-file.use-case";
 
-import { GradeEventProducer } from "./infrastructure/messaging/grade-event.producer";
-
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -210,24 +208,6 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
         return { secret: cfg.get("JWT_SECRET", "dev-secret-change-in-prod") };
       },
     }),
-
-    ClientsModule.registerAsync([
-      {
-        name: 'RABBITMQ_CLIENT',
-        inject: [ConfigService],
-        useFactory: (cfg: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [
-              `amqp://${cfg.get('RABBITMQ_USER', 'mp_rabbit')}:${cfg.get('RABBITMQ_PASSWORD', 'mp_rabbit_secret')}@${cfg.get('RABBITMQ_HOST', 'localhost')}:${cfg.get('RABBITMQ_PORT', '5672')}`,
-            ],
-            queue: 'academic-events',
-            queueOptions: { durable: true },
-            persistent: true,
-          },
-        }),
-      },
-    ]),
   ],
   controllers: [
     AcademicController,
@@ -269,6 +249,7 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
     { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },
+    { provide: "INotificationClientPort", useClass: NotificationHttpClient },
     RecordGradeUseCase,
     RegisterGradeUseCase,
     UpdateGradeUseCase,
@@ -343,9 +324,7 @@ import { GradeEventProducer } from "./infrastructure/messaging/grade-event.produ
     DeleteTopicUseCase,
     UploadTopicFileUseCase,
     DeleteTopicFileUseCase,
-    GradeEventProducer,
   ],
-  exports: [GradeEventProducer],
 })
 export class AppModule {}
 

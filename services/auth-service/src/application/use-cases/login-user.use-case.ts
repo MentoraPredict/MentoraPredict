@@ -6,7 +6,6 @@ import { ITokenCache } from '../ports/output/i-token.cache';
 import { LoginDto } from '../dtos';
 import { ILoginUseCase } from '../ports/input/i-auth.use-cases';
 import { REDIS_TTL } from '../../shared-types-local';
-import { LoginEventProducer } from '../../infrastructure/messaging/login-event.producer';
 
 @Injectable()
 export class LoginUserUseCase implements ILoginUseCase {
@@ -15,7 +14,6 @@ export class LoginUserUseCase implements ILoginUseCase {
     @Inject('IPasswordHasher')  private readonly hasher: IPasswordHasher,
     @Inject('ITokenGenerator')  private readonly tokenGen: ITokenGenerator,
     @Inject('ITokenCache')      private readonly cache: ITokenCache,
-    private readonly eventProducer: LoginEventProducer,
   ) {}
 
   async execute(dto: LoginDto, ip: string) {
@@ -49,12 +47,6 @@ export class LoginUserUseCase implements ILoginUseCase {
 
     // Store refresh token in Redis (TTL 7 days)
     await this.cache.setRefreshToken(user.id, tokens.refreshToken, REDIS_TTL.REFRESH_TOKEN);
-
-    await this.eventProducer.studentLoggedIn({
-      studentId: user.id,
-      occurredAt: new Date(),
-      ip,
-    });
 
     return { ...tokens, tokenType: 'Bearer' };
   }

@@ -122,7 +122,6 @@ export class AuthController {
   @Redirect()
   @ApiOperation({ summary: "Microsoft OAuth callback — issues app JWTs and redirects to the SPA" })
   async microsoftCallback(
-    @Req() req: Request,
     @Query("code") code?: string,
     @Query("state") state?: string,
     @Query("error") error?: string,
@@ -135,8 +134,7 @@ export class AuthController {
 
     try {
       const profile = await this.microsoftOAuth.exchangeCodeForProfile(code);
-      const ip = req.ip ?? "unknown";
-      const tokens = await this.oauthLoginUC.execute(profile, ip);
+      const tokens = await this.oauthLoginUC.execute(profile);
 
       const params = new URLSearchParams({
         accessToken: tokens.accessToken,

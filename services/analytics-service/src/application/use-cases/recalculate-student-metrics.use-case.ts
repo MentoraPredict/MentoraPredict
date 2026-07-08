@@ -8,8 +8,9 @@ import { StudentSubjectMetricsEntity, SubjectRiskLevel } from '../../domain/enti
 import { IAlertRepository } from '../../domain/ports/i-alert.repository';
 import { AlertEntity, AlertSeverity } from '../../domain/entities/alert.entity';
 import { IPredictionClientPort } from '../../domain/ports/i-prediction-client.port';
-import { INotificationRepository } from '../../domain/ports/i-notification.repository';
-import { NotificationEntity } from '../../domain/entities/notification.entity';
+import { INotificationRepository } from '../../notifications/domain/ports/i-notification.repository';
+import { NotificationEntity } from '../../notifications/domain/entities/notification.entity';
+import { NotificationsGateway } from '../../notifications/infrastructure/gateways/notifications.gateway';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 
 const PASSING_GRADE = 7;
@@ -62,6 +63,7 @@ export class RecalculateStudentMetricsUseCase {
     @Inject('IAlertRepository') private readonly alertRepo: IAlertRepository,
     @Inject('IPredictionClientPort') private readonly predictionClient: IPredictionClientPort,
     @Inject('INotificationRepository') private readonly notificationRepo: INotificationRepository,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   async execute(
@@ -289,17 +291,18 @@ export class RecalculateStudentMetricsUseCase {
       studentId,
       'STUDENT',
       'RISK_ESCALATION',
-      alertId,
-      subjectId,
-      studentId,
-      periodId,
       `Tu riesgo académico en ${subjectName} aumentó a ${riskLevel}`,
       reason,
       'UNREAD',
       now,
       null,
+      alertId,
+      subjectId,
+      studentId,
+      periodId,
     );
     await this.notificationRepo.save(studentNotification);
+    this.notificationsGateway.emitToUser(studentId, studentNotification);
 
     const teacherId = subject?.teacherId ?? null;
     if (!teacherId) return; // no teacher assigned — skip without failing
@@ -309,17 +312,18 @@ export class RecalculateStudentMetricsUseCase {
       teacherId,
       'TEACHER',
       'RISK_ESCALATION',
-      alertId,
-      subjectId,
-      studentId,
-      periodId,
       `Un estudiante de ${subjectName} escaló a riesgo ${riskLevel}`,
       `Estudiante ${studentId}: ${reason}`,
       'UNREAD',
       now,
       null,
+      alertId,
+      subjectId,
+      studentId,
+      periodId,
     );
     await this.notificationRepo.save(teacherNotification);
+    this.notificationsGateway.emitToUser(teacherId, teacherNotification);
   }
 
   private computeLinearSlope(values: number[]): number {

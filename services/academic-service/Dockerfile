@@ -8,7 +8,6 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
 RUN corepack enable
 COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY services/academic-service/package.json ./services/academic-service/package.json
-COPY packages/event-contracts/package.json ./packages/event-contracts/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS prod-deps
@@ -20,16 +19,12 @@ ENV CI=true \
     PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 COPY services/academic-service ./services/academic-service
-COPY packages/event-contracts ./packages/event-contracts
-RUN pnpm --filter @mentorapredict/event-contracts build \
-    && pnpm --filter @mentorapredict/academic-service build
+RUN pnpm --filter @mentorapredict/academic-service build
 
 FROM prod-deps AS runner
 WORKDIR /app/services/academic-service
 COPY --from=builder /app/services/academic-service/dist ./dist
 COPY --from=builder /app/services/academic-service/package.json ./
-COPY --from=builder /app/packages/event-contracts/package.json /app/packages/event-contracts/package.json
-COPY --from=builder /app/packages/event-contracts/dist /app/packages/event-contracts/dist
 RUN mkdir -p uploads/subjects uploads/topics \
     && chown -R node:node uploads
 USER node
