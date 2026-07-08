@@ -129,133 +129,156 @@ function resolveImageUrl(image: ContentfulImage): string {
 }
 
 export async function getHero(): Promise<HeroData> {
-  const entries = await contentfulClient.getEntries<HeroEntry>({
-    content_type: "hero",
-    limit: 1,
-  });
-
-  const entry = entries.items[0];
-
-  if (!entry) {
-    return {
-      badgeText: "New: GPT-4o models integrated",
-      headline: "Intelligent prediction to prevent academic failure.",
-      subtext:
-        "We transform your educational data into actionable strategies. MentoraPredict uses advanced AI to identify at-risk students and optimize academic success.",
-      ctaPrimaryText: "Get Started",
-      ctaPrimaryLink: "/login",
-      ctaSecondaryText: "Download App",
-      ctaSecondaryLink: "#downloads",
-      imageUrl: "/images/landing-analytics-dashboard.png",
-      imageAlt: "MentoraPredict analytics dashboard preview",
-    };
-  }
-
-  const { fields } = entry;
-
-  return {
-    badgeText: extractPlainText(fields.badgeText),
-    headline: extractPlainText(fields.headline),
-    subtext: extractPlainText(fields.subtext),
-    ctaPrimaryText: extractPlainText(fields.ctaPrimaryText),
-    ctaPrimaryLink: extractPlainText(fields.ctaPrimaryLink),
-    ctaSecondaryText: extractPlainText(fields.ctaSecondaryText),
-    ctaSecondaryLink: extractPlainText(fields.ctaSecondaryLink) || "#downloads",
-    imageUrl: fields.image ? resolveImageUrl(fields.image) : "/images/landing-analytics-dashboard.png",
-    imageAlt: extractPlainText(fields.imageAlt),
+  const fallback: HeroData = {
+    badgeText: "New: GPT-4o models integrated",
+    headline: "Intelligent prediction to prevent academic failure.",
+    subtext:
+      "We transform your educational data into actionable strategies. MentoraPredict uses advanced AI to identify at-risk students and optimize academic success.",
+    ctaPrimaryText: "Get Started",
+    ctaPrimaryLink: "/login",
+    ctaSecondaryText: "Download App",
+    ctaSecondaryLink: "#downloads",
+    imageUrl: "/images/landing-analytics-dashboard.png",
+    imageAlt: "MentoraPredict analytics dashboard preview",
   };
+
+  if (!contentfulClient) return fallback;
+
+  try {
+    const entries = await contentfulClient.getEntries<HeroEntry>({
+      content_type: "hero",
+      limit: 1,
+    });
+
+    const entry = entries.items[0];
+    if (!entry) return fallback;
+
+    const { fields } = entry;
+
+    return {
+      badgeText: extractPlainText(fields.badgeText),
+      headline: extractPlainText(fields.headline),
+      subtext: extractPlainText(fields.subtext),
+      ctaPrimaryText: extractPlainText(fields.ctaPrimaryText),
+      ctaPrimaryLink: extractPlainText(fields.ctaPrimaryLink),
+      ctaSecondaryText: extractPlainText(fields.ctaSecondaryText),
+      ctaSecondaryLink: extractPlainText(fields.ctaSecondaryLink) || "#downloads",
+      imageUrl: fields.image ? resolveImageUrl(fields.image) : "/images/landing-analytics-dashboard.png",
+      imageAlt: extractPlainText(fields.imageAlt),
+    };
+  } catch {
+    return fallback;
+  }
 }
 
 export async function getStats(): Promise<StatData[]> {
-  const entries = await contentfulClient.getEntries<StatEntry>({
-    content_type: "stat",
-    order: ["fields.order"],
-  });
+  const fallback: StatData[] = [
+    { value: "+25%", label: "Academic retention" },
+    { value: "92%", label: "Predictive accuracy" },
+    { value: "+500", label: "Students analyzed" },
+    { value: "24/7", label: "Continuous monitoring" },
+  ];
 
-  if (entries.items.length === 0) {
-    return [
-      { value: "+25%", label: "Academic retention" },
-      { value: "92%", label: "Predictive accuracy" },
-      { value: "+500", label: "Students analyzed" },
-      { value: "24/7", label: "Continuous monitoring" },
-    ];
+  if (!contentfulClient) return fallback;
+
+  try {
+    const entries = await contentfulClient.getEntries<StatEntry>({
+      content_type: "stat",
+      order: ["fields.order"],
+    });
+
+    if (entries.items.length === 0) return fallback;
+
+    return entries.items.map((item) => ({
+      value: extractPlainText(item.fields.value),
+      label: extractPlainText(item.fields.label),
+    }));
+  } catch {
+    return fallback;
   }
-
-  return entries.items.map((item) => ({
-    value: extractPlainText(item.fields.value),
-    label: extractPlainText(item.fields.label),
-  }));
 }
 
 export async function getFeatures(): Promise<FeatureData[]> {
-  const entries = await contentfulClient.getEntries<FeatureEntry>({
-    content_type: "feature",
-    order: ["fields.order"],
-  });
+  const fallback: FeatureData[] = [
+    {
+      title: "AI Analysis",
+      description:
+        "Neural network algorithms analyze behavioral patterns, attendance, and grades to detect anomalies before they occur.",
+      icon: "brain",
+    },
+    {
+      title: "Alerts",
+      description:
+        "Intelligent notification system for teachers and administrators when a student crosses critical academic risk thresholds.",
+      icon: "bell",
+    },
+    {
+      title: "Recommendations",
+      description:
+        "Personalized intervention suggestions based on psycho-pedagogical profiles to improve tutoring and student support.",
+      icon: "chart",
+    },
+  ];
 
-  if (entries.items.length === 0) {
-    return [
-      {
-        title: "AI Analysis",
-        description:
-          "Neural network algorithms analyze behavioral patterns, attendance, and grades to detect anomalies before they occur.",
-        icon: "brain",
-      },
-      {
-        title: "Alerts",
-        description:
-          "Intelligent notification system for teachers and administrators when a student crosses critical academic risk thresholds.",
-        icon: "bell",
-      },
-      {
-        title: "Recommendations",
-        description:
-          "Personalized intervention suggestions based on psycho-pedagogical profiles to improve tutoring and student support.",
-        icon: "chart",
-      },
-    ];
+  if (!contentfulClient) return fallback;
+
+  try {
+    const entries = await contentfulClient.getEntries<FeatureEntry>({
+      content_type: "feature",
+      order: ["fields.order"],
+    });
+
+    if (entries.items.length === 0) return fallback;
+
+    return entries.items.map((item) => ({
+      title: extractPlainText(item.fields.title),
+      description: extractPlainText(item.fields.description),
+      icon: extractPlainText(item.fields.icon),
+    }));
+  } catch {
+    return fallback;
   }
-
-  return entries.items.map((item) => ({
-    title: extractPlainText(item.fields.title),
-    description: extractPlainText(item.fields.description),
-    icon: extractPlainText(item.fields.icon),
-  }));
 }
 
 export async function getDownloadOptions(): Promise<DownloadOptionData[]> {
-  const entries = await contentfulClient.getEntries<DownloadOptionEntry>({
-    content_type: "downloadOption",
-    order: ["fields.order"],
-  });
+  const fallback: DownloadOptionData[] = [
+    {
+      platformType: "desktop",
+      label: "Download for Desktop",
+      platforms: ["Windows", "macOS", "Linux"],
+      downloadUrl: "#",
+      available: false,
+    },
+    {
+      platformType: "mobile",
+      label: "Download for Mobile",
+      platforms: ["Android", "iOS"],
+      downloadUrl: "#",
+      available: false,
+    },
+  ];
 
-  if (entries.items.length === 0) {
-    return [
-      {
-        platformType: "desktop",
-        label: "Download for Desktop",
-        platforms: ["Windows", "macOS", "Linux"],
-        downloadUrl: "#",
-        available: false,
-      },
-      {
-        platformType: "mobile",
-        label: "Download for Mobile",
-        platforms: ["Android", "iOS"],
-        downloadUrl: "#",
-        available: false,
-      },
-    ];
+  if (!contentfulClient) return fallback;
+
+  try {
+    const entries = await contentfulClient.getEntries<DownloadOptionEntry>({
+      content_type: "downloadOption",
+      order: ["fields.order"],
+    });
+
+    if (entries.items.length === 0) return fallback;
+
+    return entries.items.map((item) => ({
+      platformType: extractPlainText(item.fields.platformType),
+      label: extractPlainText(item.fields.label),
+      platforms: extractPlainText(item.fields.platforms)
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean),
+      downloadUrl: extractPlainText(item.fields.downloadUrl) || "#",
+      available: item.fields.available,
+    }));
+  } catch {
+    return fallback;
   }
-
-  return entries.items.map((item) => ({
-    platformType: extractPlainText(item.fields.platformType),
-    label: extractPlainText(item.fields.label),
-    platforms: extractPlainText(item.fields.platforms)
-      .split(",")
-      .map((p) => p.trim())
-      .filter(Boolean),
-    downloadUrl: extractPlainText(item.fields.downloadUrl) || "#",
-    available: item.fields.available,
-  }));
 }
