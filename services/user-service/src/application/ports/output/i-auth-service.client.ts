@@ -1,5 +1,5 @@
 export interface IAuthServiceClient {
-  getUserById(userId: string): Promise<AuthUserResponse>;
+  getUserById(userId: string): Promise<AuthUserResponse | undefined>;
 }
 
 export interface AuthUserResponse {
