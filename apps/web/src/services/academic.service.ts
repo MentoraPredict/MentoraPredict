@@ -659,6 +659,11 @@ export async function updateCourseEnrollmentStatus(
 export async function createTeacherCourse(
   payload: CreateTeacherCoursePayload
 ): Promise<Course> {
+  // teacherId comes from the JWT and the academic period is always the
+  // currently active one — both resolved server-side by CreateSubjectUseCase.
+  // CreateSubjectDto doesn't declare either field, and the global
+  // ValidationPipe (forbidNonWhitelisted: true) rejects the whole request
+  // with 400 if they're present, so they must not be sent here.
   const response = await api.post<SubjectApiResponse>(
     endpoints.academic.subjects,
     {
@@ -667,9 +672,7 @@ export async function createTeacherCourse(
       description: payload.description,
       credits: payload.credits,
       careerId: payload.careerId,
-      academicPeriodId: payload.academicPeriodId,
       maxCapacity: payload.maxCapacity,
-      teacherId: payload.teacherId,
     }
   );
 

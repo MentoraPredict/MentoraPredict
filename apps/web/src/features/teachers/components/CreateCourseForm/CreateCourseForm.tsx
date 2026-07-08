@@ -39,6 +39,7 @@ interface CreateCourseFormProps {
   periods: CoursePeriodOption[];
   teacherName: string;
   isSubmitting?: boolean;
+  errorMessage?: string | null;
   onCancel: () => void;
   onCreateCourse: (
     course: Omit<CreateTeacherCoursePayload, "teacherId" | "teacherName">,
@@ -53,6 +54,7 @@ export default function CreateCourseForm({
   periods,
   teacherName,
   isSubmitting = false,
+  errorMessage,
   onCancel,
   onCreateCourse,
 }: CreateCourseFormProps) {
@@ -177,6 +179,15 @@ export default function CreateCourseForm({
         Crear Curso
       </Heading>
 
+      {errorMessage ? (
+        <div
+          role="alert"
+          className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+        >
+          {errorMessage}
+        </div>
+      ) : null}
+
       <div className="mt-5 space-y-5">
         <div>
           <Label htmlFor="name">Nombre del Curso</Label>
@@ -298,18 +309,24 @@ export default function CreateCourseForm({
 
             <Select
               id="academicPeriodId"
+              disabled
+              className="disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
               hasError={!!errors.academicPeriodId}
               {...register("academicPeriodId", {
                 required: true,
               })}
             >
-              <option value="">Selecciona el periodo</option>
               {periods.map((period) => (
                 <option key={period.id} value={period.id}>
                   {period.name}
                 </option>
               ))}
             </Select>
+
+            <p className="mt-1 text-xs text-gray-500">
+              El curso se crea en el periodo academico activo; no se puede
+              elegir otro.
+            </p>
           </div>
         </div>
 

@@ -19,7 +19,6 @@ interface CourseCardProps {
   metrics?: {
     averageLabel: string;
     enrolledCount: number;
-    statusLabel: string;
   };
   onClick?: (courseId: string) => void;
   onSecondaryAction?: (courseId: string) => void;
@@ -53,7 +52,7 @@ export default function CourseCard({
 
   const averageLabel =
     typeof course.currentAverage === "number"
-      ? `${course.currentAverage.toFixed(2)} / 10`
+      ? `${course.currentAverage.toFixed(2)} / 20`
       : "Sin promedio";
 
   return (
@@ -150,23 +149,16 @@ export default function CourseCard({
               riskLevel={course.riskLevel}
               label={course.riskLabel}
             />
-            <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700">
-              Promedio {averageLabel}
-            </span>
+            {!metrics ? (
+              <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700">
+                Promedio {averageLabel}
+              </span>
+            ) : null}
           </div>
         </div>
 
         {metrics ? (
-          <div className="grid grid-cols-2 gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <div>
-              <Text variant="caption" className="font-bold uppercase text-blue-700">
-                Curso
-              </Text>
-              <Text variant="small" className="mt-1 font-semibold text-gray-900">
-                {metrics.statusLabel}
-              </Text>
-            </div>
-
+          <div className="grid grid-cols-3 gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
             <div>
               <Text variant="caption" className="font-bold uppercase text-blue-700">
                 Promedio
@@ -226,17 +218,19 @@ export default function CourseCard({
               </div>
             ) : null}
 
-            <div>
-              <Text
-                variant="caption"
-                className="font-bold uppercase text-gray-500"
-              >
-                Semestre
-              </Text>
-              <Text variant="small" className="mt-1 text-gray-800">
-                {course.semester}
-              </Text>
-            </div>
+            {!metrics ? (
+              <div>
+                <Text
+                  variant="caption"
+                  className="font-bold uppercase text-gray-500"
+                >
+                  Semestre
+                </Text>
+                <Text variant="small" className="mt-1 text-gray-800">
+                  {course.semester}
+                </Text>
+              </div>
+            ) : null}
 
             {course.careerName ? (
               <div>

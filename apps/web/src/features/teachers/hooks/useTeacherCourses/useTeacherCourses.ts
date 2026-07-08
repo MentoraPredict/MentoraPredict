@@ -53,6 +53,25 @@ function getDeleteErrorMessage(error: unknown) {
   return `No se pudo eliminar el curso. Codigo HTTP: ${status ?? "desconocido"}.`;
 }
 
+function getCreateCourseErrorMessage(error: unknown) {
+  if (!(error instanceof AxiosError)) {
+    return "No se pudo crear el curso. Intenta nuevamente.";
+  }
+
+  const status = error.response?.status;
+  const responseMessage = error.response?.data?.message;
+
+  if (
+    (status === 409 || status === 400) &&
+    typeof responseMessage === "string" &&
+    responseMessage.trim()
+  ) {
+    return responseMessage;
+  }
+
+  return `No se pudo crear el curso. Codigo HTTP: ${status ?? "desconocido"}.`;
+}
+
 function getCreationDataErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
     return `Los cursos se cargaron, pero no se pudieron cargar los datos para crear cursos. Codigo HTTP: ${
@@ -83,6 +102,7 @@ export default function useTeacherCourses(
   const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creationDataError, setCreationDataError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const loadCourses = useCallback(async () => {
     if (!teacherId) {
@@ -144,12 +164,12 @@ export default function useTeacherCourses(
       studentIds: string[]
     ) => {
       if (!isUuid(teacherId)) {
-        setError("No se pudo identificar al docente autenticado.");
+        setCreateError("No se pudo identificar al docente autenticado.");
         return null;
       }
 
       setIsCreating(true);
-      setError(null);
+      setCreateError(null);
 
       try {
         const createdCourse = await createTeacherCourse({
@@ -178,7 +198,7 @@ export default function useTeacherCourses(
 
         return createdCourse;
       } catch (requestError) {
-        setError(getErrorMessage(requestError));
+        setCreateError(getCreateCourseErrorMessage(requestError));
         return null;
       } finally {
         setIsCreating(false);
@@ -248,6 +268,10 @@ export default function useTeacherCourses(
     );
   }, []);
 
+  const clearCreateError = useCallback(() => {
+    setCreateError(null);
+  }, []);
+
   return {
     courses,
     faculties,
@@ -260,6 +284,8 @@ export default function useTeacherCourses(
     updatingCourseId,
     error,
     creationDataError,
+    createError,
+    clearCreateError,
     reload: loadCourses,
     createCourse,
     deleteCourse,

@@ -38,6 +38,8 @@ export default function TeacherCoursesManagement({
     deletingCourseId,
     error,
     creationDataError,
+    createError,
+    clearCreateError,
     createCourse,
     deleteCourse,
   } = courseState;
@@ -176,10 +178,9 @@ export default function TeacherCoursesManagement({
 
                   return {
                     averageLabel: analytics
-                      ? `${analytics.average.toFixed(2)} / 10`
+                      ? `${analytics.average.toFixed(2)} / 20`
                       : "Sin datos",
                     enrolledCount: course.enrolledCount ?? 0,
-                    statusLabel: course.riskLabel ?? "Curso activo",
                   };
                 }}
                 onCourseClick={(courseId) => {
@@ -205,6 +206,7 @@ export default function TeacherCoursesManagement({
         isOpen={isCreateModalOpen}
         onClose={() => {
           setIsCreateModalOpen(false);
+          clearCreateError();
         }}
       >
         <CreateCourseForm
@@ -214,8 +216,10 @@ export default function TeacherCoursesManagement({
           periods={periods}
           teacherName={teacherName}
           isSubmitting={isCreating}
+          errorMessage={createError}
           onCancel={() => {
             setIsCreateModalOpen(false);
+            clearCreateError();
           }}
           onCreateCourse={async (coursePayload, studentIds) => {
             const createdCourse = await createCourse(coursePayload, studentIds);
