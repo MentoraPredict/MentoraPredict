@@ -1,8 +1,12 @@
-import { Controller, Get, Param, Patch, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { GetMyNotificationsUseCase } from '../../application/use-cases/get-my-notifications.use-case';
 import { MarkNotificationReadUseCase } from '../../application/use-cases/mark-notification-read.use-case';
 import { MarkAllNotificationsReadUseCase } from '../../application/use-cases/mark-all-notifications-read.use-case';
+import { RegisterDeviceTokenUseCase } from '../../application/use-cases/register-device-token.use-case';
+import { UnregisterDeviceTokenUseCase } from '../../application/use-cases/unregister-device-token.use-case';
+import { RegisterDeviceTokenDto } from '../../application/dtos/register-device-token.dto';
+import { UnregisterDeviceTokenDto } from '../../application/dtos/unregister-device-token.dto';
 import { JwtAuthGuard } from '../../../infrastructure/guards/jwt-auth.guard';
 
 interface JwtRequest {
@@ -18,6 +22,8 @@ export class NotificationsController {
     private readonly getMyNotificationsUC: GetMyNotificationsUseCase,
     private readonly markNotificationReadUC: MarkNotificationReadUseCase,
     private readonly markAllNotificationsReadUC: MarkAllNotificationsReadUseCase,
+    private readonly registerDeviceTokenUC: RegisterDeviceTokenUseCase,
+    private readonly unregisterDeviceTokenUC: UnregisterDeviceTokenUseCase,
   ) {}
 
   @Get('me')
@@ -57,5 +63,24 @@ export class NotificationsController {
     const recipientId = req.user?.sub;
     if (!recipientId) throw new UnauthorizedException('Missing user identity');
     return this.markNotificationReadUC.execute(notificationId, recipientId);
+  }
+
+  @Post('device-tokens')
+  @ApiOperation({ summary: 'Register (or move ownership of) an Expo push token for the authenticated user' })
+  @ApiResponse({ status: 201 })
+  async registerDeviceToken(@Req() req: JwtRequest, @Body() dto: RegisterDeviceTokenDto) {
+    const userId = req.user?.sub;
+    if (!userId) throw new UnauthorizedException('Missing user identity');
+    return this.registerDeviceTokenUC.execute(userId, dto.expoPushToken, dto.platform);
+  }
+
+  @Delete('device-tokens')
+  @ApiOperation({ summary: "Unregister an Expo push token from the authenticated user's account (e.g. on logout)" })
+  @ApiResponse({ status: 200 })
+  async unregisterDeviceToken(@Req() req: JwtRequest, @Body() dto: UnregisterDeviceTokenDto) {
+    const userId = req.user?.sub;
+    if (!userId) throw new UnauthorizedException('Missing user identity');
+    await this.unregisterDeviceTokenUC.execute(userId, dto.expoPushToken);
+    return { success: true };
   }
 }

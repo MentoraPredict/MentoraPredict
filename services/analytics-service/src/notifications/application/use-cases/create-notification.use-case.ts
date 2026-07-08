@@ -7,7 +7,7 @@ import {
 } from '../../domain/entities/notification.entity';
 import { INotificationRepository } from '../../domain/ports/i-notification.repository';
 import { IUserServiceClient } from '../../domain/ports/i-user-service.client';
-import { NotificationsGateway } from '../../infrastructure/gateways/notifications.gateway';
+import { NotificationDeliveryService } from '../services/notification-delivery.service';
 
 export interface CreateNotificationDto {
   // Either target one specific recipient...
@@ -25,7 +25,7 @@ export class CreateNotificationUseCase {
   constructor(
     @Inject('INotificationRepository') private readonly notificationRepo: INotificationRepository,
     @Inject('IUserServiceClient') private readonly userServiceClient: IUserServiceClient,
-    private readonly notificationsGateway: NotificationsGateway,
+    private readonly deliveryService: NotificationDeliveryService,
   ) {}
 
   async execute(dto: CreateNotificationDto): Promise<NotificationEntity[]> {
@@ -46,7 +46,7 @@ export class CreateNotificationUseCase {
         null,
       );
       await this.notificationRepo.save(notification);
-      this.notificationsGateway.emitToUser(recipient.id, notification);
+      await this.deliveryService.deliver(notification);
       created.push(notification);
     }
 

@@ -10,7 +10,7 @@ import { AlertEntity, AlertSeverity } from '../../domain/entities/alert.entity';
 import { IPredictionClientPort } from '../../domain/ports/i-prediction-client.port';
 import { INotificationRepository } from '../../notifications/domain/ports/i-notification.repository';
 import { NotificationEntity } from '../../notifications/domain/entities/notification.entity';
-import { NotificationsGateway } from '../../notifications/infrastructure/gateways/notifications.gateway';
+import { NotificationDeliveryService } from '../../notifications/application/services/notification-delivery.service';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 
 const PASSING_GRADE = 7;
@@ -63,7 +63,7 @@ export class RecalculateStudentMetricsUseCase {
     @Inject('IAlertRepository') private readonly alertRepo: IAlertRepository,
     @Inject('IPredictionClientPort') private readonly predictionClient: IPredictionClientPort,
     @Inject('INotificationRepository') private readonly notificationRepo: INotificationRepository,
-    private readonly notificationsGateway: NotificationsGateway,
+    private readonly deliveryService: NotificationDeliveryService,
   ) {}
 
   async execute(
@@ -302,7 +302,7 @@ export class RecalculateStudentMetricsUseCase {
       periodId,
     );
     await this.notificationRepo.save(studentNotification);
-    this.notificationsGateway.emitToUser(studentId, studentNotification);
+    await this.deliveryService.deliver(studentNotification);
 
     const teacherId = subject?.teacherId ?? null;
     if (!teacherId) return; // no teacher assigned — skip without failing
@@ -323,7 +323,7 @@ export class RecalculateStudentMetricsUseCase {
       periodId,
     );
     await this.notificationRepo.save(teacherNotification);
-    this.notificationsGateway.emitToUser(teacherId, teacherNotification);
+    await this.deliveryService.deliver(teacherNotification);
   }
 
   private computeLinearSlope(values: number[]): number {

@@ -38,12 +38,18 @@ import { NotificationsController } from "./notifications/infrastructure/controll
 import { InternalNotificationsController } from "./notifications/infrastructure/controllers/internal-notifications.controller";
 import { NotificationOrmEntity } from "./notifications/infrastructure/persistence/notification.orm-entity";
 import { NotificationRepository } from "./notifications/infrastructure/persistence/notification.repository";
+import { DeviceTokenOrmEntity } from "./notifications/infrastructure/persistence/device-token.orm-entity";
+import { DeviceTokenRepository } from "./notifications/infrastructure/persistence/device-token.repository";
 import { UserHttpClient } from "./notifications/infrastructure/adapters/user-http.client";
+import { ExpoPushClient } from "./notifications/infrastructure/adapters/expo-push.client";
 import { NotificationsGateway } from "./notifications/infrastructure/gateways/notifications.gateway";
+import { NotificationDeliveryService } from "./notifications/application/services/notification-delivery.service";
 import { GetMyNotificationsUseCase } from "./notifications/application/use-cases/get-my-notifications.use-case";
 import { MarkNotificationReadUseCase } from "./notifications/application/use-cases/mark-notification-read.use-case";
 import { MarkAllNotificationsReadUseCase } from "./notifications/application/use-cases/mark-all-notifications-read.use-case";
 import { CreateNotificationUseCase } from "./notifications/application/use-cases/create-notification.use-case";
+import { RegisterDeviceTokenUseCase } from "./notifications/application/use-cases/register-device-token.use-case";
+import { UnregisterDeviceTokenUseCase } from "./notifications/application/use-cases/unregister-device-token.use-case";
 
 import { CalculateAverageUseCase } from "./application/use-cases/calculate-average.use-case";
 import { CalculateTrendUseCase } from "./application/use-cases/calculate-trend.use-case";
@@ -82,6 +88,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
           AlertOrmEntity,
           StudentSubjectMetricsOrmEntity,
           NotificationOrmEntity,
+          DeviceTokenOrmEntity,
         ],
         synchronize: cfg.get("NODE_ENV") !== "production",
       }),
@@ -91,6 +98,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
       AlertOrmEntity,
       StudentSubjectMetricsOrmEntity,
       NotificationOrmEntity,
+      DeviceTokenOrmEntity,
     ]),
 
     MongooseModule.forRootAsync({
@@ -151,12 +159,15 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     },
     { provide: "IAlertRepository", useClass: AlertRepository },
     { provide: "INotificationRepository", useClass: NotificationRepository },
+    { provide: "IDeviceTokenRepository", useClass: DeviceTokenRepository },
+    { provide: "IPushNotificationClient", useClass: ExpoPushClient },
     {
       provide: "IDatasetVersionRepository",
       useClass: DatasetVersionRepository,
     },
     { provide: "IMetricsCachePort", useClass: MetricsCacheAdapter },
     NotificationsGateway,
+    NotificationDeliveryService,
     {
       provide: "RISK_HIGH_THRESHOLD",
       inject: [ConfigService],
@@ -191,6 +202,8 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     MarkAllNotificationsReadUseCase,
     GetAggregatedMetricsUseCase,
     CreateNotificationUseCase,
+    RegisterDeviceTokenUseCase,
+    UnregisterDeviceTokenUseCase,
   ],
 })
 export class AppModule {}
