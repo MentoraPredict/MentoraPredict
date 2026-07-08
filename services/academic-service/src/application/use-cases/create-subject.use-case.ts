@@ -12,6 +12,7 @@ import { ICareerRepository } from '../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
 import { INotificationClientPort } from '../ports/output/i-notification-client.port';
+import { IUserProfilePort } from '../ports/output/i-user-profile.port';
 
 export interface CreateSubjectDto {
   name: string;
@@ -35,6 +36,8 @@ export class CreateSubjectUseCase {
     private readonly subjectTeacherRepo: ISubjectTeacherRepository,
     @Inject('INotificationClientPort')
     private readonly notificationClient: INotificationClientPort,
+    @Inject('IUserProfilePort')
+    private readonly userProfilePort: IUserProfilePort,
   ) {}
 
   async execute(dto: CreateSubjectDto, teacherId: string): Promise<SubjectEntity> {
@@ -56,13 +59,16 @@ export class CreateSubjectUseCase {
     );
     if (existingByNamePeriod) {
       throw new ConflictException(
-        `Subject with name '${dto.name}' already exists in this academic period`,
+        `Ya existe una materia con el nombre '${dto.name}' en el periodo académico activo. Elige otro nombre.`,
       );
     }
 
-    const existingByCode = await this.subjectRepo.findByCode(dto.code);
+    const normalizedCode = dto.code.trim().toUpperCase();
+    const existingByCode = await this.subjectRepo.findByCode(normalizedCode);
     if (existingByCode) {
-      throw new ConflictException(`Subject with code '${dto.code}' already exists`);
+      throw new ConflictException(
+        `El código '${normalizedCode}' ya está en uso por la materia '${existingByCode.name}'. Elige un código distinto.`,
+      );
     }
 
     const now = new Date();
@@ -70,7 +76,7 @@ export class CreateSubjectUseCase {
       randomUUID(),
       dto.name,
       dto.description ?? '',
-      dto.code,
+      normalizedCode,
       dto.credits,
       dto.careerId,
       activePeriod.id,
@@ -87,11 +93,18 @@ export class CreateSubjectUseCase {
       new SubjectTeacherEntity(saved.id, teacherId, activePeriod.id),
     );
 
+    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherName = teacherProfile
+      ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
+      : null;
+
     void this.notificationClient.notify({
       broadcastToRole: 'ADMIN',
       type: 'COURSE_CREATED',
       title: 'Nuevo curso creado',
-      message: `Se creó el curso ${saved.name}.`,
+      message: teacherName
+        ? `${teacherName} creó el curso ${saved.name}.`
+        : `Se creó el curso ${saved.name}.`,
     });
 
     return saved;
