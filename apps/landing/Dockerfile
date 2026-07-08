@@ -6,7 +6,7 @@ COPY apps/landing/package.json ./apps/landing/package.json
 RUN pnpm install --frozen-lockfile --filter @mentorapredict/landing
 
 FROM node:22-alpine AS builder
-WORKDIR /APP
+WORKDIR /app
 RUN corepack enable
 
 ARG CONTENTFUL_SPACE_ID
