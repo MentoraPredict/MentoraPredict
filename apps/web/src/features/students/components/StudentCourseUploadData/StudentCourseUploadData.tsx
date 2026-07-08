@@ -13,6 +13,7 @@ import StudentStudyHabitsPanel from "@/features/students/components/StudentStudy
 import StudentSyllabusSurveyPanel from "@/features/students/components/StudentSyllabusSurveyPanel";
 import {
   getCurrentStudentCheckIn,
+  getSubjectTopics,
   saveStudentCheckIn,
   type StudentCheckInEmotionalState,
 } from "@/services/academic.service";
@@ -23,23 +24,7 @@ interface StudentCourseUploadDataProps {
   course?: Course | null;
 }
 
-const initialTopics: StudentTopicSurveyItem[] = [
-  {
-    topicId: "1",
-    topicTitle: "tema 1",
-    comprehensionLevel: 4,
-  },
-  {
-    topicId: "2",
-    topicTitle: "tema 2",
-    comprehensionLevel: 4,
-  },
-  {
-    topicId: "3",
-    topicTitle: "tema 3",
-    comprehensionLevel: 4,
-  },
-];
+const DEFAULT_TOPIC_COMPREHENSION: StudentTopicSurveyItem["comprehensionLevel"] = 4;
 
 const emotionalStateByRating: Record<number, StudentCheckInEmotionalState> = {
   1: "CRITICAL",
@@ -83,7 +68,8 @@ export default function StudentCourseUploadData({
   const [isLoadingCheckIn, setIsLoadingCheckIn] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [topics, setTopics] = useState<StudentTopicSurveyItem[]>(initialTopics);
+  const [topics, setTopics] = useState<StudentTopicSurveyItem[]>([]);
+  const [baseTopics, setBaseTopics] = useState<StudentTopicSurveyItem[]>([]);
 
   useEffect(() => {
     if (!course?.id) {
@@ -93,11 +79,21 @@ export default function StudentCourseUploadData({
     let isCancelled = false;
     setIsLoadingCheckIn(true);
 
-    getCurrentStudentCheckIn(course.id)
-      .then((checkIn) => {
-        if (isCancelled || !checkIn) {
-          return;
-        }
+    async function loadSurveyData(subjectId: string) {
+      const realTopics = await getSubjectTopics(subjectId).catch(() => []);
+      const defaultTopics: StudentTopicSurveyItem[] = realTopics.map((topic) => ({
+        topicId: topic.id,
+        topicTitle: topic.title,
+        comprehensionLevel: DEFAULT_TOPIC_COMPREHENSION,
+      }));
+
+      if (isCancelled) return;
+      setBaseTopics(defaultTopics);
+      setTopics(defaultTopics);
+
+      try {
+        const checkIn = await getCurrentStudentCheckIn(subjectId);
+        if (isCancelled || !checkIn) return;
 
         setAttendance(checkIn.attendance ? 100 : 0);
         setTaskCompletion(checkIn.taskCompletion);
@@ -105,8 +101,8 @@ export default function StudentCourseUploadData({
         setEmotionalState(ratingByEmotionalState[checkIn.emotionalState]);
         setComprehensionLevel(percentToRating(checkIn.generalComprehension));
         setSkillsText(checkIn.notes ?? "");
-        setTopics((currentTopics) =>
-          currentTopics.map((topic) => {
+        setTopics(
+          defaultTopics.map((topic) => {
             const savedTopic = checkIn.topicResponses?.find(
               (response) => response.topicId === topic.topicId
             );
@@ -123,20 +119,21 @@ export default function StudentCourseUploadData({
         );
         setMessage("Se cargo tu registro semanal actual.");
         setMessageTone("info");
-      })
-      .catch(() => {
+      } catch {
         if (!isCancelled) {
           setMessage(
             "No se pudo cargar el registro semanal actual. Puedes completar uno nuevo."
           );
           setMessageTone("info");
         }
-      })
-      .finally(() => {
+      } finally {
         if (!isCancelled) {
           setIsLoadingCheckIn(false);
         }
-      });
+      }
+    }
+
+    void loadSurveyData(course.id);
 
     return () => {
       isCancelled = true;
@@ -166,7 +163,7 @@ export default function StudentCourseUploadData({
     setEmotionalState(4);
     setSkillsText("");
     setComprehensionLevel(4);
-    setTopics(initialTopics);
+    setTopics(baseTopics);
     setMessage("Formulario restaurado a los valores iniciales.");
     setMessageTone("info");
   };
@@ -268,10 +265,19 @@ export default function StudentCourseUploadData({
         />
       </div>
 
-      <StudentSyllabusSurveyPanel
-        topics={topics}
-        onChangeTopicLevel={handleChangeTopicLevel}
-      />
+      {baseTopics.length > 0 ? (
+        <StudentSyllabusSurveyPanel
+          topics={topics}
+          onChangeTopicLevel={handleChangeTopicLevel}
+        />
+      ) : !isLoadingCheckIn ? (
+        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-5">
+          <Text variant="small" className="text-gray-600">
+            Tu docente aún no cargó el sílabo de esta materia. Cuando lo haga,
+            aquí podrás calificar tu comprensión por tema.
+          </Text>
+        </div>
+      ) : null}
 
       {message ? (
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">

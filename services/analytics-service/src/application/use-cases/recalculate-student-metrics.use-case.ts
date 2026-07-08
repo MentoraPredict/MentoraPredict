@@ -94,7 +94,7 @@ export class RecalculateStudentMetricsUseCase {
         const complianceIndex = checkIn?.taskCompletion ?? null;
         const attendanceRate = checkIn ? (checkIn.attendance ? 100 : 0) : null;
         const studyHours = checkIn?.studyHours ?? null;
-        const comprehensionAvg = checkIn?.generalComprehension ?? null;
+        const comprehensionAvg = checkIn?.topicComprehensionAvg ?? checkIn?.generalComprehension ?? null;
 
         const failedEvaluations = grades.filter(
           (g) => g.subjectId === subjectId && g.value < PASSING_GRADE,

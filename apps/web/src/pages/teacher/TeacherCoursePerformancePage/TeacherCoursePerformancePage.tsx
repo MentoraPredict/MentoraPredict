@@ -1,14 +1,10 @@
-import { useParams } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 
 import TeacherCoursePerformance from "@/features/teachers/components/TeacherCoursePerformance";
-import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
+import type { TeacherCoursePageContext } from "@/features/teachers/components/TeacherCoursePageLayout";
 
 export default function TeacherCoursePerformancePage() {
-  const { courseId } = useParams();
+  const { course } = useOutletContext<TeacherCoursePageContext>();
 
-  return (
-    <TeacherCoursePageLayout courseId={courseId}>
-      {(course) => <TeacherCoursePerformance courseId={course.id} />}
-    </TeacherCoursePageLayout>
-  );
+  return <TeacherCoursePerformance courseId={course.id} />;
 }

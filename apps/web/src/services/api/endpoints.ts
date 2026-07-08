@@ -38,6 +38,12 @@ export const endpoints = {
         subjectImage: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/image`,
         importGrades: "/v1/academic/import/grades",
+        topics: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/topics`,
+        topic: (topicId: string) =>
+            `/v1/academic/topics/${topicId}`,
+        topicFile: (topicId: string) =>
+            `/v1/academic/topics/${topicId}/file`,
     },
     analytics: {
         studentDashboard: (studentId: string) =>

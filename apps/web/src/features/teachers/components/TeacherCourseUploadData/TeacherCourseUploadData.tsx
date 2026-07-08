@@ -25,9 +25,14 @@ function getUploadErrorMessage(error: unknown) {
   return "No se pudieron subir los datos. Intenta nuevamente.";
 }
 
-export default function TeacherCourseUploadData() {
+interface TeacherCourseUploadDataProps {
+  courseId: string;
+}
+
+export default function TeacherCourseUploadData({
+  courseId,
+}: TeacherCourseUploadDataProps) {
   const [files, setFiles] = useState<CourseUploadedFile[]>([]);
-  const [syllabusTopicsText, setSyllabusTopicsText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -53,7 +58,6 @@ export default function TeacherCourseUploadData() {
 
   const handleCancel = () => {
     setFiles([]);
-    setSyllabusTopicsText("");
     setError(null);
     setSuccessMessage(null);
   };
@@ -95,10 +99,7 @@ export default function TeacherCourseUploadData() {
         onRemoveFile={handleRemoveFile}
       />
 
-      <SyllabusTopicsPanel
-        value={syllabusTopicsText}
-        onChange={setSyllabusTopicsText}
-      />
+      <SyllabusTopicsPanel subjectId={courseId} />
 
       {error ? (
         <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-4">

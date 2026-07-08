@@ -58,7 +58,7 @@ export default function GradeEvaluationPanel({
               onChange={(event) => {
                 onChangePercentage(item.id, Number(event.target.value));
               }}
-              className="w-full accent-blue-700"
+              className="mp-slider w-full"
             />
 
             <Text
