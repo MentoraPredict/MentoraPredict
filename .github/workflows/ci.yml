@@ -229,5 +229,8 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}-deps
+          cache-to: type=gha,scope=${{ matrix.service }}-deps,mode=max
+          build-args: |
+            CONTENTFUL_SPACE_ID=${{ secrets.CONTENTFUL_SPACE_ID }}
+            CONTENTFUL_ACCESS_TOKEN=${{ secrets.CONTENTFUL_ACCESS_TOKEN }}
