@@ -11,6 +11,12 @@ import type {
     ResetPasswordPayload,
 } from "@/types/auth/auth.types";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+
+export function getMicrosoftLoginUrl(): string {
+    return `${API_BASE_URL}${endpoints.auth.microsoft}`;
+}
+
 export async function login(
     credentials: LoginCredentials
 ): Promise<AuthTokens> {

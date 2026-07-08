@@ -11,7 +11,12 @@ import {
   Text,
 } from "@/components/atoms";
 
-import { FormField, PasswordField } from "@/components/molecules";
+import {
+  Divider,
+  FormField,
+  MicrosoftSignInButton,
+  PasswordField,
+} from "@/components/molecules";
 import { APP_PATHS } from "@/routes/paths";
 import { register as registerRequest } from "@/services/auth.service";
 import type { RegisterCredentials } from "@/types/auth/auth.types";
@@ -165,13 +170,22 @@ export default function RegisterForm() {
             })}
           />
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting}
+            isLoading={isSubmitting}
+          >
             {isSubmitting ? "Registrando..." : "Registrarse"}
           </Button>
 
           <FeedbackMessage message={serverError} tone="error" />
 
           <FeedbackMessage message={successMessage} tone="success" />
+
+          <Divider />
+
+          <MicrosoftSignInButton label="Registrarme con Microsoft" />
 
           <Button
             type="button"

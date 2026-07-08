@@ -15,6 +15,7 @@ import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
+import OAuthCallbackPage from "@/pages/auth/OAuthCallbackPage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import RoleRedirect from "./RoleRedirect";
@@ -91,6 +92,10 @@ function AnimatedRoutes() {
         </Route>
 
         <Route path={APP_PATHS.shared.redirect} element={<RoleRedirect />} />
+        <Route
+          path={APP_PATHS.public.oauthCallback}
+          element={<OAuthCallbackPage />}
+        />
 
         <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
           <Route
