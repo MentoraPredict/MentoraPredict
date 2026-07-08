@@ -229,5 +229,5 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}-deps
+          cache-to: type=gha,scope=${{ matrix.service }}-deps,mode=max
