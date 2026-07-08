@@ -125,8 +125,8 @@ function getAcademicStatus(coursesAtRisk: number, globalAverage: number | null) 
 
 function getAverageTone(average: number | null): MetricTone {
   if (average === null) return "neutral";
-  if (average >= 8) return "success";
-  if (average >= 7) return "warning";
+  if (average >= 16) return "success";
+  if (average >= 14) return "warning";
   return "danger";
 }
 
@@ -320,7 +320,7 @@ export default function StudentCoursesManagement({
         dashboard.globalAverage === null
           ? "--"
           : dashboard.globalAverage.toFixed(2),
-      hint: "Escala 0-10, calculado con materias que reportan notas",
+      hint: "Escala 0-20, calculado con materias que reportan notas",
       icon: FiAward,
       tone: getAverageTone(dashboard.globalAverage),
     },
@@ -634,7 +634,7 @@ export default function StudentCoursesManagement({
                         </div>
                         <div className="text-left md:text-right">
                           <Text variant="small" className="font-bold">
-                            {latest?.toFixed(2)} / 10
+                            {latest?.toFixed(2)} / 20
                           </Text>
                           <Text variant="caption">
                             {delta === null

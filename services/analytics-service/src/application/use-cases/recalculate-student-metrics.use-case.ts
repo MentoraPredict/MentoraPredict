@@ -13,7 +13,7 @@ import { NotificationEntity } from '../../notifications/domain/entities/notifica
 import { NotificationDeliveryService } from '../../notifications/application/services/notification-delivery.service';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 
-const PASSING_GRADE = 7;
+const PASSING_GRADE = 14;
 const TREND_LOOKBACK = 4;
 const RISK_RANK: Record<SubjectRiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 

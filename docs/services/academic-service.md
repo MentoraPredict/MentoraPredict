@@ -36,7 +36,7 @@ Academic Service es el **servicio de gestión académica** de MentoraPredict. Ce
 
 4. **Calificaciones**
    - Registrar calificaciones de estudiantes
-   - Validar rangos válidos (0-10)
+   - Validar rangos válidos (0-20)
    - Evitar duplicados
    - Calcular promedios
 
@@ -259,8 +259,8 @@ POST /api/v1/academic/grades
 │    └─ Evitar duplicados                │
 │    └─ Si existe → ConflictException    │
 │                                         │
-│ 4. Validar rango (0-10)                │
-│    └─ Si value < 0 o > 10 → Error     │
+│ 4. Validar rango (0-20)                │
+│    └─ Si value < 0 o > 20 → Error     │
 │                                         │
 │ 5. Crear GradeEntity                    │
 │    ├─ id: UUID                         │
@@ -345,7 +345,7 @@ CREATE TABLE grades (
   id UUID PRIMARY KEY,
   student_id UUID NOT NULL,
   evaluation_id UUID NOT NULL,
-  value DECIMAL(5,2) NOT NULL,          -- 0-10
+  value DECIMAL(5,2) NOT NULL,          -- 0-20
   recorded_by UUID,                     -- Teacher ID
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
@@ -383,7 +383,7 @@ CREATE TABLE grades (
 {
   studentId: string;       // @IsUUID()
   evaluationId: string;    // @IsUUID()
-  value: number;           // @IsNumber() @Min(0) @Max(10)
+  value: number;           // @IsNumber() @Min(0) @Max(20)
 }
 ```
 

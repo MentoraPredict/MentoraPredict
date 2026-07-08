@@ -5,7 +5,7 @@ describe('ClassifyRiskUseCase', () => {
 
   it('returns CRITICAL for very low composite score', () => {
     const result = useCase.execute({
-      globalAverage: 2,
+      globalAverage: 4,
       complianceIndex: 20,
       attendance: 30,
       failedEvaluations: 5,
@@ -17,7 +17,7 @@ describe('ClassifyRiskUseCase', () => {
 
   it('returns LOW for strong performance', () => {
     const result = useCase.execute({
-      globalAverage: 9,
+      globalAverage: 18,
       complianceIndex: 95,
       attendance: 95,
       failedEvaluations: 0,

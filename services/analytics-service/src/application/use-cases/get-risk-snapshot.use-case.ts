@@ -27,7 +27,7 @@ const NEUTRAL_COMPLIANCE = 50;
 const NEUTRAL_ATTENDANCE = 50;
 const NEUTRAL_TREND_SLOPE = 0;
 const NEUTRAL_STUDY_HOURS = 0;
-const PASSING_GRADE = 7;
+const PASSING_GRADE = 14;
 
 @Injectable()
 export class GetRiskSnapshotUseCase {

@@ -161,7 +161,7 @@ export async function getStudentSubjectAnalytics(
     {
       id: "average",
       label: "Promedio",
-      value: (risk.factors.averageGrade ?? 0) * 10,
+      value: (risk.factors.averageGrade ?? 0) * 5,
     },
     {
       id: "compliance",

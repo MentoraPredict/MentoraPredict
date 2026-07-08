@@ -24,7 +24,7 @@ export class ClassifyRiskUseCase {
   }
 
   private computeScore(input: RiskInputDto): number {
-    const avgComponent = (input.globalAverage / 10) * 100;
+    const avgComponent = (input.globalAverage / 20) * 100;
     const failedComponent = Math.max(0, 100 - input.failedEvaluations * 15);
     const trendComponent = Math.min(
       100,

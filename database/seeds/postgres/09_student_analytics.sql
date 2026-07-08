@@ -158,14 +158,14 @@ BEGIN
         lc.academic_year,
         ROUND(
           LEAST(
-            10,
+            20,
             GREATEST(
               0,
               COALESCE(
                 ga.average_grade,
-                (5 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 5))::numeric
+                (10 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9))::numeric
               )
-              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 10)
+              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 5)
             )
           ),
           2
@@ -210,9 +210,9 @@ BEGIN
       study_hours,
       comprehension_avg,
       CASE
-        WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 40 THEN 'CRITICAL'
-        WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 55 THEN 'HIGH'
-        WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 70 THEN 'MEDIUM'
+        WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 40 THEN 'CRITICAL'
+        WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 55 THEN 'HIGH'
+        WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 70 THEN 'MEDIUM'
         ELSE 'LOW'
       END,
       trend_slope,
