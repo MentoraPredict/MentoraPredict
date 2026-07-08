@@ -6,9 +6,23 @@ COPY apps/landing/package.json ./apps/landing/package.json
 RUN pnpm install --frozen-lockfile --filter @mentorapredict/landing
 
 FROM node:22-alpine AS builder
-WORKDIR /app
+WORKDIR /APP
 RUN corepack enable
-COPY --from=deps /app .
+
+ARG CONTENTFUL_SPACE_ID
+ARG CONTENTFUL_ACCESS_TOKEN
+ARG CONTENTFUL_ENVIRONMENT=master
+ARG PUBLIC_WEB_APP_URL
+
+ENV CONTENTFUL_SPACE_ID=$CONTENTFUL_SPACE_ID
+ENV CONTENTFUL_ACCESS_TOKEN=$CONTENTFUL_ACCESS_TOKEN
+ENV CONTENTFUL_ENVIRONMENT=$CONTENTFUL_ENVIRONMENT
+ENV PUBLIC_WEB_APP_URL=$PUBLIC_WEB_APP_URL
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/landing/node_modules ./apps/landing/node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY apps/landing/ ./apps/landing/
 RUN pnpm --filter @mentorapredict/landing build
 

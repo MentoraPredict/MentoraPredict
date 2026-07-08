@@ -1,7 +1,33 @@
 ---
-import { DOWNLOAD_CONFIG } from "../config/downloads";
+interface DownloadOption {
+  platformType: string;
+  label: string;
+  platforms: string[];
+  downloadUrl: string;
+  available: boolean;
+}
 
-const { desktop, mobile } = DOWNLOAD_CONFIG;
+interface Props {
+  downloads: DownloadOption[];
+}
+
+const { downloads } = Astro.props;
+
+const desktop = downloads.find((d) => d.platformType === "desktop") ?? {
+  platformType: "desktop",
+  label: "Download for Desktop",
+  platforms: ["Windows", "macOS", "Linux"],
+  downloadUrl: "#",
+  available: false,
+};
+
+const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
+  platformType: "mobile",
+  label: "Download for Mobile",
+  platforms: ["Android", "iOS"],
+  downloadUrl: "#",
+  available: false,
+};
 ---
 
 <section id="downloads" class="scroll-mt-20 py-20 bg-neutral-50">
@@ -40,7 +66,7 @@ const { desktop, mobile } = DOWNLOAD_CONFIG;
           {desktop.platforms.join(" / ")}
         </p>
         <a
-          href={desktop.available ? desktop.href : "#"}
+          href={desktop.available ? desktop.downloadUrl : "#"}
           class:list={[
             "mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition-all",
             desktop.available
@@ -81,7 +107,7 @@ const { desktop, mobile } = DOWNLOAD_CONFIG;
           {mobile.platforms.join(" / ")}
         </p>
         <a
-          href={mobile.available ? mobile.href : "#"}
+          href={mobile.available ? mobile.downloadUrl : "#"}
           class:list={[
             "mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition-all",
             mobile.available
