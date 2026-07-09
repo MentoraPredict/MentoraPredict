@@ -6,6 +6,7 @@ export interface LatestCheckInSummary {
   taskCompletion: number;
   studyHours: number;
   generalComprehension: number;
+  topicComprehensionAvg: number | null;
 }
 
 @Injectable()
@@ -21,11 +22,15 @@ export class GetLatestCheckInUseCase {
   ): Promise<LatestCheckInSummary | null> {
     const checkIn = await this.checkInRepo.findLatestByStudentSubject(studentId, subjectId, periodId);
     if (!checkIn) return null;
+    const topicComprehensionAvg = checkIn.topicResponses.length
+      ? checkIn.topicResponses.reduce((sum, r) => sum + r.comprehension, 0) / checkIn.topicResponses.length
+      : null;
     return {
       attendance: checkIn.attendance,
       taskCompletion: checkIn.taskCompletion,
       studyHours: checkIn.studyHours,
       generalComprehension: checkIn.generalComprehension,
+      topicComprehensionAvg,
     };
   }
 }

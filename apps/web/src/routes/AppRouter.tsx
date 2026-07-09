@@ -27,6 +27,7 @@ import TeacherCoursesPage from "@/pages/teacher/TeacherCoursesPage";
 
 import StudentCoursesPage from "@/pages/student/StudentCoursesPage";
 
+import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
 import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerformancePage";
 
 import TeacherCourseUploadDataPage from "@/pages/teacher/TeacherCourseUploadDataPage";
@@ -38,8 +39,27 @@ import TeacherCourseEditPage from "@/pages/teacher/TeacherCourseEditPage";
 import TeacherProfilePage from "@/pages/teacher/TeacherProfilePage";
 import StudentProfilePage from "@/pages/student/StudentProfilePage";
 
+import StudentCoursePageLayout from "@/features/students/components/StudentCoursePageLayout";
 import StudentCoursePerformancePage from "@/pages/student/StudentCoursePerformancePage";
 import StudentCourseUploadDataPage from "@/pages/student/StudentCourseUploadDataPage";
+
+const COURSE_TAB_SEGMENTS = new Set([
+  "performance",
+  "upload-data",
+  "students",
+  "edit",
+]);
+
+function getAnimationKey(pathname: string) {
+  const segments = pathname.split("/").filter(Boolean);
+  const lastSegment = segments[segments.length - 1];
+
+  if (lastSegment && COURSE_TAB_SEGMENTS.has(lastSegment)) {
+    segments.pop();
+  }
+
+  return segments.join("/");
+}
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -47,7 +67,7 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={location.pathname}
+        key={getAnimationKey(location.pathname)}
         className="min-h-screen"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -82,13 +102,12 @@ function AnimatedRoutes() {
             element={<StudentProfilePage />}
           />
           <Route
-            path={APP_PATHS.student.coursePerformance}
-            element={<StudentCoursePerformancePage />}
-          />
-          <Route
-            path={APP_PATHS.student.courseUploadData}
-            element={<StudentCourseUploadDataPage />}
-          />
+            path={APP_PATHS.student.courseDetail}
+            element={<StudentCoursePageLayout />}
+          >
+            <Route path="performance" element={<StudentCoursePerformancePage />} />
+            <Route path="upload-data" element={<StudentCourseUploadDataPage />} />
+          </Route>
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
@@ -97,25 +116,18 @@ function AnimatedRoutes() {
             element={<TeacherCoursesPage />}
           />
           <Route
-            path={APP_PATHS.teacher.coursePerformance}
-            element={<TeacherCoursePerformancePage />}
-          />
-          <Route
-            path={APP_PATHS.teacher.courseUploadData}
-            element={<TeacherCourseUploadDataPage />}
-          />
-          <Route
-            path={APP_PATHS.teacher.courseStudents}
-            element={<TeacherCourseStudentsPage />}
-          />
-          <Route
-            path={APP_PATHS.teacher.courseEdit}
-            element={<TeacherCourseEditPage />}
-          />
-          <Route
             path={APP_PATHS.teacher.profile}
             element={<TeacherProfilePage />}
           />
+          <Route
+            path={APP_PATHS.teacher.courseDetail}
+            element={<TeacherCoursePageLayout />}
+          >
+            <Route path="performance" element={<TeacherCoursePerformancePage />} />
+            <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
+            <Route path="students" element={<TeacherCourseStudentsPage />} />
+            <Route path="edit" element={<TeacherCourseEditPage />} />
+          </Route>
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>

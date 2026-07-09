@@ -1,4 +1,4 @@
-import { FiRefreshCw, FiUploadCloud } from "react-icons/fi";
+import { FiRefreshCw } from "react-icons/fi";
 
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
@@ -17,7 +17,6 @@ import type { Course } from "@/types/course";
 interface StudentCoursePerformanceProps {
   courseId: string;
   course?: Course | null;
-  onRegisterAdvance?: () => void;
 }
 
 const predictionStatusLabels = {
@@ -53,7 +52,6 @@ function formatPredictionDate(value?: string) {
 export default function StudentCoursePerformance({
   courseId,
   course,
-  onRegisterAdvance,
 }: StudentCoursePerformanceProps) {
   const { data, isLoading, error, reload } = useStudentCoursePerformance(courseId);
 
@@ -95,17 +93,6 @@ export default function StudentCoursePerformance({
             </Text>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              {onRegisterAdvance ? (
-                <Button
-                  type="button"
-                  onClick={onRegisterAdvance}
-                  className="gap-2 px-5 py-2 text-sm"
-                >
-                  <FiUploadCloud size={16} />
-                  Registrar avance semanal
-                </Button>
-              ) : null}
-
               <Button
                 type="button"
                 variant="outline"

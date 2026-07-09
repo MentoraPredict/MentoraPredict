@@ -12,6 +12,7 @@ export interface CheckInSummary {
   taskCompletion: number;
   studyHours: number;
   generalComprehension: number;
+  topicComprehensionAvg: number | null;
 }
 
 export interface SubjectOwnership {
