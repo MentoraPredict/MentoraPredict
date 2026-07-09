@@ -1,8 +1,13 @@
 import {
-  Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn,
-} from 'typeorm';
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from "typeorm";
 
-@Entity('user_profiles')
+@Entity("user_profiles")
 export class UserProfileOrmEntity {
   @PrimaryColumn('uuid') id!: string;
   /** @deprecated see UserProfileEntity.photo — avatarUrl is the source of truth going forward. */

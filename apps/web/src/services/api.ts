@@ -11,18 +11,16 @@ import { useAuthStore } from "@/store/auth.store";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 interface RefreshResponse {
-    accessToken: string;
-    expiresIn: number;
+  accessToken: string;
+  expiresIn: number;
 }
 
 interface ApiErrorResponse {
     message?: string;
 }
 
-type RetriableRequestConfig = NonNullable<
-    AxiosError["config"]
-> & {
-    _retry?: boolean;
+type RetriableRequestConfig = NonNullable<AxiosError["config"]> & {
+  _retry?: boolean;
 };
 
 export const api = axios.create({
@@ -30,37 +28,37 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-    const token = getAccessToken();
+  const token = getAccessToken();
 
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
-    return config;
+  return config;
 });
 
 let refreshPromise: Promise<string> | null = null;
 
 async function requestNewAccessToken() {
-    const refreshToken = getRefreshToken();
+  const refreshToken = getRefreshToken();
 
-    if (!refreshToken) {
-        throw new Error("Missing refresh token");
-    }
+  if (!refreshToken) {
+    throw new Error("Missing refresh token");
+  }
 
-    const response = await axios.post<RefreshResponse>(
-        `${API_BASE_URL}${endpoints.auth.refresh}`,
-        { refreshToken },
-        {
-            headers: {
-                "Content-Type": "application/json",
-            },
-        }
-    );
+  const response = await axios.post<RefreshResponse>(
+    `${API_BASE_URL}${endpoints.auth.refresh}`,
+    { refreshToken },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
 
-    setAccessToken(response.data.accessToken);
+  setAccessToken(response.data.accessToken);
 
-    return response.data.accessToken;
+  return response.data.accessToken;
 }
 
 function shouldRefreshToken(error: AxiosError<ApiErrorResponse>) {
@@ -107,6 +105,7 @@ api.interceptors.response.use(
             refreshPromise = null;
         }
     }
+  },
 );
 
 export default api;

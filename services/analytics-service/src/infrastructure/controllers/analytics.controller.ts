@@ -134,67 +134,90 @@ export class AnalyticsController {
 
   // ─── Métricas ──────────────────────────────────────────────────────────────
 
-  @Post('average/:studentId/:periodId')
-  @ApiOperation({ summary: 'RF-015: Calculate weighted average' })
+  @Post("average/:studentId/:periodId")
+  @ApiOperation({ summary: "RF-015: Calculate weighted average" })
   average(
-    @Param('studentId') studentId: string,
-    @Param('periodId') periodId: string,
-    @Headers('x-correlation-id') correlationId?: string,
+    @Param("studentId") studentId: string,
+    @Param("periodId") periodId: string,
+    @Headers("x-correlation-id") correlationId?: string,
   ) {
     return this.calculateAverageUC.execute(studentId, periodId, correlationId);
   }
 
-  @Post('trend/:studentId')
-  @ApiOperation({ summary: 'RF-016: Calculate performance trend' })
-  @ApiQuery({ name: 'periodIds', description: 'Comma-separated period UUIDs (min 3)' })
-  trend(@Param('studentId') studentId: string, @Query('periodIds') periodIds: string) {
-    const ids = periodIds.split(',').map((id) => id.trim()).filter(Boolean);
+  @Post("trend/:studentId")
+  @ApiOperation({ summary: "RF-016: Calculate performance trend" })
+  @ApiQuery({
+    name: "periodIds",
+    description: "Comma-separated period UUIDs (min 3)",
+  })
+  trend(
+    @Param("studentId") studentId: string,
+    @Query("periodIds") periodIds: string,
+  ) {
+    const ids = periodIds
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
     return this.calculateTrendUC.execute(studentId, ids);
   }
 
-  @Post('compliance/:studentId')
-  @ApiOperation({ summary: 'RF-017: Calculate compliance index' })
-  compliance(@Param('studentId') studentId: string, @Body() dto: ComplianceInputDto) {
+  @Post("compliance/:studentId")
+  @ApiOperation({ summary: "RF-017: Calculate compliance index" })
+  compliance(
+    @Param("studentId") studentId: string,
+    @Body() dto: ComplianceInputDto,
+  ) {
     return this.calculateComplianceUC.execute(studentId, dto);
   }
 
-  @Post('risk')
-  @ApiOperation({ summary: 'RF-018: Classify student risk' })
+  @Post("risk")
+  @ApiOperation({ summary: "RF-018: Classify student risk" })
   risk(@Body() dto: RiskInputDto) {
     return this.classifyRiskUC.execute(dto);
   }
 
-  @Post('alerts/:studentId')
-  @ApiOperation({ summary: 'RF-021: Generate alerts for student' })
-  generateAlerts(@Param('studentId') studentId: string, @Body() dto: GenerateAlertsDto) {
+  @Post("alerts/:studentId")
+  @ApiOperation({ summary: "RF-021: Generate alerts for student" })
+  generateAlerts(
+    @Param("studentId") studentId: string,
+    @Body() dto: GenerateAlertsDto,
+  ) {
     return this.generateAlertsUC.execute(studentId, dto);
   }
 
   // ─── Dashboards ────────────────────────────────────────────────────────────
 
-  @Get('dashboard/student/:studentId')
-  @ApiOperation({ summary: 'RF-023: Student dashboard' })
+  @Get("dashboard/student/:studentId")
+  @ApiOperation({ summary: "RF-023: Student dashboard" })
   studentDashboard(
-    @Param('studentId') studentId: string,
-    @Query('periodId') periodId: string,
-    @Headers('x-correlation-id') correlationId?: string,
+    @Param("studentId") studentId: string,
+    @Query("periodId") periodId: string,
+    @Headers("x-correlation-id") correlationId?: string,
   ) {
-    return this.getStudentDashboardUC.execute(studentId, periodId, correlationId);
+    return this.getStudentDashboardUC.execute(
+      studentId,
+      periodId,
+      correlationId,
+    );
   }
 
-  @Get('dashboard/teacher/:teacherId')
-  @ApiOperation({ summary: 'RF-024: Teacher dashboard' })
+  @Get("dashboard/teacher/:teacherId")
+  @ApiOperation({ summary: "RF-024: Teacher dashboard" })
   teacherDashboard(
-    @Param('teacherId') teacherId: string,
-    @Query('periodId') periodId: string,
-    @Headers('x-correlation-id') correlationId?: string,
+    @Param("teacherId") teacherId: string,
+    @Query("periodId") periodId: string,
+    @Headers("x-correlation-id") correlationId?: string,
   ) {
-    return this.getTeacherDashboardUC.execute(teacherId, periodId, correlationId);
+    return this.getTeacherDashboardUC.execute(
+      teacherId,
+      periodId,
+      correlationId,
+    );
   }
 
-  @Get('dashboard/admin')
-  @ApiOperation({ summary: 'RF-025: Admin dashboard' })
-  adminDashboard(@Query('periodId') periodId: string) {
+  @Get("dashboard/admin")
+  @ApiOperation({ summary: "RF-025: Admin dashboard" })
+  adminDashboard(@Query("periodId") periodId: string) {
     return this.getAdminDashboardUC.execute(periodId);
   }
 }

@@ -10,11 +10,30 @@ import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
 
 const period = new AcademicPeriodEntity(
-  'period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'ACTIVE', 'SEMESTER', new Date(), new Date(),
+  "period-1",
+  "2025-1",
+  "2025-1",
+  "",
+  new Date(),
+  new Date(),
+  "ACTIVE",
+  "SEMESTER",
+  new Date(),
+  new Date(),
 );
 const subject = new SubjectEntity(
-  'subj-1', 'Math', '', 'MAT101', 3, 'career-1', 'period-1', 30,
-  null, true, new Date(), new Date(),
+  "subj-1",
+  "Math",
+  "",
+  "MAT101",
+  3,
+  "career-1",
+  "period-1",
+  30,
+  null,
+  true,
+  new Date(),
+  new Date(),
 );
 
 const mockEnrollRepo = (): jest.Mocked<IEnrollmentRepository> => ({
@@ -104,7 +123,7 @@ describe('EnrollStudentUseCase', () => {
     );
   });
 
-  it('enrolls student when period is active and capacity available', async () => {
+  it("enrolls student when period is active and capacity available", async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(period);
     subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);
@@ -113,9 +132,9 @@ describe('EnrollStudentUseCase', () => {
 
     const result = await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1');
 
-    expect(result.studentId).toBe('stud-1');
-    expect(result.periodId).toBe('period-1');
-    expect(result.status).toBe('ACTIVE');
+    expect(result.studentId).toBe("stud-1");
+    expect(result.periodId).toBe("period-1");
+    expect(result.status).toBe("ACTIVE");
   });
 
   it('includes the teacher name in the enrollment notification', async () => {
@@ -145,17 +164,28 @@ describe('EnrollStudentUseCase', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('throws when period is not active', async () => {
+  it("throws when period is not active", async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(
-      new AcademicPeriodEntity('period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'PLANNED', 'SEMESTER', new Date(), new Date()),
+      new AcademicPeriodEntity(
+        "period-1",
+        "2025-1",
+        "2025-1",
+        "",
+        new Date(),
+        new Date(),
+        "PLANNED",
+        "SEMESTER",
+        new Date(),
+        new Date(),
+      ),
     );
     await expect(
       useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('throws when capacity is full', async () => {
+  it("throws when capacity is full", async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(period);
     subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);
@@ -166,7 +196,7 @@ describe('EnrollStudentUseCase', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('throws on duplicate active enrollment', async () => {
+  it("throws on duplicate active enrollment", async () => {
     subjectRepo.findById.mockResolvedValue(subject);
     periodRepo.findById.mockResolvedValue(period);
     subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);

@@ -1,18 +1,16 @@
 import { FaChartBar } from "react-icons/fa";
 
 interface LogoProps {
-    variant?: "default" | "light";
+  variant?: "default" | "light";
 }
 
-export default function Logo({
-    variant = "default",
-}: LogoProps) {
-    const textColor = variant === "light" ? "text-white" : "text-blue-700";
+export default function Logo({ variant = "default" }: LogoProps) {
+  const textColor = variant === "light" ? "text-white" : "text-blue-700";
 
-    return (
-        <div className="flex items-center gap-3">
-            <span
-                className="
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className="
                     grid
                     size-8
                     place-items-center
@@ -21,16 +19,11 @@ export default function Logo({
                     text-white
                     shadow-sm
                 "
-            >
-                <FaChartBar
-                    size={15}
-                    aria-hidden="true"
-                />
-            </span>
+      >
+        <FaChartBar size={15} aria-hidden="true" />
+      </span>
 
-            <span className={`text-xl font-bold ${textColor}`}>
-                MentoraPredict
-            </span>
-        </div>
-    );
+      <span className={`text-xl font-bold ${textColor}`}>MentoraPredict</span>
+    </div>
+  );
 }

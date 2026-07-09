@@ -1,16 +1,30 @@
 import { create } from "zustand";
 import { AxiosError } from "axios";
 
-import { login as loginRequest, logout as logoutRequest, refresh as refreshRequest } from "@/services/auth.service";
-import { clearTokens, getAccessToken, getRefreshToken, setAccessToken, setTokens } from "@/services/api/tokenStorage";
+import {
+  login as loginRequest,
+  logout as logoutRequest,
+  refresh as refreshRequest,
+} from "@/services/auth.service";
+import {
+  clearTokens,
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+  setTokens,
+} from "@/services/api/tokenStorage";
 import { getCurrentUser } from "@/services/users/users.service";
 import { decodeJwtPayload } from "@/utils/jwt";
-import type { LoginCredentials, AuthTokens, AuthSessionUser } from "@/types/auth/auth.types";
+import type {
+  LoginCredentials,
+  AuthTokens,
+  AuthSessionUser,
+} from "@/types/auth/auth.types";
 
 interface JwtSessionPayload {
-    sub?: string;
-    email?: string;
-    role?: AuthSessionUser["role"];
+  sub?: string;
+  email?: string;
+  role?: AuthSessionUser["role"];
 }
 
 interface AuthState {
@@ -29,58 +43,111 @@ interface AuthState {
     clearSession: () => void;
 }
 
-function buildUserFallback(
-    accessToken: string
-): AuthSessionUser | null {
-    const payload = decodeJwtPayload<JwtSessionPayload>(
-        accessToken
-    );
+function buildUserFallback(accessToken: string): AuthSessionUser | null {
+  const payload = decodeJwtPayload<JwtSessionPayload>(accessToken);
 
-    if (!payload?.sub || !payload?.email || !payload?.role) {
-        return null;
-    }
+  if (!payload?.sub || !payload?.email || !payload?.role) {
+    return null;
+  }
 
-    return {
-        id: payload.sub,
-        email: payload.email,
-        role: payload.role,
-        isActive: true,
-    };
+  return {
+    id: payload.sub,
+    email: payload.email,
+    role: payload.role,
+    isActive: true,
+  };
 }
 
 async function resolveSessionUser(
-    accessToken: string
+  accessToken: string,
 ): Promise<AuthSessionUser | null> {
-    const fallbackUser = buildUserFallback(accessToken);
+  const fallbackUser = buildUserFallback(accessToken);
 
-    if (!fallbackUser) {
-        return null;
+  if (!fallbackUser) {
+    return null;
+  }
+
+  try {
+    const profile = await getCurrentUser();
+
+    return {
+      ...fallbackUser,
+      ...profile,
+      id: profile.id || fallbackUser.id,
+      email: profile.email || fallbackUser.email,
+      role: profile.role || fallbackUser.role,
+    };
+  } catch (error) {
+    if (
+      error instanceof AxiosError &&
+      (error.response?.status === 401 || error.response?.status === 403)
+    ) {
+      return null;
     }
 
-    try {
-        const profile = await getCurrentUser();
-
-        return {
-            ...fallbackUser,
-            ...profile,
-            id: profile.id || fallbackUser.id,
-            email: profile.email || fallbackUser.email,
-            role: profile.role || fallbackUser.role,
-        };
-    } catch (error) {
-        if (
-            error instanceof AxiosError &&
-            (error.response?.status === 401 || error.response?.status === 403)
-        ) {
-            return null;
-        }
-
-        return fallbackUser;
-    }
+    return fallbackUser;
+  }
 }
 
-export const useAuthStore = create<AuthState>(
-    (set, get) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  accessToken: getAccessToken(),
+  refreshToken: getRefreshToken(),
+  isAuthenticated: !!getAccessToken(),
+  isHydrated: false,
+
+  login: async (credentials) => {
+    const tokens: AuthTokens = await loginRequest(credentials);
+
+    setTokens(tokens.accessToken, tokens.refreshToken);
+
+    const user = await resolveSessionUser(tokens.accessToken);
+
+    if (!user) {
+      clearTokens();
+      throw new Error("No se pudo resolver la sesion del usuario");
+    }
+
+    set({
+      user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      isAuthenticated: true,
+      isHydrated: true,
+    });
+
+    return user;
+  },
+
+  refreshSession: async () => {
+    const refreshToken = get().refreshToken ?? getRefreshToken();
+
+    if (!refreshToken) {
+      get().clearSession();
+      return null;
+    }
+
+    const response = await refreshRequest({
+      refreshToken,
+    });
+
+    setAccessToken(response.accessToken);
+
+    set((state) => ({
+      ...state,
+      accessToken: response.accessToken,
+      isAuthenticated: true,
+    }));
+
+    return response.accessToken;
+  },
+
+  hydrateSession: async () => {
+    const accessToken = getAccessToken();
+    const refreshToken = getRefreshToken();
+
+    if (!accessToken || !refreshToken) {
+      set({
         user: null,
         accessToken: getAccessToken(),
         refreshToken: getRefreshToken(),

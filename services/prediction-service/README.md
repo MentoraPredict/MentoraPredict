@@ -26,14 +26,14 @@ services behind Kong.
 
 ## Environment variables
 
-| Variable | Description |
-|---|---|
-| `OPENAI_API_KEY` | OpenAI API key. If missing, falls back to a deterministic, data-grounded recommendation instead of failing the request. |
-| `OPENAI_MODEL` | Defaults to `gpt-4o-mini`. |
-| `ANALYTICS_SERVICE_URL` | Defaults to `http://analytics-service:3004`. |
-| `ACADEMIC_SERVICE_URL` | Defaults to `http://academic-service:3003`. |
-| `MONGO_*` | Standard Mongo connection vars, same convention as analytics-service. |
-| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | RS256 keys, same shared pair used across the platform. |
+| Variable                             | Description                                                                                                             |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `OPENAI_API_KEY`                     | OpenAI API key. If missing, falls back to a deterministic, data-grounded recommendation instead of failing the request. |
+| `OPENAI_MODEL`                       | Defaults to `gpt-4o-mini`.                                                                                              |
+| `ANALYTICS_SERVICE_URL`              | Defaults to `http://analytics-service:3004`.                                                                            |
+| `ACADEMIC_SERVICE_URL`               | Defaults to `http://academic-service:3003`.                                                                             |
+| `MONGO_*`                            | Standard Mongo connection vars, same convention as analytics-service.                                                   |
+| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | RS256 keys, same shared pair used across the platform.                                                                  |
 
 ## Port
 

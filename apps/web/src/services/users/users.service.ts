@@ -42,11 +42,7 @@ let studentsCache: { value: AppUser[]; expiresAt: number } | undefined;
 let studentsRequest: Promise<AppUser[]> | undefined;
 
 function isUserRole(role?: string): role is UserRole {
-    return (
-        role === "STUDENT" ||
-        role === "TEACHER" ||
-        role === "ADMIN"
-    );
+  return role === "STUDENT" || role === "TEACHER" || role === "ADMIN";
 }
 
 function toAppUser(user: UserApiResponse): AppUser {
@@ -94,15 +90,13 @@ async function enrichStudentContext(user: AppUser): Promise<AppUser> {
 }
 
 export async function getCurrentUser() {
-    const response = await api.get<AuthSessionUser>(
-        endpoints.users.me
-    );
+  const response = await api.get<AuthSessionUser>(endpoints.users.me);
 
-    return response.data;
+  return response.data;
 }
 
 export async function getUsers(): Promise<AppUser[]> {
-    const response = await api.get<UserApiResponse[]>(endpoints.users.list);
+  const response = await api.get<UserApiResponse[]>(endpoints.users.list);
 
     const loadedUsers = response.data.map(toAppUser);
     return Promise.all(loadedUsers.map((user) => enrichStudentContext(user)));
@@ -124,68 +118,68 @@ export async function deleteCurrentUserAvatar() {
 }
 
 export async function getStudents(): Promise<AppUser[]> {
-    if (studentsCache && studentsCache.expiresAt > Date.now()) {
-        return studentsCache.value;
-    }
+  if (studentsCache && studentsCache.expiresAt > Date.now()) {
+    return studentsCache.value;
+  }
 
-    if (studentsRequest) {
-        return studentsRequest;
-    }
+  if (studentsRequest) {
+    return studentsRequest;
+  }
 
-    studentsRequest = api.get<UserApiResponse[]>(
-        endpoints.users.list,
-        {
-            params: {
-                role: "STUDENT",
-                status: "ACTIVE",
-            },
-        }
-    ).then((response) => {
-        const students = response.data
-            .map(toAppUser)
-            .filter((user) => user.role === "STUDENT" && user.isActive);
+  studentsRequest = api
+    .get<UserApiResponse[]>(endpoints.users.list, {
+      params: {
+        role: "STUDENT",
+        status: "ACTIVE",
+      },
+    })
+    .then((response) => {
+      const students = response.data
+        .map(toAppUser)
+        .filter((user) => user.role === "STUDENT" && user.isActive);
 
-        studentsCache = {
-            value: students,
-            expiresAt: Date.now() + STUDENTS_CACHE_TTL_MS,
-        };
+      studentsCache = {
+        value: students,
+        expiresAt: Date.now() + STUDENTS_CACHE_TTL_MS,
+      };
 
-        return students;
-    }).finally(() => {
-        studentsRequest = undefined;
+      return students;
+    })
+    .finally(() => {
+      studentsRequest = undefined;
     });
 
-    return studentsRequest;
+  return studentsRequest;
 }
 
 export async function updateUser(
-    userId: string,
-    payload: UpdateUserPayload
+  userId: string,
+  payload: UpdateUserPayload,
 ): Promise<AppUser> {
-    const response = await api.put<UserApiResponse>(
-        endpoints.users.detail(userId),
-        payload
-    );
+  const response = await api.put<UserApiResponse>(
+    endpoints.users.detail(userId),
+    payload,
+  );
 
-    studentsCache = undefined;
+  studentsCache = undefined;
 
-    return toAppUser(response.data);
+  return toAppUser(response.data);
 }
 
 export async function updateUserStatus(
-    userId: string,
-    isActive: boolean
+  userId: string,
+  isActive: boolean,
 ): Promise<AppUser> {
-    return updateUser(userId, {
-        status: isActive ? "ACTIVE" : "INACTIVE",
-    });
+  return updateUser(userId, {
+    status: isActive ? "ACTIVE" : "INACTIVE",
+  });
 }
 
 export async function updateUserRole(
-    userId: string,
-    role: UserRole
+  userId: string,
+  role: UserRole,
 ): Promise<AppUser> {
-    return updateUser(userId, {
-        role,
-    });
+  return updateUser(userId, {
+    role,
+  });
 }
