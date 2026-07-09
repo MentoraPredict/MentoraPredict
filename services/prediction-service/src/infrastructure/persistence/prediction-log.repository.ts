@@ -19,12 +19,13 @@ export class PredictionLogRepository implements IPredictionLogRepository {
       summary: result.summary,
       recommendations: result.recommendations as unknown as Record<string, unknown>[],
       modelVersion: result.modelVersion,
+      subjectId: result.subjectId,
     });
   }
 
-  async findHistory(studentId: string, limit = 10): Promise<PredictionResult[]> {
+  async findHistory(studentId: string, limit = 10, subjectId: string | null = null): Promise<PredictionResult[]> {
     const docs = await this.model
-      .find({ studentId })
+      .find({ studentId, subjectId })
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();
@@ -37,6 +38,7 @@ export class PredictionLogRepository implements IPredictionLogRepository {
       d.recommendations as unknown as RecommendationItem[],
       d.modelVersion,
       (d as unknown as { createdAt: Date }).createdAt ?? new Date(),
+      d.subjectId ?? null,
     ));
   }
 }

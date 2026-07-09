@@ -1,10 +1,14 @@
 ---
-const stats = [
-  { value: "+25%", label: "Academic retention" },
-  { value: "92%", label: "Predictive accuracy" },
-  { value: "+500", label: "Students analyzed" },
-  { value: "24/7", label: "Continuous monitoring" },
-];
+interface Stat {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  stats: Stat[];
+}
+
+const { stats } = Astro.props;
 ---
 
 <section id="stats" class="scroll-mt-20 bg-primary-950 py-20">

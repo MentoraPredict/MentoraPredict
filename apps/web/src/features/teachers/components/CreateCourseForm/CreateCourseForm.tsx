@@ -12,7 +12,6 @@ import Textarea from "@/components/atoms/Textarea";
 
 import StudentSelector from "@/features/teachers/components/StudentSelector";
 
-import type { Course } from "@/types/course";
 import type { AppUser } from "@/types/user/user.types";
 import type {
   CourseCareerOption,
@@ -39,11 +38,12 @@ interface CreateCourseFormProps {
   periods: CoursePeriodOption[];
   teacherName: string;
   isSubmitting?: boolean;
+  errorMessage?: string | null;
   onCancel: () => void;
   onCreateCourse: (
     course: Omit<CreateTeacherCoursePayload, "teacherId" | "teacherName">,
     studentIds: string[]
-  ) => Promise<Course | null> | Course | null | void;
+  ) => void;
 }
 
 export default function CreateCourseForm({
@@ -53,6 +53,7 @@ export default function CreateCourseForm({
   periods,
   teacherName,
   isSubmitting = false,
+  errorMessage,
   onCancel,
   onCreateCourse,
 }: CreateCourseFormProps) {
@@ -145,12 +146,12 @@ export default function CreateCourseForm({
     );
   };
 
-  const onSubmit = async (values: CreateCourseFormValues) => {
+  const onSubmit = (values: CreateCourseFormValues) => {
     if (!values.careerId || !values.academicPeriodId) {
       return;
     }
 
-    const createdCourse = await onCreateCourse(
+    onCreateCourse(
       {
         name: values.name,
         code: values.code,
@@ -163,10 +164,6 @@ export default function CreateCourseForm({
       selectedStudents.map((student) => student.id)
     );
 
-    if (!createdCourse) {
-      return;
-    }
-
     reset();
     setSelectedStudents([]);
   };
@@ -176,6 +173,15 @@ export default function CreateCourseForm({
       <Heading as="h4" className="border-b border-gray-200 pb-4 text-gray-900">
         Crear Curso
       </Heading>
+
+      {errorMessage ? (
+        <div
+          role="alert"
+          className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+        >
+          {errorMessage}
+        </div>
+      ) : null}
 
       <div className="mt-5 space-y-5">
         <div>
@@ -298,18 +304,24 @@ export default function CreateCourseForm({
 
             <Select
               id="academicPeriodId"
+              disabled
+              className="disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
               hasError={!!errors.academicPeriodId}
               {...register("academicPeriodId", {
                 required: true,
               })}
             >
-              <option value="">Selecciona el periodo</option>
               {periods.map((period) => (
                 <option key={period.id} value={period.id}>
                   {period.name}
                 </option>
               ))}
             </Select>
+
+            <p className="mt-1 text-xs text-gray-500">
+              El curso se crea en el periodo academico activo; no se puede
+              elegir otro.
+            </p>
           </div>
         </div>
 

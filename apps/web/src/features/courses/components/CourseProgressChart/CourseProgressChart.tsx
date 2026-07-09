@@ -69,7 +69,7 @@ export default function CourseProgressChart({
 
             <XAxis dataKey="week" tickLine={false} axisLine={false} />
 
-            <YAxis domain={[0, 10]} tickLine={false} axisLine={false} />
+            <YAxis domain={[0, 20]} tickLine={false} axisLine={false} />
 
             <Tooltip />
 

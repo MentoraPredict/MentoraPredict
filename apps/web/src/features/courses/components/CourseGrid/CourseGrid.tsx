@@ -6,7 +6,6 @@ import type { Course } from "@/types/course";
 type CourseCardMetrics = {
   averageLabel: string;
   enrolledCount: number;
-  statusLabel: string;
 };
 
 interface CourseGridProps {

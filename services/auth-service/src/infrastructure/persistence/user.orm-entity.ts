@@ -12,11 +12,14 @@ export class UserOrmEntity {
   @Column({ unique: true, length: 255 })
   email!: string;
 
-  @Column({ name: 'password_hash', type: 'text' })
-  passwordHash!: string;
+  @Column({ name: 'password_hash', type: 'text', nullable: true })
+  passwordHash!: string | null;
 
   @Column({ type: 'varchar', default: 'STUDENT' })
   role!: OrmUserRole;
+
+  @Column({ name: 'auth_provider', type: 'varchar', default: 'LOCAL' })
+  authProvider!: 'LOCAL' | 'MICROSOFT';
 
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;

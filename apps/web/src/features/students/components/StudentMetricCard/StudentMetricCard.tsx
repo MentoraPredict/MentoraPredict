@@ -20,7 +20,7 @@ export default function StudentMetricCard({
   onChange,
 }: StudentMetricCardProps) {
   return (
-    <div>
+    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
       <div className="mb-3 flex items-center justify-between">
         <Text variant="small" className="font-semibold text-gray-900">
           {label}
@@ -40,8 +40,17 @@ export default function StudentMetricCard({
         onChange={(event) => {
           onChange(Number(event.target.value));
         }}
-        className="w-full accent-blue-700"
+        className="mp-slider w-full"
       />
+
+      <div className="mt-1 flex items-center justify-between">
+        <Text variant="caption" className="text-gray-400">
+          {min} {suffix}
+        </Text>
+        <Text variant="caption" className="text-gray-400">
+          {max} {suffix}
+        </Text>
+      </div>
     </div>
   );
 }

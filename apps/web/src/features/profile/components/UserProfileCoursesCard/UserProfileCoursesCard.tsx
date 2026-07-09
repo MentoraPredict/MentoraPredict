@@ -94,7 +94,7 @@ export default function UserProfileCoursesCard({
                     variant="caption"
                     className="rounded-full bg-blue-50 px-3 py-1 font-semibold text-blue-700"
                   >
-                    Promedio {course.currentAverage.toFixed(2)}
+                    Promedio {course.currentAverage.toFixed(2)} / 20
                   </Text>
                 ) : null}
               </div>

@@ -1,24 +1,15 @@
 ---
-const features = [
-  {
-    title: "AI Analysis",
-    description:
-      "Neural network algorithms analyze behavioral patterns, attendance, and grades to detect anomalies before they occur.",
-    icon: "brain",
-  },
-  {
-    title: "Alerts",
-    description:
-      "Intelligent notification system for teachers and administrators when a student crosses critical academic risk thresholds.",
-    icon: "bell",
-  },
-  {
-    title: "Recommendations",
-    description:
-      "Personalized intervention suggestions based on psycho-pedagogical profiles to improve tutoring and student support.",
-    icon: "chart",
-  },
-];
+interface Feature {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+interface Props {
+  features: Feature[];
+}
+
+const { features } = Astro.props;
 ---
 
 <section id="features" class="scroll-mt-20 py-20">

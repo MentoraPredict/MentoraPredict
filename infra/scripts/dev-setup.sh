@@ -81,27 +81,6 @@ wait_for_postgres() {
     done
 }
 
-run_migrations() {
-    cd "$DEPLOY_DIR"
-    echo "[MIGRATIONS - SAFE ORDER]"
-    docker compose -p "$PROJECT_NAME" \
-        -f "$COMPOSE_FILE" \
-        --env-file "$ENV_FILE" \
-        run --rm auth-service npm run migration:run || true
-    docker compose -p "$PROJECT_NAME" \
-        -f "$COMPOSE_FILE" \
-        --env-file "$ENV_FILE" \
-        run --rm user-service npm run migration:run || true
-    docker compose -p "$PROJECT_NAME" \
-        -f "$COMPOSE_FILE" \
-        --env-file "$ENV_FILE" \
-        run --rm academic-service npm run migration:run || true
-    docker compose -p "$PROJECT_NAME" \
-        -f "$COMPOSE_FILE" \
-        --env-file "$ENV_FILE" \
-        run --rm analytics-service npm run migration:run || true
-}
-
 start_monitoring() {
     cd "$DEPLOY_DIR"
     echo "[MONITORING] Starting monitoring stack (Prometheus, Grafana, Loki, Promtail)"
@@ -169,7 +148,6 @@ main() {
     cleanup_old_containers
     start_infrastructure
     wait_for_postgres
-    run_migrations
     start_services
     run_seeds
     start_monitoring

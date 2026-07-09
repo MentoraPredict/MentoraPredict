@@ -59,7 +59,7 @@ export class GeneratePredictionUseCase implements IGeneratePredictionUseCase {
           title: risk.riskLevel === 'HIGH' || risk.riskLevel === 'CRITICAL'
             ? 'Reforzar hábitos de estudio urgentemente'
             : 'Mantener hábitos de estudio actuales',
-          reason: `Promedio global actual: ${risk.globalAverage}/10.`,
+          reason: `Promedio global actual: ${risk.globalAverage}/20.`,
           priority: risk.riskLevel === 'HIGH' || risk.riskLevel === 'CRITICAL' ? 'HIGH' : 'LOW',
         },
       ];

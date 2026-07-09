@@ -1,22 +1,15 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY tsconfig*.json ./
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json ./apps/web/package.json
-COPY packages/ui/package.json ./packages/ui/package.json
-COPY packages/hooks/package.json ./packages/hooks/package.json
-COPY packages/services/package.json ./packages/services/package.json
-COPY packages/shared-types/package.json ./packages/shared-types/package.json
-COPY packages/shared-utils/package.json ./packages/shared-utils/package.json
-COPY packages/shared-config/package.json ./packages/shared-config/package.json
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter @mentorapredict/web
 
-FROM node:22-alpine AS builder
+FROM deps AS builder
 WORKDIR /app
-RUN corepack enable
-COPY --from=deps /app .
-COPY packages ./packages
+ENV CI=true \
+    PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
+    PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 COPY apps/web/ ./apps/web/
 RUN pnpm --filter @mentorapredict/web build
 

@@ -46,7 +46,7 @@ BEGIN
         EXTRACT(WEEK FROM check_in_date)::int AS academic_week,
         EXTRACT(YEAR FROM check_in_date)::int AS academic_year,
         check_in_date,
-        (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 10) >= 2 AS attendance,
+        (50 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 51))::int AS attendance,
         (55 + (('x' || substr(seed_hash, 3, 2))::bit(8)::int % 46))::int AS task_completion,
         (1 + (('x' || substr(seed_hash, 5, 2))::bit(8)::int % 10))::numeric(5,2) AS study_hours,
         CASE (('x' || substr(seed_hash, 7, 2))::bit(8)::int % 5)
@@ -158,20 +158,20 @@ BEGIN
         lc.academic_year,
         ROUND(
           LEAST(
-            10,
+            20,
             GREATEST(
               0,
               COALESCE(
                 ga.average_grade,
-                (5 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 5))::numeric
+                (10 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9))::numeric
               )
-              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 10)
+              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 5)
             )
           ),
           2
         )::numeric(4,2) AS average_grade,
         lc.task_completion AS compliance_index,
-        CASE WHEN lc.attendance THEN 100 ELSE 0 END AS attendance_rate,
+        lc.attendance AS attendance_rate,
         lc.study_hours,
         lc.general_comprehension AS comprehension_avg,
         ((('x' || substr(seed_hash, 3, 2))::bit(8)::int % 9) - 4)::numeric(6,2) / 10 AS trend_slope
@@ -179,6 +179,28 @@ BEGIN
       LEFT JOIN grade_average ga
         ON ga.student_id = lc.student_id
        AND ga.subject_id = lc.subject_id
+    ),
+
+    -- Mismo "piso" que ClassifyRiskUseCase (analytics-service): un promedio
+    -- reprobatorio siempre escala al menos a MEDIUM (<14) o HIGH (<10), sin
+    -- importar qué tan bien salgan los demás factores. Se calcula por rango
+    -- numérico (0=LOW..3=CRITICAL) y se toma el peor de score vs. piso, para
+    -- nunca degradar una clasificación que ya era peor.
+    metric_rows_ranked AS (
+      SELECT
+        *,
+        CASE
+          WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 40 THEN 3
+          WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 55 THEN 2
+          WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 70 THEN 1
+          ELSE 0
+        END AS score_rank,
+        CASE
+          WHEN average_grade < 10 THEN 2
+          WHEN average_grade < 14 THEN 1
+          ELSE 0
+        END AS grade_floor_rank
+      FROM metric_rows
     )
 
     INSERT INTO student_subject_metrics (
@@ -209,15 +231,15 @@ BEGIN
       attendance_rate,
       study_hours,
       comprehension_avg,
-      CASE
-        WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 40 THEN 'CRITICAL'
-        WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 55 THEN 'HIGH'
-        WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 70 THEN 'MEDIUM'
+      CASE GREATEST(score_rank, grade_floor_rank)
+        WHEN 3 THEN 'CRITICAL'
+        WHEN 2 THEN 'HIGH'
+        WHEN 1 THEN 'MEDIUM'
         ELSE 'LOW'
       END,
       trend_slope,
       now()
-    FROM metric_rows
+    FROM metric_rows_ranked
     ON CONFLICT (student_id, subject_id, academic_week, academic_year) DO UPDATE SET
       period_id = EXCLUDED.period_id,
       average_grade = EXCLUDED.average_grade,

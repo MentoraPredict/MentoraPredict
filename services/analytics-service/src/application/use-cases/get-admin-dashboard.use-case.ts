@@ -19,11 +19,12 @@ export interface AdminDashboard {
   generatedAt: Date;
 }
 
-// Clasifica riesgo con los mismos umbrales que ClassifyRiskUseCase (default: high=40, critical=25)
+// Clasifica riesgo con los mismos umbrales que ClassifyRiskUseCase (default: high=40, critical=25),
+// expresados en escala 0-20 (equivalentes a 7/6/5 sobre 10).
 function classifyByAverage(avg: number): keyof RiskDistribution {
-  if (avg >= 7) return "LOW";
-  if (avg >= 6) return "MEDIUM";
-  if (avg >= 5) return "HIGH";
+  if (avg >= 14) return "LOW";
+  if (avg >= 12) return "MEDIUM";
+  if (avg >= 10) return "HIGH";
   return "CRITICAL";
 }
 

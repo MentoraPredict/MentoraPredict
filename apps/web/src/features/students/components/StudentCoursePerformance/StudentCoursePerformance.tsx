@@ -1,10 +1,13 @@
-import { FiRefreshCw, FiUploadCloud } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { FiRefreshCw } from "react-icons/fi";
+import { AxiosError } from "axios";
 
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
+import AiRecommendationPanel from "@/features/courses/components/AiRecommendationPanel";
 import CourseAlertsPanel from "@/features/courses/components/CourseAlertsPanel";
 import CourseAverageChart from "@/features/courses/components/CourseAverageChart";
 import CourseProgressChart from "@/features/courses/components/CourseProgressChart";
@@ -12,12 +15,17 @@ import CourseRecommendationsPanel from "@/features/courses/components/CourseReco
 import CourseRiskStudentsPanel from "@/features/courses/components/CourseRiskStudentsPanel";
 import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
 import useStudentCoursePerformance from "@/features/students/hooks/useStudentCoursePerformance";
+import {
+  getLatestSubjectAiPrediction,
+  requestSubjectAiPrediction,
+  type AiPrediction,
+} from "@/services/course-analytics.service";
+import { useAuthStore } from "@/store/auth.store";
 import type { Course } from "@/types/course";
 
 interface StudentCoursePerformanceProps {
   courseId: string;
   course?: Course | null;
-  onRegisterAdvance?: () => void;
 }
 
 const predictionStatusLabels = {
@@ -53,9 +61,67 @@ function formatPredictionDate(value?: string) {
 export default function StudentCoursePerformance({
   courseId,
   course,
-  onRegisterAdvance,
 }: StudentCoursePerformanceProps) {
   const { data, isLoading, error, reload } = useStudentCoursePerformance(courseId);
+  const user = useAuthStore((state) => state.user);
+  const [aiPrediction, setAiPrediction] = useState<AiPrediction | null>(null);
+  const [isLoadingAi, setIsLoadingAi] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingAi(true);
+
+    getLatestSubjectAiPrediction(user.id, courseId)
+      .then((prediction) => {
+        if (!isCancelled) {
+          setAiPrediction(prediction);
+        }
+      })
+      .catch(() => {
+        // Best-effort preload — the student can still generate a fresh one.
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoadingAi(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.id, courseId]);
+
+  const handleGenerateSubjectAiPrediction = async () => {
+    setIsGeneratingAi(true);
+    setAiError(null);
+
+    try {
+      const prediction = await requestSubjectAiPrediction(courseId);
+      setAiPrediction(prediction);
+    } catch (requestError) {
+      if (
+        requestError instanceof AxiosError &&
+        requestError.response?.status === 429
+      ) {
+        setAiError(
+          (requestError.response.data as { message?: string })?.message ??
+            "Ya generaste una recomendacion para esta materia recientemente. Intenta mas tarde."
+        );
+      } else {
+        setAiError(
+          "No se pudo generar la recomendacion con IA. Intenta nuevamente."
+        );
+      }
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -95,17 +161,6 @@ export default function StudentCoursePerformance({
             </Text>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              {onRegisterAdvance ? (
-                <Button
-                  type="button"
-                  onClick={onRegisterAdvance}
-                  className="gap-2 px-5 py-2 text-sm"
-                >
-                  <FiUploadCloud size={16} />
-                  Registrar avance semanal
-                </Button>
-              ) : null}
-
               <Button
                 type="button"
                 variant="outline"
@@ -138,26 +193,21 @@ export default function StudentCoursePerformance({
         </div>
       </MotionCard>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
-          <CourseProgressChart
-            data={data.progress}
-            title="Progreso semanal"
-            subtitle="Promedio real de la materia por semana"
+      <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+          <CourseAverageChart
+            average={data.average}
+            title="Promedio actual de la materia"
           />
-          <CourseAlertsPanel alerts={data.alerts} />
           <CourseRiskStudentsPanel
             students={data.riskFactors}
             title="Factores del riesgo"
           />
         </div>
 
-        <div className="space-y-6">
-          <CourseAverageChart
-            average={data.average}
-            maxAverage={10}
-            title="Promedio actual de la materia"
-          />
+        <div className="grid gap-6 xl:grid-cols-2">
+          <CourseAlertsPanel alerts={data.alerts} />
+
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-5">
               <Badge className="bg-blue-100 text-blue-700">
@@ -251,8 +301,29 @@ export default function StudentCoursePerformance({
               </div>
             )}
           </section>
-          <CourseRecommendationsPanel recommendations={data.recommendations} />
         </div>
+
+        <AiRecommendationPanel
+          title="Recomendacion con IA para esta materia"
+          description="Basada en tu avance semanal y el silabo de la materia"
+          prediction={aiPrediction}
+          isLoading={isLoadingAi}
+          isGenerating={isGeneratingAi}
+          error={aiError}
+          emptyMessage="Aun no has generado una recomendacion con IA para esta materia. Presiona el boton para generar una basada en tu avance semanal y el silabo."
+          generateLabel="Generar recomendacion para esta materia"
+          onGenerate={() => {
+            void handleGenerateSubjectAiPrediction();
+          }}
+        />
+
+        <CourseRecommendationsPanel recommendations={data.recommendations} />
+
+        <CourseProgressChart
+          data={data.progress}
+          title="Progreso semanal"
+          subtitle="Promedio real de la materia por semana"
+        />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   markNotificationAsRead,
   type AppNotification,
 } from "@/services/notifications.service";
+import { connectNotificationsSocket } from "@/services/notifications.socket";
 
 export default function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -27,6 +28,14 @@ export default function useNotifications() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const disconnect = connectNotificationsSocket((notification) => {
+      setNotifications((current) => [notification, ...current]);
+    });
+
+    return disconnect;
+  }, []);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {

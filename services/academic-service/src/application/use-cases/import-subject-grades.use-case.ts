@@ -182,8 +182,8 @@ export class ImportSubjectGradesUseCase {
       }
 
       // Validate value range
-      if (rawValue === null || Number.isNaN(rawValue) || rawValue < 0 || rawValue > 10) {
-        errors.push({ row: rowNum, studentId: rawStudentId, evaluationId: rawEvalId, value: rawValue, reason: 'value debe estar entre 0 y 10 (inclusive)' });
+      if (rawValue === null || Number.isNaN(rawValue) || rawValue < 0 || rawValue > 20) {
+        errors.push({ row: rowNum, studentId: rawStudentId, evaluationId: rawEvalId, value: rawValue, reason: 'value debe estar entre 0 y 20 (inclusive)' });
         continue;
       }
 

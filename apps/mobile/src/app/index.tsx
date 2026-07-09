@@ -11,6 +11,7 @@ import { MobileAuthHero } from '@/components/auth/MobileAuthHero';
 import { RoleWorkspace } from '@/components/dashboard/RoleWorkspace';
 import { API_BASE_URL, login } from '@/services/auth';
 import { API_ENV } from '@/services/api/client';
+import { registerForPushNotifications, unregisterPushNotifications } from '@/services/notifications';
 import type { AuthTokens, SessionUser } from '@/types/auth';
 
 export default function HomeScreen() {
@@ -18,6 +19,7 @@ export default function HomeScreen() {
   const [password, setPassword] = useState('');
   const [user, setUser] = useState<SessionUser | null>(null);
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
+  const [pushToken, setPushToken] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,6 +42,11 @@ export default function HomeScreen() {
       setUser(session.user);
       setTokens(session.tokens);
       setPassword('');
+
+      // Best-effort: push notifications are a nice-to-have, never block login on this.
+      registerForPushNotifications(session.tokens)
+        .then(setPushToken)
+        .catch(() => setPushToken(null));
     } catch (error) {
       setServerError(error instanceof Error ? error.message : 'No se pudo iniciar sesion.');
     } finally {
@@ -48,8 +55,13 @@ export default function HomeScreen() {
   }
 
   function handleLogout() {
+    if (tokens && pushToken) {
+      void unregisterPushNotifications(tokens, pushToken);
+    }
+
     setUser(null);
     setTokens(null);
+    setPushToken(null);
     setPassword('');
     setServerError(null);
   }

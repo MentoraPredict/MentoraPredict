@@ -8,10 +8,11 @@ export interface EvaluationWeight {
 }
 
 export interface CheckInSummary {
-  attendance: boolean;
+  attendance: number;
   taskCompletion: number;
   studyHours: number;
   generalComprehension: number;
+  topicComprehensionAvg: number | null;
 }
 
 export interface SubjectOwnership {
@@ -40,4 +41,9 @@ export interface IAcademicServiceClient {
     correlationId?: string,
   ): Promise<SubjectOwnership>;
   getSubjectDetails(subjectId: string, correlationId?: string): Promise<SubjectDetails | null>;
+  getStudentsByTeacher(
+    teacherId: string,
+    periodId: string,
+    correlationId?: string,
+  ): Promise<string[]>;
 }

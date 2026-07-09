@@ -256,6 +256,17 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
+      - name: notifications-internal-routes
+        paths:
+          - /api/v1/notifications/internal
+        strip_path: false
+        regex_priority: 200
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 127.0.0.1
+                - 172.16.0.0/12
       - name: notifications-routes
         paths:
           - /api/v1/notifications
@@ -274,6 +285,15 @@ services:
               policy: local
               limit_by: ip
               fault_tolerant: true
+      - name: analytics-socket-io
+        paths:
+          - /api/socket.io
+        strip_path: false
+        regex_priority: 200
+        # No jwt plugin here: the Socket.IO handshake carries the access
+        # token as a client-side `auth` payload, not an Authorization header,
+        # so NotificationsGateway verifies it itself on connection instead.
+        plugins: []
 
   - name: prediction-service
     url: http://prediction-service:3006

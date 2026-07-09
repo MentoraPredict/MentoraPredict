@@ -1,9 +1,10 @@
-import { ConflictException, ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { IWeeklyCheckInRepository } from '../ports/output/i-weekly-check-in.repository';
 import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { IAnalyticsClientPort } from '../ports/output/i-analytics-client.port';
+import { ITopicRepository } from '../ports/output/i-topic.repository';
 import { WeeklyCheckInEntity } from '../../domain/entities/weekly-check-in.entity';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 import { CreateCheckInDto } from '../dtos/create-check-in.dto';
@@ -17,6 +18,7 @@ export class UpsertCheckInUseCase {
     @Inject('IEnrollmentRepository') private readonly enrollmentRepo: IEnrollmentRepository,
     @Inject('IAcademicPeriodRepository') private readonly periodRepo: IAcademicPeriodRepository,
     @Inject('IAnalyticsClientPort') private readonly analyticsClient: IAnalyticsClientPort,
+    @Inject('ITopicRepository') private readonly topicRepo: ITopicRepository,
   ) {}
 
   async execute(
@@ -36,6 +38,17 @@ export class UpsertCheckInUseCase {
     );
     if (!enrollment || enrollment.status !== 'ACTIVE') {
       throw new ForbiddenException('No estás matriculado activo en este curso en el periodo actual');
+    }
+
+    if (dto.topicResponses?.length) {
+      const topics = await this.topicRepo.findBySubjectIdOrdered(subjectId);
+      const validTopicIds = new Set(topics.map((t) => t.id));
+      const unknownTopicId = dto.topicResponses.find((r) => !validTopicIds.has(r.topicId));
+      if (unknownTopicId) {
+        throw new BadRequestException(
+          `El tema ${unknownTopicId.topicId} no pertenece al sílabo de esta materia`,
+        );
+      }
     }
 
     const now = new Date();

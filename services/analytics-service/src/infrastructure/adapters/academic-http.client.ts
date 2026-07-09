@@ -77,6 +77,13 @@ export class AcademicHttpClient implements IAcademicServiceClient {
     }
   }
 
+  getStudentsByTeacher(teacherId: string, periodId: string, correlationId?: string): Promise<string[]> {
+    return this.request<string[]>(
+      `/api/v1/academic/internal/teachers/${teacherId}/students?periodId=${periodId}`,
+      correlationId,
+    );
+  }
+
   private async request<T>(path: string, correlationId?: string): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const corrId = correlationId ?? randomUUID();

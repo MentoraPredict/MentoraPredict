@@ -169,7 +169,7 @@ function toNotification(alert: AlertResponse): AppNotification {
 
 function formatAverage(value?: number | null) {
   if (value === undefined || value === null) return 'Sin datos';
-  return `${Number(value).toFixed(2)} / 10`;
+  return `${Number(value).toFixed(2)} / 20`;
 }
 
 function buildTeacherMetrics(

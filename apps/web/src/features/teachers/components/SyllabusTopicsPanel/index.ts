@@ -1,1 +1,1 @@
-export { default, parseSyllabusTopics } from "./SyllabusTopicsPanel";
+export { default } from "./SyllabusTopicsPanel";

@@ -167,7 +167,7 @@ export type StudentCheckInEmotionalState =
   | "CRITICAL";
 
 export interface StudentCheckInPayload {
-  attendance: boolean;
+  attendance: number;
   taskCompletion: number;
   studyHours: number;
   emotionalState: StudentCheckInEmotionalState;
@@ -659,6 +659,11 @@ export async function updateCourseEnrollmentStatus(
 export async function createTeacherCourse(
   payload: CreateTeacherCoursePayload
 ): Promise<Course> {
+  // teacherId comes from the JWT and the academic period is always the
+  // currently active one — both resolved server-side by CreateSubjectUseCase.
+  // CreateSubjectDto doesn't declare either field, and the global
+  // ValidationPipe (forbidNonWhitelisted: true) rejects the whole request
+  // with 400 if they're present, so they must not be sent here.
   const response = await api.post<SubjectApiResponse>(
     endpoints.academic.subjects,
     {
@@ -667,9 +672,7 @@ export async function createTeacherCourse(
       description: payload.description,
       credits: payload.credits,
       careerId: payload.careerId,
-      academicPeriodId: payload.academicPeriodId,
       maxCapacity: payload.maxCapacity,
-      teacherId: payload.teacherId,
     }
   );
 
@@ -754,4 +757,75 @@ export async function saveStudentCheckIn(
   );
 
   return response.data;
+}
+
+export interface SubjectTopic {
+  id: string;
+  subjectId: string;
+  title: string;
+  description: string | null;
+  order: number;
+  fileUrl: string | null;
+  originalFileName: string | null;
+}
+
+interface SubjectTopicApiResponse {
+  id: string;
+  subjectId?: string;
+  subject_id?: string;
+  title: string;
+  description: string | null;
+  order: number;
+  fileUrl?: string | null;
+  file_url?: string | null;
+  originalFileName?: string | null;
+  original_file_name?: string | null;
+}
+
+function toSubjectTopic(raw: SubjectTopicApiResponse): SubjectTopic {
+  return {
+    id: raw.id,
+    subjectId: raw.subjectId ?? raw.subject_id ?? "",
+    title: raw.title,
+    description: raw.description ?? null,
+    order: raw.order,
+    fileUrl: raw.fileUrl ?? raw.file_url ?? null,
+    originalFileName: raw.originalFileName ?? raw.original_file_name ?? null,
+  };
+}
+
+export async function getSubjectTopics(subjectId: string): Promise<SubjectTopic[]> {
+  const response = await api.get<
+    SubjectTopicApiResponse[] | MaybeWrappedArray<SubjectTopicApiResponse>
+  >(endpoints.academic.topics(subjectId));
+
+  return unwrapArray(response.data).map(toSubjectTopic);
+}
+
+export async function createSubjectTopic(
+  subjectId: string,
+  payload: { title: string; description?: string; order: number }
+): Promise<SubjectTopic> {
+  const response = await api.post<SubjectTopicApiResponse>(
+    endpoints.academic.topics(subjectId),
+    payload
+  );
+
+  return toSubjectTopic(response.data);
+}
+
+export async function updateSubjectTopic(
+  topicId: string,
+  payload: Partial<{ title: string; description: string; order: number }>
+): Promise<SubjectTopic> {
+  const response = await api.put<SubjectTopicApiResponse>(
+    endpoints.academic.topic(topicId),
+    payload
+  );
+
+  return toSubjectTopic(response.data);
+}
+
+export async function deleteSubjectTopic(topicId: string): Promise<void> {
+  await api.delete(endpoints.academic.topic(topicId));
 }
