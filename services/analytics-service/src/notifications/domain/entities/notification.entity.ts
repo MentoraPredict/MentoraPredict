@@ -3,6 +3,7 @@ export type NotificationRecipientRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
 export type NotificationType =
   | 'RISK_ESCALATION'
   | 'ENROLLMENT_CREATED'
+  | 'ENROLLMENT_WITHDRAWN'
   | 'COURSE_CREATED';
 export type NotificationStatus = 'UNREAD' | 'READ';
 
