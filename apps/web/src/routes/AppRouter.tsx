@@ -76,81 +76,84 @@ function AnimatedRoutes() {
         transition={{ duration: 0.18, ease: "easeOut" }}
       >
         <Routes location={location}>
-        <Route path={APP_PATHS.public.landing} element={<LandingPage />} />
+          <Route path={APP_PATHS.public.landing} element={<LandingPage />} />
 
-        <Route element={<PublicOnlyRoute />}>
-          <Route path={APP_PATHS.public.login} element={<LoginPage />} />
-          <Route path={APP_PATHS.public.register} element={<RegisterPage />} />
-          <Route
-            path={APP_PATHS.public.forgotPassword}
-            element={<ForgotPasswordPage />}
-          />
-          <Route
-            path={APP_PATHS.public.resetPassword}
-            element={<ResetPasswordPage />}
-          />
-        </Route>
-
-        <Route path={APP_PATHS.shared.redirect} element={<RoleRedirect />} />
-        <Route
-          path={APP_PATHS.public.oauthCallback}
-          element={<OAuthCallbackPage />}
-        />
-
-        <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
-          <Route
-            path={APP_PATHS.student.courses}
-            element={<StudentCoursesPage />}
-          />
-          <Route
-            path={APP_PATHS.student.profile}
-            element={<StudentProfilePage />}
-          />
-          <Route
-            path={APP_PATHS.student.courseDetail}
-            element={<StudentCoursePageLayout />}
-          >
-            <Route path="performance" element={<StudentCoursePerformancePage />} />
-            <Route path="upload-data" element={<StudentCourseUploadDataPage />} />
+          <Route element={<PublicOnlyRoute />}>
+            <Route path={APP_PATHS.public.login} element={<LoginPage />} />
+            <Route
+              path={APP_PATHS.public.register}
+              element={<RegisterPage />}
+            />
+            <Route
+              path={APP_PATHS.public.forgotPassword}
+              element={<ForgotPasswordPage />}
+            />
+            <Route
+              path={APP_PATHS.public.resetPassword}
+              element={<ResetPasswordPage />}
+            />
           </Route>
-        </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
+          <Route path={APP_PATHS.shared.redirect} element={<RoleRedirect />} />
           <Route
-            path={APP_PATHS.teacher.courses}
-            element={<TeacherCoursesPage />}
+            path={APP_PATHS.public.oauthCallback}
+            element={<OAuthCallbackPage />}
           />
-          <Route
-            path={APP_PATHS.teacher.profile}
-            element={<TeacherProfilePage />}
-          />
-          <Route
-            path={APP_PATHS.teacher.courseDetail}
-            element={<TeacherCoursePageLayout />}
-          >
-            <Route path="performance" element={<TeacherCoursePerformancePage />} />
-            <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
-            <Route path="students" element={<TeacherCourseStudentsPage />} />
-            <Route path="edit" element={<TeacherCourseEditPage />} />
+
+          <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
+            <Route
+              path={APP_PATHS.student.courses}
+              element={<StudentCoursesPage />}
+            />
+            <Route
+              path={APP_PATHS.student.profile}
+              element={<StudentProfilePage />}
+            />
+            <Route
+              path={APP_PATHS.student.courseDetail}
+              element={<StudentCoursePageLayout />}
+            >
+              <Route path="performance" element={<StudentCoursePerformancePage />} />
+              <Route path="upload-data" element={<StudentCourseUploadDataPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
-          <Route
-            path={APP_PATHS.admin.dashboard}
-            element={<Navigate to={APP_PATHS.admin.users} replace />}
-          />
-          <Route path={APP_PATHS.admin.users} element={<AdminUsersPage />} />
-          <Route
-            path={APP_PATHS.admin.courses}
-            element={<AdminCoursesPage />}
-          />
-        </Route>
+          <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
+            <Route
+              path={APP_PATHS.teacher.courses}
+              element={<TeacherCoursesPage />}
+            />
+            <Route
+              path={APP_PATHS.teacher.profile}
+              element={<TeacherProfilePage />}
+            />
+            <Route
+              path={APP_PATHS.teacher.courseDetail}
+              element={<TeacherCoursePageLayout />}
+            >
+              <Route path="performance" element={<TeacherCoursePerformancePage />} />
+              <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
+              <Route path="students" element={<TeacherCourseStudentsPage />} />
+              <Route path="edit" element={<TeacherCourseEditPage />} />
+            </Route>
+          </Route>
 
-        <Route
-          path="*"
-          element={<Navigate to={APP_PATHS.public.landing} replace />}
-        />
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+            <Route
+              path={APP_PATHS.admin.dashboard}
+              element={<Navigate to={APP_PATHS.admin.users} replace />}
+            />
+            <Route path={APP_PATHS.admin.users} element={<AdminUsersPage />} />
+            <Route
+              path={APP_PATHS.admin.courses}
+              element={<AdminCoursesPage />}
+            />
+          </Route>
+
+          <Route
+            path="*"
+            element={<Navigate to={APP_PATHS.public.landing} replace />}
+          />
         </Routes>
       </motion.div>
     </AnimatePresence>
