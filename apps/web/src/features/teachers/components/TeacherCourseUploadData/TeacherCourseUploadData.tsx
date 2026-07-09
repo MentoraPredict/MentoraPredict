@@ -7,6 +7,7 @@ import Text from "@/components/atoms/Text";
 import CourseFilesUploadPanel from "@/features/teachers/components/CourseFilesUploadPanel";
 import SyllabusTopicsPanel from "@/features/teachers/components/SyllabusTopicsPanel";
 import { importGradesFile } from "@/services/academic.service";
+import { generateId } from "@/utils/id";
 
 import type { CourseUploadedFile } from "@/types/course";
 
@@ -41,7 +42,7 @@ export default function TeacherCourseUploadData({
     setFiles((currentFiles) => [
       ...currentFiles,
       {
-        id: crypto.randomUUID(),
+        id: generateId(),
         name: file.name,
         file,
       },

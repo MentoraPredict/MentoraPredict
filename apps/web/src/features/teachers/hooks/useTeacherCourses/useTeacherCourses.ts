@@ -19,6 +19,7 @@ import {
   type UpdateTeacherCoursePayload,
 } from "@/services/academic.service";
 import { getStudents } from "@/services/users/users.service";
+import { generateId } from "@/utils/id";
 import {
   PartialCourseCreationError,
   type CreateCourseMutationResult,
@@ -222,7 +223,7 @@ export default function useTeacherCourses(
         studentIds,
         teacherId,
         teacherName,
-        tempId: `pending-${crypto.randomUUID()}`,
+        tempId: `pending-${generateId()}`,
       });
     },
     [createCourseMutation, teacherId, teacherIdValid, teacherName]
