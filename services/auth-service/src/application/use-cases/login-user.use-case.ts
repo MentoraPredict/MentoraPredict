@@ -31,6 +31,12 @@ export class LoginUserUseCase implements ILoginUseCase {
 
     if (!user.isActive) throw new UnauthorizedException('Account is disabled');
 
+    if (!user.passwordHash) {
+      throw new UnauthorizedException(
+        'This account signs in with Microsoft. Use "Continue with Microsoft" instead.',
+      );
+    }
+
     const valid = await this.hasher.compare(dto.password, user.passwordHash);
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');

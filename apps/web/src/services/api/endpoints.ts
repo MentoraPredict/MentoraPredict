@@ -6,6 +6,7 @@ export const endpoints = {
         register: "/v1/auth/register",
         forgotPassword: "/v1/auth/forgot-password",
         resetPassword: "/v1/auth/reset-password",
+        microsoft: "/v1/auth/microsoft",
     },
     users: {
         me: "/v1/users/me",

@@ -7,6 +7,7 @@ export const APP_PATHS = {
     register: "/register",
     forgotPassword: "/forgot-password",
     resetPassword: "/reset-password",
+    oauthCallback: "/auth/callback",
   },
   shared: {
     redirect: "/redirect",

@@ -1,5 +1,7 @@
 import { Navigate } from "react-router-dom";
 
+import Spinner from "@/components/atoms/Spinner";
+import Text from "@/components/atoms/Text";
 import { APP_PATHS, getDashboardPath } from "./paths";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -11,8 +13,11 @@ export default function RoleRedirect() {
 
     if (!isHydrated) {
         return (
-            <div className="flex min-h-screen items-center justify-center">
-                Cargando...
+            <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-blue-700">
+                <Spinner size={32} />
+                <Text variant="small" className="text-gray-600">
+                    Cargando tu panel...
+                </Text>
             </div>
         );
     }

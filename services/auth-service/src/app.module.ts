@@ -31,6 +31,8 @@ import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-ca
 import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-case";
 import { UpdateAuthUserUseCase } from "./application/use-cases/update-user.use-case";
 import { LoginEventProducer } from "./infrastructure/messaging/login-event.producer";
+import { OAuthLoginUseCase } from "./application/use-cases/oauth-login.use-case";
+import { MicrosoftOAuthClient } from "./infrastructure/adapters/microsoft-oauth.client";
 
 @Module({
   imports: [
@@ -130,6 +132,8 @@ import { LoginEventProducer } from "./infrastructure/messaging/login-event.produ
     GetAuthUserUseCase,
     SyncAuthUserUseCase,
     UpdateAuthUserUseCase,
+    OAuthLoginUseCase,
+    MicrosoftOAuthClient,
   ],
 })
 export class AppModule {}
