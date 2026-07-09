@@ -3,13 +3,15 @@ import { FiBell } from "react-icons/fi";
 
 import IconButton from "@/components/atoms/IconButton";
 
+const MAX_DISPLAY_COUNT = 99;
+
 interface NotificationIconButtonProps {
-  hasUnread?: boolean;
+  count?: number;
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export default function NotificationIconButton({
-  hasUnread = true,
+  count = 0,
   onClick,
 }: NotificationIconButtonProps) {
   const [isPressed, setIsPressed] = useState(false);
@@ -23,10 +25,19 @@ export default function NotificationIconButton({
     }, 150);
   };
 
+  const hasUnread = count > 0;
+  const displayCount =
+    count > MAX_DISPLAY_COUNT ? `${MAX_DISPLAY_COUNT}+` : String(count);
+
   return (
     <IconButton
       type="button"
       onClick={handleClick}
+      aria-label={
+        hasUnread
+          ? `Notificaciones, ${count} sin leer`
+          : "Notificaciones"
+      }
       className={`
                 relative
                 text-gray-600
@@ -40,14 +51,24 @@ export default function NotificationIconButton({
         <span
           className="
                         absolute
-                        right-1
-                        top-1
-                        h-2
-                        w-2
+                        -right-1
+                        -top-1
+                        flex
+                        h-4
+                        min-w-4
+                        items-center
+                        justify-center
                         rounded-full
                         bg-red-500
+                        px-1
+                        text-[10px]
+                        font-bold
+                        leading-none
+                        text-white
                     "
-        />
+        >
+          {displayCount}
+        </span>
       ) : null}
     </IconButton>
   );
