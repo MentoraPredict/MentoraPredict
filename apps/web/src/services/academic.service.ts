@@ -167,7 +167,7 @@ export type StudentCheckInEmotionalState =
   | "CRITICAL";
 
 export interface StudentCheckInPayload {
-  attendance: boolean;
+  attendance: number;
   taskCompletion: number;
   studyHours: number;
   emotionalState: StudentCheckInEmotionalState;
