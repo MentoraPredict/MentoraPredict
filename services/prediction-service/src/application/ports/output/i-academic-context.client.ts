@@ -20,8 +20,21 @@ export interface SubjectOwnership {
   isOwner: boolean;
 }
 
+export interface SubjectGradesContext {
+  subjectName: string;
+  credits: number;
+  currentGrade: number | null;
+  failedEvaluations: number;
+}
+
 export interface IAcademicContextClient {
   getStudentContext(studentId: string, periodId: string): Promise<AcademicContext>;
   getEnrollmentsByStudent(studentId: string): Promise<EnrollmentView[]>;
   getSubjectOwnership(teacherId: string, subjectId: string): Promise<SubjectOwnership>;
+  getSubjectGradesContext(
+    studentId: string,
+    subjectId: string,
+    periodId: string,
+  ): Promise<SubjectGradesContext>;
+  getSubjectTopics(subjectId: string): Promise<string[]>;
 }

@@ -118,6 +118,26 @@ describe('EnrollStudentUseCase', () => {
     expect(result.status).toBe('ACTIVE');
   });
 
+  it('includes the teacher name in the enrollment notification', async () => {
+    subjectRepo.findById.mockResolvedValue(subject);
+    periodRepo.findById.mockResolvedValue(period);
+    subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);
+    userProfilePort.getProfile.mockImplementation(async (id: string) =>
+      id === 'teacher-1'
+        ? { ...studentProfile, id: 'teacher-1', firstName: 'Grace', lastName: 'Hopper', role: 'TEACHER' }
+        : studentProfile,
+    );
+    enrollRepo.saveWithCapacityCheck.mockResolvedValue('enrolled');
+
+    await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1');
+
+    expect(notificationClient.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Grace Hopper'),
+      }),
+    );
+  });
+
   it('throws when subject is inactive', async () => {
     subjectRepo.findById.mockResolvedValue(null);
     await expect(

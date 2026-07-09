@@ -14,7 +14,7 @@ export class WeeklyCheckInEntity {
     public readonly academicWeek: number,
     public readonly academicYear: number,
     public readonly checkInDate: Date,
-    public attendance: boolean,
+    public attendance: number,
     public taskCompletion: number,
     public studyHours: number,
     public emotionalState: EmotionalState,
@@ -26,7 +26,7 @@ export class WeeklyCheckInEntity {
   ) {}
 
   applyPartialUpdate(data: {
-    attendance?: boolean;
+    attendance?: number;
     taskCompletion?: number;
     studyHours?: number;
     emotionalState?: EmotionalState;

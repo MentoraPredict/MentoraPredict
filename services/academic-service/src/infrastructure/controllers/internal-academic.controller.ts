@@ -6,6 +6,8 @@ import { GetSubjectEvaluationWeightsUseCase } from '../../application/use-cases/
 import { GetLatestCheckInUseCase } from '../../application/use-cases/get-latest-check-in.use-case';
 import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-subject-ownership.use-case';
 import { GetSubjectUseCase } from '../../application/use-cases/get-subject.use-case';
+import { GetTeacherStudentsUseCase } from '../../application/use-cases/get-teacher-students.use-case';
+import { GetSubjectTopicsInternalUseCase } from '../../application/use-cases/get-subject-topics-internal.use-case';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 @ApiTags('academic-internal')
@@ -19,6 +21,8 @@ export class InternalAcademicController {
     private readonly getLatestCheckInUC: GetLatestCheckInUseCase,
     private readonly checkOwnershipUC: CheckSubjectOwnershipUseCase,
     private readonly getSubjectUC: GetSubjectUseCase,
+    private readonly getTeacherStudentsUC: GetTeacherStudentsUseCase,
+    private readonly getSubjectTopicsUC: GetSubjectTopicsInternalUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
@@ -59,5 +63,20 @@ export class InternalAcademicController {
   @ApiOperation({ summary: 'Internal: subject details (name, assigned teacherId) for cross-service lookups' })
   subjectDetails(@Param('subjectId') subjectId: string) {
     return this.getSubjectUC.execute(subjectId);
+  }
+
+  @Get('teachers/:teacherId/students')
+  @ApiOperation({ summary: 'Internal: distinct student ids enrolled in this teacher\'s subjects for a period (used by analytics teacher dashboard)' })
+  teacherStudents(
+    @Param('teacherId') teacherId: string,
+    @Query('periodId') periodId: string,
+  ) {
+    return this.getTeacherStudentsUC.execute(teacherId, periodId);
+  }
+
+  @Get('subjects/:subjectId/topics')
+  @ApiOperation({ summary: 'Internal: syllabus topics for a subject (used by prediction-service for AI context)' })
+  topics(@Param('subjectId') subjectId: string) {
+    return this.getSubjectTopicsUC.execute(subjectId);
   }
 }

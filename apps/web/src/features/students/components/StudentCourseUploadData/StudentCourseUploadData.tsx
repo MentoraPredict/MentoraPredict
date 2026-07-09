@@ -95,7 +95,7 @@ export default function StudentCourseUploadData({
         const checkIn = await getCurrentStudentCheckIn(subjectId);
         if (isCancelled || !checkIn) return;
 
-        setAttendance(checkIn.attendance ? 100 : 0);
+        setAttendance(checkIn.attendance);
         setTaskCompletion(checkIn.taskCompletion);
         setStudyHours(Number(checkIn.studyHours));
         setEmotionalState(ratingByEmotionalState[checkIn.emotionalState]);
@@ -180,7 +180,7 @@ export default function StudentCourseUploadData({
 
     try {
       await saveStudentCheckIn(course.id, {
-        attendance: attendance >= 50,
+        attendance,
         taskCompletion,
         studyHours,
         emotionalState: emotionalStateByRating[emotionalState],

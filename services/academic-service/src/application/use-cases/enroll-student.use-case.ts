@@ -92,12 +92,19 @@ export class EnrollStudentUseCase {
       throw new BadRequestException("Subject has no available capacity");
     }
 
+    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherName = teacherProfile
+      ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
+      : null;
+
     void this.notificationClient.notify({
       recipientId: dto.studentId,
       recipientRole: "STUDENT",
       type: "ENROLLMENT_CREATED",
       title: "Nueva matrícula",
-      message: `Fuiste matriculado en ${subject.name}.`,
+      message: teacherName
+        ? `${teacherName} te matriculó en ${subject.name}.`
+        : `Fuiste matriculado en ${subject.name}.`,
     });
 
     return enrollment;

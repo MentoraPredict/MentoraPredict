@@ -28,7 +28,7 @@ export class WeeklyCheckInOrmEntity {
 
   @Column({ name: "check_in_date", type: "date" }) checkInDate!: Date;
 
-  @Column({ type: "boolean" }) attendance!: boolean;
+  @Column({ type: "int" }) attendance!: number;
 
   @Column({ name: "task_completion", type: "int" }) taskCompletion!: number;
 

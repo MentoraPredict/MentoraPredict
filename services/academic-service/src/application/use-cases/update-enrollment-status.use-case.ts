@@ -9,6 +9,8 @@ import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
+import { IUserProfilePort } from '../ports/output/i-user-profile.port';
+import { INotificationClientPort } from '../ports/output/i-notification-client.port';
 import { EnrollmentEntity } from '../../domain/entities/enrollment.entity';
 
 @Injectable()
@@ -22,6 +24,10 @@ export class UpdateEnrollmentStatusUseCase {
     private readonly periodRepo: IAcademicPeriodRepository,
     @Inject('ISubjectTeacherRepository')
     private readonly subjectTeacherRepo: ISubjectTeacherRepository,
+    @Inject('IUserProfilePort')
+    private readonly userProfilePort: IUserProfilePort,
+    @Inject('INotificationClientPort')
+    private readonly notificationClient: INotificationClientPort,
   ) {}
 
   async execute(
@@ -54,7 +60,27 @@ export class UpdateEnrollmentStatusUseCase {
       }
     }
 
+    const previousStatus = enrollment.status;
     enrollment.status = newStatus;
-    return this.enrollmentRepo.update(enrollment);
+    const updated = await this.enrollmentRepo.update(enrollment);
+
+    if (newStatus === 'WITHDRAWN' && previousStatus !== 'WITHDRAWN') {
+      const requesterProfile = await this.userProfilePort.getProfile(requesterId).catch(() => null);
+      const requesterName = requesterProfile
+        ? `${requesterProfile.firstName} ${requesterProfile.lastName}`.trim()
+        : null;
+
+      void this.notificationClient.notify({
+        recipientId: enrollment.studentId,
+        recipientRole: 'STUDENT',
+        type: 'ENROLLMENT_WITHDRAWN',
+        title: 'Retiro de curso',
+        message: requesterName
+          ? `${requesterName} te retiró del curso ${subject.name}.`
+          : `Fuiste retirado del curso ${subject.name}.`,
+      });
+    }
+
+    return updated;
   }
 }

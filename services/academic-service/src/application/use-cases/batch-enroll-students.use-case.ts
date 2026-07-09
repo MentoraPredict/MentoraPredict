@@ -62,6 +62,11 @@ export class BatchEnrollStudentsUseCase {
       studentIds.map((id) => this.userProfilePort.getProfile(id)),
     );
 
+    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherName = teacherProfile
+      ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
+      : null;
+
     const enrolled: string[] = [];
     const skipped: string[] = [];
     const failed: Array<{ studentId: string; reason: string }> = [];
@@ -106,7 +111,9 @@ export class BatchEnrollStudentsUseCase {
             recipientRole: 'STUDENT',
             type: 'ENROLLMENT_CREATED',
             title: 'Nueva matrícula',
-            message: `Fuiste matriculado en ${subject.name}.`,
+            message: teacherName
+              ? `${teacherName} te matriculó en ${subject.name}.`
+              : `Fuiste matriculado en ${subject.name}.`,
           });
         } else if (result === 'already_enrolled') skipped.push(studentId);
         else failed.push({ studentId, reason: 'Subject has no available capacity' });

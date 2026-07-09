@@ -5,6 +5,7 @@ import { ICareerRepository } from '../../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
 import { INotificationClientPort } from '../../ports/output/i-notification-client.port';
+import { IUserProfilePort } from '../../ports/output/i-user-profile.port';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { CareerEntity } from '../../../domain/entities/career.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
@@ -55,6 +56,10 @@ const mockNotificationClient = (): jest.Mocked<INotificationClientPort> => ({
   notify: jest.fn().mockResolvedValue(undefined),
 });
 
+const mockUserProfilePort = (): jest.Mocked<IUserProfilePort> => ({
+  getProfile: jest.fn().mockResolvedValue(null),
+});
+
 const makeCareer = () =>
   new CareerEntity('career-1', 'Ing. Sistemas', 'IS', '', 'ACTIVE', 'faculty-1', 10, new Date(), new Date());
 
@@ -83,6 +88,7 @@ describe('CreateSubjectUseCase', () => {
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
   let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
   let notificationClient: jest.Mocked<INotificationClientPort>;
+  let userProfilePort: jest.Mocked<IUserProfilePort>;
 
   beforeEach(() => {
     subjectRepo = mockSubjectRepo();
@@ -90,12 +96,14 @@ describe('CreateSubjectUseCase', () => {
     periodRepo = mockPeriodRepo();
     subjectTeacherRepo = mockSubjectTeacherRepo();
     notificationClient = mockNotificationClient();
+    userProfilePort = mockUserProfilePort();
     useCase = new CreateSubjectUseCase(
       subjectRepo,
       careerRepo,
       periodRepo,
       subjectTeacherRepo,
       notificationClient,
+      userProfilePort,
     );
   });
 
@@ -139,5 +147,31 @@ describe('CreateSubjectUseCase', () => {
 
     await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(ConflictException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('throws ConflictException when the code already exists', async () => {
+    careerRepo.findById.mockResolvedValue(makeCareer());
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
+    subjectRepo.findByNameAndPeriod.mockResolvedValue(null);
+    subjectRepo.findByCode.mockResolvedValue(makeExistingSubject());
+
+    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(ConflictException);
+    expect(subjectRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('normalizes the code (trim + uppercase) before checking and saving', async () => {
+    careerRepo.findById.mockResolvedValue(makeCareer());
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
+    subjectRepo.findByNameAndPeriod.mockResolvedValue(null);
+    subjectRepo.findByCode.mockResolvedValue(null);
+    subjectRepo.save.mockImplementation(async (s) => s);
+    subjectTeacherRepo.save.mockImplementation(async (a) => a);
+
+    await useCase.execute({ ...validDto, code: '  pw-701  ' }, 'teacher-1');
+
+    expect(subjectRepo.findByCode).toHaveBeenCalledWith('PW-701');
+    expect(subjectRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'PW-701' }),
+    );
   });
 });

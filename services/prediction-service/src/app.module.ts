@@ -37,6 +37,9 @@ import {
 import { GetMySubjectPredictionUseCase } from "./application/use-cases/get-my-subject-prediction.use-case";
 import { GetStudentSubjectPredictionUseCase } from "./application/use-cases/get-student-subject-prediction.use-case";
 import { ListSubjectPredictionsUseCase } from "./application/use-cases/list-subject-predictions.use-case";
+import { RequestStudentPredictionUseCase } from "./application/use-cases/request-student-prediction.use-case";
+import { GenerateSubjectPredictionUseCase } from "./application/use-cases/generate-subject-prediction.use-case";
+import { RequestSubjectPredictionUseCase } from "./application/use-cases/request-subject-prediction.use-case";
 
 @Module({
   imports: [
@@ -103,6 +106,9 @@ import { ListSubjectPredictionsUseCase } from "./application/use-cases/list-subj
     GetMySubjectPredictionUseCase,
     GetStudentSubjectPredictionUseCase,
     ListSubjectPredictionsUseCase,
+    RequestStudentPredictionUseCase,
+    GenerateSubjectPredictionUseCase,
+    RequestSubjectPredictionUseCase,
   ],
 })
 export class AppModule {}
