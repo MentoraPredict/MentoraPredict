@@ -6,7 +6,11 @@ export type NotificationStatus = "UNREAD" | "READ";
 export interface AppNotification {
   id: string;
   recipientRole: "STUDENT" | "TEACHER" | "ADMIN";
-  type: "RISK_ESCALATION" | "ENROLLMENT_CREATED" | "COURSE_CREATED";
+  type:
+    | "RISK_ESCALATION"
+    | "ENROLLMENT_CREATED"
+    | "ENROLLMENT_WITHDRAWN"
+    | "COURSE_CREATED";
   subjectId: string | null;
   studentId: string | null;
   title: string;
