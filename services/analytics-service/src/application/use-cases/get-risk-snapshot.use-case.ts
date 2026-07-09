@@ -68,7 +68,7 @@ export class GetRiskSnapshotUseCase {
     const attendance =
       validCheckIns.length > 0
         ? Math.round(
-            (validCheckIns.filter((c) => c.attendance).length / validCheckIns.length) * 10000,
+            (validCheckIns.reduce((s, c) => s + c.attendance, 0) / validCheckIns.length) * 100,
           ) / 100
         : NEUTRAL_ATTENDANCE;
     const studyHours =
