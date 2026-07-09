@@ -108,8 +108,7 @@ academic-service/
 │   │   │   ├── evaluation.repository.ts
 │   │   │   ├── grade.orm-entity.ts
 │   │   │   ├── grade.repository.ts
-│   │   │   ├── academic.repository.ts   # Métodos comunes
-│   │   │   └── migrations/              # Migraciones BD
+│   │   │   └── academic.repository.ts   # Métodos comunes
 │   │   │
 │   │   ├── config/
 │   │   │   └── (Configuración general)
