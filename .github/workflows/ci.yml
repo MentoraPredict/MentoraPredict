@@ -247,6 +247,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [commitlint, detect-dev-changes]
+    environment: QA enviroment
     if: >
       github.base_ref == 'dev' &&
       needs.detect-dev-changes.outputs.mobile_changed == 'true'
