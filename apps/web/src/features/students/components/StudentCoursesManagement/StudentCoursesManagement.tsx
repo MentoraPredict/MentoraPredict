@@ -5,10 +5,13 @@ import {
   FiAlertTriangle,
   FiAward,
   FiBookOpen,
+  FiChevronLeft,
+  FiChevronRight,
   FiRefreshCw,
   FiZap,
 } from "react-icons/fi";
 import type { IconType } from "react-icons";
+import { AxiosError } from "axios";
 
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
@@ -18,6 +21,7 @@ import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
+import AiRecommendationPanel from "@/features/courses/components/AiRecommendationPanel";
 import CourseGrid from "@/features/courses/components/CourseGrid";
 import StudentCoursesEmptyState from "@/features/students/components/StudentCoursesEmptyState";
 
@@ -26,11 +30,17 @@ import {
   getStudentCourseUploadDataPath,
 } from "@/routes/paths";
 import {
+  getLatestAiPrediction,
   getStudentSubjectAnalytics,
+  requestAiPrediction,
+  type AiPrediction,
   type StudentSubjectAnalytics,
 } from "@/services/course-analytics.service";
+import { getActiveAcademicPeriod } from "@/services/student-performance.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { Course, CourseAlert, CourseRecommendation } from "@/types/course";
+
+const RECOMMENDATIONS_PAGE_SIZE = 3;
 
 const riskLabels = {
   HIGH: "Alta prioridad",
@@ -68,16 +78,6 @@ interface DashboardAlert extends CourseAlert {
 interface DashboardRecommendation extends CourseRecommendation {
   courseId: string;
   courseName: string;
-}
-
-interface DashboardPrediction {
-  courseId: string;
-  courseName: string;
-  status: string;
-  predictedRiskLevel: string;
-  trendSlope: string;
-  computedAt: string;
-  message: string;
 }
 
 interface DashboardMetric {
@@ -160,7 +160,11 @@ export default function StudentCoursesManagement({
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [showAlerts, setShowAlerts] = useState(false);
-  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendationsPage, setRecommendationsPage] = useState(0);
+  const [aiPrediction, setAiPrediction] = useState<AiPrediction | null>(null);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [isLoadingAi, setIsLoadingAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const loadInsights = useCallback(async (studentCourses: Course[]) => {
     if (studentCourses.length === 0) {
@@ -194,6 +198,61 @@ export default function StudentCoursesManagement({
       void loadInsights(courses);
     }
   }, [courses, isLoading, loadInsights]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingAi(true);
+
+    getLatestAiPrediction(user.id)
+      .then((prediction) => {
+        if (!isCancelled) {
+          setAiPrediction(prediction);
+        }
+      })
+      .catch(() => {
+        // Best-effort preload — the student can still generate a fresh one.
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoadingAi(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.id]);
+
+  const handleGenerateAiPrediction = async () => {
+    setIsGeneratingAi(true);
+    setAiError(null);
+
+    try {
+      const activePeriod = await getActiveAcademicPeriod();
+      const prediction = await requestAiPrediction(activePeriod.id);
+      setAiPrediction(prediction);
+    } catch (requestError) {
+      if (
+        requestError instanceof AxiosError &&
+        requestError.response?.status === 429
+      ) {
+        setAiError(
+          (requestError.response.data as { message?: string })?.message ??
+            "Ya generaste una recomendacion recientemente. Intenta mas tarde."
+        );
+      } else {
+        setAiError(
+          "No se pudo generar la recomendacion con IA. Intenta nuevamente."
+        );
+      }
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   const dashboard = useMemo(() => {
     const averages = courses
@@ -255,28 +314,17 @@ export default function StudentCoursesManagement({
     [insights]
   );
 
-  const dashboardPredictions = useMemo<DashboardPrediction[]>(
-    () =>
-      insights.map(({ course, analytics }) => ({
-        courseId: course.id,
-        courseName: course.name,
-        status: analytics.prediction.data?.status ?? analytics.prediction.status,
-        predictedRiskLevel:
-          analytics.prediction.data?.predictedRiskLevel ?? "Sin clasificar",
-        trendSlope:
-          analytics.prediction.data?.trendSlope !== null &&
-          analytics.prediction.data?.trendSlope !== undefined
-            ? analytics.prediction.data.trendSlope.toFixed(2)
-            : "Sin tendencia",
-        computedAt: analytics.prediction.data?.computedAt
-          ? new Intl.DateTimeFormat("es-EC", {
-              dateStyle: "short",
-              timeStyle: "short",
-            }).format(new Date(analytics.prediction.data.computedAt))
-          : "Sin fecha",
-        message: analytics.prediction.message,
-      })),
-    [insights]
+  const recommendationsPageCount = Math.max(
+    1,
+    Math.ceil(dashboardRecommendations.length / RECOMMENDATIONS_PAGE_SIZE)
+  );
+  const currentRecommendationsPage = Math.min(
+    recommendationsPage,
+    recommendationsPageCount - 1
+  );
+  const paginatedRecommendations = dashboardRecommendations.slice(
+    currentRecommendationsPage * RECOMMENDATIONS_PAGE_SIZE,
+    currentRecommendationsPage * RECOMMENDATIONS_PAGE_SIZE + RECOMMENDATIONS_PAGE_SIZE
   );
 
   const weeklyProgress = useMemo(() => {
@@ -609,9 +657,9 @@ export default function StudentCoursesManagement({
                     const tone =
                       latest === null
                         ? metricToneStyles.neutral
-                        : latest >= 8
+                        : latest >= 16
                           ? metricToneStyles.success
-                          : latest >= 7
+                          : latest >= 14
                             ? metricToneStyles.warning
                             : metricToneStyles.danger;
 
@@ -669,9 +717,9 @@ export default function StudentCoursesManagement({
                 </div>
               </div>
 
-              {dashboardRecommendations.length > 0 ? (
+              {paginatedRecommendations.length > 0 ? (
                 <div className="space-y-3">
-                  {dashboardRecommendations.slice(0, 3).map((recommendation) => (
+                  {paginatedRecommendations.map((recommendation) => (
                     <button
                       key={recommendation.id}
                       type="button"
@@ -680,12 +728,12 @@ export default function StudentCoursesManagement({
                           getStudentCoursePerformancePath(recommendation.courseId)
                         );
                       }}
-                      className="w-full rounded-xl bg-white p-4 text-left shadow-sm transition hover:shadow-md"
+                      className="w-full rounded-xl border-l-4 border-blue-700 bg-white p-4 text-left shadow-sm transition hover:shadow-md"
                     >
-                      <Text variant="caption" className="font-bold uppercase text-blue-700">
+                      <Badge className="bg-blue-100 text-xs text-blue-700">
                         {recommendation.courseName}
-                      </Text>
-                      <Text variant="small" className="mt-2 text-gray-700">
+                      </Badge>
+                      <Text variant="small" className="mt-3 text-gray-700">
                         {recommendation.description}
                       </Text>
                     </button>
@@ -698,78 +746,56 @@ export default function StudentCoursesManagement({
                 </Text>
               )}
 
-              {dashboardPredictions.length > 0 ? (
-                <div className="mt-5 space-y-3">
-                  <Text variant="caption" className="font-bold uppercase text-blue-800">
-                    Estado de predicciones
+              {dashboardRecommendations.length > RECOMMENDATIONS_PAGE_SIZE ? (
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setRecommendationsPage((current) => Math.max(0, current - 1));
+                    }}
+                    disabled={currentRecommendationsPage === 0}
+                    className="gap-2 bg-white px-4 py-2 text-sm"
+                  >
+                    <FiChevronLeft size={16} />
+                    Anterior
+                  </Button>
+
+                  <Text variant="caption" className="text-blue-800">
+                    Pagina {currentRecommendationsPage + 1} de {recommendationsPageCount}
                   </Text>
-                  {dashboardPredictions.slice(0, 3).map((prediction) => (
-                    <button
-                      key={prediction.courseId}
-                      type="button"
-                      onClick={() => {
-                        navigate(getStudentCoursePerformancePath(prediction.courseId));
-                      }}
-                      className="w-full rounded-xl border border-blue-100 bg-white p-4 text-left shadow-sm transition hover:shadow-md"
-                    >
-                      <Text variant="small" className="font-semibold text-gray-900">
-                        {prediction.courseName}
-                      </Text>
-                      <div className="mt-3 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
-                        <span>Estado: {prediction.status}</span>
-                        <span>Riesgo: {prediction.predictedRiskLevel}</span>
-                        <span>Tendencia: {prediction.trendSlope}</span>
-                        <span>Calculo: {prediction.computedAt}</span>
-                      </div>
-                      <Text variant="caption" className="mt-2 text-gray-500">
-                        {prediction.message}
-                      </Text>
-                    </button>
-                  ))}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setRecommendationsPage((current) =>
+                        Math.min(recommendationsPageCount - 1, current + 1)
+                      );
+                    }}
+                    disabled={currentRecommendationsPage >= recommendationsPageCount - 1}
+                    className="gap-2 bg-white px-4 py-2 text-sm"
+                  >
+                    Siguiente
+                    <FiChevronRight size={16} />
+                  </Button>
                 </div>
               ) : null}
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowRecommendations((current) => !current);
-                }}
-                className="mt-5 w-full bg-white px-5 py-2 text-sm"
-              >
-                {showRecommendations ? "Ocultar detalle" : "Ver detalle"}
-              </Button>
             </div>
           </div>
 
-          {showRecommendations && dashboardRecommendations.length > 3 ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <Heading as="h4" className="text-gray-900">
-                Todas las recomendaciones
-              </Heading>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {dashboardRecommendations.slice(3).map((recommendation) => (
-                  <button
-                    key={recommendation.id}
-                    type="button"
-                    onClick={() => {
-                      navigate(
-                        getStudentCoursePerformancePath(recommendation.courseId)
-                      );
-                    }}
-                    className="rounded-xl border border-gray-200 p-4 text-left transition hover:bg-gray-50"
-                  >
-                    <Text variant="caption" className="font-bold uppercase text-gray-500">
-                      {recommendation.courseName}
-                    </Text>
-                    <Text variant="small" className="mt-2 text-gray-700">
-                      {recommendation.description}
-                    </Text>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
+          <AiRecommendationPanel
+            title="Recomendacion con IA"
+            description="Generada con OpenAI a partir de tu informacion academica actual"
+            prediction={aiPrediction}
+            isLoading={isLoadingAi}
+            isGenerating={isGeneratingAi}
+            error={aiError}
+            emptyMessage="Aun no has generado una recomendacion con IA. Presiona el boton para generar una basada en tu informacion academica actual."
+            onGenerate={() => {
+              void handleGenerateAiPrediction();
+            }}
+          />
 
           {error || insightsError ? (
             <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-4">
