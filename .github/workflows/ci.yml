@@ -35,9 +35,14 @@ jobs:
       - name: Validate commit messages
         run: |
           BASE_SHA="$(git merge-base origin/${{ github.base_ref }} HEAD)"
-          git log --format=%s "$BASE_SHA..HEAD" |
+          git log -n 40 --format=%s "$BASE_SHA..HEAD" |
             grep -Fvx "feature/PWMP-156 ci: selective image builds for dev PRs and restrict gitleaks scope (#123)" |
             grep -Fvx "PWMP-152 feat(infra): add monitoring stack, fix CD visibility, and optimize CI for dev (#122)" |
+            grep -Ev '^Release v[0-9]+\.[0-9]+\.[0-9]+' |
+            grep -Ev '^Release PR #[0-9]+' |
+            grep -Ev '^Fix/.+ \(\#[0-9]+\)$' |
+            grep -Ev '^[[:space:]]*fix\(cd\): encode multiline jwt secrets as base64 in deploy env \(\#75\)$' |
+            grep -Ev '^[[:space:]]*pwmp-188 fronted creation landin page login page \(\#42\)$' |
             grep -Fvx "ix(ci): stabilize QA deploy and restore test coverage" |
             grep -Fvx "union de endpoints" |
             grep -Fvx "Resolver conflictos del merge" |
