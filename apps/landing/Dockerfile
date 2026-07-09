@@ -10,7 +10,23 @@ WORKDIR /app
 ENV CI=true \
     PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
+
+ARG CONTENTFUL_SPACE_ID
+ARG CONTENTFUL_ACCESS_TOKEN
+ARG CONTENTFUL_ENVIRONMENT=master
+ARG PUBLIC_WEB_APP_URL
+
+ENV CONTENTFUL_SPACE_ID=$CONTENTFUL_SPACE_ID
+ENV CONTENTFUL_ACCESS_TOKEN=$CONTENTFUL_ACCESS_TOKEN
+ENV CONTENTFUL_ENVIRONMENT=$CONTENTFUL_ENVIRONMENT
+ENV PUBLIC_WEB_APP_URL=$PUBLIC_WEB_APP_URL
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/landing/node_modules ./apps/landing/node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY apps/landing/ ./apps/landing/
+
 RUN pnpm --filter @mentorapredict/landing build
 
 FROM nginx:alpine AS runner
