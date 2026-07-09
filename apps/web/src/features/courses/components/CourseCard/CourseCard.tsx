@@ -40,7 +40,7 @@ export default function CourseCard({
   onCancelDelete,
 }: CourseCardProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const isClickable = !!onClick && !isDeleteMode;
+  const isClickable = !!onClick && !isDeleteMode && !course.isPendingSync;
 
   const handleCardClick = () => {
     if (!isClickable) {
@@ -145,10 +145,16 @@ export default function CourseCard({
           </Heading>
 
           <div className="flex flex-wrap items-center gap-2">
-            <CourseRiskBadge
-              riskLevel={course.riskLevel}
-              label={course.riskLabel}
-            />
+            {course.isPendingSync ? (
+              <span className="inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-700">
+                Pendiente de sincronizar
+              </span>
+            ) : (
+              <CourseRiskBadge
+                riskLevel={course.riskLevel}
+                label={course.riskLabel}
+              />
+            )}
             {!metrics ? (
               <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700">
                 Promedio {averageLabel}

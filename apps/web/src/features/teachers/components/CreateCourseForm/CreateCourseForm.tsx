@@ -12,7 +12,6 @@ import Textarea from "@/components/atoms/Textarea";
 
 import StudentSelector from "@/features/teachers/components/StudentSelector";
 
-import type { Course } from "@/types/course";
 import type { AppUser } from "@/types/user/user.types";
 import type {
   CourseCareerOption,
@@ -44,7 +43,7 @@ interface CreateCourseFormProps {
   onCreateCourse: (
     course: Omit<CreateTeacherCoursePayload, "teacherId" | "teacherName">,
     studentIds: string[]
-  ) => Promise<Course | null> | Course | null | void;
+  ) => void;
 }
 
 export default function CreateCourseForm({
@@ -147,12 +146,12 @@ export default function CreateCourseForm({
     );
   };
 
-  const onSubmit = async (values: CreateCourseFormValues) => {
+  const onSubmit = (values: CreateCourseFormValues) => {
     if (!values.careerId || !values.academicPeriodId) {
       return;
     }
 
-    const createdCourse = await onCreateCourse(
+    onCreateCourse(
       {
         name: values.name,
         code: values.code,
@@ -164,10 +163,6 @@ export default function CreateCourseForm({
       },
       selectedStudents.map((student) => student.id)
     );
-
-    if (!createdCourse) {
-      return;
-    }
 
     reset();
     setSelectedStudents([]);
