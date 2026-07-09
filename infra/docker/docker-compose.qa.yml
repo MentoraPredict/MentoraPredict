@@ -388,12 +388,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     depends_on:
       auth-service:
-        condition: service_started
+        condition: service_healthy
       user-service:
-        condition: service_started
+        condition: service_healthy
       academic-service:
-        condition: service_started
+        condition: service_healthy
       analytics-service:
-        condition: service_started
+        condition: service_healthy
     networks:
       - mentorapredict-net
