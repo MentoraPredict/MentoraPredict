@@ -30,7 +30,12 @@ Rules:
 - Never invent grades, attendance, or other numbers not present in the input.
 - Produce between 2 and 5 recommendations, ordered by priority (HIGH first).
 - Write in Spanish (the platform's primary language is Ecuadorian Spanish).
-- You do NOT decide the risk level — it is provided to you already classified. Use it as context only.`;
+- You do NOT decide the risk level — it is provided to you already classified. Use it as context only.
+- If "topics" is present and non-empty, it is the syllabus (unit titles, in teaching order) for the ONE
+  subject in focus. In that case, at least one recommendation (prefer type SUBJECT_FOCUS or TUTORING)
+  MUST name a specific topic verbatim from that list in its title or reason — e.g. "Repasar Unidad 3:
+  Aplicaciones prácticas" instead of "Repasar los temas de la materia". Never invent a topic name that
+  is not in the given list, and never quote a topic if "topics" is absent or empty.`;
 
 @Injectable()
 export class OpenAiRecommendationProvider implements IAiRecommendationProvider {
