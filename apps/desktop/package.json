@@ -39,11 +39,13 @@
       }
     ],
     "win": {
-      "target": "nsis"
+      "target": "msi",
+      "icon": "build/mentorapredict-logo.ico"
     },
-    "nsis": {
+    "msi": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "perMachine": true,
+      "runAfterFinish": true
     }
   }
 }

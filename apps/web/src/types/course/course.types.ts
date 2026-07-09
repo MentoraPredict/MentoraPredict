@@ -16,4 +16,6 @@ export interface Course {
   facultyName?: string;
   currentAverage?: number | null;
   enrolledCount?: number;
+  /** Client-only: true while this course is queued for offline sync and hasn't reached the server yet. */
+  isPendingSync?: boolean;
 }

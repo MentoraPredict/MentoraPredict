@@ -1,24 +1,32 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { AxiosError } from "axios";
+import {
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+  type MutationState,
+} from "@tanstack/react-query";
 
 import {
-  createTeacherCourse,
   deleteTeacherCourse,
-  enrollStudentsInCourse,
   getCourseCreationOptions,
   getTeacherCourses,
   updateTeacherCourse,
   uploadTeacherCourseImage,
   deleteTeacherCourseImage,
-  type CourseCareerOption,
-  type CourseFacultyOption,
-  type CoursePeriodOption,
   type CreateTeacherCoursePayload,
   type UpdateTeacherCoursePayload,
 } from "@/services/academic.service";
 import { getStudents } from "@/services/users/users.service";
+import {
+  PartialCourseCreationError,
+  type CreateCourseMutationResult,
+  type CreateCourseMutationVariables,
+} from "@/services/query/createCourseMutation";
+import { mutationKeys } from "@/services/query/mutationKeys";
+import { queryKeys } from "@/services/query/queryKeys";
 import type { Course } from "@/types/course";
-import type { AppUser } from "@/types/user/user.types";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
@@ -86,144 +94,160 @@ function isUuid(value?: string) {
   return !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
+type CreateCourseMutationStateEntry = MutationState<
+  CreateCourseMutationResult,
+  unknown,
+  CreateCourseMutationVariables,
+  unknown
+>;
+
+function pickLatestMutation(
+  states: CreateCourseMutationStateEntry[]
+): CreateCourseMutationStateEntry | undefined {
+  return states.reduce<CreateCourseMutationStateEntry | undefined>((latest, current) => {
+    if (!latest) {
+      return current;
+    }
+    return current.submittedAt > latest.submittedAt ? current : latest;
+  }, undefined);
+}
+
 export default function useTeacherCourses(
   teacherId?: string,
   teacherName?: string,
   includeCreationData = false
 ) {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [faculties, setFaculties] = useState<CourseFacultyOption[]>([]);
-  const [careers, setCareers] = useState<CourseCareerOption[]>([]);
-  const [periods, setPeriods] = useState<CoursePeriodOption[]>([]);
-  const [students, setStudents] = useState<AppUser[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const queryClient = useQueryClient();
+  const teacherIdValid = isUuid(teacherId);
+
+  const [manualError, setManualError] = useState<string | null>(null);
   const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
   const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [creationDataError, setCreationDataError] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
 
-  const loadCourses = useCallback(async () => {
-    if (!teacherId) {
-      setCourses([]);
-      setIsLoading(false);
-      setError("No se pudo identificar al docente autenticado.");
-      return;
-    }
+  const coursesQueryKey = queryKeys.teacherCourses(teacherId ?? "unknown-teacher");
 
-    setIsLoading(true);
-    setError(null);
-    setCreationDataError(null);
+  const coursesQuery = useQuery({
+    queryKey: coursesQueryKey,
+    queryFn: () => getTeacherCourses(teacherId as string, teacherName),
+    enabled: teacherIdValid,
+  });
 
-    try {
-      const loadedCourses = await getTeacherCourses(teacherId, teacherName);
-      setCourses(loadedCourses);
+  const creationOptionsQuery = useQuery({
+    queryKey: queryKeys.courseCreationOptions(),
+    queryFn: getCourseCreationOptions,
+    enabled: includeCreationData,
+  });
 
-      if (includeCreationData) {
-        const [creationOptionsResult, studentsResult] =
-          await Promise.allSettled([
-            getCourseCreationOptions(),
-            getStudents(),
-          ]);
+  const studentsQuery = useQuery({
+    queryKey: queryKeys.students(),
+    queryFn: getStudents,
+    enabled: includeCreationData,
+  });
 
-        if (creationOptionsResult.status === "fulfilled") {
-          setFaculties(creationOptionsResult.value.faculties);
-          setCareers(creationOptionsResult.value.careers);
-          setPeriods(creationOptionsResult.value.periods);
-        } else {
-          setFaculties([]);
-          setCareers([]);
-          setPeriods([]);
-          setCreationDataError(
-            getCreationDataErrorMessage(creationOptionsResult.reason)
-          );
-        }
+  const createCourseMutation = useMutation<
+    CreateCourseMutationResult,
+    unknown,
+    CreateCourseMutationVariables
+  >({
+    mutationKey: mutationKeys.createCourse,
+  });
 
-        if (studentsResult.status === "fulfilled") {
-          setStudents(studentsResult.value);
-        } else {
-          setStudents([]);
-          setCreationDataError(getCreationDataErrorMessage(studentsResult.reason));
-        }
-      }
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [includeCreationData, teacherId, teacherName]);
+  const errorMutationStates = useMutationState<CreateCourseMutationStateEntry>(
+    { filters: { mutationKey: mutationKeys.createCourse, status: "error" } },
+    queryClient
+  );
+  const successMutationStates = useMutationState<CreateCourseMutationStateEntry>(
+    { filters: { mutationKey: mutationKeys.createCourse, status: "success" } },
+    queryClient
+  );
 
-  useEffect(() => {
-    void loadCourses();
-  }, [loadCourses]);
+  const latestFatalError = pickLatestMutation(
+    errorMutationStates.filter((state) => !(state.error instanceof PartialCourseCreationError))
+  );
+  const createError = latestFatalError
+    ? getCreateCourseErrorMessage(latestFatalError.error)
+    : null;
+
+  const latestPartialFailure = pickLatestMutation(
+    errorMutationStates.filter((state) => state.error instanceof PartialCourseCreationError)
+  );
+  const latestEnrollmentWarningFromSuccess = pickLatestMutation(
+    successMutationStates.filter((state) => (state.data?.failedStudentIds.length ?? 0) > 0)
+  );
+
+  let enrollmentWarning: string | null = null;
+  if (latestPartialFailure) {
+    enrollmentWarning =
+      "El curso se creo, pero no se pudo matricular a los estudiantes seleccionados.";
+  } else if (latestEnrollmentWarningFromSuccess) {
+    const failedCount = latestEnrollmentWarningFromSuccess.data?.failedStudentIds.length ?? 0;
+    enrollmentWarning = `El curso se creo, pero no se pudo matricular a ${failedCount} estudiante(s).`;
+  }
+
+  const error =
+    manualError ??
+    enrollmentWarning ??
+    (!teacherIdValid
+      ? "No se pudo identificar al docente autenticado."
+      : coursesQuery.error
+        ? getErrorMessage(coursesQuery.error)
+        : null);
+
+  const creationDataError = creationOptionsQuery.error
+    ? getCreationDataErrorMessage(creationOptionsQuery.error)
+    : studentsQuery.error
+      ? getCreationDataErrorMessage(studentsQuery.error)
+      : null;
+
+  const reload = useCallback(async () => {
+    await Promise.allSettled([
+      coursesQuery.refetch(),
+      ...(includeCreationData ? [creationOptionsQuery.refetch(), studentsQuery.refetch()] : []),
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeCreationData]);
 
   const createCourse = useCallback(
-    async (
+    (
       payload: Omit<CreateTeacherCoursePayload, "teacherId" | "teacherName">,
       studentIds: string[]
     ) => {
-      if (!isUuid(teacherId)) {
-        setCreateError("No se pudo identificar al docente autenticado.");
-        return null;
+      if (!teacherIdValid || !teacherId) {
+        setManualError("No se pudo identificar al docente autenticado.");
+        return;
       }
 
-      setIsCreating(true);
-      setCreateError(null);
-
-      try {
-        const createdCourse = await createTeacherCourse({
-          ...payload,
-          teacherId,
-          teacherName,
-        });
-
-        setCourses((currentCourses) => [
-          ...currentCourses,
-          createdCourse,
-        ]);
-
-        if (studentIds.length > 0) {
-          const failedStudentIds = await enrollStudentsInCourse(
-            createdCourse.id,
-            studentIds
-          );
-
-          if (failedStudentIds.length > 0) {
-            setError(
-              `El curso se creo, pero no se pudo matricular a ${failedStudentIds.length} estudiante(s).`
-            );
-          }
-        }
-
-        return createdCourse;
-      } catch (requestError) {
-        setCreateError(getCreateCourseErrorMessage(requestError));
-        return null;
-      } finally {
-        setIsCreating(false);
-      }
+      createCourseMutation.mutate({
+        payload,
+        studentIds,
+        teacherId,
+        teacherName,
+        tempId: `pending-${crypto.randomUUID()}`,
+      });
     },
-    [teacherId, teacherName]
+    [createCourseMutation, teacherId, teacherIdValid, teacherName]
   );
 
-  const deleteCourse = useCallback(async (courseId: string) => {
-    setDeletingCourseId(courseId);
-    setError(null);
+  const deleteCourse = useCallback(
+    async (courseId: string) => {
+      setDeletingCourseId(courseId);
+      setManualError(null);
 
-    try {
-      await deleteTeacherCourse(courseId);
-      setCourses((currentCourses) =>
-        currentCourses.filter((course) => course.id !== courseId)
-      );
-      return true;
-    } catch (requestError) {
-      setError(getDeleteErrorMessage(requestError));
-      return false;
-    } finally {
-      setDeletingCourseId(null);
-    }
-  }, []);
+      try {
+        await deleteTeacherCourse(courseId);
+        queryClient.setQueryData<Course[]>(coursesQueryKey, (current = []) =>
+          current.filter((course) => course.id !== courseId)
+        );
+        return true;
+      } catch (requestError) {
+        setManualError(getDeleteErrorMessage(requestError));
+        return false;
+      } finally {
+        setDeletingCourseId(null);
+      }
+    },
+    [coursesQueryKey, queryClient]
+  );
 
   const updateCourse = useCallback(
     async (courseId: string, payload: UpdateTeacherCoursePayload) => {
@@ -231,8 +255,8 @@ export default function useTeacherCourses(
 
       try {
         const updatedCourse = await updateTeacherCourse(courseId, payload);
-        setCourses((currentCourses) =>
-          currentCourses.map((course) =>
+        queryClient.setQueryData<Course[]>(coursesQueryKey, (current = []) =>
+          current.map((course) =>
             course.id === courseId
               ? {
                   ...course,
@@ -246,47 +270,55 @@ export default function useTeacherCourses(
         setUpdatingCourseId(null);
       }
     },
-    []
+    [coursesQueryKey, queryClient]
   );
 
-  const uploadCourseImage = useCallback(async (courseId: string, file: File) => {
-    const imageUrl = await uploadTeacherCourseImage(courseId, file);
-    setCourses((currentCourses) =>
-      currentCourses.map((course) =>
-        course.id === courseId ? { ...course, imageUrl } : course,
-      ),
-    );
-    return imageUrl;
-  }, []);
+  const uploadCourseImage = useCallback(
+    async (courseId: string, file: File) => {
+      const imageUrl = await uploadTeacherCourseImage(courseId, file);
+      queryClient.setQueryData<Course[]>(coursesQueryKey, (current = []) =>
+        current.map((course) => (course.id === courseId ? { ...course, imageUrl } : course))
+      );
+      return imageUrl;
+    },
+    [coursesQueryKey, queryClient]
+  );
 
-  const removeCourseImage = useCallback(async (courseId: string) => {
-    await deleteTeacherCourseImage(courseId);
-    setCourses((currentCourses) =>
-      currentCourses.map((course) =>
-        course.id === courseId ? { ...course, imageUrl: undefined } : course,
-      ),
-    );
-  }, []);
+  const removeCourseImage = useCallback(
+    async (courseId: string) => {
+      await deleteTeacherCourseImage(courseId);
+      queryClient.setQueryData<Course[]>(coursesQueryKey, (current = []) =>
+        current.map((course) =>
+          course.id === courseId ? { ...course, imageUrl: undefined } : course
+        )
+      );
+    },
+    [coursesQueryKey, queryClient]
+  );
 
   const clearCreateError = useCallback(() => {
-    setCreateError(null);
-  }, []);
+    const mutationCache = queryClient.getMutationCache();
+    mutationCache
+      .findAll({ mutationKey: mutationKeys.createCourse, status: "error" })
+      .forEach((mutation) => mutationCache.remove(mutation));
+    setManualError(null);
+  }, [queryClient]);
 
   return {
-    courses,
-    faculties,
-    careers,
-    periods,
-    students,
-    isLoading,
-    isCreating,
+    courses: coursesQuery.data ?? [],
+    faculties: creationOptionsQuery.data?.faculties ?? [],
+    careers: creationOptionsQuery.data?.careers ?? [],
+    periods: creationOptionsQuery.data?.periods ?? [],
+    students: studentsQuery.data ?? [],
+    isLoading: teacherIdValid ? coursesQuery.isLoading : false,
+    isCreating: createCourseMutation.isPending,
     deletingCourseId,
     updatingCourseId,
     error,
     creationDataError,
     createError,
     clearCreateError,
-    reload: loadCourses,
+    reload,
     createCourse,
     deleteCourse,
     updateCourse,
