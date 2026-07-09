@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { IWeeklyCheckInRepository } from '../ports/output/i-weekly-check-in.repository';
 
 export interface LatestCheckInSummary {
-  attendance: boolean;
+  attendance: number;
   taskCompletion: number;
   studyHours: number;
   generalComprehension: number;

@@ -137,7 +137,7 @@ describe("RecordGradeUseCase", () => {
     ).rejects.toThrow(ConflictException);
   });
 
-  it("domain entity rejects grade value > 10", () => {
+  it("domain entity rejects grade value > 20", () => {
     const { GradeEntity } = require("../../../domain/entities/grade.entity");
     expect(
       () =>
@@ -145,13 +145,13 @@ describe("RecordGradeUseCase", () => {
           "g-1",
           "stud-1",
           "eval-1",
-          11,
+          21,
           "teacher-1",
           new Date(),
           new Date(),
           new Date(),
         ),
-    ).toThrow("Grade value must be between 0 and 10");
+    ).toThrow("Grade value must be between 0 and 20");
   });
 
   it("domain entity rejects grade value < 0", () => {
@@ -168,6 +168,6 @@ describe("RecordGradeUseCase", () => {
           new Date(),
           new Date(),
         ),
-    ).toThrow("Grade value must be between 0 and 10");
+    ).toThrow("Grade value must be between 0 and 20");
   });
 });

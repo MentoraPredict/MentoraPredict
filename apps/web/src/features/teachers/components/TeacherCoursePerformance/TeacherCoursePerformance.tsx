@@ -199,7 +199,6 @@ export default function TeacherCoursePerformance({
 
         <CourseAverageChart
           average={Number(data.average.toFixed(2))}
-          maxAverage={10}
           title="Promedio del curso"
         />
       </div>

@@ -36,7 +36,7 @@ export default function NotificationsMenu() {
   return (
     <div ref={containerRef} className="relative">
       <NotificationIconButton
-        hasUnread={unreadCount > 0}
+        count={unreadCount}
         onClick={() => setIsOpen((current) => !current)}
       />
 

@@ -13,6 +13,7 @@ import { ISubjectRepository } from "../ports/output/i-subject.repository";
 import { IAcademicPeriodRepository } from "../ports/output/i-academic-period.repository";
 import { ISubjectTeacherRepository } from "../ports/output/i-subject-teacher.repository";
 import { IUserProfilePort } from "../ports/output/i-user-profile.port";
+import { INotificationClientPort } from "../ports/output/i-notification-client.port";
 import { EnrollStudentDto } from "../dtos/enroll-student.dto";
 
 @Injectable()
@@ -28,6 +29,8 @@ export class EnrollStudentUseCase {
     private readonly subjectTeacherRepo: ISubjectTeacherRepository,
     @Inject("IUserProfilePort")
     private readonly userProfilePort: IUserProfilePort,
+    @Inject("INotificationClientPort")
+    private readonly notificationClient: INotificationClientPort,
   ) {}
 
   async execute(
@@ -88,6 +91,21 @@ export class EnrollStudentUseCase {
     if (result === "at_capacity") {
       throw new BadRequestException("Subject has no available capacity");
     }
+
+    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherName = teacherProfile
+      ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
+      : null;
+
+    void this.notificationClient.notify({
+      recipientId: dto.studentId,
+      recipientRole: "STUDENT",
+      type: "ENROLLMENT_CREATED",
+      title: "Nueva matrícula",
+      message: teacherName
+        ? `${teacherName} te matriculó en ${subject.name}.`
+        : `Fuiste matriculado en ${subject.name}.`,
+    });
 
     return enrollment;
   }

@@ -25,7 +25,7 @@ export class AuthHttpClient implements IAuthServiceClient {
     );
   }
 
-  async getUserById(userId: string): Promise<AuthUserResponse> {
+  async getUserById(userId: string): Promise<AuthUserResponse | undefined> {
     const url = `${this.baseUrl}/api/v1/auth/internal/users/${userId}`;
 
     try {
@@ -40,11 +40,12 @@ export class AuthHttpClient implements IAuthServiceClient {
 
       return response.data;
     } catch (error) {
-      this.logger.error(
-        `Could not fetch auth user ${userId} from auth-service`,
-        error instanceof Error ? error.stack : undefined,
+      this.logger.warn(
+        `Could not fetch auth user ${userId} from auth-service: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
-      throw error;
+      return undefined;
     }
   }
 }

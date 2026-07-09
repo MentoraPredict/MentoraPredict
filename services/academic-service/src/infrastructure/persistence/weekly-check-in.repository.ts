@@ -68,7 +68,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
       `SELECT
          academic_week AS "academicWeek",
          academic_year AS "academicYear",
-         ROUND(AVG(CASE WHEN attendance THEN 100 ELSE 0 END)::numeric, 2)::float AS "avgAttendance",
+         ROUND(AVG(attendance)::numeric, 2)::float AS "avgAttendance",
          ROUND(AVG(task_completion)::numeric, 2)::float AS "avgTaskCompletion",
          ROUND(AVG(study_hours)::numeric, 2)::float AS "avgStudyHours",
          ROUND(AVG(general_comprehension)::numeric, 2)::float AS "avgGeneralComprehension",
@@ -144,7 +144,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
       Number(row.academic_week),
       Number(row.academic_year),
       new Date(row.check_in_date as string),
-      row.attendance as boolean,
+      Number(row.attendance),
       Number(row.task_completion),
       Number(row.study_hours),
       row.emotional_state as EmotionalState,

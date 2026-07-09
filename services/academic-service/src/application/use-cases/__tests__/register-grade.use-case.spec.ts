@@ -8,7 +8,7 @@ import { EnrollmentEntity } from '../../../domain/entities/enrollment.entity';
 import { GradeEntity } from '../../../domain/entities/grade.entity';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
-import { GradeEventProducer } from '../../../infrastructure/messaging/grade-event.producer';
+import { IAnalyticsClientPort } from '../../ports/output/i-analytics-client.port';
 
 const mockGradeRepo = (): jest.Mocked<IGradeRepository> => ({
   findById: jest.fn(),
@@ -59,8 +59,9 @@ const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
   delete: jest.fn(),
 });
 
-const mockEventProducer = (): jest.Mocked<Pick<GradeEventProducer, 'gradeRecorded'>> => ({
-  gradeRecorded: jest.fn().mockResolvedValue(undefined),
+const mockAnalyticsClient = (): jest.Mocked<IAnalyticsClientPort> => ({
+  triggerRecalculate: jest.fn().mockResolvedValue(undefined),
+  getLatestSubjectMetric: jest.fn(),
 });
 
 const makeSubject = () =>
@@ -75,20 +76,20 @@ describe('RegisterGradeUseCase', () => {
   let enrollRepo: jest.Mocked<IEnrollmentRepository>;
   let subjectRepo: jest.Mocked<ISubjectRepository>;
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
-  let eventProducer: jest.Mocked<Pick<GradeEventProducer, 'gradeRecorded'>>;
+  let analyticsClient: jest.Mocked<IAnalyticsClientPort>;
 
   beforeEach(() => {
     gradeRepo = mockGradeRepo();
     enrollRepo = mockEnrollRepo();
     subjectRepo = mockSubjectRepo();
     periodRepo = mockPeriodRepo();
-    eventProducer = mockEventProducer();
+    analyticsClient = mockAnalyticsClient();
     useCase = new RegisterGradeUseCase(
       gradeRepo,
       enrollRepo,
       subjectRepo,
       periodRepo,
-      eventProducer as unknown as GradeEventProducer,
+      analyticsClient,
     );
   });
 

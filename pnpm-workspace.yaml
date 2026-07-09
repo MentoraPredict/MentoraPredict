@@ -2,7 +2,6 @@ packages:
   - "apps/*"
   - "packages/*"
   - "services/*"
-  - "packages/event-contracts"
 allowBuilds:
   "@nestjs/core": true
   "@scarf/scarf": true

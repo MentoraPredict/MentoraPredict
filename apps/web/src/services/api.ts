@@ -2,11 +2,11 @@ import axios, { AxiosError } from "axios";
 
 import { endpoints } from "./api/endpoints";
 import {
-    clearTokens,
     getAccessToken,
     getRefreshToken,
     setAccessToken,
 } from "./api/tokenStorage";
+import { useAuthStore } from "@/store/auth.store";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
@@ -16,7 +16,6 @@ interface RefreshResponse {
 }
 
 interface ApiErrorResponse {
-    exp?: string;
     message?: string;
 }
 
@@ -66,15 +65,15 @@ async function requestNewAccessToken() {
 
 function shouldRefreshToken(error: AxiosError<ApiErrorResponse>) {
     const status = error.response?.status;
-    const response = error.response?.data;
     const requestUrl = error.config?.url ?? "";
     const isRefreshRequest = requestUrl.includes(endpoints.auth.refresh);
+    const hadAuthHeader = Boolean(error.config?.headers?.Authorization);
 
-    if (isRefreshRequest) {
+    if (isRefreshRequest || !hadAuthHeader) {
         return false;
     }
 
-    return status === 401 && response?.exp === "token expired";
+    return status === 401;
 }
 
 api.interceptors.response.use(
@@ -102,7 +101,7 @@ api.interceptors.response.use(
 
             return api(originalRequest);
         } catch (refreshError) {
-            clearTokens();
+            useAuthStore.getState().clearSession();
             return Promise.reject(refreshError);
         } finally {
             refreshPromise = null;

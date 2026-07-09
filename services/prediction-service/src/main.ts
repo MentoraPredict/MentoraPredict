@@ -2,28 +2,12 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe, Logger } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { Transport, MicroserviceOptions } from "@nestjs/microservices";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger("Bootstrap");
   const port = process.env.APP_PORT ?? 3006;
-
-  const rmqUser = process.env.RABBITMQ_USER ?? "mp_rabbit";
-  const rmqPass = process.env.RABBITMQ_PASSWORD ?? "mp_rabbit_secret";
-  const rmqHost = process.env.RABBITMQ_HOST ?? "localhost";
-  const rmqPort = process.env.RABBITMQ_PORT ?? "5672";
-
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [`amqp://${rmqUser}:${rmqPass}@${rmqHost}:${rmqPort}`],
-      queue: "prediction-events",
-      queueOptions: { durable: true },
-      noAck: false,
-    },
-  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -71,7 +55,6 @@ async function bootstrap() {
     SwaggerModule.createDocument(app, config),
   );
 
-  await app.startAllMicroservices();
   await app.listen(port);
   logger.log(`prediction-service running on http://localhost:${port}`);
   logger.log(`Swagger: http://localhost:${port}/api/v1/prediction/docs`);

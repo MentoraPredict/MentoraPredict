@@ -5,7 +5,6 @@ import { IUserRepository } from "../ports/output/i-user.repository";
 import { ITokenGenerator } from "../ports/output/i-token.generator";
 import { ITokenCache } from "../ports/output/i-token.cache";
 import { IUserProfileClient } from "../ports/output/i-user-profile.client";
-import { LoginEventProducer } from "../../infrastructure/messaging/login-event.producer";
 import { MicrosoftOAuthProfile } from "../../infrastructure/adapters/microsoft-oauth.client";
 import { REDIS_TTL } from "../../shared-types-local";
 
@@ -18,10 +17,9 @@ export class OAuthLoginUseCase {
     @Inject("ITokenGenerator") private readonly tokenGen: ITokenGenerator,
     @Inject("ITokenCache") private readonly cache: ITokenCache,
     @Inject("IUserProfileClient") private readonly userProfileClient: IUserProfileClient,
-    private readonly eventProducer: LoginEventProducer,
   ) {}
 
-  async execute(profile: MicrosoftOAuthProfile, ip: string) {
+  async execute(profile: MicrosoftOAuthProfile) {
     let user = await this.userRepo.findByEmail(profile.email);
 
     if (!user) {
@@ -56,12 +54,6 @@ export class OAuthLoginUseCase {
 
     const tokens = this.tokenGen.generatePair(user.id, user.email, user.role);
     await this.cache.setRefreshToken(user.id, tokens.refreshToken, REDIS_TTL.REFRESH_TOKEN);
-
-    await this.eventProducer.studentLoggedIn({
-      studentId: user.id,
-      occurredAt: new Date(),
-      ip,
-    });
 
     return { ...tokens, tokenType: "Bearer" as const };
   }

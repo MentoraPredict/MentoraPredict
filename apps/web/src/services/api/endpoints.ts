@@ -66,6 +66,12 @@ export const endpoints = {
             `/v1/prediction/subjects/${subjectId}/predictions`,
         teacherStudentSubject: (subjectId: string, studentId: string) =>
             `/v1/prediction/subjects/${subjectId}/students/${studentId}/prediction`,
+        generate: (periodId: string) =>
+            `/v1/prediction/students/me/periods/${periodId}/generate`,
+        generateForSubject: (subjectId: string) =>
+            `/v1/prediction/students/me/subjects/${subjectId}/generate`,
+        history: (studentId: string) =>
+            `/v1/prediction/students/${studentId}/history`,
     },
     notifications: {
         mine: "/v1/notifications/me",

@@ -12,6 +12,7 @@ import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.rep
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { IUserProfilePort } from '../ports/output/i-user-profile.port';
+import { INotificationClientPort } from '../ports/output/i-notification-client.port';
 
 export interface BatchEnrollResult {
   enrolled: string[];
@@ -32,6 +33,8 @@ export class BatchEnrollStudentsUseCase {
     private readonly enrollmentRepo: IEnrollmentRepository,
     @Inject('IUserProfilePort')
     private readonly userProfilePort: IUserProfilePort,
+    @Inject('INotificationClientPort')
+    private readonly notificationClient: INotificationClientPort,
   ) {}
 
   async execute(
@@ -58,6 +61,11 @@ export class BatchEnrollStudentsUseCase {
     const profiles = await Promise.all(
       studentIds.map((id) => this.userProfilePort.getProfile(id)),
     );
+
+    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherName = teacherProfile
+      ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
+      : null;
 
     const enrolled: string[] = [];
     const skipped: string[] = [];
@@ -96,8 +104,18 @@ export class BatchEnrollStudentsUseCase {
           enrollment,
           subject.maxCapacity,
         );
-        if (result === 'enrolled') enrolled.push(studentId);
-        else if (result === 'already_enrolled') skipped.push(studentId);
+        if (result === 'enrolled') {
+          enrolled.push(studentId);
+          void this.notificationClient.notify({
+            recipientId: studentId,
+            recipientRole: 'STUDENT',
+            type: 'ENROLLMENT_CREATED',
+            title: 'Nueva matrícula',
+            message: teacherName
+              ? `${teacherName} te matriculó en ${subject.name}.`
+              : `Fuiste matriculado en ${subject.name}.`,
+          });
+        } else if (result === 'already_enrolled') skipped.push(studentId);
         else failed.push({ studentId, reason: 'Subject has no available capacity' });
       } catch (err) {
         const reason = err instanceof Error ? err.message : 'Enrollment failed';

@@ -14,8 +14,8 @@ export class GradeEntity {
   }
 
   private assertValidValue(v: number): void {
-    if (v < 0 || v > 10) {
-      throw new Error(`Grade value must be between 0 and 10, received: ${v}`);
+    if (v < 0 || v > 20) {
+      throw new Error(`Grade value must be between 0 and 20, received: ${v}`);
     }
   }
 

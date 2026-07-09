@@ -5,6 +5,7 @@ import { ISubjectRepository } from '../../ports/output/i-subject.repository';
 import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
 import { IUserProfilePort } from '../../ports/output/i-user-profile.port';
+import { INotificationClientPort } from '../../ports/output/i-notification-client.port';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
 
@@ -64,6 +65,10 @@ const mockUserProfilePort = (): jest.Mocked<IUserProfilePort> => ({
   getProfile: jest.fn(),
 });
 
+const mockNotificationClient = (): jest.Mocked<INotificationClientPort> => ({
+  notify: jest.fn().mockResolvedValue(undefined),
+});
+
 const studentProfile = {
   id: 'stud-1',
   firstName: 'Ada',
@@ -80,6 +85,7 @@ describe('EnrollStudentUseCase', () => {
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
   let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
   let userProfilePort: jest.Mocked<IUserProfilePort>;
+  let notificationClient: jest.Mocked<INotificationClientPort>;
 
   beforeEach(() => {
     enrollRepo = mockEnrollRepo();
@@ -87,12 +93,14 @@ describe('EnrollStudentUseCase', () => {
     periodRepo = mockPeriodRepo();
     subjectTeacherRepo = mockSubjectTeacherRepo();
     userProfilePort = mockUserProfilePort();
+    notificationClient = mockNotificationClient();
     useCase = new EnrollStudentUseCase(
       enrollRepo,
       subjectRepo,
       periodRepo,
       subjectTeacherRepo,
       userProfilePort,
+      notificationClient,
     );
   });
 
@@ -108,6 +116,26 @@ describe('EnrollStudentUseCase', () => {
     expect(result.studentId).toBe('stud-1');
     expect(result.periodId).toBe('period-1');
     expect(result.status).toBe('ACTIVE');
+  });
+
+  it('includes the teacher name in the enrollment notification', async () => {
+    subjectRepo.findById.mockResolvedValue(subject);
+    periodRepo.findById.mockResolvedValue(period);
+    subjectTeacherRepo.findBySubjectTeacherAndPeriod.mockResolvedValue({} as never);
+    userProfilePort.getProfile.mockImplementation(async (id: string) =>
+      id === 'teacher-1'
+        ? { ...studentProfile, id: 'teacher-1', firstName: 'Grace', lastName: 'Hopper', role: 'TEACHER' }
+        : studentProfile,
+    );
+    enrollRepo.saveWithCapacityCheck.mockResolvedValue('enrolled');
+
+    await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1');
+
+    expect(notificationClient.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Grace Hopper'),
+      }),
+    );
   });
 
   it('throws when subject is inactive', async () => {

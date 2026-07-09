@@ -154,4 +154,27 @@ describe("ListUsersUseCase", () => {
 
     expect(result).toHaveLength(0);
   });
+
+  it("degrades gracefully when auth-service is unreachable for a user", async () => {
+    const repo = mockRepo();
+    const authClient = mockAuthClient();
+    const profiles = [makeProfile("u1"), makeProfile("u2")];
+    repo.findAll.mockResolvedValue(profiles);
+    authClient.getUserById
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({
+        id: "u2",
+        email: "u2@example.com",
+        firstName: "First u2",
+        lastName: "Last u2",
+        isActive: true,
+      });
+
+    const useCase = new ListUsersUseCase(repo, authClient);
+    const result = await useCase.execute({});
+
+    expect(result).toHaveLength(2);
+    expect(result[0].email).toBe("");
+    expect(result[1].email).toBe("u2@example.com");
+  });
 });

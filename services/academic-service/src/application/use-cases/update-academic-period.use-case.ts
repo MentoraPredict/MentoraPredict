@@ -32,12 +32,15 @@ export class UpdateAcademicPeriodUseCase {
       }
     }
 
-    if (dto.code && dto.code !== period.code) {
-      const existing = await this.repo.findByCode(dto.code);
-      if (existing) {
-        throw new ConflictException(`Academic period with code '${dto.code}' already exists`);
+    if (dto.code) {
+      const normalizedCode = dto.code.trim().toUpperCase();
+      if (normalizedCode !== period.code) {
+        const existing = await this.repo.findByCode(normalizedCode);
+        if (existing) {
+          throw new ConflictException(`Academic period with code '${normalizedCode}' already exists`);
+        }
+        period.code = normalizedCode;
       }
-      period.code = dto.code;
     }
 
     if (dto.name && dto.name !== period.name) {

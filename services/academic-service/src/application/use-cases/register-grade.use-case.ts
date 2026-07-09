@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { randomUUID } from "crypto";
@@ -11,11 +12,13 @@ import { IGradeRepository } from "../ports/output/i-grade.repository";
 import { IEnrollmentRepository } from "../ports/output/i-enrollment.repository";
 import { ISubjectRepository } from "../ports/output/i-subject.repository";
 import { IAcademicPeriodRepository } from "../ports/output/i-academic-period.repository";
+import { IAnalyticsClientPort } from "../ports/output/i-analytics-client.port";
 import { RegisterGradeDto } from "../dtos/register-grade.dto";
-import { GradeEventProducer } from "../../infrastructure/messaging/grade-event.producer";
 
 @Injectable()
 export class RegisterGradeUseCase {
+  private readonly logger = new Logger(RegisterGradeUseCase.name);
+
   constructor(
     @Inject("IGradeRepository") private readonly gradeRepo: IGradeRepository,
     @Inject("IEnrollmentRepository")
@@ -24,7 +27,8 @@ export class RegisterGradeUseCase {
     private readonly subjectRepo: ISubjectRepository,
     @Inject("IAcademicPeriodRepository")
     private readonly periodRepo: IAcademicPeriodRepository,
-    private readonly eventProducer: GradeEventProducer,
+    @Inject("IAnalyticsClientPort")
+    private readonly analyticsClient: IAnalyticsClientPort,
   ) {}
 
   async execute(
@@ -81,13 +85,13 @@ export class RegisterGradeUseCase {
 
     const saved = await this.gradeRepo.save(grade);
 
-    await this.eventProducer.gradeRecorded({
-      studentId: dto.studentId,
-      subjectId: dto.subjectId,
-      value: dto.grade,
-      recordedBy: registeredBy,
-      timestamp: now,
-    });
+    // Fire-and-forget: trigger analytics recalculation for this student,
+    // same call the bulk import path uses (see import-subject-grades.use-case.ts).
+    this.analyticsClient
+      .triggerRecalculate(dto.subjectId, subject.academicPeriodId, [dto.studentId])
+      .catch((err) =>
+        this.logger.error(`Analytics trigger failed: ${err instanceof Error ? err.message : String(err)}`),
+      );
 
     return saved;
   }
