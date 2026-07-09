@@ -213,6 +213,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     timeout-minutes: 30
+    environment: QA enviroment
     if: >
       needs.detect-changes.outputs.mobile_changed == 'true' &&
       github.ref == 'refs/heads/QA'
@@ -240,10 +241,28 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform android
 
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            apps/mobile/android/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/gradle/wrapper/gradle-wrapper.properties', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
       - name: Configure release signing
         working-directory: apps/mobile/android
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > app/mentorapredict-release.jks
+
+          if ! keytool -list -keystore app/mentorapredict-release.jks \
+              -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" > /dev/null 2>&1; then
+            echo "::error::The decoded release keystore is not a valid Java keystore (ANDROID_KEYSTORE_BASE64 secret is likely corrupted, truncated, or was set from the wrong file, or ANDROID_KEYSTORE_PASSWORD doesn't match it). Regenerate the secret with 'base64 -w0 your-keystore.jks' and update it, then verify locally with 'keytool -list -keystore your-keystore.jks'."
+            exit 1
+          fi
+
           cat >> app/build.gradle << 'EOF'
 
           android {
