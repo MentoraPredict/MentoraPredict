@@ -6,6 +6,7 @@ export const endpoints = {
         register: "/v1/auth/register",
         forgotPassword: "/v1/auth/forgot-password",
         resetPassword: "/v1/auth/reset-password",
+        microsoft: "/v1/auth/microsoft",
     },
     users: {
         me: "/v1/users/me",
@@ -38,6 +39,12 @@ export const endpoints = {
         subjectImage: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/image`,
         importGrades: "/v1/academic/import/grades",
+        topics: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/topics`,
+        topic: (topicId: string) =>
+            `/v1/academic/topics/${topicId}`,
+        topicFile: (topicId: string) =>
+            `/v1/academic/topics/${topicId}/file`,
     },
     analytics: {
         studentDashboard: (studentId: string) =>
@@ -59,6 +66,12 @@ export const endpoints = {
             `/v1/prediction/subjects/${subjectId}/predictions`,
         teacherStudentSubject: (subjectId: string, studentId: string) =>
             `/v1/prediction/subjects/${subjectId}/students/${studentId}/prediction`,
+        generate: (periodId: string) =>
+            `/v1/prediction/students/me/periods/${periodId}/generate`,
+        generateForSubject: (subjectId: string) =>
+            `/v1/prediction/students/me/subjects/${subjectId}/generate`,
+        history: (studentId: string) =>
+            `/v1/prediction/students/${studentId}/history`,
     },
     notifications: {
         mine: "/v1/notifications/me",

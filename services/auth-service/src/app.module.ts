@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { JwtModule } from "@nestjs/jwt";
-import { ClientsModule, Transport } from "@nestjs/microservices";
 
 import { AuthController } from "./infrastructure/controllers/auth.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
@@ -30,7 +29,8 @@ import { InternalUsersController } from "./infrastructure/controllers/internal-a
 import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-case";
 import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-case";
 import { UpdateAuthUserUseCase } from "./application/use-cases/update-user.use-case";
-import { LoginEventProducer } from "./infrastructure/messaging/login-event.producer";
+import { OAuthLoginUseCase } from "./application/use-cases/oauth-login.use-case";
+import { MicrosoftOAuthClient } from "./infrastructure/adapters/microsoft-oauth.client";
 
 @Module({
   imports: [
@@ -83,24 +83,6 @@ import { LoginEventProducer } from "./infrastructure/messaging/login-event.produ
         };
       },
     }),
-
-    ClientsModule.registerAsync([
-      {
-        name: 'RABBITMQ_CLIENT',
-        inject: [ConfigService],
-        useFactory: (cfg: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: {
-            urls: [
-              `amqp://${cfg.get('RABBITMQ_USER', 'mp_rabbit')}:${cfg.get('RABBITMQ_PASSWORD', 'mp_rabbit_secret')}@${cfg.get('RABBITMQ_HOST', 'localhost')}:${cfg.get('RABBITMQ_PORT', '5672')}`,
-            ],
-            queue: 'auth-events',
-            queueOptions: { durable: true },
-            persistent: true,
-          },
-        }),
-      },
-    ]),
   ],
   controllers: [
     AuthController,
@@ -120,7 +102,6 @@ import { LoginEventProducer } from "./infrastructure/messaging/login-event.produ
     InternalJwtService,
     InternalServiceGuard,
     { provide: "IUserProfileClient", useClass: UserProfileHttpClient },
-    LoginEventProducer,
     RegisterUserUseCase,
     LoginUserUseCase,
     LogoutUserUseCase,
@@ -130,6 +111,8 @@ import { LoginEventProducer } from "./infrastructure/messaging/login-event.produ
     GetAuthUserUseCase,
     SyncAuthUserUseCase,
     UpdateAuthUserUseCase,
+    OAuthLoginUseCase,
+    MicrosoftOAuthClient,
   ],
 })
 export class AppModule {}

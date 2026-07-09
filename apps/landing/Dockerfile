@@ -1,13 +1,15 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/landing/package.json ./apps/landing/package.json
 RUN pnpm install --frozen-lockfile --filter @mentorapredict/landing
 
-FROM node:22-alpine AS builder
+FROM deps AS builder
 WORKDIR /app
-RUN corepack enable
+ENV CI=true \
+    PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
+    PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 
 ARG CONTENTFUL_SPACE_ID
 ARG CONTENTFUL_ACCESS_TOKEN
@@ -24,6 +26,7 @@ COPY --from=deps /app/apps/landing/node_modules ./apps/landing/node_modules
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY apps/landing/ ./apps/landing/
+
 RUN pnpm --filter @mentorapredict/landing build
 
 FROM nginx:alpine AS runner

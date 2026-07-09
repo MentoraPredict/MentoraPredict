@@ -13,3 +13,4 @@ export { default as CourseAlertsPanel } from "./CourseAlertsPanel";
 export { default as CourseRecommendationsPanel } from "./CourseRecommendationsPanel";
 export { default as CourseRiskBars } from "./CourseRiskBars";
 export { default as CourseRiskStudentsPanel } from "./CourseRiskStudentsPanel";
+export { default as AiRecommendationPanel } from "./AiRecommendationPanel";

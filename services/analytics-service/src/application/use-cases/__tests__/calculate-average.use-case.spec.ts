@@ -16,6 +16,7 @@ const mockAcademic = (): jest.Mocked<IAcademicServiceClient> => ({
   getLatestCheckIn: jest.fn(),
   getSubjectOwnership: jest.fn(),
   getSubjectDetails: jest.fn(),
+  getStudentsByTeacher: jest.fn(),
 });
 
 const mockMetricsRepo = (): jest.Mocked<IStudentMetricsRepository> => ({

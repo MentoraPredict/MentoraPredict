@@ -17,9 +17,10 @@ export class CreateFacultyUseCase {
   ) {}
 
   async execute(dto: CreateFacultyDto): Promise<FacultyEntity> {
-    const existingByCode = await this.repo.findByCode(dto.code);
+    const normalizedCode = dto.code.trim().toUpperCase();
+    const existingByCode = await this.repo.findByCode(normalizedCode);
     if (existingByCode) {
-      throw new ConflictException(`Faculty with code '${dto.code}' already exists`);
+      throw new ConflictException(`Faculty with code '${normalizedCode}' already exists`);
     }
 
     const existingByName = await this.repo.findByName(dto.name);
@@ -31,7 +32,7 @@ export class CreateFacultyUseCase {
     const faculty = new FacultyEntity(
       randomUUID(),
       dto.name,
-      dto.code,
+      normalizedCode,
       dto.description ?? '',
       'ACTIVE',
       now,

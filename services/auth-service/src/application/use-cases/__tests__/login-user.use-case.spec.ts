@@ -5,7 +5,6 @@ import { IPasswordHasher } from '../../ports/output/i-password.hasher';
 import { ITokenGenerator } from '../../ports/output/i-token.generator';
 import { ITokenCache } from '../../ports/output/i-token.cache';
 import { UserEntity, UserRole } from '../../../domain/entities/user.entity';
-import { LoginEventProducer } from '../../../infrastructure/messaging/login-event.producer';
 
 const makeUser = (active = true) =>
   new UserEntity('uid-1', 'v@uce.edu.ec', 'hash', UserRole.STUDENT, active, true, new Date(), new Date());
@@ -18,9 +17,6 @@ const mockCache   = (): jest.Mocked<ITokenCache>       => ({
   setResetToken: jest.fn(), getResetToken: jest.fn(), deleteResetToken: jest.fn(),
   incrementLoginAttempts: jest.fn(), deleteLoginAttempts: jest.fn(),
 });
-const mockEventProducer = (): jest.Mocked<Pick<LoginEventProducer, 'studentLoggedIn'>> => ({
-  studentLoggedIn: jest.fn().mockResolvedValue(undefined),
-});
 
 describe('LoginUserUseCase', () => {
   let useCase: LoginUserUseCase;
@@ -28,20 +24,17 @@ describe('LoginUserUseCase', () => {
   let hasher: jest.Mocked<IPasswordHasher>;
   let tokenGen: jest.Mocked<ITokenGenerator>;
   let cache: jest.Mocked<ITokenCache>;
-  let eventProducer: jest.Mocked<Pick<LoginEventProducer, 'studentLoggedIn'>>;
 
   beforeEach(() => {
     repo     = mockRepo();
     hasher   = mockHasher();
     tokenGen = mockTokens();
     cache    = mockCache();
-    eventProducer = mockEventProducer();
     useCase  = new LoginUserUseCase(
       repo,
       hasher,
       tokenGen,
       cache,
-      eventProducer as unknown as LoginEventProducer,
     );
   });
 
@@ -56,11 +49,6 @@ describe('LoginUserUseCase', () => {
     expect(result.accessToken).toBe('at');
     expect(result.tokenType).toBe('Bearer');
     expect(cache.setRefreshToken).toHaveBeenCalledWith('uid-1', 'rt', expect.any(Number));
-    expect(eventProducer.studentLoggedIn).toHaveBeenCalledWith({
-      studentId: 'uid-1',
-      occurredAt: expect.any(Date),
-      ip: '127.0.0.1',
-    });
   });
 
   it('throws UnauthorizedException for wrong password', async () => {

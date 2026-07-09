@@ -2,17 +2,19 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { CalculateAverageUseCase } from './calculate-average.use-case';
 import { ClassifyRiskUseCase } from './classify-risk.use-case';
+import { GenerateAlertsUseCase } from './generate-alerts.use-case';
 import { IAcademicServiceClient } from '../../domain/ports/i-academic-service.client';
 import { IStudentSubjectMetricsRepository } from '../../domain/ports/i-student-subject-metrics.repository';
 import { StudentSubjectMetricsEntity, SubjectRiskLevel } from '../../domain/entities/student-subject-metrics.entity';
 import { IAlertRepository } from '../../domain/ports/i-alert.repository';
 import { AlertEntity, AlertSeverity } from '../../domain/entities/alert.entity';
 import { IPredictionClientPort } from '../../domain/ports/i-prediction-client.port';
-import { INotificationRepository } from '../../domain/ports/i-notification.repository';
-import { NotificationEntity } from '../../domain/entities/notification.entity';
+import { INotificationRepository } from '../../notifications/domain/ports/i-notification.repository';
+import { NotificationEntity } from '../../notifications/domain/entities/notification.entity';
+import { NotificationDeliveryService } from '../../notifications/application/services/notification-delivery.service';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 
-const PASSING_GRADE = 7;
+const PASSING_GRADE = 14;
 const TREND_LOOKBACK = 4;
 const RISK_RANK: Record<SubjectRiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 
@@ -56,12 +58,14 @@ export class RecalculateStudentMetricsUseCase {
   constructor(
     private readonly calculateAverageUC: CalculateAverageUseCase,
     private readonly classifyRiskUC: ClassifyRiskUseCase,
+    private readonly generateAlertsUC: GenerateAlertsUseCase,
     @Inject('IAcademicServiceClient') private readonly academic: IAcademicServiceClient,
     @Inject('IStudentSubjectMetricsRepository')
     private readonly subjectMetricsRepo: IStudentSubjectMetricsRepository,
     @Inject('IAlertRepository') private readonly alertRepo: IAlertRepository,
     @Inject('IPredictionClientPort') private readonly predictionClient: IPredictionClientPort,
     @Inject('INotificationRepository') private readonly notificationRepo: INotificationRepository,
+    private readonly deliveryService: NotificationDeliveryService,
   ) {}
 
   async execute(
@@ -92,9 +96,9 @@ export class RecalculateStudentMetricsUseCase {
         // honestly null — never a fabricated neutral value (those only
         // exist for Fase 5's global risk-snapshot fallback).
         const complianceIndex = checkIn?.taskCompletion ?? null;
-        const attendanceRate = checkIn ? (checkIn.attendance ? 100 : 0) : null;
+        const attendanceRate = checkIn?.attendance ?? null;
         const studyHours = checkIn?.studyHours ?? null;
-        const comprehensionAvg = checkIn?.generalComprehension ?? null;
+        const comprehensionAvg = checkIn?.topicComprehensionAvg ?? checkIn?.generalComprehension ?? null;
 
         const failedEvaluations = grades.filter(
           (g) => g.subjectId === subjectId && g.value < PASSING_GRADE,
@@ -171,6 +175,32 @@ export class RecalculateStudentMetricsUseCase {
           complianceIndex,
           now,
         });
+
+        // RF-021 checks (average drop, failed evaluations, low attendance,
+        // sustained high/critical risk) — complementary to the escalation
+        // alert above, which only fires on an upward risk transition.
+        // GenerateAlertsUseCase dedupes against existing UNREAD alerts per
+        // (student, subject, type) so calling this every recalculation
+        // doesn't spam a new row for the same ongoing problem.
+        if (riskLevel !== null && averageGrade !== null && attendanceRate !== null) {
+          try {
+            await this.generateAlertsUC.execute(studentId, {
+              subjectId,
+              riskLevel,
+              currentAverage: averageGrade,
+              previousAverage:
+                historicalGrades.length > 0
+                  ? historicalGrades[historicalGrades.length - 1]
+                  : undefined,
+              failedEvaluations,
+              attendance: attendanceRate,
+            });
+          } catch (err) {
+            this.logger.error(
+              `Alert generation failed for student ${studentId}/${subjectId}: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
+        }
 
         // Fase 8 — fire-and-forget, same pattern as every trigger so far
         // (ImportSubjectGradesUseCase, UpsertCheckInUseCase): a failure here
@@ -289,17 +319,18 @@ export class RecalculateStudentMetricsUseCase {
       studentId,
       'STUDENT',
       'RISK_ESCALATION',
-      alertId,
-      subjectId,
-      studentId,
-      periodId,
       `Tu riesgo académico en ${subjectName} aumentó a ${riskLevel}`,
       reason,
       'UNREAD',
       now,
       null,
+      alertId,
+      subjectId,
+      studentId,
+      periodId,
     );
     await this.notificationRepo.save(studentNotification);
+    await this.deliveryService.deliver(studentNotification);
 
     const teacherId = subject?.teacherId ?? null;
     if (!teacherId) return; // no teacher assigned — skip without failing
@@ -309,17 +340,18 @@ export class RecalculateStudentMetricsUseCase {
       teacherId,
       'TEACHER',
       'RISK_ESCALATION',
-      alertId,
-      subjectId,
-      studentId,
-      periodId,
       `Un estudiante de ${subjectName} escaló a riesgo ${riskLevel}`,
       `Estudiante ${studentId}: ${reason}`,
       'UNREAD',
       now,
       null,
+      alertId,
+      subjectId,
+      studentId,
+      periodId,
     );
     await this.notificationRepo.save(teacherNotification);
+    await this.deliveryService.deliver(teacherNotification);
   }
 
   private computeLinearSlope(values: number[]): number {

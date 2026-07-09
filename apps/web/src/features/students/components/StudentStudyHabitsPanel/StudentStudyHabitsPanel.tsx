@@ -57,7 +57,7 @@ export default function StudentStudyHabitsPanel({
           />
         </div>
 
-        <div>
+        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
           <Text variant="small" className="mb-4 font-semibold text-gray-900">
             Nivel de comprension de la materia
           </Text>
@@ -66,6 +66,15 @@ export default function StudentStudyHabitsPanel({
             value={comprehensionLevel}
             onChange={onChangeComprehensionLevel}
           />
+
+          <div className="mt-2 flex items-center justify-between">
+            <Text variant="caption" className="text-gray-400">
+              Muy bajo
+            </Text>
+            <Text variant="caption" className="text-gray-400">
+              Muy alto
+            </Text>
+          </div>
         </div>
       </div>
     </section>

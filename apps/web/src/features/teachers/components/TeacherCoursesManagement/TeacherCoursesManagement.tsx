@@ -8,6 +8,7 @@ import CreateCourseModal from "@/features/teachers/components/CreateCourseModal"
 import TeacherCoursesEmptyState from "@/features/teachers/components/TeacherCoursesEmptyState";
 import TeacherCoursesHeader from "@/features/teachers/components/TeacherCoursesHeader/TeacherCoursesHeader";
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
+import useOnlineStatus from "@/hooks/useOnlineStatus";
 import { getCourseEnrolledStudents } from "@/services/academic.service";
 import { getTeacherSubjectAnalytics } from "@/services/course-analytics.service";
 
@@ -26,6 +27,7 @@ export default function TeacherCoursesManagement({
   courseState,
 }: TeacherCoursesManagementProps) {
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
 
   const {
     courses: backendCourses,
@@ -38,6 +40,8 @@ export default function TeacherCoursesManagement({
     deletingCourseId,
     error,
     creationDataError,
+    createError,
+    clearCreateError,
     createCourse,
     deleteCourse,
   } = courseState;
@@ -65,8 +69,9 @@ export default function TeacherCoursesManagement({
     let isMounted = true;
 
     async function loadCourseAnalytics() {
+      const syncedCourses = courses.filter((course) => !course.isPendingSync);
       const entries = await Promise.all(
-        courses.map(async (course) => {
+        syncedCourses.map(async (course) => {
           try {
             const [analytics, enrolledStudents] = await Promise.all([
               getTeacherSubjectAnalytics(course.id),
@@ -145,6 +150,15 @@ export default function TeacherCoursesManagement({
               }}
             />
 
+            {!isOnline ? (
+              <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4">
+                <Text variant="small" className="font-medium text-amber-700">
+                  Sin conexión — los cambios se sincronizarán automáticamente cuando vuelva
+                  internet.
+                </Text>
+              </div>
+            ) : null}
+
             {error ? (
               <div className="mb-6 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
                 <Text variant="small" className="font-medium text-red-700">
@@ -176,10 +190,9 @@ export default function TeacherCoursesManagement({
 
                   return {
                     averageLabel: analytics
-                      ? `${analytics.average.toFixed(2)} / 10`
+                      ? `${analytics.average.toFixed(2)} / 20`
                       : "Sin datos",
                     enrolledCount: course.enrolledCount ?? 0,
-                    statusLabel: course.riskLabel ?? "Curso activo",
                   };
                 }}
                 onCourseClick={(courseId) => {
@@ -205,6 +218,7 @@ export default function TeacherCoursesManagement({
         isOpen={isCreateModalOpen}
         onClose={() => {
           setIsCreateModalOpen(false);
+          clearCreateError();
         }}
       >
         <CreateCourseForm
@@ -214,17 +228,14 @@ export default function TeacherCoursesManagement({
           periods={periods}
           teacherName={teacherName}
           isSubmitting={isCreating}
+          errorMessage={createError}
           onCancel={() => {
             setIsCreateModalOpen(false);
+            clearCreateError();
           }}
-          onCreateCourse={async (coursePayload, studentIds) => {
-            const createdCourse = await createCourse(coursePayload, studentIds);
-
-            if (createdCourse) {
-              setIsCreateModalOpen(false);
-            }
-
-            return createdCourse;
+          onCreateCourse={(coursePayload, studentIds) => {
+            createCourse(coursePayload, studentIds);
+            setIsCreateModalOpen(false);
           }}
         />
       </CreateCourseModal>

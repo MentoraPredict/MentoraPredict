@@ -32,14 +32,13 @@ export class GetTeacherDashboardUseCase {
     periodId: string,
     correlationId?: string,
   ): Promise<TeacherDashboard> {
-    // Obtiene todos los estudiantes del período vía academic-service
-    const enrollments = await this.academic.getEnrollmentsByStudent(
+    // Obtiene los estudiantes matriculados en las materias de este docente
+    // en el período dado, deduplicados, vía academic-service.
+    const studentIds = await this.academic.getStudentsByTeacher(
       teacherId,
+      periodId,
       correlationId,
     );
-
-    // Deduplica studentIds
-    const studentIds = [...new Set(enrollments.map((e) => e.studentId))];
 
     // Carga métricas de cada estudiante en paralelo
     const metricsResults = await Promise.allSettled(

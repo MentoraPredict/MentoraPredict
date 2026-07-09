@@ -30,8 +30,6 @@ volumes:
     name: mp_dev_mongo_data
   redis_data:
     name: mp_dev_redis_data
-  rabbitmq_data:
-    name: mp_dev_rabbitmq_data
   academic_uploads_data:
     name: mp_dev_academic_uploads_data
   user_uploads_data:
@@ -159,33 +157,6 @@ services:
       timeout: 5s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: mp_dev_rabbitmq
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "0.30"
-          memory: 384M
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-mp_rabbit}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
-      RABBITMQ_DEFAULT_VHOST: /
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - mentorapredict-net
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
-
   redis-commander:
     image: rediscommander/redis-commander:0.7.2
     container_name: mp_redis_ui
@@ -307,17 +278,10 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
-      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -429,18 +393,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       UPLOADS_DIR: /app/services/academic-service/uploads
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
-      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
       - academic_uploads_data:/app/services/academic-service/uploads
     networks:
       - mentorapredict-net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -498,17 +455,10 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
-      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -563,17 +513,10 @@ services:
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
-      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
-      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
-      RABBITMQ_USER: ${RABBITMQ_USER:-mp_rabbit}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-mp_rabbit_secret}
     volumes:
       - ../keys:/secrets:ro
     networks:
       - mentorapredict-net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     healthcheck:
       test:
         [

@@ -11,6 +11,7 @@ export class PredictionLogDoc {
   @Prop({ required: true }) summary!: string;
   @Prop({ type: [Object], required: true }) recommendations!: Record<string, unknown>[];
   @Prop({ required: true }) modelVersion!: string;
+  @Prop({ type: String, default: null }) subjectId!: string | null;
 }
 
 export const PredictionLogSchema = SchemaFactory.createForClass(PredictionLogDoc);

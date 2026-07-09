@@ -1,25 +1,21 @@
-import { useParams } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 
 import TeacherCourseEdit from "@/features/teachers/components/TeacherCourseEdit";
-import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
+import type { TeacherCoursePageContext } from "@/features/teachers/components/TeacherCoursePageLayout";
 
 export default function TeacherCourseEditPage() {
-  const { courseId } = useParams();
+  const {
+    course,
+    actions: { updateCourse, updatingCourseId, uploadCourseImage, removeCourseImage },
+  } = useOutletContext<TeacherCoursePageContext>();
 
   return (
-    <TeacherCoursePageLayout courseId={courseId}>
-      {(
-        activeCourse,
-        { updateCourse, updatingCourseId, uploadCourseImage, removeCourseImage },
-      ) => (
-        <TeacherCourseEdit
-          course={activeCourse}
-          isSaving={updatingCourseId === activeCourse.id}
-          onSave={(payload) => updateCourse(activeCourse.id, payload)}
-          onUploadImage={(file) => uploadCourseImage(activeCourse.id, file)}
-          onDeleteImage={() => removeCourseImage(activeCourse.id)}
-        />
-      )}
-    </TeacherCoursePageLayout>
+    <TeacherCourseEdit
+      course={course}
+      isSaving={updatingCourseId === course.id}
+      onSave={(payload) => updateCourse(course.id, payload)}
+      onUploadImage={(file) => uploadCourseImage(course.id, file)}
+      onDeleteImage={() => removeCourseImage(course.id)}
+    />
   );
 }

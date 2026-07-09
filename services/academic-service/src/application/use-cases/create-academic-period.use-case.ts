@@ -30,9 +30,10 @@ export class CreateAcademicPeriodUseCase {
       throw new BadRequestException('startDate must be before endDate');
     }
 
-    const existingByCode = await this.repo.findByCode(dto.code);
+    const normalizedCode = dto.code.trim().toUpperCase();
+    const existingByCode = await this.repo.findByCode(normalizedCode);
     if (existingByCode) {
-      throw new ConflictException(`Academic period with code '${dto.code}' already exists`);
+      throw new ConflictException(`Academic period with code '${normalizedCode}' already exists`);
     }
 
     const existingByName = await this.repo.findByName(dto.name);
@@ -44,7 +45,7 @@ export class CreateAcademicPeriodUseCase {
     const period = new AcademicPeriodEntity(
       randomUUID(),
       dto.name,
-      dto.code,
+      normalizedCode,
       dto.description ?? '',
       start,
       end,

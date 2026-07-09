@@ -2,6 +2,7 @@ export { default as FormField } from "./FormField";
 export { default as PasswordField } from "./PasswordField";
 export { default as Divider } from "./Divider";
 export { default as AuthFooter } from "./AuthFooter";
+export { default as MicrosoftSignInButton } from "./MicrosoftSignInButton";
 export { default as FooterBrand } from "./FooterBrand";
 export { default as FooterLinkColumn } from "./FooterLinkColumn";
 

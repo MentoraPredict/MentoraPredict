@@ -162,12 +162,12 @@ postgresql:
 
     grades:
       owner: academic-service
-      description: "RF-012: Grade recorded per student per evaluation. Scale 0-10."
+      description: "RF-012: Grade recorded per student per evaluation. Scale 0-20."
       columns:
         id:             { type: UUID, constraint: PK }
         student_id:     { type: UUID, constraint: "FK → users.id" }
         evaluation_id:  { type: UUID, constraint: "FK → evaluations.id" }
-        value:          { type: NUMERIC(4,2), constraint: NOT NULL, note: "0.00 to 10.00" }
+        value:          { type: NUMERIC(4,2), constraint: NOT NULL, note: "0.00 to 20.00" }
         recorded_by:    { type: UUID, constraint: "FK → users.id", note: "TEACHER who entered the grade" }
         recorded_at:    { type: TIMESTAMPTZ, default: NOW() }
         created_at:     { type: TIMESTAMPTZ, default: NOW() }

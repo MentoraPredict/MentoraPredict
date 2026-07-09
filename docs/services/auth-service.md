@@ -90,8 +90,7 @@ auth-service/
 │   │   ├── persistence/
 │   │   │   ├── user.orm-entity.ts      # ORM Entity (TypeORM)
 │   │   │   ├── user.repository.ts      # Implementación del repository
-│   │   │   ├── auth.repository.ts      # Métodos de auth
-│   │   │   └── migrations/             # Migraciones de BD
+│   │   │   └── auth.repository.ts      # Métodos de auth
 │   │   │
 │   │   ├── cache/
 │   │   │   ├── redis.client.ts         # Cliente Redis

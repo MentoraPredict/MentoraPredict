@@ -72,6 +72,36 @@ interface SubjectRiskSummary {
 
 export type TeacherStudentPrediction = PredictionResponse;
 
+export interface AiRecommendationItem {
+  type:
+    | "STUDY_HABIT"
+    | "TUTORING"
+    | "TIME_MANAGEMENT"
+    | "ATTENDANCE"
+    | "SUBJECT_FOCUS"
+    | "WELLBEING";
+  title: string;
+  reason: string;
+  priority: "LOW" | "MEDIUM" | "HIGH";
+}
+
+export interface AiPrediction {
+  studentId: string;
+  periodId: string;
+  risk: {
+    riskLevel: RiskLevel;
+    globalAverage: number;
+    complianceIndex: number;
+    attendance: number;
+    failedEvaluations: number;
+    trendSlope: number;
+  };
+  summary: string;
+  recommendations: AiRecommendationItem[];
+  modelVersion: string;
+  generatedAt: string;
+}
+
 export interface StudentSubjectAnalytics {
   average: number;
   progress: CourseProgressPoint[];
@@ -99,6 +129,10 @@ const emptyRisk: SubjectRisk = {
   },
   weeksOfHistory: 0,
 };
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
 
 function toAlert(alert: AlertResponse): CourseAlert {
   return {
@@ -161,22 +195,22 @@ export async function getStudentSubjectAnalytics(
     {
       id: "average",
       label: "Promedio",
-      value: (risk.factors.averageGrade ?? 0) * 10,
+      value: round2((risk.factors.averageGrade ?? 0) * 5),
     },
     {
       id: "compliance",
       label: "Cumplimiento",
-      value: risk.factors.complianceIndex ?? 0,
+      value: round2(risk.factors.complianceIndex ?? 0),
     },
     {
       id: "attendance",
       label: "Asistencia",
-      value: risk.factors.attendanceRate ?? 0,
+      value: round2(risk.factors.attendanceRate ?? 0),
     },
     {
       id: "comprehension",
       label: "Comprension",
-      value: risk.factors.comprehensionAvg ?? 0,
+      value: round2(risk.factors.comprehensionAvg ?? 0),
     },
   ];
 
@@ -272,4 +306,47 @@ export async function getTeacherStudentSubjectPrediction(
   );
 
   return response.data;
+}
+
+export async function requestAiPrediction(
+  periodId: string
+): Promise<AiPrediction> {
+  const response = await api.post<AiPrediction>(
+    endpoints.prediction.generate(periodId)
+  );
+
+  return response.data;
+}
+
+export async function getLatestAiPrediction(
+  studentId: string
+): Promise<AiPrediction | null> {
+  const response = await api.get<AiPrediction[]>(
+    endpoints.prediction.history(studentId),
+    { params: { limit: 1 } }
+  );
+
+  return response.data[0] ?? null;
+}
+
+export async function requestSubjectAiPrediction(
+  subjectId: string
+): Promise<AiPrediction> {
+  const response = await api.post<AiPrediction>(
+    endpoints.prediction.generateForSubject(subjectId)
+  );
+
+  return response.data;
+}
+
+export async function getLatestSubjectAiPrediction(
+  studentId: string,
+  subjectId: string
+): Promise<AiPrediction | null> {
+  const response = await api.get<AiPrediction[]>(
+    endpoints.prediction.history(studentId),
+    { params: { limit: 1, subjectId } }
+  );
+
+  return response.data[0] ?? null;
 }

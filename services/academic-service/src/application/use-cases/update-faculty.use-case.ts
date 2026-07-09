@@ -21,12 +21,15 @@ export class UpdateFacultyUseCase {
       throw new NotFoundException(`Faculty with id '${id}' not found`);
     }
 
-    if (dto.code && dto.code !== faculty.code) {
-      const existingByCode = await this.repo.findByCode(dto.code);
-      if (existingByCode) {
-        throw new ConflictException(`Faculty with code '${dto.code}' already exists`);
+    if (dto.code) {
+      const normalizedCode = dto.code.trim().toUpperCase();
+      if (normalizedCode !== faculty.code) {
+        const existingByCode = await this.repo.findByCode(normalizedCode);
+        if (existingByCode) {
+          throw new ConflictException(`Faculty with code '${normalizedCode}' already exists`);
+        }
+        faculty.code = normalizedCode;
       }
-      faculty.code = dto.code;
     }
 
     if (dto.name && dto.name !== faculty.name) {

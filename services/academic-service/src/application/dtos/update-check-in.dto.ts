@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
-  IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
@@ -18,7 +17,12 @@ import { TopicResponseDto } from './create-check-in.dto';
 const EMOTIONAL_STATES: EmotionalState[] = ['GREAT', 'GOOD', 'NEUTRAL', 'BAD', 'CRITICAL'];
 
 export class UpdateCheckInDto {
-  @ApiProperty({ required: false }) @IsOptional() @IsBoolean() attendance?: boolean;
+  @ApiProperty({ required: false, minimum: 0, maximum: 100 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  attendance?: number;
 
   @ApiProperty({ required: false, minimum: 0, maximum: 100 })
   @IsOptional()

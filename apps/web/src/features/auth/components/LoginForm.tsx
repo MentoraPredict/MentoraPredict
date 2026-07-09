@@ -16,6 +16,7 @@ import {
   AuthFooter,
   Divider,
   FormField,
+  MicrosoftSignInButton,
   PasswordField,
 } from "@/components/molecules";
 import { APP_PATHS } from "@/routes/paths";
@@ -130,13 +131,20 @@ export default function LoginForm() {
             </button>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmittingLogin}>
-            Iniciar sesión
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmittingLogin}
+            isLoading={isSubmittingLogin}
+          >
+            {isSubmittingLogin ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
           <FeedbackMessage message={serverError} tone="error" />
         </form>
 
         <Divider />
+
+        <MicrosoftSignInButton />
 
         <Button
           variant="outline"
