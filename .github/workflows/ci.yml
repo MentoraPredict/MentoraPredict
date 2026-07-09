@@ -346,5 +346,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mentorapredict-desktop-dev
-          path: apps/desktop/release/*.exe
+          path: apps/desktop/release/*.msi
           retention-days: 14
