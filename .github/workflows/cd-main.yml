@@ -26,6 +26,7 @@ jobs:
       docker_matrix: ${{ steps.generate-matrix.outputs.docker_matrix }}
       changed_services: ${{ steps.generate-matrix.outputs.changed_services }}
       mobile_changed: ${{ steps.filter.outputs.mobile }}
+      desktop_changed: ${{ steps.filter.outputs.desktop }}
 
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +53,9 @@ jobs:
               - 'apps/landing/**'
             mobile:
               - 'apps/mobile/**'
+            desktop:
+              - 'apps/desktop/**'
+              - 'apps/web/**'
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
@@ -276,6 +280,40 @@ jobs:
         with:
           name: mentorapredict-prod-apk
           path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+  build-desktop-app:
+    name: Build Desktop App (Production)
+    runs-on: windows-latest
+    needs: detect-changes
+    timeout-minutes: 30
+    if: >
+      needs.detect-changes.outputs.desktop_changed == 'true' &&
+      github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package desktop app
+        working-directory: apps/desktop
+        run: pnpm package:prod
+
+      - name: Upload desktop installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentorapredict-desktop-prod
+          path: apps/desktop/release/*.exe
           retention-days: 30
 
   deploy-to-prod:
