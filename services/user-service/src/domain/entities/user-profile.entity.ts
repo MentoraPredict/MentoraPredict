@@ -1,15 +1,16 @@
 export enum AuthProvider {
-  LOCAL = 'LOCAL',
-  GOOGLE = 'GOOGLE',
-  MICROSOFT = 'MICROSOFT',
+  LOCAL = "LOCAL",
+  GOOGLE = "GOOGLE",
+  MICROSOFT = "MICROSOFT",
 }
 
 export const UserProfileStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
 } as const;
 
-export type UserProfileStatus = typeof UserProfileStatus[keyof typeof UserProfileStatus];
+export type UserProfileStatus =
+  (typeof UserProfileStatus)[keyof typeof UserProfileStatus];
 
 export class UserProfileEntity {
   constructor(
@@ -30,7 +31,14 @@ export class UserProfileEntity {
     public avatarUrl: string | null = null,
   ) {}
 
-  update(data: Partial<Pick<UserProfileEntity, 'photo' | 'bio' | 'cedula' | 'authProvider' | 'role' | 'status'>>): void {
+  update(
+    data: Partial<
+      Pick<
+        UserProfileEntity,
+        "photo" | "bio" | "cedula" | "authProvider" | "role" | "status"
+      >
+    >,
+  ): void {
     if (data.photo !== undefined) this.photo = data.photo;
     if (data.bio !== undefined) this.bio = data.bio;
     if (data.cedula !== undefined) this.cedula = data.cedula;
@@ -52,7 +60,7 @@ export class UserProfileEntity {
 
   softDelete(): void {
     this.deletedAt = new Date();
-    this.status = 'INACTIVE';
+    this.status = "INACTIVE";
     this.updatedAt = new Date();
   }
 }

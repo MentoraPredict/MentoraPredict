@@ -143,7 +143,8 @@ export class UsersController {
     @Req() req: AuthenticatedRequest,
   ) {
     const caller = req.user;
-    if (!caller?.sub) throw new UnauthorizedException("Invalid authorization token");
+    if (!caller?.sub)
+      throw new UnauthorizedException("Invalid authorization token");
 
     if (caller.role !== "ADMIN") {
       if (caller.sub !== id) {

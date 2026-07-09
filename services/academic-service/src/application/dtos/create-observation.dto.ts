@@ -1,6 +1,6 @@
-import { IsEnum, IsString, IsUUID, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { ObservationType } from '../../domain/entities/teacher-observation.entity';
+import { IsEnum, IsString, IsUUID, MinLength } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { ObservationType } from "../../domain/entities/teacher-observation.entity";
 
 export class CreateObservationDto {
   @ApiProperty() @IsUUID() studentId!: string;
