@@ -3,11 +3,20 @@ import CourseCard from "@/features/courses/components/CourseCard";
 
 import type { Course } from "@/types/course";
 
+type CourseCardMetrics = {
+  averageLabel: string;
+  enrolledCount: number;
+};
+
 interface CourseGridProps {
   courses: Course[];
   isDeleteMode?: boolean;
   deletingCourseId?: string | null;
+  showTeacherDetails?: boolean;
+  getCourseMetrics?: (course: Course) => CourseCardMetrics | undefined;
   onCourseClick?: (courseId: string) => void;
+  onSecondaryCourseAction?: (courseId: string) => void;
+  secondaryCourseActionLabel?: string;
   onDeleteCourse?: (courseId: string) => void;
   onCancelDeleteMode?: () => void;
 }
@@ -16,7 +25,11 @@ export default function CourseGrid({
   courses,
   isDeleteMode = false,
   deletingCourseId,
+  showTeacherDetails = true,
+  getCourseMetrics,
   onCourseClick,
+  onSecondaryCourseAction,
+  secondaryCourseActionLabel,
   onDeleteCourse,
   onCancelDeleteMode,
 }: CourseGridProps) {
@@ -53,7 +66,11 @@ export default function CourseGrid({
           course={course}
           isDeleteMode={isDeleteMode}
           isDeleting={deletingCourseId === course.id}
+          showTeacherDetails={showTeacherDetails}
+          metrics={getCourseMetrics?.(course)}
           onClick={onCourseClick}
+          onSecondaryAction={onSecondaryCourseAction}
+          secondaryActionLabel={secondaryCourseActionLabel}
           onDelete={onDeleteCourse}
           onCancelDelete={onCancelDeleteMode}
         />

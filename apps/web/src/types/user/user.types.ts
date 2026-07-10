@@ -9,4 +9,8 @@ export interface AppUser {
     isActive?: boolean;
     createdAt?: string;
     updatedAt?: string;
+    avatarUrl?: string | null;
+    facultyName?: string;
+    careerName?: string;
+    semester?: string;
 }

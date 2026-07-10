@@ -1,0 +1,42 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import HeroSection from "../components/HeroSection.astro";
+import StatsSection from "../components/StatsSection.astro";
+import FeaturesSection from "../components/FeaturesSection.astro";
+import DownloadSection from "../components/DownloadSection.astro";
+import Footer from "../components/Footer.astro";
+import { getHero, getStats, getFeatures, getDownloadOptions } from "../lib/queries";
+
+const [hero, stats, features, downloads] = await Promise.all([
+  getHero(),
+  getStats(),
+  getFeatures(),
+  getDownloadOptions(),
+]);
+---
+
+<BaseLayout title="MentoraPredict - Intelligent Academic Prediction">
+  <div class="min-h-screen bg-neutral-50">
+    <Navbar />
+
+    <main>
+      <HeroSection
+        badgeText={hero.badgeText}
+        headline={hero.headline}
+        subtext={hero.subtext}
+        ctaPrimaryText={hero.ctaPrimaryText}
+        ctaPrimaryLink={hero.ctaPrimaryLink}
+        ctaSecondaryText={hero.ctaSecondaryText}
+        ctaSecondaryLink={hero.ctaSecondaryLink}
+        imageUrl={hero.imageUrl}
+        imageAlt={hero.imageAlt}
+      />
+      <StatsSection stats={stats} />
+      <FeaturesSection features={features} />
+      <DownloadSection downloads={downloads} />
+    </main>
+
+    <Footer />
+  </div>
+</BaseLayout>

@@ -41,7 +41,7 @@ grades_seed AS (
         student_id,
         subject_id,
         evaluation_id,
-        (2 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 8))::numeric(4,2) AS value,
+        (4 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 16))::numeric(4,2) AS value,
         registered_by,
         now() - (((('x' || substr(seed_hash, 3, 2))::bit(8)::int % 30)) * interval '1 day') AS registered_at
     FROM data
@@ -102,7 +102,7 @@ history_seed AS (
             substr(seed_hash, 21, 12)
         )::uuid AS id,
         grade_id,
-        GREATEST(0, value - (1 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 5)))::numeric(4,2) AS previous_value,
+        GREATEST(0, value - (1 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 10)))::numeric(4,2) AS previous_value,
         value AS new_value,
         changed_by,
         now() - (((('x' || substr(seed_hash, 3, 2))::bit(8)::int % 20)) * interval '1 day') AS changed_at

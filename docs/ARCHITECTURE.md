@@ -6,7 +6,7 @@ MentoraPredict es una plataforma de **predicción y recomendación académica** 
 
 - **Domain-Driven Design (DDD)** para modelado de dominio
 - **Clean Architecture** para separación de responsabilidades
-- **Event-Driven Architecture** (planeado) para comunicación entre servicios
+- Comunicación entre servicios vía **HTTP interno directo** (fire-and-forget, JWT de servicio) y **Socket.IO** para push en tiempo real hacia el navegador — ver [ADR 0003](adr/0003-messaging-and-notifications.md). No se usa un bus de mensajes (RabbitMQ fue removido: nunca transportó un mensaje real entre servicios).
 
 ---
 
@@ -289,8 +289,6 @@ export class UserOrmEntity {
 
 ## Próximos Pasos
 
-- [ ] Implementar API Gateway (Kong/Nginx)
-- [ ] Event Bus con RabbitMQ/Kafka
 - [ ] Circuit Breaker para resiliencia
 - [ ] Distributed Tracing (Jaeger)
 - [ ] Logging centralizado (ELK Stack)

@@ -28,6 +28,9 @@ import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
 import { InternalUsersController } from "./infrastructure/controllers/internal-auth.controller";
 import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-case";
 import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-case";
+import { UpdateAuthUserUseCase } from "./application/use-cases/update-user.use-case";
+import { OAuthLoginUseCase } from "./application/use-cases/oauth-login.use-case";
+import { MicrosoftOAuthClient } from "./infrastructure/adapters/microsoft-oauth.client";
 
 @Module({
   imports: [
@@ -107,6 +110,9 @@ import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-
     ResetPasswordUseCase,
     GetAuthUserUseCase,
     SyncAuthUserUseCase,
+    UpdateAuthUserUseCase,
+    OAuthLoginUseCase,
+    MicrosoftOAuthClient,
   ],
 })
 export class AppModule {}

@@ -2,15 +2,27 @@ import Text from "@/components/atoms/Text";
 import TeacherCourseStudentsTableRow from "@/features/teachers/components/TeacherCourseStudentsTableRow";
 
 import type { CourseEnrolledStudent } from "@/types/course";
+import type { TeacherStudentPrediction } from "@/services/course-analytics.service";
 
 interface TeacherCourseStudentsTableProps {
   students: CourseEnrolledStudent[];
-  onUnenrollStudent: (studentId: string) => void;
+  studentPredictionsById?: Map<string, TeacherStudentPrediction>;
+  updatingEnrollmentId?: string | null;
+  regeneratingPredictionStudentId?: string | null;
+  onEnrollmentStatusChange?: (
+    enrollmentId: string,
+    isCurrentlyEnrolled: boolean,
+  ) => void;
+  onRegeneratePrediction?: (studentId: string) => void;
 }
 
 export default function TeacherCourseStudentsTable({
   students,
-  onUnenrollStudent,
+  studentPredictionsById,
+  updatingEnrollmentId,
+  regeneratingPredictionStudentId,
+  onEnrollmentStatusChange,
+  onRegeneratePrediction,
 }: TeacherCourseStudentsTableProps) {
   return (
     <div
@@ -50,6 +62,15 @@ export default function TeacherCourseStudentsTable({
                   variant="caption"
                   className="font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
+                  Correo
+                </Text>
+              </th>
+
+              <th className="px-6 py-4">
+                <Text
+                  variant="caption"
+                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                >
                   Promedio
                 </Text>
               </th>
@@ -71,6 +92,15 @@ export default function TeacherCourseStudentsTable({
                   Matriculado
                 </Text>
               </th>
+
+              <th className="px-6 py-4">
+                <Text
+                  variant="caption"
+                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                >
+                  Estado
+                </Text>
+              </th>
             </tr>
           </thead>
 
@@ -79,13 +109,19 @@ export default function TeacherCourseStudentsTable({
               <TeacherCourseStudentsTableRow
                 key={student.id}
                 student={student}
-                onUnenrollStudent={onUnenrollStudent}
+                prediction={studentPredictionsById?.get(student.user.id)}
+                isUpdating={updatingEnrollmentId === student.id}
+                isRegeneratingPrediction={
+                  regeneratingPredictionStudentId === student.user.id
+                }
+                onEnrollmentStatusChange={onEnrollmentStatusChange}
+                onRegeneratePrediction={onRegeneratePrediction}
               />
             ))}
 
             {students.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center">
+                <td colSpan={7} className="px-6 py-12 text-center">
                   <Text variant="small">
                     No existen estudiantes matriculados.
                   </Text>

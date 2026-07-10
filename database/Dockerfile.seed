@@ -1,4 +1,4 @@
-FROM postgres:16
+FROM postgres:16-alpine
 
 COPY database/seeds /seeds
 COPY database/load_all.sql /load_all.sql

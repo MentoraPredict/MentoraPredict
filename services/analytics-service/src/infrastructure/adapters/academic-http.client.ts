@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { IAcademicServiceClient } from '../../domain/ports/i-academic-service.client';
+import { CheckInSummary, EvaluationWeight, IAcademicServiceClient, SubjectDetails, SubjectOwnership } from '../../domain/ports/i-academic-service.client';
 import { Grade } from '../../domain/entities/grade.vo';
 import { Enrollment } from '../../domain/entities/enrollment.vo';
 import { InternalJwtService } from '../auth/internal-jwt.service';
@@ -31,6 +31,55 @@ export class AcademicHttpClient implements IAcademicServiceClient {
   getEnrollmentsByStudent(studentId: string, correlationId?: string): Promise<Enrollment[]> {
     return this.request<Enrollment[]>(
       `/api/v1/academic/internal/students/${studentId}/enrollments`,
+      correlationId,
+    );
+  }
+
+  getEvaluationsBySubject(subjectId: string, correlationId?: string): Promise<EvaluationWeight[]> {
+    return this.request<EvaluationWeight[]>(
+      `/api/v1/academic/internal/subjects/${subjectId}/evaluations`,
+      correlationId,
+    );
+  }
+
+  getLatestCheckIn(
+    studentId: string,
+    subjectId: string,
+    periodId: string,
+    correlationId?: string,
+  ): Promise<CheckInSummary | null> {
+    return this.request<CheckInSummary | null>(
+      `/api/v1/academic/internal/students/${studentId}/check-ins/latest?subjectId=${subjectId}&periodId=${periodId}`,
+      correlationId,
+    );
+  }
+
+  getSubjectOwnership(
+    teacherId: string,
+    subjectId: string,
+    correlationId?: string,
+  ): Promise<SubjectOwnership> {
+    return this.request<SubjectOwnership>(
+      `/api/v1/academic/internal/subjects/${subjectId}/teachers/${teacherId}/is-owner`,
+      correlationId,
+    );
+  }
+
+  async getSubjectDetails(subjectId: string, correlationId?: string): Promise<SubjectDetails | null> {
+    try {
+      return await this.request<SubjectDetails>(
+        `/api/v1/academic/internal/subjects/${subjectId}`,
+        correlationId,
+      );
+    } catch (err) {
+      this.logger.warn(`getSubjectDetails failed for ${subjectId}: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
+  }
+
+  getStudentsByTeacher(teacherId: string, periodId: string, correlationId?: string): Promise<string[]> {
+    return this.request<string[]>(
+      `/api/v1/academic/internal/teachers/${teacherId}/students?periodId=${periodId}`,
       correlationId,
     );
   }

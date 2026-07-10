@@ -30,7 +30,12 @@ describe('LoginUserUseCase', () => {
     hasher   = mockHasher();
     tokenGen = mockTokens();
     cache    = mockCache();
-    useCase  = new LoginUserUseCase(repo, hasher, tokenGen, cache);
+    useCase  = new LoginUserUseCase(
+      repo,
+      hasher,
+      tokenGen,
+      cache,
+    );
   });
 
   it('returns token pair on valid credentials', async () => {

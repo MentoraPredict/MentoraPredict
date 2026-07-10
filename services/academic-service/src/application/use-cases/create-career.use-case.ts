@@ -27,16 +27,17 @@ export class CreateCareerUseCase {
       throw new NotFoundException(`Faculty with id '${dto.facultyId}' not found`);
     }
 
-    const existingByCode = await this.careerRepo.findByCode(dto.code);
+    const normalizedCode = dto.code.trim().toUpperCase();
+    const existingByCode = await this.careerRepo.findByCode(normalizedCode);
     if (existingByCode) {
-      throw new ConflictException(`Career with code '${dto.code}' already exists`);
+      throw new ConflictException(`Career with code '${normalizedCode}' already exists`);
     }
 
     const now = new Date();
     const career = new CareerEntity(
       randomUUID(),
       dto.name,
-      dto.code,
+      normalizedCode,
       dto.description ?? '',
       'ACTIVE',
       dto.facultyId,

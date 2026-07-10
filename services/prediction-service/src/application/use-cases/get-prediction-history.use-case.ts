@@ -9,7 +9,7 @@ export class GetPredictionHistoryUseCase {
     @Inject(PREDICTION_LOG_REPO) private readonly logRepo: IPredictionLogRepository,
   ) {}
 
-  execute(studentId: string, limit?: number): Promise<PredictionResult[]> {
-    return this.logRepo.findHistory(studentId, limit);
+  execute(studentId: string, limit?: number, subjectId?: string | null): Promise<PredictionResult[]> {
+    return this.logRepo.findHistory(studentId, limit, subjectId);
   }
 }

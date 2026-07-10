@@ -15,6 +15,8 @@ export type UserProfileStatus =
 export class UserProfileEntity {
   constructor(
     public readonly id: string,
+    /** @deprecated Freeform string that predates real file storage. `avatarUrl` (Fase 10)
+     * is the source of truth going forward — kept as-is, no data migration in this phase. */
     public photo: string | null,
     public bio: string | null,
     public cedula: string | null,
@@ -24,6 +26,9 @@ export class UserProfileEntity {
     public deletedAt: Date | null,
     public readonly createdAt: Date,
     public updatedAt: Date,
+    // Server-managed upload (Fase 10) — distinct from the freeform `photo`
+    // string field, which predates real file storage and stays untouched.
+    public avatarUrl: string | null = null,
   ) {}
 
   update(
@@ -40,6 +45,16 @@ export class UserProfileEntity {
     if (data.authProvider !== undefined) this.authProvider = data.authProvider;
     if (data.role !== undefined) this.role = data.role;
     if (data.status !== undefined) this.status = data.status;
+    this.updatedAt = new Date();
+  }
+
+  setAvatar(url: string): void {
+    this.avatarUrl = url;
+    this.updatedAt = new Date();
+  }
+
+  clearAvatar(): void {
+    this.avatarUrl = null;
     this.updatedAt = new Date();
   }
 

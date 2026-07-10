@@ -19,7 +19,13 @@
 # Build outputs
 dist/
 build/
+release/
 .turbo/
+
+# electron-builder reads source assets (icons, entitlements, etc.) from
+# apps/desktop/build/ — not a generated output dir, despite the name.
+!apps/desktop/build/
+!apps/desktop/build/**
 
 # Dependencies
 /package
@@ -50,6 +56,10 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.desktop
+!.env.desktop.local
+!.env.desktop.qa
+!.env.desktop.prod
 
 # Logs
 *.log

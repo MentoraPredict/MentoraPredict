@@ -12,15 +12,20 @@ const dirname =
     : path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode.startsWith("desktop") ? "./" : "/",
   plugins: [react(), tailwindcss()],
   server: {
+    allowedHosts: process.env.VITE_ALLOW_ALL_HOSTS === "true" ? true : ["localhost", "127.0.0.1", "web"],
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
         changeOrigin: true,
       },
     },
+  },
+  build: {
+    sourcemap: mode === "qa",
   },
   resolve: {
     alias: {
@@ -54,4 +59,4 @@ export default defineConfig({
       },
     ],
   },
-});
+}));

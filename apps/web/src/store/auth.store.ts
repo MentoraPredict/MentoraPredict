@@ -34,6 +34,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isHydrated: boolean;
   login: (credentials: LoginCredentials) => Promise<AuthSessionUser>;
+  loginWithTokens: (tokens: AuthTokens) => Promise<AuthSessionUser>;
   refreshSession: () => Promise<string | null>;
   hydrateSession: () => Promise<void>;
   logout: () => Promise<void>;
@@ -96,6 +97,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (credentials) => {
     const tokens: AuthTokens = await loginRequest(credentials);
 
+    return get().loginWithTokens(tokens);
+  },
+
+  loginWithTokens: async (tokens) => {
     setTokens(tokens.accessToken, tokens.refreshToken);
 
     const user = await resolveSessionUser(tokens.accessToken);

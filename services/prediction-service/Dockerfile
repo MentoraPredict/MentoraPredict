@@ -6,38 +6,25 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
     NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=300000 \
     PNPM_HOME="/root/.pnpm"
 RUN corepack enable
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY services/auth-service/package.json ./services/auth-service/package.json
-COPY services/user-service/package.json ./services/user-service/package.json
-COPY services/academic-service/package.json ./services/academic-service/package.json
-COPY services/analytics-service/package.json ./services/analytics-service/package.json
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY services/prediction-service/package.json ./services/prediction-service/package.json
-COPY apps/web/package.json ./apps/web/package.json
-COPY packages/hooks/package.json ./packages/hooks/package.json
-COPY packages/services/package.json ./packages/services/package.json
-COPY packages/shared-config/package.json ./packages/shared-config/package.json
-COPY packages/shared-types/package.json ./packages/shared-types/package.json
-COPY packages/shared-utils/package.json ./packages/shared-utils/package.json
-COPY packages/ui/package.json ./packages/ui/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS prod-deps
 RUN CI=true pnpm install --prod --frozen-lockfile
 
-FROM node:22-alpine AS builder
+FROM deps AS builder
 WORKDIR /app
-RUN corepack enable
-COPY --from=deps /app .
+ENV CI=true \
+    PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
+    PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 COPY services/prediction-service ./services/prediction-service
-COPY packages ./packages
 RUN pnpm --filter @mentorapredict/prediction-service build
 
-FROM node:22-alpine AS runner
+FROM prod-deps AS runner
 WORKDIR /app/services/prediction-service
 COPY --from=builder /app/services/prediction-service/dist ./dist
 COPY --from=builder /app/services/prediction-service/package.json ./
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=prod-deps /app/services/prediction-service/node_modules ./node_modules
 USER node
 ENV NODE_ENV=production
 EXPOSE 3006

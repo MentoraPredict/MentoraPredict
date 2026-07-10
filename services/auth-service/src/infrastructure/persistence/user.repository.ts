@@ -39,7 +39,7 @@ export class UserRepository implements IUserRepository {
       orm.id, orm.email, orm.passwordHash,
       orm.role as UserRole, orm.isActive, orm.isVerified,
       orm.createdAt, orm.updatedAt,
-      orm.firstName, orm.lastName,
+      orm.firstName, orm.lastName, orm.authProvider,
     );
   }
 
@@ -53,6 +53,7 @@ export class UserRepository implements IUserRepository {
     orm.isVerified   = domain.isVerified;
     orm.firstName    = domain.firstName;
     orm.lastName     = domain.lastName;
+    orm.authProvider = domain.authProvider;
     orm.createdAt    = domain.createdAt;
     orm.updatedAt    = domain.updatedAt;
     return orm;

@@ -2,6 +2,12 @@ import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GetStudentGradesUseCase } from '../../application/use-cases/get-student-grades.use-case';
 import { GetStudentEnrollmentsUseCase } from '../../application/use-cases/get-student-enrollments.use-case';
+import { GetSubjectEvaluationWeightsUseCase } from '../../application/use-cases/get-subject-evaluation-weights.use-case';
+import { GetLatestCheckInUseCase } from '../../application/use-cases/get-latest-check-in.use-case';
+import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-subject-ownership.use-case';
+import { GetSubjectUseCase } from '../../application/use-cases/get-subject.use-case';
+import { GetTeacherStudentsUseCase } from '../../application/use-cases/get-teacher-students.use-case';
+import { GetSubjectTopicsInternalUseCase } from '../../application/use-cases/get-subject-topics-internal.use-case';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 @ApiTags('academic-internal')
@@ -11,10 +17,16 @@ export class InternalAcademicController {
   constructor(
     private readonly getGradesUC: GetStudentGradesUseCase,
     private readonly getEnrollmentsUC: GetStudentEnrollmentsUseCase,
+    private readonly getEvalWeightsUC: GetSubjectEvaluationWeightsUseCase,
+    private readonly getLatestCheckInUC: GetLatestCheckInUseCase,
+    private readonly checkOwnershipUC: CheckSubjectOwnershipUseCase,
+    private readonly getSubjectUC: GetSubjectUseCase,
+    private readonly getTeacherStudentsUC: GetTeacherStudentsUseCase,
+    private readonly getSubjectTopicsUC: GetSubjectTopicsInternalUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
-  @ApiOperation({ summary: 'Internal: grades by student and period' })
+  @ApiOperation({ summary: 'Internal: grades by student and period (one per evaluation)' })
   grades(@Param('studentId') studentId: string, @Query('periodId') periodId: string) {
     return this.getGradesUC.execute(studentId, periodId);
   }
@@ -23,5 +35,48 @@ export class InternalAcademicController {
   @ApiOperation({ summary: 'Internal: enrollments by student' })
   enrollments(@Param('studentId') studentId: string) {
     return this.getEnrollmentsUC.execute(studentId);
+  }
+
+  @Get('subjects/:subjectId/evaluations')
+  @ApiOperation({ summary: 'Internal: evaluation weights for a subject (used by analytics)' })
+  evaluationWeights(@Param('subjectId') subjectId: string) {
+    return this.getEvalWeightsUC.execute(subjectId);
+  }
+
+  @Get('students/:studentId/check-ins/latest')
+  @ApiOperation({ summary: 'Internal: latest weekly check-in summary for risk calculation' })
+  latestCheckIn(
+    @Param('studentId') studentId: string,
+    @Query('subjectId') subjectId: string,
+    @Query('periodId') periodId: string,
+  ) {
+    return this.getLatestCheckInUC.execute(studentId, subjectId, periodId);
+  }
+
+  @Get('subjects/:subjectId/teachers/:teacherId/is-owner')
+  @ApiOperation({ summary: 'Internal: check whether a teacher owns a subject in its current academic period' })
+  isOwner(@Param('subjectId') subjectId: string, @Param('teacherId') teacherId: string) {
+    return this.checkOwnershipUC.execute(subjectId, teacherId);
+  }
+
+  @Get('subjects/:subjectId')
+  @ApiOperation({ summary: 'Internal: subject details (name, assigned teacherId) for cross-service lookups' })
+  subjectDetails(@Param('subjectId') subjectId: string) {
+    return this.getSubjectUC.execute(subjectId);
+  }
+
+  @Get('teachers/:teacherId/students')
+  @ApiOperation({ summary: 'Internal: distinct student ids enrolled in this teacher\'s subjects for a period (used by analytics teacher dashboard)' })
+  teacherStudents(
+    @Param('teacherId') teacherId: string,
+    @Query('periodId') periodId: string,
+  ) {
+    return this.getTeacherStudentsUC.execute(teacherId, periodId);
+  }
+
+  @Get('subjects/:subjectId/topics')
+  @ApiOperation({ summary: 'Internal: syllabus topics for a subject (used by prediction-service for AI context)' })
+  topics(@Param('subjectId') subjectId: string) {
+    return this.getSubjectTopicsUC.execute(subjectId);
   }
 }

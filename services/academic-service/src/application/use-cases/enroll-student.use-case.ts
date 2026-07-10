@@ -1,15 +1,19 @@
 import {
   BadRequestException,
   ConflictException,
-  NotFoundException,
+  ForbiddenException,
   Inject,
   Injectable,
+  NotFoundException,
 } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { EnrollmentEntity } from "../../domain/entities/enrollment.entity";
 import { IEnrollmentRepository } from "../ports/output/i-enrollment.repository";
 import { ISubjectRepository } from "../ports/output/i-subject.repository";
 import { IAcademicPeriodRepository } from "../ports/output/i-academic-period.repository";
+import { ISubjectTeacherRepository } from "../ports/output/i-subject-teacher.repository";
+import { IUserProfilePort } from "../ports/output/i-user-profile.port";
+import { INotificationClientPort } from "../ports/output/i-notification-client.port";
 import { EnrollStudentDto } from "../dtos/enroll-student.dto";
 
 @Injectable()
@@ -21,9 +25,18 @@ export class EnrollStudentUseCase {
     private readonly subjectRepo: ISubjectRepository,
     @Inject("IAcademicPeriodRepository")
     private readonly periodRepo: IAcademicPeriodRepository,
+    @Inject("ISubjectTeacherRepository")
+    private readonly subjectTeacherRepo: ISubjectTeacherRepository,
+    @Inject("IUserProfilePort")
+    private readonly userProfilePort: IUserProfilePort,
+    @Inject("INotificationClientPort")
+    private readonly notificationClient: INotificationClientPort,
   ) {}
 
-  async execute(dto: EnrollStudentDto): Promise<EnrollmentEntity> {
+  async execute(
+    dto: EnrollStudentDto,
+    teacherId: string,
+  ): Promise<EnrollmentEntity> {
     const subject = await this.subjectRepo.findById(dto.subjectId);
     if (!subject || !subject.isActive) {
       throw new NotFoundException("Subject not found or inactive");
@@ -34,22 +47,24 @@ export class EnrollStudentUseCase {
       throw new BadRequestException("Academic period is not active");
     }
 
-    const activeCount = await this.enrollRepo.countActiveBySubject(
+    // Teacher must own this course
+    const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
       dto.subjectId,
-    );
-    if (activeCount >= subject.maxCapacity) {
-      throw new BadRequestException("Subject has no available capacity");
-    }
-
-    const existing = await this.enrollRepo.findByStudentSubjectAndPeriod(
-      dto.studentId,
-      dto.subjectId,
+      teacherId,
       subject.academicPeriodId,
     );
-    if (existing?.status === "ACTIVE") {
-      throw new ConflictException(
-        "Student is already enrolled in this subject for the period",
-      );
+    if (!assignment) {
+      throw new ForbiddenException("No tienes acceso a este curso");
+    }
+
+    // Student must exist and be an active STUDENT
+    const profile = await this.userProfilePort.getProfile(dto.studentId);
+    if (!profile) throw new NotFoundException("Student not found");
+    if (profile.role !== "STUDENT") {
+      throw new BadRequestException("User is not a STUDENT");
+    }
+    if (profile.status !== "ACTIVE") {
+      throw new BadRequestException("Student account is not active");
     }
 
     const now = new Date();
@@ -62,6 +77,36 @@ export class EnrollStudentUseCase {
       now,
       now,
     );
-    return this.enrollRepo.save(enrollment);
+
+    const result = await this.enrollRepo.saveWithCapacityCheck(
+      enrollment,
+      subject.maxCapacity,
+    );
+
+    if (result === "already_enrolled") {
+      throw new ConflictException(
+        "Student is already enrolled in this subject for the period",
+      );
+    }
+    if (result === "at_capacity") {
+      throw new BadRequestException("Subject has no available capacity");
+    }
+
+    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherName = teacherProfile
+      ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
+      : null;
+
+    void this.notificationClient.notify({
+      recipientId: dto.studentId,
+      recipientRole: "STUDENT",
+      type: "ENROLLMENT_CREATED",
+      title: "Nueva matrícula",
+      message: teacherName
+        ? `${teacherName} te matriculó en ${subject.name}.`
+        : `Fuiste matriculado en ${subject.name}.`,
+    });
+
+    return enrollment;
   }
 }

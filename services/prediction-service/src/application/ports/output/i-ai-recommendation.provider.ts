@@ -11,6 +11,9 @@ export interface AiRecommendationRequest {
     trendSlope: number;
   };
   subjects: Array<{ name: string; currentGrade: number | null; credits: number }>;
+  // Present only for a subject-scoped request — the syllabus unit titles for
+  // the ONE subject in focus (subjects will contain a single entry too).
+  topics?: string[];
 }
 
 export interface AiRecommendationResult {

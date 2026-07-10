@@ -13,10 +13,11 @@ import {
   HttpStatus,
   UseInterceptors,
   UseGuards,
+  UseFilters,
   UploadedFile,
   BadRequestException,
-  ForbiddenException,
   UnauthorizedException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
@@ -27,6 +28,8 @@ import {
   ApiConsumes,
   ApiBody,
 } from "@nestjs/swagger";
+import { MulterExceptionFilter } from "../filters/multer-exception.filter";
+import { MAX_IMAGE_BYTES, MAX_TOPIC_FILE_BYTES } from "../storage/upload.util";
 
 type MulterUploadedFile = {
   fieldname: string;
@@ -47,7 +50,6 @@ import { RegisterGradeUseCase } from "../../application/use-cases/register-grade
 import { UpdateGradeUseCase } from "../../application/use-cases/update-grade.use-case";
 import { EnrollStudentUseCase } from "../../application/use-cases/enroll-student.use-case";
 import { GetStudentEnrollmentsUseCase } from "../../application/use-cases/get-student-enrollments.use-case";
-import { GetSubjectEnrollmentsUseCase } from "../../application/use-cases/get-subject-enrollments.use-case";
 import { CreateEvaluationUseCase } from "../../application/use-cases/create-evaluation.use-case";
 import { AssignTeacherUseCase } from "../../application/use-cases/assign-teacher.use-case";
 import { ImportGradesUseCase } from "../../application/use-cases/import-grades.use-case";
@@ -99,9 +101,45 @@ import { ListSubjectsUseCase } from "../../application/use-cases/list-subjects.u
 import { UpdateSubjectUseCase } from "../../application/use-cases/update-subject.use-case";
 import { ChangeSubjectStatusUseCase } from "../../application/use-cases/change-subject-status.use-case";
 import { DeleteSubjectUseCase } from "../../application/use-cases/delete-subject.use-case";
+import { GetTeacherSubjectsUseCase } from "../../application/use-cases/get-teacher-subjects.use-case";
+import { GetSubjectEnrollmentsUseCase } from "../../application/use-cases/get-subject-enrollments.use-case";
+import { BatchEnrollStudentsUseCase } from "../../application/use-cases/batch-enroll-students.use-case";
+import { UpdateEnrollmentStatusUseCase } from "../../application/use-cases/update-enrollment-status.use-case";
+import { GetStudentSubjectsUseCase } from "../../application/use-cases/get-student-subjects.use-case";
 import { CreateSubjectDto } from "../../application/dtos/create-subject.dto";
 import { UpdateSubjectDto } from "../../application/dtos/update-subject.dto";
 import { ChangeSubjectStatusDto } from "../../application/dtos/change-subject-status.dto";
+import { BatchEnrollDto } from "../../application/dtos/batch-enroll.dto";
+import { UpdateEnrollmentStatusDto } from "../../application/dtos/update-enrollment-status.dto";
+import { SubjectEvaluationDto } from "../../application/dtos/subject-evaluation.dto";
+import { UpdateEvaluationDto } from "../../application/dtos/update-evaluation.dto";
+import { ToggleEvaluationStatusDto } from "../../application/dtos/toggle-evaluation-status.dto";
+import { ListEvaluationsUseCase } from "../../application/use-cases/list-evaluations.use-case";
+import { UpdateEvaluationUseCase } from "../../application/use-cases/update-evaluation.use-case";
+import { ArchiveEvaluationUseCase } from "../../application/use-cases/archive-evaluation.use-case";
+import { GetWeightSummaryUseCase } from "../../application/use-cases/get-weight-summary.use-case";
+import { ImportSubjectGradesUseCase } from "../../application/use-cases/import-subject-grades.use-case";
+import { ListGradeImportsUseCase } from "../../application/use-cases/list-grade-imports.use-case";
+import { GetGradeImportUseCase } from "../../application/use-cases/get-grade-import.use-case";
+import { UploadSubjectImageUseCase } from "../../application/use-cases/upload-subject-image.use-case";
+import { DeleteSubjectImageUseCase } from "../../application/use-cases/delete-subject-image.use-case";
+import { CreateTopicUseCase } from "../../application/use-cases/create-topic.use-case";
+import { ListTopicsUseCase } from "../../application/use-cases/list-topics.use-case";
+import { UpdateTopicUseCase } from "../../application/use-cases/update-topic.use-case";
+import { DeleteTopicUseCase } from "../../application/use-cases/delete-topic.use-case";
+import { UploadTopicFileUseCase } from "../../application/use-cases/upload-topic-file.use-case";
+import { DeleteTopicFileUseCase } from "../../application/use-cases/delete-topic-file.use-case";
+import { CreateTopicDto } from "../../application/dtos/create-topic.dto";
+import { UpdateTopicDto } from "../../application/dtos/update-topic.dto";
+
+// Weekly check-ins (Phase 5)
+import { GetCurrentCheckInUseCase } from "../../application/use-cases/get-current-check-in.use-case";
+import { UpsertCheckInUseCase } from "../../application/use-cases/upsert-check-in.use-case";
+import { UpdateCheckInUseCase } from "../../application/use-cases/update-check-in.use-case";
+import { ListCheckInsUseCase } from "../../application/use-cases/list-check-ins.use-case";
+import { GetCheckInsSummaryUseCase } from "../../application/use-cases/get-check-ins-summary.use-case";
+import { CreateCheckInDto } from "../../application/dtos/create-check-in.dto";
+import { UpdateCheckInDto } from "../../application/dtos/update-check-in.dto";
 
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 import { RolesGuard, Roles } from "../guards/roles.guard";
@@ -117,7 +155,6 @@ export class AcademicController {
     private readonly updateGradeUC: UpdateGradeUseCase,
     private readonly enrollStudentUC: EnrollStudentUseCase,
     private readonly getStudentEnrollmentsUC: GetStudentEnrollmentsUseCase,
-    private readonly getSubjectEnrollmentsUC: GetSubjectEnrollmentsUseCase,
     private readonly createEvaluationUC: CreateEvaluationUseCase,
     private readonly assignTeacherUC: AssignTeacherUseCase,
     private readonly importGradesUC: ImportGradesUseCase,
@@ -150,17 +187,209 @@ export class AcademicController {
     private readonly updateSubjectUC: UpdateSubjectUseCase,
     private readonly changeSubjectStatusUC: ChangeSubjectStatusUseCase,
     private readonly deleteSubjectUC: DeleteSubjectUseCase,
+    private readonly getTeacherSubjectsUC: GetTeacherSubjectsUseCase,
+    private readonly getSubjectEnrollmentsUC: GetSubjectEnrollmentsUseCase,
+    private readonly batchEnrollUC: BatchEnrollStudentsUseCase,
+    private readonly updateEnrollmentStatusUC: UpdateEnrollmentStatusUseCase,
+    private readonly getStudentSubjectsUC: GetStudentSubjectsUseCase,
+    // Evaluation CRUD (Phase 4)
+    private readonly listEvaluationsUC: ListEvaluationsUseCase,
+    private readonly updateEvaluationUC: UpdateEvaluationUseCase,
+    private readonly archiveEvaluationUC: ArchiveEvaluationUseCase,
+    private readonly getWeightSummaryUC: GetWeightSummaryUseCase,
+    // Grade import (Phase 4)
+    private readonly importSubjectGradesUC: ImportSubjectGradesUseCase,
+    private readonly listGradeImportsUC: ListGradeImportsUseCase,
+    private readonly getGradeImportUC: GetGradeImportUseCase,
+    // Weekly check-ins (Phase 5)
+    private readonly getCurrentCheckInUC: GetCurrentCheckInUseCase,
+    private readonly upsertCheckInUC: UpsertCheckInUseCase,
+    private readonly updateCheckInUC: UpdateCheckInUseCase,
+    private readonly listCheckInsUC: ListCheckInsUseCase,
+    private readonly getCheckInsSummaryUC: GetCheckInsSummaryUseCase,
+    // File storage (Phase 10)
+    private readonly uploadSubjectImageUC: UploadSubjectImageUseCase,
+    private readonly deleteSubjectImageUC: DeleteSubjectImageUseCase,
+    // Temario (Phase 10b)
+    private readonly createTopicUC: CreateTopicUseCase,
+    private readonly listTopicsUC: ListTopicsUseCase,
+    private readonly updateTopicUC: UpdateTopicUseCase,
+    private readonly deleteTopicUC: DeleteTopicUseCase,
+    private readonly uploadTopicFileUC: UploadTopicFileUseCase,
+    private readonly deleteTopicFileUC: DeleteTopicFileUseCase,
   ) {}
 
   // ─── Enrollments ──────────────────────────────────────────────────────────────
 
   @Post("enrollments")
-  @Roles("ADMIN", "TEACHER")
-  @ApiOperation({ summary: "RF-007: Enroll student in a subject" })
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (TEACHER only)" })
   @ApiResponse({ status: 201 })
-  @ApiResponse({ status: 409, description: "Already enrolled" })
-  async enroll(@Body() dto: EnrollStudentDto) {
-    return this.enrollStudentUC.execute(dto);
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 409, description: "Already enrolled or no capacity" })
+  async enroll(@Body() dto: EnrollStudentDto, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.enrollStudentUC.execute(dto, teacherId);
+  }
+
+  @Get("subjects/:subjectId/enrollments")
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "List enrolled students for a subject" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  async getSubjectEnrollments(
+    @Param("subjectId") subjectId: string,
+    @Req() req: JwtRequest,
+    @Query("status") status?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const requesterId = req.user?.sub ?? "";
+    const requesterRole = req.user?.role ?? "";
+    return this.getSubjectEnrollmentsUC.execute(
+      subjectId,
+      requesterId,
+      requesterRole,
+      { status },
+      { page: parseInt(page ?? "1", 10), limit: parseInt(limit ?? "20", 10) },
+    );
+  }
+
+  @Post("subjects/:subjectId/enrollments/batch")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Batch enroll multiple students in a subject (TEACHER only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  async batchEnroll(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: BatchEnrollDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.batchEnrollUC.execute(subjectId, teacherId, dto.studentIds);
+  }
+
+  @Patch("enrollments/:enrollmentId/status")
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "Change enrollment status (TEACHER: own courses only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409, description: "Period is not active" })
+  async updateEnrollmentStatus(
+    @Param("enrollmentId") enrollmentId: string,
+    @Body() dto: UpdateEnrollmentStatusDto,
+    @Req() req: JwtRequest,
+  ) {
+    const requesterId = req.user?.sub ?? "";
+    const requesterRole = req.user?.role ?? "";
+    return this.updateEnrollmentStatusUC.execute(
+      enrollmentId,
+      dto.status,
+      requesterId,
+      requesterRole,
+    );
+  }
+
+  @Get("students/me/subjects")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "Get authenticated student's enrolled subjects" })
+  @ApiResponse({ status: 200 })
+  async getMyEnrolledSubjects(
+    @Req() req: JwtRequest,
+    @Query("periodId") periodId?: string,
+    @Query("status") status?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.getStudentSubjectsUC.execute(
+      studentId,
+      { periodId, status },
+      { page: parseInt(page ?? "1", 10), limit: parseInt(limit ?? "20", 10) },
+    );
+  }
+
+  // ─── Weekly check-ins (Phase 5) ─────────────────────────────────────────────
+
+  @Get("students/me/subjects/:subjectId/check-ins/current")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "Get the authenticated student's check-in for the current academic week" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
+  async getCurrentCheckIn(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.getCurrentCheckInUC.execute(studentId, subjectId);
+  }
+
+  @Post("students/me/subjects/:subjectId/check-ins")
+  @Roles("STUDENT")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Create or update (upsert) the current week's check-in" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
+  @ApiResponse({ status: 409, description: "No active academic period" })
+  async upsertCheckIn(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: CreateCheckInDto,
+    @Req() req: JwtRequest,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.upsertCheckInUC.execute(studentId, subjectId, dto);
+  }
+
+  @Put("students/me/subjects/:subjectId/check-ins/:checkInId")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "Update an existing check-in owned by the authenticated student" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Check-in does not belong to this student" })
+  @ApiResponse({ status: 404 })
+  async updateCheckIn(
+    @Param("checkInId") checkInId: string,
+    @Body() dto: UpdateCheckInDto,
+    @Req() req: JwtRequest,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.updateCheckInUC.execute(checkInId, studentId, dto);
+  }
+
+  @Get("students/me/subjects/:subjectId/check-ins")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "List the authenticated student's check-in history for a subject" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Student is not actively enrolled in this subject" })
+  async listCheckIns(
+    @Param("subjectId") subjectId: string,
+    @Req() req: JwtRequest,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.listCheckInsUC.execute(studentId, subjectId, {
+      page: parseInt(page ?? "1", 10),
+      limit: parseInt(limit ?? "20", 10),
+    });
+  }
+
+  @Get("subjects/:subjectId/check-ins/summary")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Aggregated weekly check-in averages for a subject (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  async getCheckInsSummary(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.getCheckInsSummaryUC.execute(subjectId, teacherId);
   }
 
   @Get("enrollments")
@@ -183,7 +412,13 @@ export class AcademicController {
         );
       }
 
-      return this.getSubjectEnrollmentsUC.execute(subjectId);
+      return this.getSubjectEnrollmentsUC.execute(
+        subjectId,
+        caller.sub,
+        caller.role ?? "",
+        {},
+        { page: 1, limit: 20 },
+      );
     }
 
     const targetStudentId = studentId ?? caller.sub;
@@ -205,10 +440,159 @@ export class AcademicController {
 
   @Post("evaluations")
   @Roles("TEACHER", "ADMIN")
-  @ApiOperation({ summary: "RF-008: Create evaluation for a subject" })
+  @ApiOperation({ summary: "RF-008: Create evaluation for a subject (legacy — subjectId in body)" })
   @ApiResponse({ status: 201 })
   async createEvaluation(@Body() dto: CreateEvaluationDto) {
     return this.createEvaluationUC.execute(dto);
+  }
+
+  // ─── Evaluations (Phase 4) ─────────────────────────────────────────────────
+
+  @Get("subjects/:subjectId/evaluations/weight-summary")
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "Get weight summary for a subject's evaluations" })
+  @ApiResponse({ status: 200 })
+  async getWeightSummary(@Param("subjectId") subjectId: string) {
+    return this.getWeightSummaryUC.execute(subjectId);
+  }
+
+  @Get("subjects/:subjectId/evaluations")
+  @Roles("TEACHER", "ADMIN", "STUDENT")
+  @ApiOperation({ summary: "List evaluations for a subject (STUDENT requires active enrollment)" })
+  @ApiResponse({ status: 200 })
+  async listEvaluations(
+    @Param("subjectId") subjectId: string,
+    @Req() req: JwtRequest,
+  ) {
+    const requesterId = req.user?.sub ?? "";
+    const requesterRole = req.user?.role ?? "";
+    return this.listEvaluationsUC.execute(subjectId, requesterId, requesterRole);
+  }
+
+  @Post("subjects/:subjectId/evaluations")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create evaluation for a subject (TEACHER owner, subjectId from URL)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400, description: "Weight would exceed 100%" })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  async createSubjectEvaluation(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: SubjectEvaluationDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.createEvaluationUC.execute(
+      { name: dto.name, weight: dto.weight, subjectId, dueDate: dto.dueDate },
+      subjectId,
+    );
+  }
+
+  @Put("evaluations/:evaluationId")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Update evaluation name/weight/dueDate (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 400, description: "Weight would exceed 100%" })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async updateEvaluation(
+    @Param("evaluationId") evaluationId: string,
+    @Body() dto: UpdateEvaluationDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.updateEvaluationUC.execute(evaluationId, teacherId, dto);
+  }
+
+  @Patch("evaluations/:evaluationId/status")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Archive or reactivate an evaluation (TEACHER owner, no grade deletion)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async toggleEvaluationStatus(
+    @Param("evaluationId") evaluationId: string,
+    @Body() dto: ToggleEvaluationStatusDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.archiveEvaluationUC.execute(evaluationId, teacherId, dto.isActive);
+  }
+
+  // ─── Grade import (Phase 4) ────────────────────────────────────────────────
+
+  @Post("subjects/:subjectId/grade-imports")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Import grades from XLSX/CSV for a specific subject (TEACHER owner)" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: { file: { type: "string", format: "binary" } },
+    },
+  })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400, description: "Missing columns or invalid rows" })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 409, description: "Period inactive" })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  @UseInterceptors(FileInterceptor("file"))
+  async importSubjectGrades(
+    @Param("subjectId") subjectId: string,
+    @UploadedFile() file: MulterUploadedFile,
+    @Req() req: JwtRequest,
+  ) {
+    if (!file?.buffer) throw new BadRequestException("Se requiere un archivo");
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.importSubjectGradesUC.execute(
+      subjectId,
+      teacherId,
+      file.buffer,
+      file.originalname,
+      file.size,
+      file.mimetype,
+    );
+  }
+
+  @Get("subjects/:subjectId/grade-imports")
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "List grade import history for a subject" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  async listGradeImports(
+    @Param("subjectId") subjectId: string,
+    @Req() req: JwtRequest,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const requesterId = req.user?.sub ?? "";
+    const requesterRole = req.user?.role ?? "";
+    return this.listGradeImportsUC.execute(
+      subjectId,
+      requesterId,
+      requesterRole,
+      { page: parseInt(page ?? "1", 10), limit: parseInt(limit ?? "20", 10) },
+    );
+  }
+
+  @Get("grade-imports/:importId")
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "Get grade import detail including per-row errors" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async getGradeImport(
+    @Param("importId") importId: string,
+    @Req() req: JwtRequest,
+  ) {
+    const requesterId = req.user?.sub ?? "";
+    const requesterRole = req.user?.role ?? "";
+    return this.getGradeImportUC.execute(importId, requesterId, requesterRole);
   }
 
   // ─── Grades ───────────────────────────────────────────────────────────────────
@@ -485,15 +869,37 @@ export class AcademicController {
   }
 
   @Post("subjects")
-  @Roles("ADMIN", "TEACHER")
+  @Roles("TEACHER")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new subject (ADMIN or TEACHER)" })
+  @ApiOperation({ summary: "Create a new subject (TEACHER only)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 400 })
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
-  async createSubject(@Body() dto: CreateSubjectDto) {
-    return this.createSubjectUC.execute(dto);
+  async createSubject(@Body() dto: CreateSubjectDto, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException('Missing teacher identity');
+    return this.createSubjectUC.execute(dto, teacherId);
+  }
+
+  @Get("teachers/me/subjects")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Get authenticated teacher's subjects with pagination" })
+  @ApiResponse({ status: 200 })
+  async getMySubjects(
+    @Req() req: JwtRequest,
+    @Query("periodId") periodId?: string,
+    @Query("status") status?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException('Missing teacher identity');
+    return this.getTeacherSubjectsUC.execute(
+      teacherId,
+      { periodId, status },
+      { page: parseInt(page ?? '1', 10), limit: parseInt(limit ?? '20', 10) },
+    );
   }
 
   @Put("subjects/:id")
@@ -526,5 +932,134 @@ export class AcademicController {
   @ApiResponse({ status: 404 })
   async deleteSubject(@Param("id") id: string) {
     return this.deleteSubjectUC.execute(id);
+  }
+
+  // ─── Subject image (Phase 10) ──────────────────────────────────────────
+
+  @Post("subjects/:subjectId/image")
+  @Roles("TEACHER")
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace a subject's cover image (TEACHER owner, jpg/jpeg/png, max 2MB)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  async uploadSubjectImage(
+    @Param("subjectId") subjectId: string,
+    @UploadedFile() file: MulterUploadedFile,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.uploadSubjectImageUC.execute(subjectId, teacherId, file);
+  }
+
+  @Delete("subjects/:subjectId/image")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove a subject's cover image (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  async deleteSubjectImage(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.deleteSubjectImageUC.execute(subjectId, teacherId);
+  }
+
+  // ─── Temario / Topics (Phase 10b) ────────────────────────────────────────
+
+  @Get("subjects/:subjectId/topics")
+  @Roles("TEACHER", "STUDENT")
+  @ApiOperation({ summary: "List a subject's topics, ordered (TEACHER owner or STUDENT actively enrolled)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async listTopics(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const requesterId = req.user?.sub ?? "";
+    const requesterRole = req.user?.role ?? "";
+    return this.listTopicsUC.execute(subjectId, requesterId, requesterRole);
+  }
+
+  @Post("subjects/:subjectId/topics")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a topic for a subject, without a file yet (TEACHER owner)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  async createTopic(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: CreateTopicDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.createTopicUC.execute(subjectId, teacherId, dto);
+  }
+
+  @Put("topics/:topicId")
+  @Roles("TEACHER")
+  @ApiOperation({ summary: "Update a topic's title/description/order (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async updateTopic(
+    @Param("topicId") topicId: string,
+    @Body() dto: UpdateTopicDto,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.updateTopicUC.execute(topicId, teacherId, dto);
+  }
+
+  @Delete("topics/:topicId")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete a topic and its physical file, if any (TEACHER owner)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async deleteTopic(@Param("topicId") topicId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    await this.deleteTopicUC.execute(topicId, teacherId);
+  }
+
+  @Post("topics/:topicId/file")
+  @Roles("TEACHER")
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_TOPIC_FILE_BYTES } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace a topic's file (TEACHER owner, image 2MB or pdf/docx/pptx/xlsx 10MB)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  async uploadTopicFile(
+    @Param("topicId") topicId: string,
+    @UploadedFile() file: MulterUploadedFile,
+    @Req() req: JwtRequest,
+  ) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.uploadTopicFileUC.execute(topicId, teacherId, file);
+  }
+
+  @Delete("topics/:topicId/file")
+  @Roles("TEACHER")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove a topic's file, keeping the topic itself (TEACHER owner)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403 })
+  @ApiResponse({ status: 404 })
+  async deleteTopicFile(@Param("topicId") topicId: string, @Req() req: JwtRequest) {
+    const teacherId = req.user?.sub;
+    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
+    return this.deleteTopicFileUC.execute(topicId, teacherId);
   }
 }

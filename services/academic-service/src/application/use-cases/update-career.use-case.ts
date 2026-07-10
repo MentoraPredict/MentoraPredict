@@ -22,12 +22,15 @@ export class UpdateCareerUseCase {
       throw new NotFoundException(`Career with id '${id}' not found`);
     }
 
-    if (dto.code && dto.code !== career.code) {
-      const existing = await this.repo.findByCode(dto.code);
-      if (existing) {
-        throw new ConflictException(`Career with code '${dto.code}' already exists`);
+    if (dto.code) {
+      const normalizedCode = dto.code.trim().toUpperCase();
+      if (normalizedCode !== career.code) {
+        const existing = await this.repo.findByCode(normalizedCode);
+        if (existing) {
+          throw new ConflictException(`Career with code '${normalizedCode}' already exists`);
+        }
+        career.code = normalizedCode;
       }
-      career.code = dto.code;
     }
 
     if (dto.name !== undefined) {

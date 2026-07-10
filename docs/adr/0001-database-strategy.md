@@ -14,7 +14,6 @@ Decision
 
 Consequences
 
-- Developers must maintain migration scripts for Postgres (Flyway or TypeORM migrations).
 - Backups and restore procedures need to cover both Postgres and Mongo.
 
 Notes

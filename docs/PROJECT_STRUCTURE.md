@@ -66,8 +66,7 @@ mentorapredict/
 │   │   │   │   ├── persistence/
 │   │   │   │   │   ├── user.orm-entity.ts         # TypeORM Entity
 │   │   │   │   │   ├── user.repository.ts         # Implementación repo
-│   │   │   │   │   ├── auth.repository.ts         # Métodos específicos
-│   │   │   │   │   └── migrations/                # Migraciones BD
+│   │   │   │   │   └── auth.repository.ts         # Métodos específicos
 │   │   │   │   ├── cache/
 │   │   │   │   │   ├── redis.client.ts            # Cliente Redis
 │   │   │   │   │   └── redis.adapter.ts           # Implementación ITokenCache
@@ -149,8 +148,7 @@ mentorapredict/
 │   │   │   │   │   ├── evaluation.repository.ts
 │   │   │   │   │   ├── grade.orm-entity.ts
 │   │   │   │   │   ├── grade.repository.ts
-│   │   │   │   │   ├── academic.repository.ts
-│   │   │   │   │   └── migrations/
+│   │   │   │   │   └── academic.repository.ts
 │   │   │   │   └── (otros)
 │   │   │   │
 │   │   │   ├── app.module.ts

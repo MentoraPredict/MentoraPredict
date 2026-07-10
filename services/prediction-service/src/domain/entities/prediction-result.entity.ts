@@ -23,5 +23,7 @@ export class PredictionResult {
     public readonly recommendations: RecommendationItem[],
     public readonly modelVersion: string,
     public readonly generatedAt: Date,
+    // null = global (all subjects) prediction; set = scoped to one subject.
+    public readonly subjectId: string | null = null,
   ) {}
 }

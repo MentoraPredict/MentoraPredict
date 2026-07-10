@@ -7,6 +7,7 @@ export const APP_PATHS = {
     register: "/register",
     forgotPassword: "/forgot-password",
     resetPassword: "/reset-password",
+    oauthCallback: "/auth/callback",
   },
   shared: {
     redirect: "/redirect",
@@ -15,6 +16,7 @@ export const APP_PATHS = {
     dashboard: "/student/courses",
     courses: "/student/courses",
     profile: "/student/profile",
+    courseDetail: "/student/courses/:courseId",
     coursePerformance: "/student/courses/:courseId/performance",
     courseUploadData: "/student/courses/:courseId/upload-data",
   },
@@ -22,6 +24,7 @@ export const APP_PATHS = {
     dashboard: "/teacher/courses",
     courses: "/teacher/courses",
     profile: "/teacher/profile",
+    courseDetail: "/teacher/courses/:courseId",
     coursePerformance: "/teacher/courses/:courseId/performance",
     courseUploadData: "/teacher/courses/:courseId/upload-data",
     courseStudents: "/teacher/courses/:courseId/students",

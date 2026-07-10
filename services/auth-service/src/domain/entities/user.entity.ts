@@ -7,11 +7,13 @@ export enum UserRole {
   ADMIN = "ADMIN",
 }
 
+export type AuthProvider = "LOCAL" | "MICROSOFT";
+
 export class UserEntity {
   constructor(
     public readonly id: string,
     public email: string,
-    public passwordHash: string,
+    public passwordHash: string | null,
     public role: UserRole,
     public isActive: boolean,
     public isVerified: boolean,
@@ -19,6 +21,7 @@ export class UserEntity {
     public updatedAt: Date,
     public firstName: string = "",
     public lastName: string = "",
+    public authProvider: AuthProvider = "LOCAL",
   ) {}
 
   get fullName(): string {
