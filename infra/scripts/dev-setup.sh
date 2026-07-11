@@ -83,7 +83,7 @@ wait_for_postgres() {
 
 start_monitoring() {
     cd "$DEPLOY_DIR"
-    echo "[MONITORING] Starting monitoring stack (Prometheus, Grafana, Loki, Promtail)"
+    echo "[MONITORING] Starting monitoring stack (cAdvisor, Node Exporter, Grafana)"
     docker compose -p "$PROJECT_NAME" \
         -f "infra/monitoring/docker-compose.monitoring.yml" \
         --env-file "$ENV_FILE" \
