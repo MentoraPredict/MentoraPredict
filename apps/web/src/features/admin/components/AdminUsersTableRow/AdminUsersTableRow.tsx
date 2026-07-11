@@ -205,7 +205,7 @@ export default function AdminUsersTableRow({
           </>
         ) : null}
 
-        <td className="px-4 py-4">
+        <td className="px-4 py-4 text-center">
           <AdminUserStatusCell
             isActive={user.isActive}
             onToggleStatus={() => {
@@ -215,7 +215,7 @@ export default function AdminUsersTableRow({
         </td>
 
         {showRoleColumn ? (
-          <td className="px-4 py-4">
+          <td className="px-4 py-4 text-center">
             <AdminUserRoleCell
               role={user.role}
               onToggleTeacherRole={() => {

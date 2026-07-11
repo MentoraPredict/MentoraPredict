@@ -27,11 +27,11 @@ interface CourseProgressChartProps {
 
 const classificationStyles: Record<
   SubjectTrendClassification,
-  { label: string; className: string }
+  { label: string; tone: "green" | "neutral" | "red" }
 > = {
-  ASCENDING: { label: "Tendencia ascendente", className: "bg-emerald-100 text-emerald-700" },
-  STABLE: { label: "Tendencia estable", className: "bg-gray-100 text-gray-700" },
-  DESCENDING: { label: "Tendencia descendente", className: "bg-red-100 text-red-700" },
+  ASCENDING: { label: "Tendencia ascendente", tone: "green" },
+  STABLE: { label: "Tendencia estable", tone: "neutral" },
+  DESCENDING: { label: "Tendencia descendente", tone: "red" },
 };
 
 export default function CourseProgressChart({
@@ -80,7 +80,7 @@ export default function CourseProgressChart({
         <div className="flex flex-wrap items-center gap-4">
           {tone ? (
             <div className="flex items-center gap-2">
-              <Badge className={tone.className}>{tone.label}</Badge>
+              <Badge tone={tone.tone}>{tone.label}</Badge>
               <WasmConfettiTrigger onTrigger={() => setBurstKey((key) => key + 1)} />
             </div>
           ) : null}

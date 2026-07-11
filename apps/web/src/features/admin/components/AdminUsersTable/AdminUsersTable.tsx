@@ -226,16 +226,16 @@ export default function AdminUsersTable({
                   </th>
                 </>
               ) : null}
-              <th className="truncate px-4 py-4">
+              <th className="truncate px-4 py-4 text-center">
                 <Text
                   variant="caption"
-                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Activo
                 </Text>
               </th>
               {showRoleColumn ? (
-                <th className="truncate px-4 py-4">
+                <th className="truncate px-4 py-4 text-center">
                   <Text
                     variant="caption"
                     className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
