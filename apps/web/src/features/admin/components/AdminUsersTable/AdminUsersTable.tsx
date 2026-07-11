@@ -1,3 +1,5 @@
+import Label from "@/components/atoms/Label";
+import Select from "@/components/atoms/Select";
 import Text from "@/components/atoms/Text";
 import AdminUsersTableRow from "@/features/admin/components/AdminUsersTableRow";
 import type { AppUser } from "@/types/user/user.types";
@@ -20,6 +22,8 @@ interface AdminUsersTableProps {
   onClearFilters: () => void;
   onToggleStatus?: (userId: string) => void;
   onToggleTeacherRole?: (userId: string) => void;
+  deletingUserId?: string | null;
+  onDeleteUser?: (userId: string) => Promise<boolean>;
   onSaveUserProfile?: (
     userId: string,
     payload: {
@@ -42,34 +46,14 @@ function FilterSelect({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
-      <Text variant="caption" className="mb-2 font-semibold text-gray-600">
+    <div>
+      <Label className="mb-2 block text-xs font-semibold text-gray-600">
         {label}
-      </Text>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="
-          w-full
-          rounded-xl
-          border
-          border-gray-200
-          bg-white
-          px-4
-          py-3
-          text-sm
-          text-gray-700
-          shadow-sm
-          outline-none
-          transition
-          focus:border-blue-500
-          focus:ring-2
-          focus:ring-blue-100
-        "
-      >
+      </Label>
+      <Select value={value} onChange={(event) => onChange(event.target.value)}>
         {children}
-      </select>
-    </label>
+      </Select>
+    </div>
   );
 }
 
@@ -86,12 +70,26 @@ export default function AdminUsersTable({
   onClearFilters,
   onToggleStatus,
   onToggleTeacherRole,
+  deletingUserId,
+  onDeleteUser,
   onSaveUserProfile,
 }: AdminUsersTableProps) {
   return (
     <div className="overflow-hidden rounded-b-2xl border-x border-b border-gray-200 bg-white">
       <div className="overflow-x-auto">
-        <table className="min-w-[1280px] w-full border-collapse">
+        <table className="w-full min-w-[1280px] table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[9%]" />
+            <col className="w-[9%]" />
+            <col className="w-[17%]" />
+            <col className="w-[11%]" />
+            <col className="w-[11%]" />
+            <col className="w-[7%]" />
+            <col className="w-[12%]" />
+            <col className="w-[13%]" />
+            <col className="w-[11%]" />
+          </colgroup>
+
           <thead>
             <tr>
               <th
@@ -168,74 +166,74 @@ export default function AdminUsersTable({
             </tr>
 
             <tr className="bg-gray-100 text-left">
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Nombres
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Apellidos
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Correo
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Facultad
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Carrera
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Semestre
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Activo
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Rol
                 </Text>
               </th>
-              <th className="px-6 py-4">
+              <th className="truncate px-4 py-4">
                 <Text
                   variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
+                  className="truncate font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
                   Acciones
                 </Text>
@@ -250,6 +248,8 @@ export default function AdminUsersTable({
                 user={user}
                 onToggleStatus={onToggleStatus}
                 onToggleTeacherRole={onToggleTeacherRole}
+                isDeleting={deletingUserId === user.id}
+                onDeleteUser={onDeleteUser}
                 onSaveUserProfile={onSaveUserProfile}
               />
             ))}

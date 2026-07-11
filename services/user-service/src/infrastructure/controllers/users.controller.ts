@@ -79,18 +79,45 @@ export class UsersController {
     @Req() req: AuthenticatedRequest,
     @Query("role") role?: string,
     @Query("status") status?: string,
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ) {
     const callerRole = req.user?.role;
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    const pagination = {
+      page: Number.parseInt(page ?? "1", 10),
+      limit: Number.parseInt(limit ?? "20", 10),
+    };
 
     if (callerRole === "TEACHER") {
       if (role && role !== "STUDENT") {
         throw new ForbiddenException("Teachers can only list students");
       }
 
+      if (shouldPaginate) {
+        return this.listUsersUC.executePaginated(
+          {
+            role: "STUDENT",
+            status: status ?? "ACTIVE",
+          },
+          pagination,
+          search,
+        );
+      }
+
       return this.listUsersUC.execute({
         role: "STUDENT",
         status: status ?? "ACTIVE",
       });
+    }
+
+    if (shouldPaginate) {
+      return this.listUsersUC.executePaginated(
+        { role, status },
+        pagination,
+        search,
+      );
     }
 
     return this.listUsersUC.execute({ role, status });

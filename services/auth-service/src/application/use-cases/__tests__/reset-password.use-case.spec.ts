@@ -9,7 +9,7 @@ const makeUser = () =>
   new UserEntity('uid-1', 'v@uce.edu.ec', 'old-hash', UserRole.STUDENT, true, true, new Date(), new Date());
 
 const mockRepo = (): jest.Mocked<IUserRepository> => ({
-  findById: jest.fn(), findByEmail: jest.fn(), save: jest.fn(), update: jest.fn(),
+  findById: jest.fn(), findByIds: jest.fn(), searchByText: jest.fn(), findByEmail: jest.fn(), save: jest.fn(), update: jest.fn(),
 });
 
 const mockCache = (): jest.Mocked<ICachePort> => ({

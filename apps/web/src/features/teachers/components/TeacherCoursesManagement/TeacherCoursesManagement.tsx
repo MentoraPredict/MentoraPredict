@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import Container from "@/components/atoms/Container";
+import Modal from "@/components/molecules/Modal";
 
 import CourseGrid from "@/features/courses/components/CourseGrid";
 import CreateCourseForm from "@/features/teachers/components/CreateCourseForm";
-import CreateCourseModal from "@/features/teachers/components/CreateCourseModal";
 import TeacherCoursesEmptyState from "@/features/teachers/components/TeacherCoursesEmptyState";
 import TeacherCoursesHeader from "@/features/teachers/components/TeacherCoursesHeader/TeacherCoursesHeader";
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
@@ -214,8 +214,9 @@ export default function TeacherCoursesManagement({
         </Container>
       </section>
 
-      <CreateCourseModal
+      <Modal
         isOpen={isCreateModalOpen}
+        ariaLabel="Crear curso"
         onClose={() => {
           setIsCreateModalOpen(false);
           clearCreateError();
@@ -238,7 +239,7 @@ export default function TeacherCoursesManagement({
             setIsCreateModalOpen(false);
           }}
         />
-      </CreateCourseModal>
+      </Modal>
     </>
   );
 }

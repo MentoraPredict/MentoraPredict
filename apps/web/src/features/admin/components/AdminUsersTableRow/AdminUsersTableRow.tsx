@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FiTrash2 } from "react-icons/fi";
 
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
@@ -11,6 +12,8 @@ interface AdminUsersTableRowProps {
   user: AppUser;
   onToggleStatus?: (userId: string) => void;
   onToggleTeacherRole?: (userId: string) => void;
+  isDeleting?: boolean;
+  onDeleteUser?: (userId: string) => Promise<boolean>;
   onSaveUserProfile?: (
     userId: string,
     payload: {
@@ -25,6 +28,8 @@ export default function AdminUsersTableRow({
   user,
   onToggleStatus,
   onToggleTeacherRole,
+  isDeleting = false,
+  onDeleteUser,
   onSaveUserProfile,
 }: AdminUsersTableRowProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -70,6 +75,22 @@ export default function AdminUsersTableRow({
     }
   };
 
+  const handleDelete = async () => {
+    if (!onDeleteUser) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Eliminar usuario ${user.email}? Esta accion desactivara su perfil.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await onDeleteUser(user.id);
+  };
+
   return (
     <>
       <tr
@@ -80,37 +101,47 @@ export default function AdminUsersTableRow({
           hover:bg-gray-50
         "
       >
-        <td className="px-6 py-4">
-          <Text variant="small" className="font-medium text-gray-900">
-            {user.firstName ?? "-"}
+        <td className="px-4 py-4">
+          <Text
+            variant="small"
+            className="truncate font-medium text-gray-900"
+            title={user.firstName}
+          >
+            {user.firstName || "-"}
           </Text>
         </td>
 
-        <td className="px-6 py-4">
-          <Text variant="small">{user.lastName ?? "-"}</Text>
+        <td className="px-4 py-4">
+          <Text variant="small" className="truncate" title={user.lastName}>
+            {user.lastName || "-"}
+          </Text>
         </td>
 
-        <td className="px-6 py-4">
-          <Text variant="small">{user.email}</Text>
+        <td className="px-4 py-4">
+          <Text variant="small" className="truncate" title={user.email}>
+            {user.email}
+          </Text>
         </td>
 
-        <td className="px-6 py-4">
-          <Text variant="small" className="max-w-36 truncate">
+        <td className="px-4 py-4">
+          <Text variant="small" className="truncate" title={user.facultyName}>
             {user.facultyName ?? "Sin datos"}
           </Text>
         </td>
 
-        <td className="px-6 py-4">
-          <Text variant="small" className="max-w-40 truncate">
+        <td className="px-4 py-4">
+          <Text variant="small" className="truncate" title={user.careerName}>
             {user.careerName ?? "Sin datos"}
           </Text>
         </td>
 
-        <td className="px-6 py-4">
-          <Text variant="small">{user.semester ?? "Sin datos"}</Text>
+        <td className="px-4 py-4">
+          <Text variant="small" className="truncate">
+            {user.semester ?? "Sin datos"}
+          </Text>
         </td>
 
-        <td className="px-6 py-4">
+        <td className="px-4 py-4">
           <AdminUserStatusCell
             isActive={user.isActive}
             onToggleStatus={() => {
@@ -119,7 +150,7 @@ export default function AdminUsersTableRow({
           />
         </td>
 
-        <td className="px-6 py-4">
+        <td className="px-4 py-4">
           <AdminUserRoleCell
             role={user.role}
             onToggleTeacherRole={() => {
@@ -128,17 +159,32 @@ export default function AdminUsersTableRow({
           />
         </td>
 
-        <td className="px-6 py-4">
-          <Button
-            variant="outline"
-            type="button"
-            className="px-4 py-2 text-sm"
-            onClick={() => {
-              setIsEditing((current) => !current);
-            }}
-          >
-            {isEditing ? "Cerrar" : "Editar"}
-          </Button>
+        <td className="px-4 py-4">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              className="flex-1 px-3 py-2 text-sm"
+              onClick={() => {
+                setIsEditing((current) => !current);
+              }}
+            >
+              {isEditing ? "Cerrar" : "Editar"}
+            </Button>
+
+            {user.role !== "ADMIN" ? (
+              <Button
+                variant="outline"
+                type="button"
+                className="px-3 py-2 text-sm text-red-600 hover:border-red-200 hover:bg-red-50"
+                disabled={isDeleting}
+                onClick={handleDelete}
+                title="Eliminar usuario"
+              >
+                {isDeleting ? "..." : <FiTrash2 />}
+              </Button>
+            ) : null}
+          </div>
         </td>
       </tr>
 

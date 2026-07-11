@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Container from "@/components/atoms/Container";
+import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
+import Modal from "@/components/molecules/Modal";
 import Pagination from "@/components/molecules/Pagination";
 import SearchBar from "@/components/molecules/SearchBar";
+import StatCard from "@/components/molecules/StatCard";
 
 import AdminUsersTable from "@/features/admin/components/AdminUsersTable";
+import CreateUserForm from "@/features/admin/components/CreateUserForm";
 import useAdminUsers from "@/features/admin/hooks/useAdminUsers";
-import usePagination from "@/hooks/usePagination";
-
-const USERS_PER_PAGE = 10;
 
 export default function AdminUsersManagement() {
   const {
@@ -25,6 +26,12 @@ export default function AdminUsersManagement() {
     setCareerFilter,
     filterOptions,
     users,
+    allUsers,
+    currentPage,
+    pageSize,
+    totalUsers,
+    totalPages,
+    setCurrentPage,
     isLoading,
     error,
     clearSearch,
@@ -32,33 +39,57 @@ export default function AdminUsersManagement() {
     toggleStatus,
     toggleTeacherRole,
     saveUserProfile,
+    createUser,
+    isCreatingUser,
+    createUserError,
+    clearCreateUserError,
+    deletingUserId,
+    removeUser,
   } = useAdminUsers();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const {
-    currentPage,
-    paginatedItems: paginatedUsers,
-    totalItems,
-    totalPages,
-    setCurrentPage,
-  } = usePagination(
-    users,
-    USERS_PER_PAGE,
-    `${search}-${roleFilter}-${facultyFilter}-${careerFilter}`
+  const stats = useMemo(
+    () => ({
+      total: totalUsers,
+      active: allUsers.filter((user) => user.isActive).length,
+      teachers: allUsers.filter((user) => user.role === "TEACHER").length,
+      students: allUsers.filter((user) => user.role === "STUDENT").length,
+    }),
+    [allUsers, totalUsers]
   );
 
   return (
     <section className="py-8">
       <Container>
-        <div className="mb-6">
-          <Heading as="h3" className="text-gray-900">
-            Gestión de usuarios
-          </Heading>
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <Badge className="bg-blue-100 text-blue-700">Administración</Badge>
+            <Heading as="h3" className="mt-3 text-gray-900">
+              Gestión de usuarios
+            </Heading>
 
-          <Text variant="small" className="mt-2 max-w-2xl">
-            Visualiza usuarios registrados, administra su estado de cuenta,
-            edita sus datos principales y filtra por contexto académico.
-          </Text>
+            <Text variant="small" className="mt-2 max-w-2xl">
+              Visualiza usuarios registrados, administra su estado de cuenta,
+              edita sus datos principales y filtra por contexto académico.
+            </Text>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() => {
+              setIsCreateModalOpen(true);
+            }}
+          >
+            Crear usuario
+          </Button>
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard value={String(stats.total)} label="Usuarios totales" />
+          <StatCard value={String(stats.active)} label="Activos en pagina" />
+          <StatCard value={String(stats.teachers)} label="Docentes en pagina" />
+          <StatCard value={String(stats.students)} label="Estudiantes en pagina" />
         </div>
 
         <div className="rounded-t-2xl border border-gray-200 bg-white p-5">
@@ -113,10 +144,12 @@ export default function AdminUsersManagement() {
           </div>
         ) : (
           <AdminUsersTable
-            users={paginatedUsers}
+            users={users}
             isFiltersOpen={isFiltersOpen}
             onToggleStatus={toggleStatus}
             onToggleTeacherRole={toggleTeacherRole}
+            deletingUserId={deletingUserId}
+            onDeleteUser={removeUser}
             onSaveUserProfile={saveUserProfile}
             roleFilter={roleFilter}
             facultyFilter={facultyFilter}
@@ -132,14 +165,39 @@ export default function AdminUsersManagement() {
         {!isLoading && !error ? (
           <Pagination
             currentPage={currentPage}
-            pageSize={USERS_PER_PAGE}
-            totalItems={totalItems}
+            pageSize={pageSize}
+            totalItems={totalUsers}
             totalPages={totalPages}
             itemLabel="usuarios"
             onPageChange={setCurrentPage}
           />
         ) : null}
       </Container>
+
+      <Modal
+        isOpen={isCreateModalOpen}
+        ariaLabel="Crear usuario"
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          clearCreateUserError();
+        }}
+      >
+        <CreateUserForm
+          isSubmitting={isCreatingUser}
+          errorMessage={createUserError}
+          onCancel={() => {
+            setIsCreateModalOpen(false);
+            clearCreateUserError();
+          }}
+          onCreateUser={(payload) => {
+            void createUser(payload).then((success) => {
+              if (success) {
+                setIsCreateModalOpen(false);
+              }
+            });
+          }}
+        />
+      </Modal>
     </section>
   );
 }

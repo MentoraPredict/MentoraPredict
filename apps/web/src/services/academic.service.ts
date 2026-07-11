@@ -684,6 +684,34 @@ export async function createTeacherCourse(
   return toCourse(response.data, periodsById, payload.teacherName);
 }
 
+// Admin variant of createTeacherCourse: the backend resolves teacherId from
+// the JWT for TEACHER callers, but requires (and trusts) an explicit
+// teacherId in the body when the caller is ADMIN — validated server-side
+// against ITeacherRolePort in CreateSubjectUseCase.
+export async function createAdminCourse(
+  payload: CreateTeacherCoursePayload
+): Promise<Course> {
+  const response = await api.post<SubjectApiResponse>(
+    endpoints.academic.subjects,
+    {
+      name: payload.name,
+      code: payload.code,
+      description: payload.description,
+      credits: payload.credits,
+      careerId: payload.careerId,
+      maxCapacity: payload.maxCapacity,
+      teacherId: payload.teacherId,
+    }
+  );
+
+  const periods = await getPeriods();
+  const periodsById = new Map(periods.map((period) => [period.id, period]));
+
+  invalidateSubjectsCache();
+
+  return toCourse(response.data, periodsById, payload.teacherName);
+}
+
 export async function deleteTeacherCourse(courseId: string): Promise<void> {
   await api.delete(endpoints.academic.subject(courseId));
   invalidateSubjectsCache();

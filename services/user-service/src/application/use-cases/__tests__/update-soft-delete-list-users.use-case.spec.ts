@@ -30,10 +30,13 @@ const mockRepo = (): jest.Mocked<IUserProfileRepository> => ({
   update: jest.fn(),
   softDelete: jest.fn(),
   findAll: jest.fn(),
+  findPaginated: jest.fn(),
 });
 
 const mockAuthClient = (): jest.Mocked<IAuthServiceClient> => ({
   getUserById: jest.fn(),
+  getUsersByIds: jest.fn().mockResolvedValue([]),
+  searchUsers: jest.fn().mockResolvedValue([]),
 });
 
 const mockAuthSyncClient = (): jest.Mocked<IAuthSyncClient> => ({
@@ -107,18 +110,21 @@ describe("ListUsersUseCase", () => {
     const authClient = mockAuthClient();
     const profiles = [makeProfile("u1"), makeProfile("u2")];
     repo.findAll.mockResolvedValue(profiles);
-    authClient.getUserById.mockImplementation(async (id: string) => ({
-      id,
-      email: `${id}@example.com`,
-      firstName: `First ${id}`,
-      lastName: `Last ${id}`,
-      isActive: true,
-    }));
+    authClient.getUsersByIds.mockResolvedValue(
+      ["u1", "u2"].map((id) => ({
+        id,
+        email: `${id}@example.com`,
+        firstName: `First ${id}`,
+        lastName: `Last ${id}`,
+        isActive: true,
+      })),
+    );
 
     const useCase = new ListUsersUseCase(repo, authClient);
     const result = await useCase.execute({});
 
     expect(repo.findAll).toHaveBeenCalledWith({});
+    expect(authClient.getUsersByIds).toHaveBeenCalledWith(["u1", "u2"]);
     expect(result).toHaveLength(2);
     expect(result[0].email).toBe("u1@example.com");
   });
@@ -127,13 +133,15 @@ describe("ListUsersUseCase", () => {
     const repo = mockRepo();
     const authClient = mockAuthClient();
     repo.findAll.mockResolvedValue([makeProfile()]);
-    authClient.getUserById.mockResolvedValue({
-      id: "uid-1",
-      email: "student@example.com",
-      firstName: "Ada",
-      lastName: "Lovelace",
-      isActive: true,
-    });
+    authClient.getUsersByIds.mockResolvedValue([
+      {
+        id: "uid-1",
+        email: "student@example.com",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        isActive: true,
+      },
+    ]);
 
     const useCase = new ListUsersUseCase(repo, authClient);
     await useCase.execute({ role: "TEACHER", status: "ACTIVE" });
@@ -155,20 +163,22 @@ describe("ListUsersUseCase", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("degrades gracefully when auth-service is unreachable for a user", async () => {
+  it("degrades gracefully when a user is missing from the auth-service batch response", async () => {
     const repo = mockRepo();
     const authClient = mockAuthClient();
     const profiles = [makeProfile("u1"), makeProfile("u2")];
     repo.findAll.mockResolvedValue(profiles);
-    authClient.getUserById
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce({
+    // u1 has no matching auth-service record (e.g. an orphaned profile);
+    // the batch call still succeeds and returns what it can find.
+    authClient.getUsersByIds.mockResolvedValue([
+      {
         id: "u2",
         email: "u2@example.com",
         firstName: "First u2",
         lastName: "Last u2",
         isActive: true,
-      });
+      },
+    ]);
 
     const useCase = new ListUsersUseCase(repo, authClient);
     const result = await useCase.execute({});
@@ -176,5 +186,88 @@ describe("ListUsersUseCase", () => {
     expect(result).toHaveLength(2);
     expect(result[0].email).toBe("");
     expect(result[1].email).toBe("u2@example.com");
+  });
+
+  it("makes a single batched auth-service call regardless of how many profiles are listed", async () => {
+    const repo = mockRepo();
+    const authClient = mockAuthClient();
+    const profiles = [makeProfile("u1"), makeProfile("u2"), makeProfile("u3")];
+    repo.findAll.mockResolvedValue(profiles);
+    authClient.getUsersByIds.mockResolvedValue([]);
+
+    const useCase = new ListUsersUseCase(repo, authClient);
+    await useCase.execute({});
+
+    expect(authClient.getUsersByIds).toHaveBeenCalledTimes(1);
+    expect(authClient.getUserById).not.toHaveBeenCalled();
+  });
+
+  it("returns paginated users with metadata", async () => {
+    const repo = mockRepo();
+    const authClient = mockAuthClient();
+    const profiles = [makeProfile("u1")];
+    repo.findPaginated.mockResolvedValue({ items: profiles, total: 21 });
+    authClient.getUsersByIds.mockResolvedValue([
+      {
+        id: "u1",
+        email: "u1@example.com",
+        firstName: "First u1",
+        lastName: "Last u1",
+        isActive: true,
+      },
+    ]);
+
+    const useCase = new ListUsersUseCase(repo, authClient);
+    const result = await useCase.executePaginated(
+      { role: "STUDENT", status: "ACTIVE" },
+      { page: 2, limit: 10 },
+    );
+
+    expect(repo.findPaginated).toHaveBeenCalledWith(
+      { role: "STUDENT", status: "ACTIVE" },
+      { page: 2, limit: 10 },
+    );
+    expect(result.data).toHaveLength(1);
+    expect(result.total).toBe(21);
+    expect(result.totalPages).toBe(3);
+  });
+
+  it("filters paginated users by auth-service search matches", async () => {
+    const repo = mockRepo();
+    const authClient = mockAuthClient();
+    const profiles = [makeProfile("u2")];
+    authClient.searchUsers.mockResolvedValue([
+      {
+        id: "u2",
+        email: "ada@example.com",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        isActive: true,
+      },
+    ]);
+    repo.findPaginated.mockResolvedValue({ items: profiles, total: 1 });
+    authClient.getUsersByIds.mockResolvedValue([
+      {
+        id: "u2",
+        email: "ada@example.com",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        isActive: true,
+      },
+    ]);
+
+    const useCase = new ListUsersUseCase(repo, authClient);
+    const result = await useCase.executePaginated(
+      { role: "STUDENT" },
+      { page: 1, limit: 10 },
+      "ada",
+    );
+
+    expect(authClient.searchUsers).toHaveBeenCalledWith("ada", 500);
+    expect(repo.findPaginated).toHaveBeenCalledWith(
+      { role: "STUDENT", ids: ["u2"] },
+      { page: 1, limit: 10 },
+    );
+    expect(result.data[0].email).toBe("ada@example.com");
   });
 });

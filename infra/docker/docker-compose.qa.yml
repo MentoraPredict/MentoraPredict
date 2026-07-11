@@ -80,7 +80,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
+          cpus: "0.5"
           memory: 320M
     expose:
       - 3001

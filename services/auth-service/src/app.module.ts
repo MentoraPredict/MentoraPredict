@@ -27,10 +27,12 @@ import { ResetPasswordUseCase } from "./application/use-cases/reset-password.use
 import { EmailAdapter } from "./infrastructure/adapters/email.adapter";
 import { InternalUsersController } from "./infrastructure/controllers/internal-auth.controller";
 import { GetAuthUserUseCase } from "./application/use-cases/get-auth-user.use-case";
+import { GetAuthUsersByIdsUseCase } from "./application/use-cases/get-auth-users-by-ids.use-case";
 import { SyncAuthUserUseCase } from "./application/use-cases/sync-auth-user.use-case";
 import { UpdateAuthUserUseCase } from "./application/use-cases/update-user.use-case";
 import { OAuthLoginUseCase } from "./application/use-cases/oauth-login.use-case";
 import { MicrosoftOAuthClient } from "./infrastructure/adapters/microsoft-oauth.client";
+import { SearchAuthUsersUseCase } from "./application/use-cases/search-auth-users.use-case";
 
 @Module({
   imports: [
@@ -109,6 +111,8 @@ import { MicrosoftOAuthClient } from "./infrastructure/adapters/microsoft-oauth.
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
     GetAuthUserUseCase,
+    GetAuthUsersByIdsUseCase,
+    SearchAuthUsersUseCase,
     SyncAuthUserUseCase,
     UpdateAuthUserUseCase,
     OAuthLoginUseCase,

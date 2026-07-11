@@ -9,7 +9,7 @@ import { UserEntity, UserRole } from '../../../domain/entities/user.entity';
 const makeUser = (active = true) =>
   new UserEntity('uid-1', 'v@uce.edu.ec', 'hash', UserRole.STUDENT, active, true, new Date(), new Date());
 
-const mockRepo    = (): jest.Mocked<IUserRepository>   => ({ findById: jest.fn(), findByEmail: jest.fn(), save: jest.fn(), update: jest.fn() });
+const mockRepo    = (): jest.Mocked<IUserRepository>   => ({ findById: jest.fn(), findByIds: jest.fn(), searchByText: jest.fn(), findByEmail: jest.fn(), save: jest.fn(), update: jest.fn() });
 const mockHasher  = (): jest.Mocked<IPasswordHasher>   => ({ hash: jest.fn(), compare: jest.fn() });
 const mockTokens  = (): jest.Mocked<ITokenGenerator>   => ({ generatePair: jest.fn(), verifyAccess: jest.fn(), verifyRefresh: jest.fn() });
 const mockCache   = (): jest.Mocked<ITokenCache>       => ({

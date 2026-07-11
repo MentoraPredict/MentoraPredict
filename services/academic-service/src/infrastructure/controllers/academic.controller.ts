@@ -869,17 +869,21 @@ export class AcademicController {
   }
 
   @Post("subjects")
-  @Roles("TEACHER")
+  @Roles("TEACHER", "ADMIN")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new subject (TEACHER only)" })
+  @ApiOperation({
+    summary:
+      "Create a new subject (TEACHER creates their own; ADMIN must assign a teacherId)",
+  })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 400 })
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
   async createSubject(@Body() dto: CreateSubjectDto, @Req() req: JwtRequest) {
-    const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException('Missing teacher identity');
-    return this.createSubjectUC.execute(dto, teacherId);
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException('Missing caller identity');
+    return this.createSubjectUC.execute(dto, callerId, callerRole);
   }
 
   @Get("teachers/me/subjects")

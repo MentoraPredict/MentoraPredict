@@ -3,6 +3,17 @@ import { UserProfileEntity } from '../entities/user-profile.entity';
 export interface UserProfileFilters {
   role?: string;
   status?: string;
+  ids?: string[];
+}
+
+export interface UserProfilePagination {
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedUserProfiles {
+  items: UserProfileEntity[];
+  total: number;
 }
 
 export interface IUserProfileRepository {
@@ -11,4 +22,8 @@ export interface IUserProfileRepository {
   update(id: string, data: Partial<UserProfileEntity>): Promise<UserProfileEntity>;
   softDelete(id: string): Promise<void>;
   findAll(filters: UserProfileFilters): Promise<UserProfileEntity[]>;
+  findPaginated(
+    filters: UserProfileFilters,
+    pagination: UserProfilePagination,
+  ): Promise<PaginatedUserProfiles>;
 }

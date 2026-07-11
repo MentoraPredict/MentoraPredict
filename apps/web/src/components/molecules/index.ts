@@ -20,3 +20,4 @@ export { default as ImageUploadPreview } from "./ImageUploadPreview";
 export { default as LogoLink } from "./LogoLink";
 
 export { default as RatingScale } from "./RatingScale";
+export { default as Modal } from "./Modal";

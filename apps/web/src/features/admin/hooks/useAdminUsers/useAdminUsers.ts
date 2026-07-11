@@ -2,27 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 import {
+    createUserWithRole,
+    deleteUser,
     getUsers,
+    PartialUserCreationError,
     updateUser,
     updateUserRole,
     updateUserStatus,
+    type CreateUserWithRolePayload,
 } from "@/services/users/users.service";
 import type { AppUser } from "@/types/user/user.types";
+import type { UserRole } from "@/types/user/role.types";
 
-function getUserSearchText(user: AppUser) {
-    return [
-        user.firstName,
-        user.lastName,
-        user.email,
-        user.role,
-        user.facultyName,
-        user.careerName,
-        user.semester,
-    ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-}
+const USERS_PAGE_SIZE = 10;
 
 function getRequestErrorMessage(
     fallbackMessage: string,
@@ -49,14 +41,27 @@ export default function useAdminUsers() {
     const [users, setUsers] = useState<AppUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isCreatingUser, setIsCreatingUser] = useState(false);
+    const [createUserError, setCreateUserError] = useState<string | null>(null);
+    const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
     const loadUsers = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const loadedUsers = await getUsers();
-            setUsers(loadedUsers);
+            const result = await getUsers({
+                page: currentPage,
+                limit: USERS_PAGE_SIZE,
+                search,
+                role: roleFilter as UserRole | "",
+            });
+            setUsers(result.data);
+            setTotalUsers(result.total);
+            setTotalPages(result.totalPages);
         } catch (requestError) {
             setError(
                 getRequestErrorMessage(
@@ -67,22 +72,22 @@ export default function useAdminUsers() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentPage, roleFilter, search]);
 
     useEffect(() => {
         void loadUsers();
     }, [loadUsers]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [careerFilter, facultyFilter, roleFilter, search]);
+
     const filteredUsers = useMemo(() => {
-        const normalizedSearch = search.trim().toLowerCase();
         const normalizedRole = roleFilter.trim().toLowerCase();
         const normalizedFaculty = facultyFilter.trim().toLowerCase();
         const normalizedCareer = careerFilter.trim().toLowerCase();
 
         return users.filter((user) => {
-            const matchesSearch =
-                !normalizedSearch ||
-                getUserSearchText(user).includes(normalizedSearch);
             const matchesRole =
                 !normalizedRole || user.role.toLowerCase() === normalizedRole;
             const matchesFaculty =
@@ -97,13 +102,12 @@ export default function useAdminUsers() {
                     .includes(normalizedCareer);
 
             return (
-                matchesSearch &&
                 matchesRole &&
                 matchesFaculty &&
                 matchesCareer
             );
         });
-    }, [careerFilter, facultyFilter, roleFilter, search, users]);
+    }, [careerFilter, facultyFilter, roleFilter, users]);
 
     const filterOptions = useMemo(() => {
         const faculties = Array.from(
@@ -134,6 +138,7 @@ export default function useAdminUsers() {
         setRoleFilter("");
         setFacultyFilter("");
         setCareerFilter("");
+        setCurrentPage(1);
     }, []);
 
     const replaceUser = useCallback((updatedUser: AppUser) => {
@@ -232,6 +237,67 @@ export default function useAdminUsers() {
         [replaceUser]
     );
 
+    const createUser = useCallback(
+        async (payload: CreateUserWithRolePayload) => {
+            setCreateUserError(null);
+            setIsCreatingUser(true);
+
+            try {
+                await createUserWithRole(payload);
+                await loadUsers();
+                return true;
+            } catch (requestError) {
+                if (requestError instanceof PartialUserCreationError) {
+                    // The user was still created (as STUDENT) — refresh the
+                    // table so it shows up, but keep the modal open with the
+                    // message so the admin knows the role needs a manual fix.
+                    await loadUsers();
+                    setCreateUserError(requestError.message);
+                    return false;
+                }
+
+                setCreateUserError(
+                    getRequestErrorMessage(
+                        "No se pudo crear el usuario.",
+                        requestError
+                    )
+                );
+                return false;
+            } finally {
+                setIsCreatingUser(false);
+            }
+        },
+        [loadUsers]
+    );
+
+    const clearCreateUserError = useCallback(() => {
+        setCreateUserError(null);
+    }, []);
+
+    const removeUser = useCallback(
+        async (userId: string) => {
+            setError(null);
+            setDeletingUserId(userId);
+
+            try {
+                await deleteUser(userId);
+                await loadUsers();
+                return true;
+            } catch (requestError) {
+                setError(
+                    getRequestErrorMessage(
+                        "No se pudo eliminar el usuario.",
+                        requestError
+                    )
+                );
+                return false;
+            } finally {
+                setDeletingUserId(null);
+            }
+        },
+        [loadUsers]
+    );
+
     return {
         search,
         setSearch,
@@ -243,6 +309,12 @@ export default function useAdminUsers() {
         setCareerFilter,
         filterOptions,
         users: filteredUsers,
+        allUsers: users,
+        currentPage,
+        pageSize: USERS_PAGE_SIZE,
+        totalUsers,
+        totalPages,
+        setCurrentPage,
         isLoading,
         error,
         reload: loadUsers,
@@ -251,5 +323,11 @@ export default function useAdminUsers() {
         toggleStatus,
         toggleTeacherRole,
         saveUserProfile,
+        createUser,
+        isCreatingUser,
+        createUserError,
+        clearCreateUserError,
+        deletingUserId,
+        removeUser,
     };
 }
