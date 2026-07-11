@@ -10,7 +10,6 @@ protocol.registerSchemesAsPrivileged([
     scheme: APP_PROTOCOL,
     privileges: {
       standard: true,
-      secure: true,
       supportFetchAPI: true,
       corsEnabled: true,
     },
