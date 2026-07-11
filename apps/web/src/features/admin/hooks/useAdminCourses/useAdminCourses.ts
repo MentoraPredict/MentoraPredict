@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AxiosError } from "axios";
 
 import {
+  changeCourseStatus,
   createAdminCourse,
   deleteTeacherCourse,
   getAdminCourses,
@@ -12,10 +13,40 @@ import {
   type CoursePeriodOption,
   type UpdateTeacherCoursePayload,
 } from "@/services/academic.service";
+import { getSubjectAverageGrade } from "@/services/course-analytics.service";
 import { getTeachers } from "@/services/users/users.service";
 import type { AdminCreateCoursePayload } from "@/features/admin/components/AdminCreateCourseForm";
 import type { Course } from "@/types/course";
 import type { AppUser } from "@/types/user/user.types";
+
+function getTeacherDisplayName(teacher: AppUser) {
+  return (
+    [teacher.firstName, teacher.lastName].filter(Boolean).join(" ").trim() ||
+    teacher.email
+  );
+}
+
+function resolveTeacherNames(courses: Course[], teachers: AppUser[]): Course[] {
+  const teachersById = new Map(teachers.map((teacher) => [teacher.id, teacher]));
+
+  return courses.map((course) => {
+    const teacher = course.teacherId ? teachersById.get(course.teacherId) : undefined;
+    return teacher ? { ...course, teacherName: getTeacherDisplayName(teacher) } : course;
+  });
+}
+
+async function enrichWithAverageGrades(courses: Course[]): Promise<Course[]> {
+  const averages = await Promise.allSettled(
+    courses.map((course) => getSubjectAverageGrade(course.id))
+  );
+
+  return courses.map((course, index) => {
+    const result = averages[index];
+    return result.status === "fulfilled"
+      ? { ...course, currentAverage: result.value }
+      : course;
+  });
+}
 
 function getErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
@@ -94,37 +125,45 @@ export default function useAdminCourses() {
     setError(null);
     setCreationDataError(null);
 
-    try {
-      const loadedCourses = await getAdminCourses();
-      setCourses(loadedCourses);
+    const [coursesResult, creationOptionsResult, teachersResult] = await Promise.allSettled([
+      getAdminCourses(),
+      getCourseCreationOptions(),
+      getTeachers(),
+    ]);
 
-      const [creationOptionsResult, teachersResult] = await Promise.allSettled([
-        getCourseCreationOptions(),
-        getTeachers(),
-      ]);
-
-      if (creationOptionsResult.status === "fulfilled") {
-        setFaculties(creationOptionsResult.value.faculties);
-        setCareers(creationOptionsResult.value.careers);
-        setPeriods(creationOptionsResult.value.periods);
-      } else {
-        setFaculties([]);
-        setCareers([]);
-        setPeriods([]);
-        setCreationDataError(getCreationDataErrorMessage(creationOptionsResult.reason));
-      }
-
-      if (teachersResult.status === "fulfilled") {
-        setTeachers(teachersResult.value);
-      } else {
-        setTeachers([]);
-        setCreationDataError(getCreationDataErrorMessage(teachersResult.reason));
-      }
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
-    } finally {
+    if (coursesResult.status === "rejected") {
+      setError(getErrorMessage(coursesResult.reason));
       setIsLoading(false);
+      return;
     }
+
+    if (creationOptionsResult.status === "fulfilled") {
+      setFaculties(creationOptionsResult.value.faculties);
+      setCareers(creationOptionsResult.value.careers);
+      setPeriods(creationOptionsResult.value.periods);
+    } else {
+      setFaculties([]);
+      setCareers([]);
+      setPeriods([]);
+      setCreationDataError(getCreationDataErrorMessage(creationOptionsResult.reason));
+    }
+
+    const loadedTeachers = teachersResult.status === "fulfilled" ? teachersResult.value : [];
+    if (teachersResult.status === "fulfilled") {
+      setTeachers(loadedTeachers);
+    } else {
+      setTeachers([]);
+      setCreationDataError(getCreationDataErrorMessage(teachersResult.reason));
+    }
+
+    const coursesWithTeacherNames = resolveTeacherNames(coursesResult.value, loadedTeachers);
+    setCourses(coursesWithTeacherNames);
+    setIsLoading(false);
+
+    // Enrich with the course-level average in the background so the list
+    // itself doesn't wait on one extra analytics-service call per course.
+    const enrichedCourses = await enrichWithAverageGrades(coursesWithTeacherNames);
+    setCourses(enrichedCourses);
   }, []);
 
   useEffect(() => {
@@ -175,6 +214,32 @@ export default function useAdminCourses() {
     []
   );
 
+  const updateCourseStatus = useCallback(async (courseId: string, isActive: boolean) => {
+    setUpdatingCourseId(courseId);
+    setError(null);
+
+    try {
+      await changeCourseStatus(courseId, isActive);
+      setCourses((current) =>
+        current.map((course) =>
+          course.id === courseId
+            ? {
+                ...course,
+                isActive,
+                riskLabel: isActive ? "Curso activo" : "Curso inactivo",
+              }
+            : course
+        )
+      );
+      return true;
+    } catch (requestError) {
+      setError(getCreateCourseErrorMessage(requestError));
+      return false;
+    } finally {
+      setUpdatingCourseId(null);
+    }
+  }, []);
+
   const deleteCourse = useCallback(async (courseId: string) => {
     setDeletingCourseId(courseId);
     setError(null);
@@ -212,6 +277,7 @@ export default function useAdminCourses() {
     reload: loadCourses,
     createCourse,
     updateCourse,
+    updateCourseStatus,
     deleteCourse,
   };
 }

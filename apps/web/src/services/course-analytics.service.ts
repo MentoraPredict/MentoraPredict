@@ -68,6 +68,7 @@ interface SubjectRiskSummary {
   HIGH: number;
   CRITICAL: number;
   unclassified: number;
+  averageGrade?: number | null;
 }
 
 export type TeacherStudentPrediction = PredictionResponse;
@@ -295,6 +296,19 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
     recommendations,
     predictions: predictionsResponse.data.data,
   };
+}
+
+// Lightweight companion to getTeacherSubjectAnalytics for callers that only
+// need the course-level average (e.g. the admin course card), so they don't
+// pay for the alerts/predictions calls that function also makes.
+export async function getSubjectAverageGrade(
+  subjectId: string
+): Promise<number | null> {
+  const response = await api.get<SubjectRiskSummary>(
+    endpoints.analytics.subjectSummary(subjectId)
+  );
+
+  return response.data.averageGrade ?? null;
 }
 
 export async function getTeacherStudentSubjectPrediction(

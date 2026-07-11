@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 
 import Badge from "@/components/atoms/Badge";
@@ -17,6 +18,8 @@ import AdminCreateCourseForm from "@/features/admin/components/AdminCreateCourse
 import CourseGrid from "@/features/courses/components/CourseGrid";
 import useAdminCourses from "@/features/admin/hooks/useAdminCourses";
 import usePagination from "@/hooks/usePagination";
+import { uploadTeacherCourseImage } from "@/services/academic.service";
+import { getAdminCourseStudentsPath } from "@/routes/paths";
 import type { Course } from "@/types/course";
 
 const COURSES_PER_PAGE = 6;
@@ -25,17 +28,21 @@ const UNASSIGNED_TEACHER_LABEL = "Docente sin asignar";
 interface EditCourseModalProps {
   course: Course;
   isSubmitting: boolean;
+  isTogglingStatus: boolean;
   errorMessage?: string | null;
   onCancel: () => void;
   onSave: (payload: { name: string; description: string }) => void;
+  onToggleStatus: () => void;
 }
 
 function EditCourseForm({
   course,
   isSubmitting,
+  isTogglingStatus,
   errorMessage,
   onCancel,
   onSave,
+  onToggleStatus,
 }: EditCourseModalProps) {
   const [name, setName] = useState(course.name);
   const [description, setDescription] = useState(course.description);
@@ -81,6 +88,31 @@ function EditCourseForm({
             required
           />
         </div>
+
+        <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Text variant="small" className="font-semibold text-gray-800">
+              Estado del curso
+            </Text>
+            <Text variant="caption" className="mt-1 text-gray-600">
+              {course.isActive ?? true ? "Curso activo" : "Curso inactivo"}
+            </Text>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isTogglingStatus}
+            onClick={onToggleStatus}
+            className="px-4 py-2 text-sm"
+          >
+            {isTogglingStatus
+              ? "Guardando..."
+              : (course.isActive ?? true)
+                ? "Desactivar"
+                : "Activar"}
+          </Button>
+        </div>
       </div>
 
       <div className="mt-8 flex justify-end gap-3">
@@ -97,6 +129,7 @@ function EditCourseForm({
 }
 
 export default function AdminCoursesManagement() {
+  const navigate = useNavigate();
   const {
     courses,
     teachers,
@@ -111,8 +144,10 @@ export default function AdminCoursesManagement() {
     clearCreateError,
     deletingCourseId,
     updatingCourseId,
+    reload,
     createCourse,
     updateCourse,
+    updateCourseStatus,
     deleteCourse,
   } = useAdminCourses();
 
@@ -229,6 +264,9 @@ export default function AdminCoursesManagement() {
             isDeleteMode={isDeleteMode}
             deletingCourseId={deletingCourseId}
             showTeacherDetails
+            onCourseClick={(courseId) => {
+              navigate(getAdminCourseStudentsPath(courseId));
+            }}
             onSecondaryCourseAction={(courseId) => {
               const course = courses.find((item) => item.id === courseId);
               if (course) setEditingCourse(course);
@@ -273,9 +311,14 @@ export default function AdminCoursesManagement() {
             setIsCreateModalOpen(false);
             clearCreateError();
           }}
-          onCreateCourse={(payload) => {
-            void createCourse(payload).then((created) => {
-              if (created) setIsCreateModalOpen(false);
+          onCreateCourse={(payload, imageFile) => {
+            void createCourse(payload).then(async (created) => {
+              if (!created) return;
+              setIsCreateModalOpen(false);
+              if (imageFile) {
+                await uploadTeacherCourseImage(created.id, imageFile).catch(() => null);
+                await reload();
+              }
             });
           }}
         />
@@ -290,11 +333,22 @@ export default function AdminCoursesManagement() {
           <EditCourseForm
             course={editingCourse}
             isSubmitting={updatingCourseId === editingCourse.id}
+            isTogglingStatus={updatingCourseId === editingCourse.id}
             errorMessage={error}
             onCancel={() => setEditingCourse(null)}
             onSave={(payload) => {
               void updateCourse(editingCourse.id, payload).then((success) => {
                 if (success) setEditingCourse(null);
+              });
+            }}
+            onToggleStatus={() => {
+              const nextIsActive = !(editingCourse.isActive ?? true);
+              void updateCourseStatus(editingCourse.id, nextIsActive).then((success) => {
+                if (success) {
+                  setEditingCourse((current) =>
+                    current ? { ...current, isActive: nextIsActive } : current
+                  );
+                }
               });
             }}
           />

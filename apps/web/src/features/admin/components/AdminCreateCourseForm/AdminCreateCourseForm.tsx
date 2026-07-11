@@ -44,8 +44,11 @@ interface AdminCreateCourseFormProps {
   isSubmitting?: boolean;
   errorMessage?: string | null;
   onCancel: () => void;
-  onCreateCourse: (course: AdminCreateCoursePayload) => void;
+  onCreateCourse: (course: AdminCreateCoursePayload, imageFile?: File) => void;
 }
+
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
 function getTeacherDisplayName(teacher: AppUser) {
   const fullName = [teacher.firstName, teacher.lastName].filter(Boolean).join(" ");
@@ -63,6 +66,8 @@ export default function AdminCreateCourseForm({
   onCreateCourse,
 }: AdminCreateCourseFormProps) {
   const [isCodeHelpOpen, setIsCodeHelpOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const {
     register,
@@ -125,19 +130,47 @@ export default function AdminCreateCourseForm({
 
     const teacher = teachers.find((item) => item.id === values.teacherId);
 
-    onCreateCourse({
-      name: values.name,
-      code: values.code,
-      description: values.description,
-      credits: Number(values.credits),
-      careerId: values.careerId,
-      academicPeriodId: values.academicPeriodId,
-      maxCapacity: Number(values.maxCapacity),
-      teacherId: values.teacherId,
-      teacherName: teacher ? getTeacherDisplayName(teacher) : undefined,
-    });
+    onCreateCourse(
+      {
+        name: values.name,
+        code: values.code,
+        description: values.description,
+        credits: Number(values.credits),
+        careerId: values.careerId,
+        academicPeriodId: values.academicPeriodId,
+        maxCapacity: Number(values.maxCapacity),
+        teacherId: values.teacherId,
+        teacherName: teacher ? getTeacherDisplayName(teacher) : undefined,
+      },
+      imageFile ?? undefined
+    );
 
     reset();
+    setImageFile(null);
+    setImageError(null);
+  };
+
+  const handleImageChange = (file: File | undefined) => {
+    if (!file) {
+      setImageFile(null);
+      setImageError(null);
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setImageError("Solo se aceptan imagenes jpg, jpeg o png.");
+      setImageFile(null);
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError("La imagen no debe superar los 2MB.");
+      setImageFile(null);
+      return;
+    }
+
+    setImageError(null);
+    setImageFile(file);
   };
 
   return (
@@ -322,6 +355,25 @@ export default function AdminCreateCourseForm({
           </Select>
           {errors.teacherId?.message ? (
             <p className="mt-1 text-sm text-red-600">{errors.teacherId.message}</p>
+          ) : null}
+        </div>
+
+        <div>
+          <Label htmlFor="courseImage">Imagen del curso (opcional)</Label>
+
+          <Input
+            id="courseImage"
+            type="file"
+            accept="image/jpeg,image/jpg,image/png"
+            onChange={(event) => handleImageChange(event.target.files?.[0])}
+          />
+
+          <p className="mt-1 text-xs text-gray-500">
+            jpg, jpeg o png, maximo 2MB.
+          </p>
+
+          {imageError ? (
+            <p className="mt-1 text-sm text-red-600">{imageError}</p>
           ) : null}
         </div>
       </div>

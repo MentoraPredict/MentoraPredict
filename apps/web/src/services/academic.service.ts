@@ -347,8 +347,10 @@ function toCourse(
   return {
     id: subject.id,
     name: subject.name,
+    teacherId: subject.teacherId ?? subject.teacher_id ?? undefined,
     teacherName: teacherNameFallback ?? getTeacherName(subject),
     semester: period?.name ?? period?.code ?? "Periodo no asignado",
+    isActive,
     description: subject.description ?? "Sin descripcion registrada.",
     riskLevel: "LOW",
     riskLabel: isActive ? "Curso activo" : "Curso inactivo",
@@ -733,6 +735,14 @@ export async function updateTeacherCourse(
     name: response.data.name,
     description: response.data.description ?? "",
   };
+}
+
+export async function changeCourseStatus(
+  courseId: string,
+  isActive: boolean
+): Promise<void> {
+  await api.patch(endpoints.academic.subjectStatus(courseId), { isActive });
+  invalidateSubjectsCache();
 }
 
 export async function uploadTeacherCourseImage(courseId: string, file: File) {

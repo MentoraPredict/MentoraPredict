@@ -35,7 +35,8 @@ export class EnrollStudentUseCase {
 
   async execute(
     dto: EnrollStudentDto,
-    teacherId: string,
+    callerId: string,
+    callerRole: string,
   ): Promise<EnrollmentEntity> {
     const subject = await this.subjectRepo.findById(dto.subjectId);
     if (!subject || !subject.isActive) {
@@ -47,14 +48,16 @@ export class EnrollStudentUseCase {
       throw new BadRequestException("Academic period is not active");
     }
 
-    // Teacher must own this course
-    const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
-      dto.subjectId,
-      teacherId,
-      subject.academicPeriodId,
-    );
-    if (!assignment) {
-      throw new ForbiddenException("No tienes acceso a este curso");
+    // TEACHER callers must own this course; ADMIN can enroll into any course.
+    if (callerRole === "TEACHER") {
+      const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
+        dto.subjectId,
+        callerId,
+        subject.academicPeriodId,
+      );
+      if (!assignment) {
+        throw new ForbiddenException("No tienes acceso a este curso");
+      }
     }
 
     // Student must exist and be an active STUDENT
@@ -92,7 +95,10 @@ export class EnrollStudentUseCase {
       throw new BadRequestException("Subject has no available capacity");
     }
 
-    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherProfile =
+      callerRole === "TEACHER"
+        ? await this.userProfilePort.getProfile(callerId).catch(() => null)
+        : null;
     const teacherName = teacherProfile
       ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
       : null;

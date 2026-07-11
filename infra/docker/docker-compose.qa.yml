@@ -205,6 +205,9 @@ services:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://mp_user_service:3002}
       UPLOADS_DIR: /app/services/academic-service/uploads
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mentorapredict-images}
     networks:
       - mentorapredict-net
     volumes:

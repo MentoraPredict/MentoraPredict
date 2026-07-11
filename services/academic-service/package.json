@@ -12,6 +12,7 @@
     "test:cov": "jest --config jest.config.js --coverage"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "@nestjs/common": "^11.1.24",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.24",
