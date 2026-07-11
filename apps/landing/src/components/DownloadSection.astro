@@ -43,6 +43,7 @@ const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
 
     <div class="mx-auto mt-12 grid max-w-2xl gap-6 sm:grid-cols-2">
       <div
+        id="desktop-download-card"
         class:list={[
           "group relative rounded-xl border p-8 text-center transition-all",
           desktop.available
@@ -50,11 +51,15 @@ const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
             : "border-neutral-200 bg-neutral-50 opacity-75",
         ]}
       >
-        {!desktop.available && (
-          <span class="absolute right-4 top-4 rounded-full bg-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600">
-            Coming Soon
-          </span>
-        )}
+        <span
+          id="desktop-badge"
+          class:list={[
+            "absolute right-4 top-4 rounded-full bg-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600",
+            desktop.available ? "hidden" : "",
+          ]}
+        >
+          Coming Soon
+        </span>
         <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
           <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <rect x="2" y="3" width="20" height="14" rx="2" />
@@ -66,6 +71,7 @@ const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
           {desktop.platforms.join(" / ")}
         </p>
         <a
+          id="desktop-download-link"
           href={desktop.available ? desktop.downloadUrl : "#"}
           class:list={[
             "mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition-all",
@@ -79,11 +85,12 @@ const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
           <svg class="size-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <path d="M8 1v10M4 7l4 4 4-4M2 13h12" />
           </svg>
-          {desktop.available ? "Download Now" : "Coming Soon"}
+          <span id="desktop-download-text">{desktop.available ? "Download Now" : "Coming Soon"}</span>
         </a>
       </div>
 
       <div
+        id="mobile-download-card"
         class:list={[
           "group relative rounded-xl border p-8 text-center transition-all",
           mobile.available
@@ -91,11 +98,15 @@ const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
             : "border-neutral-200 bg-neutral-50 opacity-75",
         ]}
       >
-        {!mobile.available && (
-          <span class="absolute right-4 top-4 rounded-full bg-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600">
-            Coming Soon
-          </span>
-        )}
+        <span
+          id="mobile-badge"
+          class:list={[
+            "absolute right-4 top-4 rounded-full bg-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600",
+            mobile.available ? "hidden" : "",
+          ]}
+        >
+          Coming Soon
+        </span>
         <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
           <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <rect x="5" y="2" width="14" height="20" rx="3" />
@@ -107,6 +118,7 @@ const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
           {mobile.platforms.join(" / ")}
         </p>
         <a
+          id="mobile-download-link"
           href={mobile.available ? mobile.downloadUrl : "#"}
           class:list={[
             "mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition-all",
@@ -120,9 +132,56 @@ const mobile = downloads.find((d) => d.platformType === "mobile") ?? {
           <svg class="size-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <path d="M8 1v10M4 7l4 4 4-4M2 13h12" />
           </svg>
-          {mobile.available ? "Download Now" : "Coming Soon"}
+          <span id="mobile-download-text">{mobile.available ? "Download Now" : "Coming Soon"}</span>
         </a>
       </div>
     </div>
   </div>
 </section>
+
+<script>
+  interface DownloadManifest {
+    downloadUrl?: string;
+  }
+
+  function applyManifest(prefix: "desktop" | "mobile", manifest: DownloadManifest) {
+    if (!manifest.downloadUrl) return;
+
+    const card = document.getElementById(`${prefix}-download-card`);
+    const badge = document.getElementById(`${prefix}-badge`);
+    const link = document.getElementById(`${prefix}-download-link`) as HTMLAnchorElement | null;
+    const linkText = document.getElementById(`${prefix}-download-text`);
+
+    card?.classList.remove("border-neutral-200", "bg-neutral-50", "opacity-75");
+    card?.classList.add("border-primary-200", "bg-white", "shadow-sm", "hover:border-primary-300", "hover:shadow-md");
+
+    badge?.classList.add("hidden");
+
+    if (link) {
+      link.href = manifest.downloadUrl;
+      link.removeAttribute("aria-disabled");
+      link.tabIndex = 0;
+      link.classList.remove("cursor-not-allowed", "border", "border-neutral-300", "bg-neutral-100", "text-neutral-400");
+      link.classList.add("bg-primary-700", "text-white", "shadow-[0_18px_30px_rgba(21,101,192,0.22)]", "hover:bg-primary-800", "hover:shadow-lg");
+    }
+
+    if (linkText) {
+      linkText.textContent = "Download Now";
+    }
+  }
+
+  async function loadManifest(prefix: "desktop" | "mobile") {
+    try {
+      const response = await fetch(`/downloads/${prefix}.json`, {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      applyManifest(prefix, (await response.json()) as DownloadManifest);
+    } catch {
+      // Keep the "Coming Soon" server-rendered state on any failure.
+    }
+  }
+
+  void loadManifest("desktop");
+  void loadManifest("mobile");
+</script>

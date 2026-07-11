@@ -341,6 +341,10 @@ services:
       - 80
     environment:
       NODE_ENV: ${NODE_ENV:-development}
+    volumes:
+      # CD publishes the mobile/desktop installers here directly via SCP
+      # (see cd-qa.yml) — served as static files under /downloads.
+      - /opt/mentorapredict-downloads:/usr/share/nginx/html/downloads
     networks:
       - mentorapredict-net
     depends_on:
