@@ -189,6 +189,26 @@ export async function deleteCurrentUserAvatar() {
     return response.data;
 }
 
+export async function uploadUserAvatar(
+    userId: string,
+    file: File
+): Promise<AppUser> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<UserApiResponse>(
+        endpoints.users.userAvatar(userId),
+        formData,
+    );
+    return toAppUser(response.data);
+}
+
+export async function deleteUserAvatar(userId: string): Promise<AppUser> {
+    const response = await api.delete<UserApiResponse>(
+        endpoints.users.userAvatar(userId)
+    );
+    return toAppUser(response.data);
+}
+
 export async function getStudents(): Promise<AppUser[]> {
     if (studentsCache && studentsCache.expiresAt > Date.now()) {
         return studentsCache.value;

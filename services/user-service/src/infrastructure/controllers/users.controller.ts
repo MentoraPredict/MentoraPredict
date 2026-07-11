@@ -156,6 +156,29 @@ export class UsersController {
     return this.deleteAvatarUC.execute(userId);
   }
 
+  @Post(":id/avatar")
+  @Roles("ADMIN")
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace another user's avatar (ADMIN only, jpg/jpeg/png, max 2MB)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  uploadUserAvatar(@Param("id") id: string, @UploadedFile() file: MulterUploadedFile) {
+    return this.uploadAvatarUC.execute(id, file);
+  }
+
+  @Delete(":id/avatar")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove another user's avatar (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  deleteUserAvatar(@Param("id") id: string) {
+    return this.deleteAvatarUC.execute(id);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get user profile by id" })
   get(@Param("id") id: string) {

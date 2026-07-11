@@ -9,6 +9,7 @@ import Input from "@/components/atoms/Input";
 import Label from "@/components/atoms/Label";
 import Select from "@/components/atoms/Select";
 import Textarea from "@/components/atoms/Textarea";
+import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
 
 import type { AppUser } from "@/types/user/user.types";
 import type {
@@ -67,6 +68,7 @@ export default function AdminCreateCourseForm({
 }: AdminCreateCourseFormProps) {
   const [isCodeHelpOpen, setIsCodeHelpOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | undefined>(undefined);
   const [imageError, setImageError] = useState<string | null>(null);
 
   const {
@@ -147,16 +149,11 @@ export default function AdminCreateCourseForm({
 
     reset();
     setImageFile(null);
+    setImagePreviewUrl(undefined);
     setImageError(null);
   };
 
-  const handleImageChange = (file: File | undefined) => {
-    if (!file) {
-      setImageFile(null);
-      setImageError(null);
-      return;
-    }
-
+  const handleImageChange = (file: File) => {
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       setImageError("Solo se aceptan imagenes jpg, jpeg o png.");
       setImageFile(null);
@@ -171,6 +168,7 @@ export default function AdminCreateCourseForm({
 
     setImageError(null);
     setImageFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
   };
 
   return (
@@ -359,16 +357,18 @@ export default function AdminCreateCourseForm({
         </div>
 
         <div>
-          <Label htmlFor="courseImage">Imagen del curso (opcional)</Label>
+          <Label>Imagen del curso (opcional)</Label>
 
-          <Input
-            id="courseImage"
-            type="file"
-            accept="image/jpeg,image/jpg,image/png"
-            onChange={(event) => handleImageChange(event.target.files?.[0])}
-          />
+          <div className="mt-2">
+            <ImageUploadPreview
+              imageUrl={imagePreviewUrl}
+              alt="Imagen del curso"
+              helperText={imageFile ? "Cambiar imagen" : "Subir imagen del curso"}
+              onChangeImage={handleImageChange}
+            />
+          </div>
 
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-gray-500">
             jpg, jpeg o png, maximo 2MB.
           </p>
 

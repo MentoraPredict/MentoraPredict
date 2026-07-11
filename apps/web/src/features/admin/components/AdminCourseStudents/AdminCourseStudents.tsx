@@ -8,6 +8,7 @@ import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
+import AdminSyllabusPanel from "@/features/admin/components/AdminSyllabusPanel";
 import TeacherCourseStudents from "@/features/teachers/components/TeacherCourseStudents";
 import { APP_PATHS } from "@/routes/paths";
 import type { Course } from "@/types/course";
@@ -101,6 +102,13 @@ export default function AdminCourseStudents({ course }: AdminCourseStudentsProps
               </Text>
             </div>
           ) : null}
+        </MotionCard>
+
+        <MotionCard
+          as="section"
+          className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+        >
+          <AdminSyllabusPanel subjectId={course.id} />
         </MotionCard>
 
         <MotionCard

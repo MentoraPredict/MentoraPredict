@@ -31,6 +31,7 @@ services:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
       KONG_NGINX_WORKER_PROCESSES: "1"
+      KONG_NGINX_HTTP_CLIENT_MAX_BODY_SIZE: "12m"
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
@@ -154,6 +155,9 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
       UPLOADS_DIR: /app/services/user-service/uploads
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mentorapredict-images}
     volumes:
       - ../keys:/secrets:ro
       - user_uploads_data:/app/services/user-service/uploads

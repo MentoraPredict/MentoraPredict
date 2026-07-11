@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import Label from "@/components/atoms/Label";
 import Select from "@/components/atoms/Select";
+import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
 import { FormField, PasswordField } from "@/components/molecules";
 import { USER_ROLES, type UserRole } from "@/types/user/role.types";
+
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
 interface CreateUserFormValues {
   firstName: string;
@@ -33,7 +38,7 @@ interface CreateUserFormProps {
   isSubmitting?: boolean;
   errorMessage?: string | null;
   onCancel: () => void;
-  onCreateUser: (payload: CreateUserPayload) => void;
+  onCreateUser: (payload: CreateUserPayload, avatarFile?: File) => void;
 }
 
 export default function CreateUserForm({
@@ -57,9 +62,34 @@ export default function CreateUserForm({
     },
   });
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | undefined>(
+    undefined
+  );
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
+  const handleAvatarChange = (file: File) => {
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError("Solo se aceptan imagenes jpg, jpeg o png.");
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarError("La imagen no debe superar los 2MB.");
+      return;
+    }
+
+    setAvatarError(null);
+    setAvatarFile(file);
+    setAvatarPreviewUrl(URL.createObjectURL(file));
+  };
+
   const onSubmit = (values: CreateUserFormValues) => {
-    onCreateUser(values);
+    onCreateUser(values, avatarFile ?? undefined);
     reset();
+    setAvatarFile(null);
+    setAvatarPreviewUrl(undefined);
+    setAvatarError(null);
   };
 
   return (
@@ -131,6 +161,27 @@ export default function CreateUserForm({
             El usuario se crea con esta contraseña inicial; comunícasela directamente, no existe
             invitación por correo.
           </p>
+        </div>
+
+        <div>
+          <Label>Foto de perfil (opcional)</Label>
+
+          <div className="mt-2">
+            <ImageUploadPreview
+              imageUrl={avatarPreviewUrl}
+              alt="Foto de perfil"
+              helperText={avatarFile ? "Cambiar foto" : "Subir foto de perfil"}
+              onChangeImage={handleAvatarChange}
+            />
+          </div>
+
+          <p className="mt-2 text-xs text-gray-500">
+            jpg, jpeg o png, maximo 2MB.
+          </p>
+
+          {avatarError ? (
+            <p className="mt-1 text-sm text-red-600">{avatarError}</p>
+          ) : null}
         </div>
       </div>
 

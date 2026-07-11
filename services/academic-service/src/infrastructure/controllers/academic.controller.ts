@@ -980,8 +980,8 @@ export class AcademicController {
   // ─── Temario / Topics (Phase 10b) ────────────────────────────────────────
 
   @Get("subjects/:subjectId/topics")
-  @Roles("TEACHER", "STUDENT")
-  @ApiOperation({ summary: "List a subject's topics, ordered (TEACHER owner or STUDENT actively enrolled)" })
+  @Roles("TEACHER", "STUDENT", "ADMIN")
+  @ApiOperation({ summary: "List a subject's topics, ordered (TEACHER owner, STUDENT actively enrolled, or ADMIN)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })

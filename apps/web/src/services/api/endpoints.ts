@@ -11,6 +11,7 @@ export const endpoints = {
     users: {
         me: "/v1/users/me",
         avatar: "/v1/users/me/avatar",
+        userAvatar: (id: string) => `/v1/users/${id}/avatar`,
         list: "/v1/users",
         detail: (id: string) => `/v1/users/${id}`,
     },

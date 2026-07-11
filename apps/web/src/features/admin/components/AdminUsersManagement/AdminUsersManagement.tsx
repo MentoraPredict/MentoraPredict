@@ -13,32 +13,161 @@ import StatCard from "@/components/molecules/StatCard";
 import AdminUsersTable from "@/features/admin/components/AdminUsersTable";
 import CreateUserForm from "@/features/admin/components/CreateUserForm";
 import useAdminUsers from "@/features/admin/hooks/useAdminUsers";
+import type { AppUser } from "@/types/user/user.types";
+
+interface FilterOptions {
+  faculties: string[];
+  careers: string[];
+}
+
+interface UserRoleSectionProps {
+  title: string;
+  description: string;
+  users: AppUser[];
+  isLoading: boolean;
+  error: string | null;
+  currentPage: number;
+  pageSize: number;
+  totalUsers: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  showAcademicColumns?: boolean;
+  showRoleColumn?: boolean;
+  isFiltersOpen?: boolean;
+  onToggleFilters?: () => void;
+  facultyFilter?: string;
+  careerFilter?: string;
+  filterOptions?: FilterOptions;
+  onFacultyFilterChange?: (value: string) => void;
+  onCareerFilterChange?: (value: string) => void;
+  onClearFilters?: () => void;
+  onToggleStatus?: (userId: string) => void;
+  onToggleTeacherRole?: (userId: string) => void;
+  deletingUserId?: string | null;
+  onDeleteUser?: (userId: string) => Promise<boolean>;
+  onSaveUserProfile?: (
+    userId: string,
+    payload: { email?: string; firstName?: string; lastName?: string }
+  ) => Promise<AppUser>;
+  onUploadAvatar?: (userId: string, file: File) => Promise<AppUser>;
+  onDeleteAvatar?: (userId: string) => Promise<AppUser>;
+}
+
+function UserRoleSection({
+  title,
+  description,
+  users,
+  isLoading,
+  error,
+  currentPage,
+  pageSize,
+  totalUsers,
+  totalPages,
+  onPageChange,
+  showAcademicColumns,
+  showRoleColumn,
+  isFiltersOpen,
+  onToggleFilters,
+  facultyFilter,
+  careerFilter,
+  filterOptions,
+  onFacultyFilterChange,
+  onCareerFilterChange,
+  onClearFilters,
+  onToggleStatus,
+  onToggleTeacherRole,
+  deletingUserId,
+  onDeleteUser,
+  onSaveUserProfile,
+  onUploadAvatar,
+  onDeleteAvatar,
+}: UserRoleSectionProps) {
+  return (
+    <div className="mb-10">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border border-b-0 border-gray-200 bg-white px-5 py-4">
+        <div>
+          <Heading as="h5" className="text-gray-900">
+            {title}
+          </Heading>
+          <Text variant="caption" className="mt-1 text-gray-600">
+            {description}
+          </Text>
+        </div>
+
+        {onToggleFilters ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="px-4 py-2 text-sm"
+            onClick={onToggleFilters}
+          >
+            Filtros
+          </Button>
+        ) : null}
+      </div>
+
+      {error ? (
+        <div className="border-x border-gray-200 bg-red-50 px-6 py-4">
+          <Text variant="small" className="font-medium text-red-700">
+            {error}
+          </Text>
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="rounded-b-2xl border-x border-b border-gray-200 bg-white px-6 py-12 text-center">
+          <Text variant="small">Cargando...</Text>
+        </div>
+      ) : (
+        <AdminUsersTable
+          users={users}
+          showAcademicColumns={showAcademicColumns}
+          showRoleColumn={showRoleColumn}
+          isFiltersOpen={isFiltersOpen}
+          facultyFilter={facultyFilter}
+          careerFilter={careerFilter}
+          filterOptions={filterOptions}
+          onFacultyFilterChange={onFacultyFilterChange}
+          onCareerFilterChange={onCareerFilterChange}
+          onClearFilters={onClearFilters}
+          onToggleStatus={onToggleStatus}
+          onToggleTeacherRole={onToggleTeacherRole}
+          deletingUserId={deletingUserId}
+          onDeleteUser={onDeleteUser}
+          onSaveUserProfile={onSaveUserProfile}
+          onUploadAvatar={onUploadAvatar}
+          onDeleteAvatar={onDeleteAvatar}
+        />
+      )}
+
+      {!isLoading && !error ? (
+        <Pagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalItems={totalUsers}
+          totalPages={totalPages}
+          itemLabel="usuarios"
+          onPageChange={onPageChange}
+        />
+      ) : null}
+    </div>
+  );
+}
 
 export default function AdminUsersManagement() {
   const {
     search,
     setSearch,
-    roleFilter,
-    setRoleFilter,
-    facultyFilter,
-    setFacultyFilter,
-    careerFilter,
-    setCareerFilter,
-    filterOptions,
-    users,
-    allUsers,
-    currentPage,
-    pageSize,
-    totalUsers,
-    totalPages,
-    setCurrentPage,
-    isLoading,
-    error,
     clearSearch,
-    clearFilters,
+    mutationError,
+    admins,
+    teachers,
+    students,
     toggleStatus,
     toggleTeacherRole,
     saveUserProfile,
+    uploadAvatar,
+    deleteAvatar,
     createUser,
     isCreatingUser,
     createUserError,
@@ -46,17 +175,17 @@ export default function AdminUsersManagement() {
     deletingUserId,
     removeUser,
   } = useAdminUsers();
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isStudentFiltersOpen, setIsStudentFiltersOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const stats = useMemo(
     () => ({
-      total: totalUsers,
-      active: allUsers.filter((user) => user.isActive).length,
-      teachers: allUsers.filter((user) => user.role === "TEACHER").length,
-      students: allUsers.filter((user) => user.role === "STUDENT").length,
+      admins: admins.totalUsers,
+      teachers: teachers.totalUsers,
+      students: students.totalUsers,
+      total: admins.totalUsers + teachers.totalUsers + students.totalUsers,
     }),
-    [allUsers, totalUsers]
+    [admins.totalUsers, teachers.totalUsers, students.totalUsers]
   );
 
   return (
@@ -87,12 +216,12 @@ export default function AdminUsersManagement() {
 
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard value={String(stats.total)} label="Usuarios totales" />
-          <StatCard value={String(stats.active)} label="Activos en pagina" />
-          <StatCard value={String(stats.teachers)} label="Docentes en pagina" />
-          <StatCard value={String(stats.students)} label="Estudiantes en pagina" />
+          <StatCard value={String(stats.admins)} label="Administradores" />
+          <StatCard value={String(stats.teachers)} label="Docentes" />
+          <StatCard value={String(stats.students)} label="Estudiantes" />
         </div>
 
-        <div className="rounded-t-2xl border border-gray-200 bg-white p-5">
+        <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-5">
           <div className="mb-4">
             <Text
               variant="caption"
@@ -101,77 +230,97 @@ export default function AdminUsersManagement() {
               Buscar usuarios
             </Text>
             <Text variant="small" className="mt-1 text-gray-600">
-              Edita nombres, apellidos y correo; el contexto académico se
-              muestra cuando el usuario tiene matrículas activas.
+              La búsqueda aplica a las tres tablas de abajo (administradores,
+              docentes y estudiantes).
             </Text>
           </div>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="min-w-0 flex-1">
-              <SearchBar
-                value={search}
-                placeholder="Buscar por nombres, apellidos, correo o contexto académico"
-                onChange={setSearch}
-                onClear={clearSearch}
-                onSearch={() => {}}
-              />
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="lg:min-w-28"
-              onClick={() => {
-                setIsFiltersOpen((current) => !current);
-              }}
-            >
-              Filtros
-            </Button>
-          </div>
+          <SearchBar
+            value={search}
+            placeholder="Buscar por nombres, apellidos o correo"
+            onChange={setSearch}
+            onClear={clearSearch}
+            onSearch={() => {}}
+          />
         </div>
 
-        {error ? (
-          <div className="border-x border-gray-200 bg-red-50 px-6 py-4">
+        {mutationError ? (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-6 py-4">
             <Text variant="small" className="font-medium text-red-700">
-              {error}
+              {mutationError}
             </Text>
           </div>
         ) : null}
 
-        {isLoading ? (
-          <div className="rounded-b-2xl border-x border-b border-gray-200 bg-white px-6 py-12 text-center">
-            <Text variant="small">Cargando usuarios...</Text>
-          </div>
-        ) : (
-          <AdminUsersTable
-            users={users}
-            isFiltersOpen={isFiltersOpen}
-            onToggleStatus={toggleStatus}
-            onToggleTeacherRole={toggleTeacherRole}
-            deletingUserId={deletingUserId}
-            onDeleteUser={removeUser}
-            onSaveUserProfile={saveUserProfile}
-            roleFilter={roleFilter}
-            facultyFilter={facultyFilter}
-            careerFilter={careerFilter}
-            filterOptions={filterOptions}
-            onRoleFilterChange={setRoleFilter}
-            onFacultyFilterChange={setFacultyFilter}
-            onCareerFilterChange={setCareerFilter}
-            onClearFilters={clearFilters}
-          />
-        )}
+        <UserRoleSection
+          title="Administradores"
+          description="Cuentas con acceso total al panel administrativo."
+          users={admins.users}
+          isLoading={admins.isLoading}
+          error={admins.error}
+          currentPage={admins.currentPage}
+          pageSize={admins.pageSize}
+          totalUsers={admins.totalUsers}
+          totalPages={admins.totalPages}
+          onPageChange={admins.setCurrentPage}
+          onToggleStatus={toggleStatus}
+          deletingUserId={deletingUserId}
+          onDeleteUser={removeUser}
+          onSaveUserProfile={saveUserProfile}
+          onUploadAvatar={uploadAvatar}
+          onDeleteAvatar={deleteAvatar}
+        />
 
-        {!isLoading && !error ? (
-          <Pagination
-            currentPage={currentPage}
-            pageSize={pageSize}
-            totalItems={totalUsers}
-            totalPages={totalPages}
-            itemLabel="usuarios"
-            onPageChange={setCurrentPage}
-          />
-        ) : null}
+        <UserRoleSection
+          title="Docentes"
+          description="Cuentas con cursos y estudiantes a cargo."
+          users={teachers.users}
+          isLoading={teachers.isLoading}
+          error={teachers.error}
+          currentPage={teachers.currentPage}
+          pageSize={teachers.pageSize}
+          totalUsers={teachers.totalUsers}
+          totalPages={teachers.totalPages}
+          onPageChange={teachers.setCurrentPage}
+          showRoleColumn
+          onToggleStatus={toggleStatus}
+          onToggleTeacherRole={toggleTeacherRole}
+          deletingUserId={deletingUserId}
+          onDeleteUser={removeUser}
+          onSaveUserProfile={saveUserProfile}
+          onUploadAvatar={uploadAvatar}
+          onDeleteAvatar={deleteAvatar}
+        />
+
+        <UserRoleSection
+          title="Estudiantes"
+          description="Cuentas matriculadas en cursos, con su contexto académico."
+          users={students.users}
+          isLoading={students.isLoading}
+          error={students.error}
+          currentPage={students.currentPage}
+          pageSize={students.pageSize}
+          totalUsers={students.totalUsers}
+          totalPages={students.totalPages}
+          onPageChange={students.setCurrentPage}
+          showAcademicColumns
+          showRoleColumn
+          isFiltersOpen={isStudentFiltersOpen}
+          onToggleFilters={() => setIsStudentFiltersOpen((current) => !current)}
+          facultyFilter={students.facultyFilter}
+          careerFilter={students.careerFilter}
+          filterOptions={students.filterOptions}
+          onFacultyFilterChange={students.setFacultyFilter}
+          onCareerFilterChange={students.setCareerFilter}
+          onClearFilters={students.clearFilters}
+          onToggleStatus={toggleStatus}
+          onToggleTeacherRole={toggleTeacherRole}
+          deletingUserId={deletingUserId}
+          onDeleteUser={removeUser}
+          onSaveUserProfile={saveUserProfile}
+          onUploadAvatar={uploadAvatar}
+          onDeleteAvatar={deleteAvatar}
+        />
       </Container>
 
       <Modal
@@ -189,8 +338,8 @@ export default function AdminUsersManagement() {
             setIsCreateModalOpen(false);
             clearCreateUserError();
           }}
-          onCreateUser={(payload) => {
-            void createUser(payload).then((success) => {
+          onCreateUser={(payload, avatarFile) => {
+            void createUser(payload, avatarFile).then((success) => {
               if (success) {
                 setIsCreateModalOpen(false);
               }

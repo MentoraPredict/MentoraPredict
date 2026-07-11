@@ -8,50 +8,89 @@ import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
 import Input from "@/components/atoms/Input";
 import Label from "@/components/atoms/Label";
+import Select from "@/components/atoms/Select";
 import Text from "@/components/atoms/Text";
 import Textarea from "@/components/atoms/Textarea";
 import Modal from "@/components/molecules/Modal";
 import Pagination from "@/components/molecules/Pagination";
+import SearchBar from "@/components/molecules/SearchBar";
 import StatCard from "@/components/molecules/StatCard";
+import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
 
 import AdminCreateCourseForm from "@/features/admin/components/AdminCreateCourseForm";
 import CourseGrid from "@/features/courses/components/CourseGrid";
 import useAdminCourses from "@/features/admin/hooks/useAdminCourses";
 import usePagination from "@/hooks/usePagination";
-import { uploadTeacherCourseImage } from "@/services/academic.service";
+import {
+  deleteTeacherCourseImage,
+  uploadTeacherCourseImage,
+} from "@/services/academic.service";
 import { getAdminCourseStudentsPath } from "@/routes/paths";
 import type { Course } from "@/types/course";
 
 const COURSES_PER_PAGE = 6;
 const UNASSIGNED_TEACHER_LABEL = "Docente sin asignar";
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
 interface EditCourseModalProps {
   course: Course;
   isSubmitting: boolean;
   isTogglingStatus: boolean;
+  isRemovingImage: boolean;
   errorMessage?: string | null;
   onCancel: () => void;
-  onSave: (payload: { name: string; description: string }) => void;
+  onSave: (
+    payload: { name: string; description: string },
+    imageFile?: File
+  ) => void;
   onToggleStatus: () => void;
+  onRemoveImage: () => void;
 }
 
 function EditCourseForm({
   course,
   isSubmitting,
   isTogglingStatus,
+  isRemovingImage,
   errorMessage,
   onCancel,
   onSave,
   onToggleStatus,
+  onRemoveImage,
 }: EditCourseModalProps) {
   const [name, setName] = useState(course.name);
   const [description, setDescription] = useState(course.description);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | undefined>(
+    course.imageUrl
+  );
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  const handleImageChange = (file: File) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setImageError("Solo se aceptan imagenes jpg, jpeg o png.");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError("La imagen no debe superar los 2MB.");
+      return;
+    }
+
+    setImageError(null);
+    setImageFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
+  };
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        onSave({ name: name.trim(), description: description.trim() });
+        onSave(
+          { name: name.trim(), description: description.trim() },
+          imageFile ?? undefined
+        );
       }}
     >
       <Heading as="h4" className="border-b border-gray-200 pb-4 text-gray-900">
@@ -87,6 +126,42 @@ function EditCourseForm({
             onChange={(event) => setDescription(event.target.value)}
             required
           />
+        </div>
+
+        <div>
+          <Label>Imagen del curso</Label>
+
+          <div className="mt-2">
+            <ImageUploadPreview
+              imageUrl={imagePreviewUrl}
+              alt="Imagen del curso"
+              helperText={imageFile ? "Cambiar imagen" : "Subir imagen del curso"}
+              onChangeImage={handleImageChange}
+            />
+          </div>
+
+          <p className="mt-2 text-xs text-gray-500">
+            jpg, jpeg o png, maximo 2MB.
+          </p>
+
+          {imageError ? (
+            <p className="mt-1 text-sm text-red-600">{imageError}</p>
+          ) : null}
+
+          {course.imageUrl && !imageFile ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 px-4 py-2 text-sm text-red-600 hover:border-red-200 hover:bg-red-50"
+              disabled={isRemovingImage}
+              onClick={() => {
+                onRemoveImage();
+                setImagePreviewUrl(undefined);
+              }}
+            >
+              {isRemovingImage ? "Eliminando..." : "Eliminar imagen"}
+            </Button>
+          ) : null}
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
@@ -154,6 +229,33 @@ export default function AdminCoursesManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [removingImageCourseId, setRemovingImageCourseId] = useState<string | null>(
+    null
+  );
+  const [search, setSearch] = useState("");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [teacherFilter, setTeacherFilter] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("");
+
+  const filteredCourses = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return courses.filter((course) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        course.name.toLowerCase().includes(normalizedSearch) ||
+        course.description.toLowerCase().includes(normalizedSearch);
+      const matchesStatus =
+        !statusFilter || String(course.isActive ?? true) === statusFilter;
+      const matchesTeacher =
+        !teacherFilter || course.teacherId === teacherFilter;
+      const matchesPeriod =
+        !periodFilter || course.semester === periodFilter;
+
+      return matchesSearch && matchesStatus && matchesTeacher && matchesPeriod;
+    });
+  }, [courses, search, statusFilter, teacherFilter, periodFilter]);
 
   const {
     currentPage,
@@ -161,7 +263,18 @@ export default function AdminCoursesManagement() {
     totalItems,
     totalPages,
     setCurrentPage,
-  } = usePagination(courses, COURSES_PER_PAGE);
+  } = usePagination(
+    filteredCourses,
+    COURSES_PER_PAGE,
+    `${search}|${statusFilter}|${teacherFilter}|${periodFilter}`
+  );
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("");
+    setTeacherFilter("");
+    setPeriodFilter("");
+  };
 
   const stats = useMemo(() => {
     const activePeriod = periods.find((period) => period.status === "ACTIVE");
@@ -238,6 +351,108 @@ export default function AdminCoursesManagement() {
           <StatCard value={String(stats.inActivePeriod)} label="En periodo activo" />
         </div>
 
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="min-w-0 flex-1">
+              <SearchBar
+                value={search}
+                placeholder="Buscar por nombre o descripción del curso"
+                onChange={setSearch}
+                onClear={() => setSearch("")}
+                onSearch={() => {}}
+              />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="lg:min-w-28"
+              onClick={() => setIsFiltersOpen((current) => !current)}
+            >
+              Filtros
+            </Button>
+          </div>
+
+          {isFiltersOpen ? (
+            <div className="mt-4 grid gap-4 border-t border-gray-100 pt-4 lg:grid-cols-4">
+              <div>
+                <Label className="mb-2 block text-xs font-semibold text-gray-600">
+                  Estado
+                </Label>
+                <Select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                >
+                  <option value="">Todos los estados</option>
+                  <option value="true">Activo</option>
+                  <option value="false">Inactivo</option>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="mb-2 block text-xs font-semibold text-gray-600">
+                  Docente
+                </Label>
+                <Select
+                  value={teacherFilter}
+                  onChange={(event) => setTeacherFilter(event.target.value)}
+                >
+                  <option value="">Todos los docentes</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {[teacher.firstName, teacher.lastName].filter(Boolean).join(" ") ||
+                        teacher.email}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <Label className="mb-2 block text-xs font-semibold text-gray-600">
+                  Periodo
+                </Label>
+                <Select
+                  value={periodFilter}
+                  onChange={(event) => setPeriodFilter(event.target.value)}
+                >
+                  <option value="">Todos los periodos</option>
+                  {periods.map((period) => (
+                    <option key={period.id} value={period.name}>
+                      {period.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="
+                    inline-flex
+                    w-full
+                    items-center
+                    justify-center
+                    rounded-xl
+                    border
+                    border-blue-200
+                    bg-blue-50
+                    px-4
+                    py-3
+                    text-sm
+                    font-semibold
+                    text-blue-700
+                    transition
+                    hover:bg-blue-100
+                  "
+                >
+                  Reiniciar filtros
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         {error ? (
           <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-6 py-4">
             <Text variant="small" className="font-medium text-red-700">
@@ -257,6 +472,12 @@ export default function AdminCoursesManagement() {
         {isLoading ? (
           <div className="rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center">
             <Text variant="small">Cargando cursos...</Text>
+          </div>
+        ) : filteredCourses.length === 0 && courses.length > 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center">
+            <Text variant="small">
+              Ningún curso coincide con la búsqueda o los filtros aplicados.
+            </Text>
           </div>
         ) : (
           <CourseGrid
@@ -334,12 +555,29 @@ export default function AdminCoursesManagement() {
             course={editingCourse}
             isSubmitting={updatingCourseId === editingCourse.id}
             isTogglingStatus={updatingCourseId === editingCourse.id}
+            isRemovingImage={removingImageCourseId === editingCourse.id}
             errorMessage={error}
             onCancel={() => setEditingCourse(null)}
-            onSave={(payload) => {
-              void updateCourse(editingCourse.id, payload).then((success) => {
-                if (success) setEditingCourse(null);
+            onSave={(payload, imageFile) => {
+              void updateCourse(editingCourse.id, payload).then(async (success) => {
+                if (!success) return;
+                if (imageFile) {
+                  await uploadTeacherCourseImage(editingCourse.id, imageFile).catch(
+                    () => null
+                  );
+                  await reload();
+                }
+                setEditingCourse(null);
               });
+            }}
+            onRemoveImage={() => {
+              setRemovingImageCourseId(editingCourse.id);
+              void deleteTeacherCourseImage(editingCourse.id)
+                .catch(() => null)
+                .then(async () => {
+                  await reload();
+                  setRemovingImageCourseId(null);
+                });
             }}
             onToggleStatus={() => {
               const nextIsActive = !(editingCourse.isActive ?? true);
