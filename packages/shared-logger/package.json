@@ -1,0 +1,25 @@
+{
+  "name": "@mentorapredict/shared-logger",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src/",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "nestjs-pino": "^4.1.0",
+    "pino-http": "^10.3.0"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0 || ^11.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/common": "^10.3.0",
+    "@types/node": "^22.0.0",
+    "pino-pretty": "^11.2.2",
+    "typescript": "^5.4.0"
+  }
+}
