@@ -138,7 +138,10 @@ export async function getHero(): Promise<HeroData> {
     ctaPrimaryLink: "/login",
     ctaSecondaryText: "Download App",
     ctaSecondaryLink: "#downloads",
-    imageUrl: "/images/landing-analytics-dashboard.png",
+    // Site is served under the /landing base path (astro.config.mjs) — a
+    // plain "/images/..." string escapes that prefix and 404s against the
+    // web app instead, since it isn't run through Astro's asset pipeline.
+    imageUrl: `${import.meta.env.BASE_URL}images/landing-analytics-dashboard.png`,
     imageAlt: "MentoraPredict analytics dashboard preview",
   };
 
@@ -163,7 +166,9 @@ export async function getHero(): Promise<HeroData> {
       ctaPrimaryLink: extractPlainText(fields.ctaPrimaryLink),
       ctaSecondaryText: extractPlainText(fields.ctaSecondaryText),
       ctaSecondaryLink: extractPlainText(fields.ctaSecondaryLink) || "#downloads",
-      imageUrl: fields.image ? resolveImageUrl(fields.image) : "/images/landing-analytics-dashboard.png",
+      imageUrl: fields.image
+        ? resolveImageUrl(fields.image)
+        : `${import.meta.env.BASE_URL}images/landing-analytics-dashboard.png`,
       imageAlt: extractPlainText(fields.imageAlt),
     };
   } catch {
