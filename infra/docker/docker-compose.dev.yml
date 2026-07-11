@@ -26,8 +26,6 @@ networks:
 volumes:
   postgres_data:
     name: mp_dev_postgres_data
-  mongo_data:
-    name: mp_dev_mongo_data
   redis_data:
     name: mp_dev_redis_data
   academic_uploads_data:
@@ -66,61 +64,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  mongo:
-    image: mongo:7.0
-    container_name: mp_dev_mongo
-    restart: unless-stopped
-    command: ["mongod", "--quiet"]
-    deploy:
-      resources:
-        limits:
-          cpus: "0.75"
-          memory: 768M
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mp_mongo_user}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_INITDB_DATABASE: ${MONGO_DB:-mentorapredict_nosql}
-    expose:
-      - "27017"
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - mentorapredict-net
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'mongosh --quiet --username "$${MONGO_INITDB_ROOT_USERNAME}" --password "$${MONGO_INITDB_ROOT_PASSWORD}" --authenticationDatabase admin --eval "db.adminCommand(''ping'').ok" | grep 1',
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
-  mongo-express:
-    image: mongo-express:1.0.2-20
-    container_name: mp_mongo_ui
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "0.15"
-          memory: 192M
-    profiles: ["tools"]
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
-      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/"
-      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_UI_USER:-admin}
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_UI_PASSWORD:-admin}
-    ports:
-      - "8082:8081"
-    networks:
-      - mentorapredict-net
-    depends_on:
-      mongo:
-        condition: service_healthy
 
   redis:
     image: redis:7.2-alpine
@@ -378,11 +321,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
-      MONGO_HOST: ${MONGO_HOST:-mongo}
-      MONGO_PORT: ${MONGO_PORT:-27017}
-      MONGO_USER: ${MONGO_USER:-mp_mongo_user}
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
+      MONGO_URL: ${MONGO_URL}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
@@ -439,11 +378,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
-      MONGO_HOST: ${MONGO_HOST:-mongo}
-      MONGO_PORT: ${MONGO_PORT:-27017}
-      MONGO_USER: ${MONGO_USER:-mp_mongo_user}
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
+      MONGO_URL: ${MONGO_URL}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
@@ -497,11 +432,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mp_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
       POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
-      MONGO_HOST: ${MONGO_HOST:-mongo}
-      MONGO_PORT: ${MONGO_PORT:-27017}
-      MONGO_USER: ${MONGO_USER:-mp_mongo_user}
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
+      MONGO_URL: ${MONGO_URL}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
