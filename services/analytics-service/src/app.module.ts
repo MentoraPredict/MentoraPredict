@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { createLoggerModule } from "@mentorapredict/shared-logger";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
@@ -72,6 +73,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
 
 @Module({
   imports: [
+    createLoggerModule("analytics-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
     TypeOrmModule.forRootAsync({

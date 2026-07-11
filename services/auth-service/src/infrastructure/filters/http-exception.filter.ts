@@ -25,7 +25,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message,
       timestamp: new Date().toISOString(),
       path: req.url,
-      requestId: (req as unknown as { correlationId?: string }).correlationId ?? '',
+      requestId: (req as unknown as { id?: string }).id ?? '',
     });
   }
 }

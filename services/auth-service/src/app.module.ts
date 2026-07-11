@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { JwtModule } from "@nestjs/jwt";
+import { createLoggerModule } from "@mentorapredict/shared-logger";
 
 import { AuthController } from "./infrastructure/controllers/auth.controller";
 import { HealthController } from "./infrastructure/controllers/health.controller";
@@ -36,6 +37,7 @@ import { SearchAuthUsersUseCase } from "./application/use-cases/search-auth-user
 
 @Module({
   imports: [
+    createLoggerModule("auth-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
     TypeOrmModule.forRootAsync({

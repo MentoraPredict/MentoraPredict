@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { createLoggerModule } from "@mentorapredict/shared-logger";
 
 import { PredictionController } from "./infrastructure/controllers/prediction.controller";
 import { InternalPredictionController } from "./infrastructure/controllers/internal-prediction.controller";
@@ -43,6 +44,7 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
 
 @Module({
   imports: [
+    createLoggerModule("prediction-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
     // Fase 8 — first Postgres connection in prediction-service, for

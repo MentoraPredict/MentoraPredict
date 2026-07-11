@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { createLoggerModule } from "@mentorapredict/shared-logger";
 
 import { AcademicController } from "./infrastructure/controllers/academic.controller";
 import { InternalAcademicController } from "./infrastructure/controllers/internal-academic.controller";
@@ -135,6 +136,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
 
 @Module({
   imports: [
+    createLoggerModule("academic-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
     TypeOrmModule.forRootAsync({

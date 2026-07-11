@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { JwtModule } from "@nestjs/jwt";
 import { HttpModule } from "@nestjs/axios";
+import { createLoggerModule } from "@mentorapredict/shared-logger";
 
 import { UsersController } from "./infrastructure/controllers/users.controller";
 import { InternalUsersController } from "./infrastructure/controllers/internal-users.controller";
@@ -28,6 +29,7 @@ import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-i
 
 @Module({
   imports: [
+    createLoggerModule("user-service"),
     ConfigModule.forRoot({ isGlobal: true }),
     HttpModule,
     TypeOrmModule.forRootAsync({
