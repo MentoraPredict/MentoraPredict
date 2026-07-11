@@ -4,36 +4,28 @@ interface RequestWithId {
   id?: string | number;
 }
 
-interface ResponseLike {
-  setHeader(name: string, value: string): void;
-}
-
-type MiddlewareFn = (req: RequestWithId, res: ResponseLike, next: () => void) => void;
-
-interface AppWithMiddleware {
-  use(fn: MiddlewareFn): unknown;
-}
-
 /**
- * pino-http assigns req.id via genReqId before any route middleware runs.
- * Registering this with app.use() after NestFactory.create() guarantees it
- * runs after nestjs-pino's own middleware, so req.id is already populated.
+ * Must be registered via AppModule's own configure(consumer) — e.g.
+ *   consumer.apply(correlationContextMiddleware).forRoutes('*')
+ * with createLoggerModule(...) imported before other modules in
+ * AppModule.imports. NestJS binds middleware from imported modules'
+ * configure() before the importing module's own configure(), so this
+ * runs after pino-http's middleware has already assigned req.id.
  *
- * Running next() inside correlationContext.run() makes the id available via
- * correlationContext.getId() anywhere downstream in this request's async
- * chain (use-cases, outbound HTTP clients) without threading it through
- * every function signature.
+ * A plain app.use() call in main.ts (registered after NestFactory.create())
+ * was tried first and found to run BEFORE nestjs-pino's module-bound
+ * middleware, seeing req.id as undefined — hence going through Nest's own
+ * middleware-consumer system instead of raw Express registration.
  */
-export function attachCorrelationIdHeader(app: AppWithMiddleware): void {
-  app.use(
-    (req: RequestWithId, res: ResponseLike, next: () => void): void => {
-      const id = req.id ? String(req.id) : undefined;
-      if (!id) {
-        next();
-        return;
-      }
-      res.setHeader('x-correlation-id', id);
-      correlationContext.run(id, next);
-    },
-  );
+export function correlationContextMiddleware(
+  req: RequestWithId,
+  _res: unknown,
+  next: () => void,
+): void {
+  const id = req.id ? String(req.id) : undefined;
+  if (!id) {
+    next();
+    return;
+  }
+  correlationContext.run(id, next);
 }

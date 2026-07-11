@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { Logger, attachCorrelationIdHeader } from "@mentorapredict/shared-logger";
+import { Logger } from "@mentorapredict/shared-logger";
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./infrastructure/filters/http-exception.filter";
 
@@ -10,7 +10,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const logger = app.get(Logger);
   app.useLogger(logger);
-  attachCorrelationIdHeader(app);
   const port = process.env.APP_PORT ?? 3001;
 
   // Global pipes, filters

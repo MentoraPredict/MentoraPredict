@@ -14,7 +14,19 @@ function resolveCorrelationId(req: IncomingMessage): string {
 export function buildLoggerOptions(serviceName: string): Params {
   return {
     pinoHttp: {
-      genReqId: (req: IncomingMessage) => resolveCorrelationId(req),
+      // Setting the response header here — rather than in a separate
+      // app.use() middleware — sidesteps NestJS middleware ordering
+      // entirely: genReqId is guaranteed to run at the exact moment
+      // pino-http assigns req.id, with res already available as the
+      // second argument. A middleware registered via app.use() after
+      // NestFactory.create() was empirically found to run BEFORE
+      // nestjs-pino's own module-bound middleware, so req.id was still
+      // undefined when it ran.
+      genReqId: (req: IncomingMessage, res: ServerResponse) => {
+        const id = resolveCorrelationId(req);
+        res.setHeader('x-correlation-id', id);
+        return id;
+      },
       customProps: (req: IncomingMessage) => ({
         service: serviceName,
         correlationId: (req as IncomingMessage & { id?: string }).id,
