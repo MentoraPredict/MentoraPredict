@@ -101,6 +101,11 @@ services:
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://mp_user_service:3002}
       CORS_ORIGINS: ${CORS_ORIGINS}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-https://mentorapredictqa.programacionwebuce.net}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-https://mentorapredictqa.programacionwebuce.net/api/v1/auth/microsoft/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-https://mentorapredictqa.programacionwebuce.net}
     networks:
       - mentorapredict-net
     volumes:
