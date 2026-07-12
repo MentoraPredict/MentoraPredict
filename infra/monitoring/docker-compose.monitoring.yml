@@ -80,6 +80,8 @@ services:
       # explicitly trusted — root_url alone doesn't cover this behind a
       # reverse proxy. Bare host:port, no scheme, per Grafana's docs.
       GF_SECURITY_CSRF_TRUSTED_ORIGINS: ${GRAFANA_TRUSTED_ORIGIN:-mentorapredictqa.programacionwebuce.net}
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_SECURITY_COOKIE_SAMESITE: "none"
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
