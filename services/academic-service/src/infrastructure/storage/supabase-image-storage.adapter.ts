@@ -14,7 +14,7 @@ const IMAGE_MIME_EXT: Record<string, string> = {
 @Injectable()
 export class SupabaseImageStorageAdapter implements IImageStoragePort {
   private readonly logger = new Logger(SupabaseImageStorageAdapter.name);
-  private readonly client: SupabaseClient;
+  private readonly client: SupabaseClient | null;
   private readonly bucket: string;
   private readonly objectUrlPrefix: string;
 
@@ -22,11 +22,28 @@ export class SupabaseImageStorageAdapter implements IImageStoragePort {
     const url = config.get<string>('SUPABASE_URL', '');
     const serviceRoleKey = config.get<string>('SUPABASE_SERVICE_ROLE_KEY', '');
     this.bucket = config.get<string>('SUPABASE_STORAGE_BUCKET', 'mentorapredict-images');
-    this.client = createClient(url, serviceRoleKey);
     this.objectUrlPrefix = `${url}/storage/v1/object/public/${this.bucket}/`;
+
+    if (!url || !serviceRoleKey) {
+      // createClient() throws synchronously on an empty URL, and this
+      // adapter is instantiated as part of Nest's DI graph — an unhandled
+      // throw here would crash the whole service at boot, not just image
+      // uploads. Defer the failure to save()/deleteByPublicUrl() instead.
+      this.logger.warn(
+        'SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY are not configured — image uploads will fail until they are set.',
+      );
+      this.client = null;
+      return;
+    }
+
+    this.client = createClient(url, serviceRoleKey);
   }
 
   async save(subdir: string, file: MulterMemoryFile): Promise<{ publicUrl: string }> {
+    if (!this.client) {
+      throw new Error('Image storage is not configured (missing SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY).');
+    }
+
     const ext = IMAGE_MIME_EXT[file.mimetype] ?? 'jpg';
     const objectPath = `${subdir}/${randomUUID()}.${ext}`;
 
@@ -44,7 +61,7 @@ export class SupabaseImageStorageAdapter implements IImageStoragePort {
   }
 
   async deleteByPublicUrl(publicUrl: string | null): Promise<void> {
-    if (!publicUrl?.startsWith(this.objectUrlPrefix)) return;
+    if (!this.client || !publicUrl?.startsWith(this.objectUrlPrefix)) return;
 
     const objectPath = publicUrl.slice(this.objectUrlPrefix.length);
     const { error } = await this.client.storage.from(this.bucket).remove([objectPath]);
