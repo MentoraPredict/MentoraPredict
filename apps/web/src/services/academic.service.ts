@@ -552,15 +552,30 @@ interface BatchEnrollApiResponse {
   failed: Array<{ studentId: string; reason: string }>;
 }
 
-export async function getCourseCreationOptions(): Promise<{
+export async function getActivePeriodOptions(): Promise<CoursePeriodOption[]> {
+  const loadedPeriods = await getPeriods();
+
+  return loadedPeriods
+    .filter((period) => !period.status || period.status === "ACTIVE")
+    .map((period) => ({
+      id: period.id,
+      name: period.name,
+      code: period.code,
+      status: period.status,
+    }));
+}
+
+// Faculty/career dropdown options are only needed once a course-creation
+// form is actually open — callers with their own "create course" flow
+// (e.g. the periods list) should defer this instead of loading it eagerly
+// alongside periods.
+export async function getFacultyAndCareerOptions(): Promise<{
   faculties: CourseFacultyOption[];
   careers: CourseCareerOption[];
-  periods: CoursePeriodOption[];
 }> {
-  const [loadedFaculties, loadedCareers, loadedPeriods] = await Promise.all([
+  const [loadedFaculties, loadedCareers] = await Promise.all([
     getFaculties(),
     getCareers(),
-    getPeriods(),
   ]);
 
   const faculties = loadedFaculties
@@ -584,20 +599,20 @@ export async function getCourseCreationOptions(): Promise<{
       facultyId: career.facultyId ?? career.faculty_id ?? "",
     }));
 
-  const periods = loadedPeriods
-    .filter((period) => !period.status || period.status === "ACTIVE")
-    .map((period) => ({
-      id: period.id,
-      name: period.name,
-      code: period.code,
-      status: period.status,
-    }));
+  return { faculties, careers };
+}
 
-  return {
-    faculties,
-    careers,
-    periods,
-  };
+export async function getCourseCreationOptions(): Promise<{
+  faculties: CourseFacultyOption[];
+  careers: CourseCareerOption[];
+  periods: CoursePeriodOption[];
+}> {
+  const [{ faculties, careers }, periods] = await Promise.all([
+    getFacultyAndCareerOptions(),
+    getActivePeriodOptions(),
+  ]);
+
+  return { faculties, careers, periods };
 }
 
 export async function enrollStudentsInCourse(

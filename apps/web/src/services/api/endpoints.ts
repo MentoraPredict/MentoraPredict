@@ -56,6 +56,7 @@ export const endpoints = {
             `/v1/analytics/students/me/subjects/${subjectId}/metrics`,
         studentSubjectRisk: (subjectId: string) =>
             `/v1/analytics/students/me/subjects/${subjectId}/risk`,
+        studentSubjectsOverview: "/v1/analytics/students/me/subjects/overview",
         studentAlerts: "/v1/analytics/students/me/alerts",
         subjectSummary: (subjectId: string) =>
             `/v1/analytics/subjects/${subjectId}/metrics/summary`,

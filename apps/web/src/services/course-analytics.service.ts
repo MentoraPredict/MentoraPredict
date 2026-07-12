@@ -62,7 +62,7 @@ interface AlertResponse {
   severity: "MEDIUM" | "HIGH" | "CRITICAL" | null;
 }
 
-interface PredictionResponse {
+export interface PredictionResponse {
   id: string;
   studentId: string;
   subjectId?: string;
@@ -76,13 +76,26 @@ interface PredictionResponse {
   computedAt?: string;
 }
 
-interface SubjectRiskSummary {
+export interface SubjectRiskSummary {
   LOW: number;
   MEDIUM: number;
   HIGH: number;
   CRITICAL: number;
   unclassified: number;
   averageGrade?: number | null;
+}
+
+// Risk-count distribution + course average in one call — already computed
+// server-side by GetSubjectMetricsSummaryUseCase. The course grid only ever
+// needs this, not the full progress/alerts/predictions bundle
+// getTeacherSubjectAnalytics fetches (that's for the course detail page).
+export async function getSubjectMetricsSummary(
+  subjectId: string
+): Promise<SubjectRiskSummary> {
+  const response = await api.get<SubjectRiskSummary>(
+    endpoints.analytics.subjectSummary(subjectId)
+  );
+  return response.data;
 }
 
 interface SubjectWeeklyProgress {
@@ -136,6 +149,51 @@ export interface StudentSubjectAnalytics {
     status: "loaded" | "empty" | "error";
     message: string;
   };
+}
+
+interface StudentSubjectOverviewAlertResponse {
+  id: string;
+  message: string;
+  severity: "MEDIUM" | "HIGH" | "CRITICAL" | null;
+}
+
+interface StudentSubjectOverviewProgressPoint {
+  academicYear: number;
+  academicWeek: number;
+  averageGrade: number | null;
+}
+
+export interface StudentSubjectOverview {
+  subjectId: string;
+  averageGrade: number | null;
+  riskLevel: RiskLevel | null;
+  trendDirection: "IMPROVING" | "STABLE" | "WORSENING" | null;
+  computedAt: string | null;
+  recentProgress: StudentSubjectOverviewProgressPoint[];
+  alerts: StudentSubjectOverviewAlertResponse[];
+}
+
+// One call replacing what used to be a metrics + risk + alerts call fired
+// separately for every one of the student's active subjects — see
+// GetStudentSubjectsOverviewUseCase in analytics-service. Predictions still
+// come from a separate per-subject call (getStudentSubjectPrediction below)
+// since they live in prediction-service.
+export async function getStudentSubjectsOverview(): Promise<
+  StudentSubjectOverview[]
+> {
+  const response = await api.get<StudentSubjectOverview[]>(
+    endpoints.analytics.studentSubjectsOverview
+  );
+  return response.data;
+}
+
+export async function getStudentSubjectPrediction(
+  subjectId: string
+): Promise<PredictionResponse | null> {
+  const response = await api.get<PredictionResponse | null>(
+    endpoints.prediction.studentSubject(subjectId)
+  );
+  return response.data;
 }
 
 const PROJECTION_STEPS = 2;

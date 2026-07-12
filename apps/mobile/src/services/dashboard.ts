@@ -83,20 +83,6 @@ interface RiskSummaryResponse {
   unclassified?: number;
 }
 
-interface SubjectMetricResponse {
-  id: string;
-  academicWeek: number;
-  averageGrade: number | null;
-  riskLevel?: RiskLevel | null;
-}
-
-interface SubjectRiskResponse {
-  riskLevel: RiskLevel | null;
-  factors?: {
-    averageGrade?: number | null;
-  };
-}
-
 interface AlertResponse {
   id: string;
   title?: string;
@@ -110,6 +96,14 @@ interface PredictionResponse {
   id: string;
   recommendation?: string | null;
   predictedRiskLevel?: RiskLevel | null;
+}
+
+interface SubjectOverviewResponse {
+  subjectId: string;
+  averageGrade: number | null;
+  riskLevel: RiskLevel | null;
+  recentProgress: Array<{ academicWeek: number; averageGrade: number | null }>;
+  alerts: Array<{ id: string; message: string }>;
 }
 
 function toUser(user: UserResponse): AppUser {
@@ -197,44 +191,51 @@ function getCourseAverageFromStudents(students: CourseStudent[]) {
   return averages.reduce((total, average) => total + average, 0) / averages.length;
 }
 
-async function getSubjectAnalytics(
+// One request for all of the student's active subjects (metrics/risk/
+// progress/alerts) instead of firing metrics + risk + alerts separately for
+// every subject — see GetStudentSubjectsOverviewUseCase in
+// analytics-service. Predictions still need one call per subject (they live
+// in prediction-service), fetched separately below.
+async function getSubjectsOverview(
+  tokens: AuthTokens,
+): Promise<Map<string, SubjectOverviewResponse>> {
+  const overview = await requestJson<SubjectOverviewResponse[]>(
+    '/v1/analytics/students/me/subjects/overview',
+    { tokens },
+  ).catch(() => []);
+
+  return new Map(overview.map((entry) => [entry.subjectId, entry]));
+}
+
+async function getSubjectPrediction(
   subjectId: string,
   tokens: AuthTokens,
-): Promise<StudentCourseAnalytics> {
-  const [metricsResult, riskResult, alertsResult, predictionResult] = await Promise.allSettled([
-    requestJson<MaybePaginated<SubjectMetricResponse>>(
-      `/v1/analytics/students/me/subjects/${subjectId}/metrics`,
-      { tokens, params: { page: 1, limit: 20 } },
-    ),
-    requestJson<SubjectRiskResponse>(`/v1/analytics/students/me/subjects/${subjectId}/risk`, {
-      tokens,
-    }),
-    requestJson<MaybePaginated<AlertResponse>>('/v1/analytics/students/me/alerts', {
-      tokens,
-      params: { subjectId, page: 1, limit: 20 },
-    }),
-    requestJson<PredictionResponse | null>(
-      `/v1/prediction/students/me/subjects/${subjectId}/prediction`,
-      { tokens },
-    ),
-  ]);
+): Promise<PredictionResponse | null> {
+  return requestJson<PredictionResponse | null>(
+    `/v1/prediction/students/me/subjects/${subjectId}/prediction`,
+    { tokens },
+  ).catch(() => null);
+}
 
-  const metrics =
-    metricsResult.status === 'fulfilled' ? unwrapArray(metricsResult.value) : [];
-  const latest = metrics[0];
-  const risk = riskResult.status === 'fulfilled' ? riskResult.value : null;
-  const alerts =
-    alertsResult.status === 'fulfilled' ? unwrapArray(alertsResult.value).map(toNotification) : [];
-  const prediction = predictionResult.status === 'fulfilled' ? predictionResult.value : null;
-
+function toSubjectAnalytics(
+  overview: SubjectOverviewResponse | undefined,
+  prediction: PredictionResponse | null,
+): StudentCourseAnalytics {
   return {
-    average: latest?.averageGrade ?? risk?.factors?.averageGrade ?? null,
-    riskLevel: prediction?.predictedRiskLevel ?? risk?.riskLevel ?? latest?.riskLevel ?? 'UNKNOWN',
-    alerts,
+    average: overview?.averageGrade ?? null,
+    riskLevel: prediction?.predictedRiskLevel ?? overview?.riskLevel ?? 'UNKNOWN',
+    alerts: (overview?.alerts ?? []).map((alert) => ({
+      id: alert.id,
+      title: 'Alerta academica',
+      message: alert.message,
+      status: 'UNREAD',
+    })),
     recommendation: prediction?.recommendation,
-    progress: [...metrics].reverse().map((metric) => ({
-      week: `S${metric.academicWeek}`,
-      value: metric.averageGrade ?? 0,
+    // recentProgress is newest-first (latest week at index 0) — reverse for
+    // a chronological chart/history count, matching the old ordering.
+    progress: [...(overview?.recentProgress ?? [])].reverse().map((point) => ({
+      week: `S${point.academicWeek}`,
+      value: point.averageGrade ?? 0,
     })),
   };
 }
@@ -302,10 +303,13 @@ export async function getTeacherDashboard(tokens: AuthTokens): Promise<TeacherDa
 }
 
 export async function getStudentDashboard(tokens: AuthTokens): Promise<StudentDashboardData> {
-  const subjectsResponse = await requestJson<SubjectResponse[] | MaybePaginated<SubjectResponse>>(
-    '/v1/academic/students/me/subjects',
-    { tokens, params: { status: 'ACTIVE', page: 1, limit: 100 } },
-  );
+  const [subjectsResponse, overviewBySubject] = await Promise.all([
+    requestJson<SubjectResponse[] | MaybePaginated<SubjectResponse>>(
+      '/v1/academic/students/me/subjects',
+      { tokens, params: { status: 'ACTIVE', page: 1, limit: 100 } },
+    ),
+    getSubjectsOverview(tokens),
+  ]);
 
   const courses = await Promise.all(
     unwrapArray(subjectsResponse).map(async (subject) => {
@@ -313,7 +317,8 @@ export async function getStudentDashboard(tokens: AuthTokens): Promise<StudentDa
       if (!course.id) {
         return null;
       }
-      const analytics = await getSubjectAnalytics(course.id, tokens).catch(() => undefined);
+      const prediction = await getSubjectPrediction(course.id, tokens);
+      const analytics = toSubjectAnalytics(overviewBySubject.get(course.id), prediction);
       return { ...course, analytics };
     }),
   );
