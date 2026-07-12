@@ -1,44 +1,17 @@
-# WebAssembly en MentoraPredict
+# WebAssembly
 
-## Descripción general
+MentoraPredict uses WebAssembly (WASM) in two independent places:
 
-MentoraPredict utiliza WebAssembly (WASM) en `analytics-service` para ejecutar la
-regresión lineal empleada en el cálculo de tendencias académicas.
+| Runtime | Module | Purpose |
+| --- | --- | --- |
+| Analytics service (Node.js) | Linear regression | Calculates academic trend slope and intercept |
+| Web browser | Confetti particle engine | Updates animation physics for the course progress chart |
 
-Esta implementación se ejecuta en el backend, dentro de Node.js. No se ejecuta
-en el navegador ni forma parte directamente de la aplicación React.
+The backend module produces academic data. The browser module is a visual enhancement and does not affect grades, risk, or predictions.
 
-## ¿Para qué sirve?
+## Academic trend in analytics-service
 
-La regresión lineal permite determinar cómo cambia el promedio académico de un
-estudiante a través de varios periodos. A partir de los promedios históricos se
-calculan dos valores:
-
-- `slope`: pendiente de la tendencia.
-- `intercept`: punto de intersección de la recta calculada.
-
-La pendiente se utiliza para clasificar el rendimiento:
-
-| Condición | Clasificación |
-| --- | --- |
-| `slope > 0.5` | `ASCENDING` |
-| `slope < -0.5` | `DESCENDING` |
-| Cualquier otro valor | `STABLE` |
-
-Por ejemplo, este resultado indica que el rendimiento está mejorando:
-
-```json
-{
-  "slope": 6.32,
-  "intercept": -8.427,
-  "classification": "ASCENDING",
-  "periodsAnalyzed": 3
-}
-```
-
-## Ubicación de la implementación
-
-El adaptador de WebAssembly se encuentra en:
+The adapter is located at:
 
 ```text
 services/analytics-service/src/infrastructure/wasm/
@@ -46,157 +19,116 @@ services/analytics-service/src/infrastructure/wasm/
 └── linear-regression.wasm.spec.ts
 ```
 
-El caso de uso que consume el adaptador está en:
+`linearRegression(values)` computes the accumulated values in TypeScript and passes them to the embedded WASM function:
 
 ```text
-services/analytics-service/src/application/use-cases/
-└── calculate-trend.use-case.ts
+n, sumX, sumY, sumXY, sumXX -> WASM -> slope, intercept
 ```
 
-### `linear-regression.wasm.ts`
+The precompiled bytes are embedded in the TypeScript module, so the service does not require Rust, AssemblyScript, or a WASM compiler at build or runtime. The module instance is cached after its first load.
 
-Este archivo contiene:
+### Consumers
 
-- El módulo WebAssembly precompilado como un arreglo de bytes.
-- El código WAT equivalente como documentación legible.
-- La creación de `WebAssembly.Module` y `WebAssembly.Instance`.
-- La función pública `linearRegression()`.
-- Una implementación TypeScript de respaldo.
+- `CalculateTrendUseCase` calculates a trend across at least three academic periods.
+- `GetStudentSubjectMetricsUseCase` calculates the weekly trend for one student's subject when at least three metric records exist.
 
-El módulo está embebido para evitar incorporar Rust, `wasm-pack`, AssemblyScript
-o dependencias adicionales al proyecto por una sola operación matemática.
+Classification uses the same thresholds:
 
-### `calculate-trend.use-case.ts`
+| Slope | Classification |
+| --- | --- |
+| Greater than `0.5` | `ASCENDING` |
+| Less than `-0.5` | `DESCENDING` |
+| Otherwise | `STABLE` |
 
-Este caso de uso recupera el promedio del estudiante para cada periodo y envía
-los valores al adaptador:
-
-```ts
-const { slope, intercept } = linearRegression(averages);
-```
-
-Después redondea los resultados, clasifica la tendencia y registra el cálculo
-en el repositorio de versiones del conjunto de datos.
-
-### `linear-regression.wasm.spec.ts`
-
-Contiene pruebas para comprobar que el adaptador devuelve correctamente la
-pendiente y el intercepto de una serie ascendente y de una serie constante.
-
-## Flujo de ejecución
-
-Cuando se solicita una tendencia mediante la API, el flujo es:
-
-```text
-Cliente o Swagger
-  → Kong
-  → AnalyticsController
-  → CalculateTrendUseCase
-  → linearRegression()
-  → WebAssembly
-  → clasificación de la tendencia
-  → respuesta HTTP
-```
-
-El endpoint que inicia este flujo es:
+The period-based operation is exposed through:
 
 ```http
 POST /api/v1/analytics/trend/:studentId?periodIds=id1,id2,id3
 ```
 
-Se requieren al menos tres IDs de periodos.
-
-## Funcionamiento interno
-
-La función TypeScript recorre los promedios y prepara los acumulados requeridos
-por la regresión:
-
-- Cantidad de valores (`n`).
-- Suma de posiciones (`sumX`).
-- Suma de promedios (`sumY`).
-- Suma de productos (`sumXY`).
-- Suma de posiciones al cuadrado (`sumXX`).
-
-Estos valores se envían a la función exportada por WebAssembly:
-
-```ts
-const [slope, intercept] = wasm(n, sumX, sumY, sumXY, sumXX);
-```
-
-WASM ejecuta las fórmulas finales de la pendiente y el intercepto y devuelve
-ambos valores a Node.js.
-
-El módulo se instancia una sola vez. Las llamadas posteriores reutilizan la
-función ya cargada mediante la variable `wasmRegression`.
-
-## Mecanismo de respaldo
-
-La disponibilidad del servicio no depende completamente de WebAssembly. Si el
-entorno no permite crear el módulo o la instancia, el error es capturado y se
-utiliza la misma fórmula implementada en TypeScript.
-
-```text
-WebAssembly disponible
-  → ejecutar el módulo WASM
-
-WebAssembly no disponible
-  → ejecutar el fallback TypeScript
-```
-
-Ambas rutas producen la misma estructura de respuesta. El fallback evita que
-una restricción del runtime interrumpa el endpoint de tendencias.
-
-## Cómo verificar la implementación
-
-### Prueba automatizada del adaptador
-
-Desde la raíz del proyecto:
-
-```powershell
-pnpm.cmd --filter @mentorapredict/analytics-service test -- --runInBand src/infrastructure/wasm/linear-regression.wasm.spec.ts
-```
-
-### Prueba de integración con el caso de uso
-
-```powershell
-pnpm.cmd --filter @mentorapredict/analytics-service test -- --runInBand src/infrastructure/wasm/linear-regression.wasm.spec.ts src/application/use-cases/__tests__/calculate-trend.use-case.spec.ts
-```
-
-### Compilación del servicio
-
-```powershell
-pnpm.cmd --filter @mentorapredict/analytics-service build
-```
-
-### Prueba desde Swagger
-
-Con el entorno local levantado, Swagger está disponible en:
-
-```text
-http://localhost:3004/api/v1/analytics/docs
-```
-
-Después de autorizarse con un JWT, se puede ejecutar:
+The authenticated student dashboard consumes weekly metrics through:
 
 ```http
-POST /api/v1/analytics/trend/{studentId}
+GET /api/v1/analytics/students/me/subjects/:subjectId/metrics
 ```
 
-El parámetro `periodIds` debe contener al menos tres IDs reales separados por
-comas.
+That response includes the metric page and a nullable trend summary:
 
-## Alcance actual
+```json
+{
+  "data": [],
+  "trend": {
+    "slope": 0.75,
+    "intercept": 12.5,
+    "classification": "ASCENDING",
+    "weeksAnalyzed": 4
+  }
+}
+```
 
-WebAssembly se usa únicamente para la regresión lineal del cálculo de tendencias
-por periodo. Actualmente no interviene en:
+### Availability fallback
 
-- Autenticación o autorización.
-- Acceso a PostgreSQL, MongoDB o Redis.
-- Cálculo de promedios ponderados.
-- Cálculo del índice de cumplimiento.
-- Clasificación del nivel de riesgo.
-- Generación de recomendaciones.
-- Interfaz web o aplicación de escritorio.
+If the Node.js runtime cannot instantiate WebAssembly, the adapter caches that result and uses the equivalent TypeScript formula. The API contract remains unchanged, so WASM availability cannot take analytics-service offline.
 
-Este alcance reducido mantiene la integración aislada y evita modificar los
-contratos, controladores o respuestas existentes.
+## Web integration
+
+`apps/web/src/services/course-analytics.service.ts` reads the backend trend summary. It adds two projected points to the student progress series using:
+
+```text
+projected average = intercept + slope × future week
+```
+
+Projected values are limited to the valid `0–20` grade range. `CourseProgressChart` then displays:
+
+- the historical average as a solid line;
+- the two projected points as a dashed line;
+- an ascending, stable, or descending trend badge.
+
+This projection is derived in the frontend from regression coefficients calculated by backend WASM. The frontend does not recalculate the regression.
+
+## Browser confetti module
+
+The browser also has a separate WASM module:
+
+```text
+apps/web/src/utils/wasm/
+├── confetti-particles.c
+├── confetti-particles-bytes.ts
+└── confetti-particles.compiled-evidence.wasm
+```
+
+The C source exports linear memory, `get_particles_ptr`, and `step`. Its compiled bytes are embedded in `confetti-particles-bytes.ts` to avoid a runtime request for a `.wasm` asset and to keep Vite imports predictable.
+
+`WasmConfettiBurst` stores up to 512 particles in WASM linear memory. On each animation frame, WASM updates position, velocity, gravity, and remaining life; React and Canvas handle spawning and rendering. The engine is loaded once and reused.
+
+`CourseProgressChart` triggers the effect automatically once for an ascending trend. A user can replay it with the **Calculated with WebAssembly** control for any available classification.
+
+If browser WASM is unavailable, `loadConfettiEngine()` returns `null` and the animation is skipped. The chart and all academic information remain usable.
+
+## Data flow
+
+```text
+Academic metrics
+  -> analytics-service regression WASM
+  -> trend summary API response
+  -> web service adds projected points
+  -> CourseProgressChart renders trend
+  -> browser confetti WASM animates particles when triggered
+```
+
+## Verification
+
+Run from the repository root in Git Bash:
+
+```bash
+pnpm --filter @mentorapredict/analytics-service test -- --runInBand src/infrastructure/wasm/linear-regression.wasm.spec.ts
+pnpm --filter @mentorapredict/analytics-service test -- --runInBand src/application/use-cases/__tests__/calculate-trend.use-case.spec.ts
+pnpm --filter @mentorapredict/analytics-service build
+pnpm --filter @mentorapredict/web build
+```
+
+For a manual web check, open a student course with at least three weekly metric records. Confirm the trend badge and dashed projection appear, and verify that an ascending trend triggers the full-screen confetti effect without changing chart data.
+
+## Scope
+
+WASM currently does not handle authentication, persistence, HTTP requests, weighted averages, compliance, risk classification, or AI recommendations. The regression module only supplies trend coefficients, while the browser module only advances animation physics.
