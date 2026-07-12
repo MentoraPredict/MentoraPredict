@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -8,23 +9,50 @@ import {
   YAxis,
 } from "recharts";
 
+import Badge from "@/components/atoms/Badge";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
+import WasmConfettiBurst, { WasmConfettiTrigger } from "@/components/molecules/WasmConfettiBurst";
 
 import type { CourseProgressPoint } from "@/types/course";
+import type { SubjectTrendClassification } from "@/services/course-analytics.service";
 
 interface CourseProgressChartProps {
   data: CourseProgressPoint[];
   title?: string;
   subtitle?: string;
+  /** When provided, shows a trend badge and the WASM-powered confetti trigger. */
+  classification?: SubjectTrendClassification;
 }
+
+const classificationStyles: Record<
+  SubjectTrendClassification,
+  { label: string; className: string }
+> = {
+  ASCENDING: { label: "Tendencia ascendente", className: "bg-emerald-100 text-emerald-700" },
+  STABLE: { label: "Tendencia estable", className: "bg-gray-100 text-gray-700" },
+  DESCENDING: { label: "Tendencia descendente", className: "bg-red-100 text-red-700" },
+};
 
 export default function CourseProgressChart({
   data,
   title = "Progreso",
   subtitle = "Promedio general del curso por semana",
+  classification,
 }: CourseProgressChartProps) {
   const hasProjection = data.some((point) => point.projection !== undefined);
+  const [burstKey, setBurstKey] = useState(0);
+  const hasAutoBurstRef = useRef(false);
+
+  useEffect(() => {
+    if (classification === "ASCENDING" && !hasAutoBurstRef.current) {
+      hasAutoBurstRef.current = true;
+      setBurstKey((key) => key + 1);
+    }
+  }, [classification]);
+
+  const tone = classification ? classificationStyles[classification] : null;
+
   return (
     <section
       className="
@@ -36,7 +64,9 @@ export default function CourseProgressChart({
                 shadow-sm
             "
     >
-      <div className="mb-6 flex items-start justify-between gap-4">
+      {classification ? <WasmConfettiBurst triggerKey={burstKey} /> : null}
+
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <Heading as="h4" className="text-gray-900">
             {title}
@@ -47,7 +77,14 @@ export default function CourseProgressChart({
           </Text>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {tone ? (
+            <div className="flex items-center gap-2">
+              <Badge className={tone.className}>{tone.label}</Badge>
+              <WasmConfettiTrigger onTrigger={() => setBurstKey((key) => key + 1)} />
+            </div>
+          ) : null}
+
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-blue-700" />
             <Text variant="caption">Actual</Text>

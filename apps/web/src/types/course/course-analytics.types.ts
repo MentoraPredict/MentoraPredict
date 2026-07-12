@@ -1,6 +1,6 @@
 export interface CourseProgressPoint {
   week: string;
-  actual: number;
+  actual?: number;
   projection?: number;
 }
 

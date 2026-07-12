@@ -28,6 +28,19 @@ interface SubjectMetric {
   trendSlope: number | null;
 }
 
+export type SubjectTrendClassification = "ASCENDING" | "STABLE" | "DESCENDING";
+
+export interface SubjectTrendSummary {
+  slope: number;
+  intercept: number;
+  classification: SubjectTrendClassification;
+  weeksAnalyzed: number;
+}
+
+interface SubjectMetricsResponse extends Paginated<SubjectMetric> {
+  trend: SubjectTrendSummary | null;
+}
+
 interface SubjectRisk {
   riskLevel: RiskLevel | null;
   trendSlope: number | null;
@@ -106,6 +119,7 @@ export interface AiPrediction {
 export interface StudentSubjectAnalytics {
   average: number;
   progress: CourseProgressPoint[];
+  trend: SubjectTrendSummary | null;
   risk: SubjectRisk;
   riskFactors: CourseRiskItem[];
   alerts: CourseAlert[];
@@ -115,6 +129,34 @@ export interface StudentSubjectAnalytics {
     status: "loaded" | "empty" | "error";
     message: string;
   };
+}
+
+const PROJECTION_STEPS = 2;
+const AVERAGE_SCALE_MAX = 20;
+
+function clampAverage(value: number): number {
+  return Math.min(AVERAGE_SCALE_MAX, Math.max(0, value));
+}
+
+function withProjection(
+  progress: CourseProgressPoint[],
+  trend: SubjectTrendSummary | null
+): CourseProgressPoint[] {
+  if (!trend || progress.length === 0) return progress;
+
+  const points = [...progress];
+  const lastIndex = points.length - 1;
+  points[lastIndex] = { ...points[lastIndex], projection: points[lastIndex].actual };
+
+  for (let step = 1; step <= PROJECTION_STEPS; step += 1) {
+    const x = trend.weeksAnalyzed + step;
+    points.push({
+      week: `Proyección +${step}`,
+      projection: clampAverage(trend.intercept + trend.slope * x),
+    });
+  }
+
+  return points;
 }
 
 const emptyRisk: SubjectRisk = {
@@ -148,7 +190,7 @@ export async function getStudentSubjectAnalytics(
 ): Promise<StudentSubjectAnalytics> {
   const [metricsResponse, riskResponse, alertsResponse, predictionResponse] =
     await Promise.allSettled([
-      api.get<Paginated<SubjectMetric>>(
+      api.get<SubjectMetricsResponse>(
         endpoints.analytics.studentSubjectMetrics(subjectId),
         { params: { page: 1, limit: 100 } }
       ),
@@ -163,6 +205,8 @@ export async function getStudentSubjectAnalytics(
 
   const metrics =
     metricsResponse.status === "fulfilled" ? metricsResponse.value.data.data : [];
+  const trend =
+    metricsResponse.status === "fulfilled" ? metricsResponse.value.data.trend : null;
   const risk =
     riskResponse.status === "fulfilled" ? riskResponse.value.data : emptyRisk;
   const alerts =
@@ -185,12 +229,13 @@ export async function getStudentSubjectAnalytics(
         : "Prediction-service no devolvio una prediccion para esta materia.";
 
   const latest = metrics[0] ?? null;
-  const progress: CourseProgressPoint[] = [...metrics]
-    .reverse()
-    .map((metric) => ({
+  const progress: CourseProgressPoint[] = withProjection(
+    [...metrics].reverse().map((metric) => ({
       week: `S${metric.academicWeek}`,
       actual: metric.averageGrade ?? 0,
-    }));
+    })),
+    trend
+  );
 
   const factors: CourseRiskItem[] = [
     {
@@ -228,6 +273,7 @@ export async function getStudentSubjectAnalytics(
   return {
     average: latest?.averageGrade ?? risk.factors.averageGrade ?? 0,
     progress,
+    trend,
     risk,
     riskFactors: factors,
     alerts: alerts.map(toAlert),

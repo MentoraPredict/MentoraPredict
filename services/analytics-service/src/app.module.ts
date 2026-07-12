@@ -107,6 +107,16 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
+        serverSelectionTimeoutMS: 5000,
+        // Connects in the background instead of blocking Nest's bootstrap:
+        // without this, an unreachable MongoDB crashes the whole service
+        // (NestFactory.create() awaits the connection and rethrows once
+        // retries are exhausted). Queries just buffer/timeout individually
+        // while disconnected — handled by the try/catch in DatasetVersionRepository.
+        lazyConnection: true,
+        // Default is 10s per buffered query — too slow for a request path;
+        // fail faster so callers hit the try/catch sooner.
+        bufferTimeoutMS: 3000,
       }),
     }),
     MongooseModule.forFeature([

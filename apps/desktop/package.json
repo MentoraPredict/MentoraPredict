@@ -1,6 +1,8 @@
 {
   "name": "@mentorapredict/desktop",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Aplicacion desktop de MentoraPredict",
+  "author": "Equipo MentoraPredict - Universidad Central del Ecuador",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -24,6 +26,7 @@
   "build": {
     "appId": "com.mentorapredict.desktop",
     "productName": "MentoraPredict",
+    "copyright": "Copyright (c) 2026 Equipo MentoraPredict",
     "directories": {
       "output": "release"
     },
@@ -39,13 +42,22 @@
       }
     ],
     "win": {
-      "target": "msi",
-      "icon": "build/mentorapredict-logo.ico"
+      "target": "nsis",
+      "icon": "build/mentorapredict-logo.ico",
+      "executableName": "MentoraPredict"
     },
-    "msi": {
+    "nsis": {
       "oneClick": false,
-      "perMachine": true,
-      "runAfterFinish": true
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MentoraPredict",
+      "installerIcon": "build/mentorapredict-logo.ico",
+      "uninstallerIcon": "build/mentorapredict-logo.ico",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "${productName}_Setup_${version}_${arch}.${ext}"
     }
   }
 }
