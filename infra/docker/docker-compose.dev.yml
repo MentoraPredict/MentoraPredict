@@ -43,6 +43,11 @@ services:
         limits:
           cpus: "0.75"
           memory: 768M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mp_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
@@ -74,6 +79,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 192M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     command: >
       redis-server
       --requirepass ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
@@ -109,6 +119,11 @@ services:
         limits:
           cpus: "0.15"
           memory: 192M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     profiles: ["tools"]
     environment:
       REDIS_HOSTS: "local:redis:6379:0:${REDIS_PASSWORD}"
@@ -132,6 +147,11 @@ services:
         limits:
           cpus: "0.35"
           memory: 384M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
@@ -176,6 +196,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     profiles: ["tools"]
     environment:
       NODE_ENV: development
@@ -202,6 +227,11 @@ services:
         limits:
           cpus: "0.5"
           memory: 384M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3001:3001"
     environment:
@@ -260,6 +290,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 384M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3002:3002"
     environment:
@@ -318,6 +353,11 @@ services:
         limits:
           cpus: "0.35"
           memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3003:3003"
     environment:
@@ -378,6 +418,11 @@ services:
         limits:
           cpus: "0.35"
           memory: 640M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3004:3004"
     environment:
@@ -435,6 +480,11 @@ services:
         limits:
           cpus: "0.35"
           memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3006:3006"
     environment:
@@ -491,6 +541,11 @@ services:
         limits:
           cpus: "0.20"
           memory: 192M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     expose:
       - "80"
     environment:
@@ -513,6 +568,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     expose:
       - "80"
     networks:
@@ -528,6 +588,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: "no"
     init: true
     environment:
