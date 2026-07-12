@@ -79,3 +79,6 @@ kong.yml
 storybook-static
 
 .pnpm-store/
+
+# Internal documentation (not committed)
+Contexto.md
