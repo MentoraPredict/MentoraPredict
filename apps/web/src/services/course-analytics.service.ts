@@ -57,6 +57,7 @@ interface SubjectRisk {
 
 interface AlertResponse {
   id: string;
+  studentId?: string;
   message: string;
   severity: "MEDIUM" | "HIGH" | "CRITICAL" | null;
 }
@@ -186,6 +187,7 @@ function round2(value: number): number {
 function toAlert(alert: AlertResponse): CourseAlert {
   return {
     id: alert.id,
+    studentId: alert.studentId,
     message: alert.message,
     severity: alert.severity ?? "LOW",
   };
@@ -246,7 +248,7 @@ export async function getStudentSubjectAnalytics(
   const factors: CourseRiskItem[] = [
     {
       id: "average",
-      label: "Promedio",
+      label: "Promedio equivalente",
       value: round2((risk.factors.averageGrade ?? 0) * 5),
     },
     {
@@ -261,8 +263,8 @@ export async function getStudentSubjectAnalytics(
     },
     {
       id: "comprehension",
-      label: "Comprension",
-      value: round2(risk.factors.comprehensionAvg ?? 0),
+      label: "Comprensión declarada",
+      value: round2((risk.factors.comprehensionAvg ?? 0) * 20),
     },
   ];
 
@@ -276,13 +278,32 @@ export async function getStudentSubjectAnalytics(
       ]
     : [];
 
+  const studentWarnings: CourseAlert[] = [];
+  if (!latest || risk.riskLevel === null) {
+    studentWarnings.push({
+      id: "insufficient-data",
+      severity: "MEDIUM",
+      message:
+        "Aún faltan notas o un seguimiento semanal completo para evaluar tu riesgo con precisión.",
+    });
+  }
+  const currentAverage = latest?.averageGrade ?? risk.factors.averageGrade;
+  if (currentAverage !== null && currentAverage < 14) {
+    studentWarnings.push({
+      id: "current-average-below-passing",
+      severity: "HIGH",
+      message:
+        "Tu promedio actual está por debajo de la nota mínima de aprobación de 14/20.",
+    });
+  }
+
   return {
     average: latest?.averageGrade ?? risk.factors.averageGrade ?? 0,
     progress,
     trend,
     risk,
     riskFactors: factors,
-    alerts: alerts.map(toAlert),
+    alerts: [...alerts.map(toAlert), ...studentWarnings],
     recommendations,
     prediction: {
       data: prediction,
@@ -340,6 +361,29 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
       description: prediction.recommendation!,
     }));
 
+  const courseWarnings: CourseAlert[] = [];
+  if ((summary.averageGrade ?? 20) < 14) {
+    courseWarnings.push({
+      id: "course-average-below-passing",
+      severity: "HIGH",
+      message: `El promedio general del curso es ${round2(summary.averageGrade ?? 0)}/20, por debajo de la nota mínima de aprobación.`,
+    });
+  }
+  if (summary.HIGH + summary.CRITICAL > 1) {
+    courseWarnings.push({
+      id: "multiple-high-risk-students",
+      severity: summary.CRITICAL > 0 ? "CRITICAL" : "HIGH",
+      message: `${summary.HIGH + summary.CRITICAL} estudiantes presentan riesgo alto o crítico y requieren seguimiento.`,
+    });
+  }
+  if (summary.unclassified > 0) {
+    courseWarnings.push({
+      id: "unclassified-students",
+      severity: "MEDIUM",
+      message: `${summary.unclassified} estudiantes aún no tienen datos suficientes para calcular su nivel de riesgo.`,
+    });
+  }
+
   return {
     progress: progressResponse.data.map((point) => ({
       week: `S${point.academicWeek}`,
@@ -351,7 +395,7 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
       medium: summary.MEDIUM,
       high: summary.HIGH + summary.CRITICAL,
     },
-    alerts: alertsResponse.data.data.map(toAlert),
+    alerts: [...courseWarnings, ...alertsResponse.data.data.map(toAlert)],
     recommendations,
     predictions: predictionsResponse.data.data,
   };

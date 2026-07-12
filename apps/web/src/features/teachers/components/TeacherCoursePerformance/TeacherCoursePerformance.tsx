@@ -204,7 +204,10 @@ export default function TeacherCoursePerformance({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <CourseAlertsPanel alerts={data.alerts} />
+        <CourseAlertsPanel
+          alerts={data.alerts}
+          title="Advertencias del curso"
+        />
         <CourseRecommendationsPanel
           recommendations={data.recommendations}
           showDescription={false}

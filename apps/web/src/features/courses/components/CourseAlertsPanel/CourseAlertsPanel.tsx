@@ -7,6 +7,8 @@ import type { CourseAlert } from "@/types/course";
 
 interface CourseAlertsPanelProps {
   alerts: CourseAlert[];
+  title?: string;
+  emptyMessage?: string;
 }
 
 const severityStyles: Record<CourseAlert["severity"], string> = {
@@ -16,7 +18,21 @@ const severityStyles: Record<CourseAlert["severity"], string> = {
   LOW: "border-gray-400 bg-gray-100 text-gray-700",
 };
 
-export default function CourseAlertsPanel({ alerts }: CourseAlertsPanelProps) {
+const severityRank: Record<CourseAlert["severity"], number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
+
+export default function CourseAlertsPanel({
+  alerts,
+  title = "Advertencias académicas",
+  emptyMessage = "No hay advertencias activas con los datos disponibles.",
+}: CourseAlertsPanelProps) {
+  const sortedAlerts = [...alerts].sort(
+    (left, right) => severityRank[right.severity] - severityRank[left.severity],
+  );
   return (
     <section
       className="
@@ -32,12 +48,18 @@ export default function CourseAlertsPanel({ alerts }: CourseAlertsPanelProps) {
         <FiAlertTriangle size={22} className="text-red-600" />
 
         <Heading as="h5" className="text-gray-900">
-          Alertas Críticas
+          {title}
         </Heading>
       </div>
 
       <div className="space-y-3">
-        {alerts.map((alert) => (
+        {sortedAlerts.length === 0 ? (
+          <Text variant="small" className="text-gray-600">
+            {emptyMessage}
+          </Text>
+        ) : null}
+
+        {sortedAlerts.map((alert) => (
           <div
             key={alert.id}
             className={`
