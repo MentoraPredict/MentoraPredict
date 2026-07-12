@@ -31,9 +31,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug push event refs
+        run: |
+          echo "github.event.before: ${{ github.event.before }}"
+          echo "github.sha (after):  ${{ github.sha }}"
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # Pin the diff base explicitly instead of relying on the action's
+          # default push-event inference — twice now a QA merge-commit push
+          # (e.g. #192, #193) has caused every filter to evaluate true even
+          # though the actual file diff was tiny and scoped, redeploying
+          # every service on a web-only change. github.event.before is the
+          # branch's exact previous tip for a push event; being explicit
+          # here removes any ambiguity in how the action resolves it.
+          base: ${{ github.event.before }}
           filters: |
             auth-service:
               - 'services/auth-service/**'
@@ -138,6 +151,7 @@ jobs:
 
       - name: Debug outputs
         run: |
+          echo "RAW FILTER OUTPUTS: ${{ toJson(steps.filter.outputs) }}"
           echo "HAS CHANGES: ${{ steps.generate-matrix.outputs.has_changes }}"
           echo "CHANGED SERVICES: ${{ steps.generate-matrix.outputs.changed_services }}"
           echo "MATRIX: ${{ steps.generate-matrix.outputs.matrix }}"
