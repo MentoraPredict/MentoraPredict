@@ -153,6 +153,7 @@ export default function DashboardNavbar({
 
       <HelpDialog
         isOpen={isHelpOpen}
+        role={user?.role}
         onClose={() => {
           setIsHelpOpen(false);
         }}

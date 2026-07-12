@@ -84,6 +84,12 @@ interface SubjectRiskSummary {
   averageGrade?: number | null;
 }
 
+interface SubjectWeeklyProgress {
+  academicYear: number;
+  academicWeek: number;
+  averageGrade: number;
+}
+
 export type TeacherStudentPrediction = PredictionResponse;
 
 export interface AiRecommendationItem {
@@ -287,9 +293,12 @@ export async function getStudentSubjectAnalytics(
 }
 
 export async function getTeacherSubjectAnalytics(subjectId: string) {
-  const [summaryResponse, alertsResponse, predictionsResponse] =
+  const [summaryResponse, progressResponse, alertsResponse, predictionsResponse] =
     await Promise.all([
       api.get<SubjectRiskSummary>(endpoints.analytics.subjectSummary(subjectId)),
+      api.get<SubjectWeeklyProgress[]>(
+        endpoints.analytics.subjectProgress(subjectId)
+      ),
       api.get<Paginated<AlertResponse>>(
         endpoints.analytics.subjectAlerts(subjectId),
         {
@@ -332,6 +341,10 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
     }));
 
   return {
+    progress: progressResponse.data.map((point) => ({
+      week: `S${point.academicWeek}`,
+      actual: round2(point.averageGrade),
+    })),
     riskDistribution,
     riskCounts: {
       low: summary.LOW,

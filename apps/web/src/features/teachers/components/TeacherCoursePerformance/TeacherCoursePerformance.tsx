@@ -213,9 +213,9 @@ export default function TeacherCoursePerformance({
 
       <div className="w-full">
         <CourseProgressChart
-          data={[]}
+          data={data.progress}
           title="Progreso del curso"
-          subtitle="Analytics todavia no entrega historial semanal agregado del curso"
+          subtitle="Promedio general de todos los estudiantes por semana"
         />
       </div>
     </div>

@@ -12,6 +12,7 @@ const mockMetricsRepo = (): jest.Mocked<IStudentSubjectMetricsRepository> => ({
   findRecentByStudentSubject: jest.fn(),
   getRiskCountsBySubject: jest.fn().mockResolvedValue(riskCounts),
   getAverageGradeBySubject: jest.fn().mockResolvedValue(15.5),
+  getWeeklyProgressBySubject: jest.fn(),
 });
 
 const mockAcademicClient = (): jest.Mocked<IAcademicServiceClient> => ({

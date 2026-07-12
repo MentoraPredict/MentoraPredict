@@ -8,6 +8,7 @@ import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-
 import { GetSubjectUseCase } from '../../application/use-cases/get-subject.use-case';
 import { GetTeacherStudentsUseCase } from '../../application/use-cases/get-teacher-students.use-case';
 import { GetSubjectTopicsInternalUseCase } from '../../application/use-cases/get-subject-topics-internal.use-case';
+import { CheckUserDeactivationEligibilityUseCase } from '../../application/use-cases/check-user-deactivation-eligibility.use-case';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 @ApiTags('academic-internal')
@@ -23,6 +24,7 @@ export class InternalAcademicController {
     private readonly getSubjectUC: GetSubjectUseCase,
     private readonly getTeacherStudentsUC: GetTeacherStudentsUseCase,
     private readonly getSubjectTopicsUC: GetSubjectTopicsInternalUseCase,
+    private readonly checkUserDeactivationUC: CheckUserDeactivationEligibilityUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
@@ -78,5 +80,14 @@ export class InternalAcademicController {
   @ApiOperation({ summary: 'Internal: syllabus topics for a subject (used by prediction-service for AI context)' })
   topics(@Param('subjectId') subjectId: string) {
     return this.getSubjectTopicsUC.execute(subjectId);
+  }
+
+  @Get('users/:userId/deactivation-eligibility')
+  @ApiOperation({ summary: 'Internal: check academic dependencies before deactivating a user' })
+  deactivationEligibility(
+    @Param('userId') userId: string,
+    @Query('role') role: string,
+  ) {
+    return this.checkUserDeactivationUC.execute(userId, role);
   }
 }

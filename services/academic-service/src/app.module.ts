@@ -101,6 +101,7 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
 import { GetTeacherSubjectsUseCase } from "./application/use-cases/get-teacher-subjects.use-case";
 import { GetTeacherStudentsUseCase } from "./application/use-cases/get-teacher-students.use-case";
 import { GetSubjectTopicsInternalUseCase } from "./application/use-cases/get-subject-topics-internal.use-case";
+import { CheckUserDeactivationEligibilityUseCase } from "./application/use-cases/check-user-deactivation-eligibility.use-case";
 import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
 import { BatchEnrollStudentsUseCase } from "./application/use-cases/batch-enroll-students.use-case";
 import { UpdateEnrollmentStatusUseCase } from "./application/use-cases/update-enrollment-status.use-case";
@@ -309,6 +310,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     GetTeacherSubjectsUseCase,
     GetTeacherStudentsUseCase,
     GetSubjectTopicsInternalUseCase,
+    CheckUserDeactivationEligibilityUseCase,
     // Enrollment use-cases (Phase 3)
     GetSubjectEnrollmentsUseCase,
     BatchEnrollStudentsUseCase,

@@ -59,6 +59,8 @@ export const endpoints = {
         studentAlerts: "/v1/analytics/students/me/alerts",
         subjectSummary: (subjectId: string) =>
             `/v1/analytics/subjects/${subjectId}/metrics/summary`,
+        subjectProgress: (subjectId: string) =>
+            `/v1/analytics/subjects/${subjectId}/metrics/progress`,
         subjectAlerts: (subjectId: string) =>
             `/v1/analytics/subjects/${subjectId}/alerts`,
     },

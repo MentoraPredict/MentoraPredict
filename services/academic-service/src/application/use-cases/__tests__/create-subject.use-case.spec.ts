@@ -50,6 +50,7 @@ const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
 const mockSubjectTeacherRepo = (): jest.Mocked<ISubjectTeacherRepository> => ({
   findBySubjectTeacherAndPeriod: jest.fn(),
   save: jest.fn(),
+  hasActiveCourseAssignment: jest.fn(),
   findByTeacherIdWithDetails: jest.fn(),
 });
 

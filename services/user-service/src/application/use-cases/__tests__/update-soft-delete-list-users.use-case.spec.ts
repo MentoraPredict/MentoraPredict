@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { ConflictException, NotFoundException } from "@nestjs/common";
 import { UpdateUserUseCase } from "../update-user.use-case";
 import { SoftDeleteUserUseCase } from "../soft-delete-user.use-case";
 import { ListUsersUseCase } from "../list-users.use-case";
@@ -9,6 +9,8 @@ import {
 } from "../../../domain/entities/user-profile.entity";
 import { IAuthServiceClient } from "../../ports/output/i-auth-service.client";
 import { IAuthSyncClient } from "../../ports/output/i-auth-sync.client";
+import { IAcademicStatusClient } from "../../ports/output/i-academic-status.client";
+import { INotificationClient } from "../../ports/output/i-notification-client";
 
 const makeProfile = (id = "uid-1") =>
   new UserProfileEntity(
@@ -45,6 +47,14 @@ const mockAuthSyncClient = (): jest.Mocked<IAuthSyncClient> => ({
   syncProfile: jest.fn().mockResolvedValue(undefined),
 });
 
+const mockAcademicStatusClient = (): jest.Mocked<IAcademicStatusClient> => ({
+  getDeactivationEligibility: jest.fn().mockResolvedValue({ canDeactivate: true }),
+});
+
+const mockNotificationClient = (): jest.Mocked<INotificationClient> => ({
+  notify: jest.fn().mockResolvedValue(undefined),
+});
+
 // ─── UpdateUserUseCase ───────────────────────────────────────────────────────
 
 describe("UpdateUserUseCase", () => {
@@ -56,7 +66,12 @@ describe("UpdateUserUseCase", () => {
     repo.update.mockResolvedValue(updated);
 
     const authSync = mockAuthSyncClient();
-    const useCase = new UpdateUserUseCase(repo, authSync);
+    const useCase = new UpdateUserUseCase(
+      repo,
+      authSync,
+      mockAcademicStatusClient(),
+      mockNotificationClient(),
+    );
     const result = await useCase.execute("uid-1", { bio: "Nueva bio" });
 
     expect(repo.update).toHaveBeenCalledWith("uid-1", { bio: "Nueva bio" });
@@ -70,11 +85,151 @@ describe("UpdateUserUseCase", () => {
     const repo = mockRepo();
     repo.findById.mockResolvedValue(null);
 
-    const useCase = new UpdateUserUseCase(repo, mockAuthSyncClient());
+    const useCase = new UpdateUserUseCase(
+      repo,
+      mockAuthSyncClient(),
+      mockAcademicStatusClient(),
+      mockNotificationClient(),
+    );
     await expect(useCase.execute("missing", { bio: "x" })).rejects.toThrow(
       NotFoundException,
     );
     expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("does not allow deactivating an administrator", async () => {
+    const repo = mockRepo();
+    const admin = makeProfile();
+    admin.role = "ADMIN";
+    repo.findById.mockResolvedValue(admin);
+    const academicStatus = mockAcademicStatusClient();
+    const useCase = new UpdateUserUseCase(
+      repo,
+      mockAuthSyncClient(),
+      academicStatus,
+      mockNotificationClient(),
+    );
+
+    await expect(useCase.execute("uid-1", { status: "INACTIVE" })).rejects.toThrow(
+      ConflictException,
+    );
+    expect(academicStatus.getDeactivationEligibility).not.toHaveBeenCalled();
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("blocks deactivation when the user has active academic dependencies", async () => {
+    const repo = mockRepo();
+    const teacher = makeProfile();
+    teacher.role = "TEACHER";
+    repo.findById.mockResolvedValue(teacher);
+    const academicStatus = mockAcademicStatusClient();
+    academicStatus.getDeactivationEligibility.mockResolvedValue({
+      canDeactivate: false,
+      reason: "Tiene un curso activo.",
+    });
+    const useCase = new UpdateUserUseCase(
+      repo,
+      mockAuthSyncClient(),
+      academicStatus,
+      mockNotificationClient(),
+    );
+
+    await expect(useCase.execute("uid-1", { status: "INACTIVE" })).rejects.toThrow(
+      "Tiene un curso activo.",
+    );
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("deactivates a user without active academic dependencies", async () => {
+    const repo = mockRepo();
+    const student = makeProfile();
+    const updated = { ...student, status: "INACTIVE" } as UserProfileEntity;
+    repo.findById.mockResolvedValue(student);
+    repo.update.mockResolvedValue(updated);
+    const authSync = mockAuthSyncClient();
+    const academicStatus = mockAcademicStatusClient();
+    const useCase = new UpdateUserUseCase(
+      repo,
+      authSync,
+      academicStatus,
+      mockNotificationClient(),
+    );
+
+    const result = await useCase.execute("uid-1", { status: "INACTIVE" });
+
+    expect(academicStatus.getDeactivationEligibility).toHaveBeenCalledWith(
+      "uid-1",
+      "STUDENT",
+    );
+    expect(repo.update).toHaveBeenCalled();
+    expect(result.status).toBe("INACTIVE");
+  });
+
+  it("blocks changing a teacher with an active course to student", async () => {
+    const repo = mockRepo();
+    const teacher = makeProfile();
+    teacher.role = "TEACHER";
+    repo.findById.mockResolvedValue(teacher);
+    const academicStatus = mockAcademicStatusClient();
+    academicStatus.getDeactivationEligibility.mockResolvedValue({ canDeactivate: false });
+    const authSync = mockAuthSyncClient();
+    const useCase = new UpdateUserUseCase(
+      repo,
+      authSync,
+      academicStatus,
+      mockNotificationClient(),
+    );
+
+    await expect(useCase.execute("uid-1", { role: "STUDENT" })).rejects.toThrow(
+      "curso activo",
+    );
+    expect(repo.update).not.toHaveBeenCalled();
+    expect(authSync.syncRole).not.toHaveBeenCalled();
+  });
+
+  it("blocks changing a student with an active enrollment to teacher", async () => {
+    const repo = mockRepo();
+    repo.findById.mockResolvedValue(makeProfile());
+    const academicStatus = mockAcademicStatusClient();
+    academicStatus.getDeactivationEligibility.mockResolvedValue({ canDeactivate: false });
+    const useCase = new UpdateUserUseCase(
+      repo,
+      mockAuthSyncClient(),
+      academicStatus,
+      mockNotificationClient(),
+    );
+
+    await expect(useCase.execute("uid-1", { role: "TEACHER" })).rejects.toThrow(
+      "matrícula activa",
+    );
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("changes role and waits for auth-service when there are no active dependencies", async () => {
+    const repo = mockRepo();
+    const student = makeProfile();
+    const updated = { ...student, role: "TEACHER" } as UserProfileEntity;
+    repo.findById.mockResolvedValue(student);
+    repo.update.mockResolvedValue(updated);
+    const authSync = mockAuthSyncClient();
+    const notifications = mockNotificationClient();
+    const useCase = new UpdateUserUseCase(
+      repo,
+      authSync,
+      mockAcademicStatusClient(),
+      notifications,
+    );
+
+    await useCase.execute("uid-1", { role: "TEACHER" });
+
+    expect(authSync.syncRole).toHaveBeenCalledWith("uid-1", "TEACHER");
+    expect(notifications.notify).toHaveBeenCalledWith({
+      recipientId: "uid-1",
+      recipientRole: "TEACHER",
+      type: "ROLE_CHANGED",
+      title: "Tu rol ha cambiado",
+      message: expect.stringContaining("estudiante a docente"),
+    });
   });
 });
 

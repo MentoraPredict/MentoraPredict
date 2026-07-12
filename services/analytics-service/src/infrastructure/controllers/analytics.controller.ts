@@ -10,6 +10,7 @@ import { GetTeacherDashboardUseCase } from '../../application/use-cases/get-teac
 import { GetAdminDashboardUseCase } from '../../application/use-cases/get-admin-dashboard.use-case';
 import { GetStudentSubjectMetricsUseCase } from '../../application/use-cases/get-student-subject-metrics.use-case';
 import { GetSubjectMetricsSummaryUseCase } from '../../application/use-cases/get-subject-metrics-summary.use-case';
+import { GetSubjectWeeklyProgressUseCase } from '../../application/use-cases/get-subject-weekly-progress.use-case';
 import { GetSubjectRiskUseCase } from '../../application/use-cases/get-subject-risk.use-case';
 import { GetAlertsUseCase } from '../../application/use-cases/get-alerts.use-case';
 import { GetSubjectAlertsUseCase } from '../../application/use-cases/get-subject-alerts.use-case';
@@ -39,6 +40,7 @@ export class AnalyticsController {
     private readonly getAdminDashboardUC: GetAdminDashboardUseCase,
     private readonly getStudentSubjectMetricsUC: GetStudentSubjectMetricsUseCase,
     private readonly getSubjectMetricsSummaryUC: GetSubjectMetricsSummaryUseCase,
+    private readonly getSubjectWeeklyProgressUC: GetSubjectWeeklyProgressUseCase,
     private readonly getSubjectRiskUC: GetSubjectRiskUseCase,
     private readonly getAlertsUC: GetAlertsUseCase,
     private readonly getSubjectAlertsUC: GetSubjectAlertsUseCase,
@@ -74,6 +76,18 @@ export class AnalyticsController {
     const callerRole = req.user?.role;
     if (!callerId || !callerRole) throw new UnauthorizedException('Missing caller identity');
     return this.getSubjectMetricsSummaryUC.execute(subjectId, callerId, callerRole);
+  }
+
+  @Get('subjects/:subjectId/metrics/progress')
+  @Roles('TEACHER', 'ADMIN')
+  @ApiOperation({ summary: 'Weekly course average across all students (TEACHER owner or ADMIN)' })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: 'Teacher does not own this course' })
+  async getSubjectWeeklyProgress(@Param('subjectId') subjectId: string, @Req() req: JwtRequest) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException('Missing caller identity');
+    return this.getSubjectWeeklyProgressUC.execute(subjectId, callerId, callerRole);
   }
 
   // ─── Riesgo consolidado + alertas (Fase 7) ───────────────────────────────

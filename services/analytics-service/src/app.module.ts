@@ -65,6 +65,7 @@ import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapsho
 import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalculate-student-metrics.use-case";
 import { GetStudentSubjectMetricsUseCase } from "./application/use-cases/get-student-subject-metrics.use-case";
 import { GetSubjectMetricsSummaryUseCase } from "./application/use-cases/get-subject-metrics-summary.use-case";
+import { GetSubjectWeeklyProgressUseCase } from "./application/use-cases/get-subject-weekly-progress.use-case";
 import { GetLatestSubjectMetricUseCase } from "./application/use-cases/get-latest-subject-metric.use-case";
 import { GetSubjectRiskUseCase } from "./application/use-cases/get-subject-risk.use-case";
 import { GetSubjectAlertsUseCase } from "./application/use-cases/get-subject-alerts.use-case";
@@ -205,6 +206,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     RecalculateStudentMetricsUseCase,
     GetStudentSubjectMetricsUseCase,
     GetSubjectMetricsSummaryUseCase,
+    GetSubjectWeeklyProgressUseCase,
     GetLatestSubjectMetricUseCase,
     GetSubjectRiskUseCase,
     GetSubjectAlertsUseCase,

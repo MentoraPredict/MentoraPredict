@@ -15,6 +15,7 @@ const mockEnrollmentRepo = (): jest.Mocked<IEnrollmentRepository> => ({
   findByStudentAndSubject: jest.fn(),
   findByStudentSubjectAndPeriod: jest.fn(),
   countActiveBySubject: jest.fn(),
+  hasActiveEnrollmentInActiveCourse: jest.fn(),
   findByStudentId: jest.fn(),
   findBySubjectIdPaginated: jest.fn(),
   findByStudentIdWithDetails: jest.fn(),
@@ -51,6 +52,7 @@ const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
 const mockSubjectTeacherRepo = (): jest.Mocked<ISubjectTeacherRepository> => ({
   findBySubjectTeacherAndPeriod: jest.fn(),
   save: jest.fn(),
+  hasActiveCourseAssignment: jest.fn(),
   findByTeacherIdWithDetails: jest.fn(),
 });
 
