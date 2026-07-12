@@ -7,6 +7,7 @@ import {
   setAccessToken,
 } from "./api/tokenStorage";
 import { useAuthStore } from "@/store/auth.store";
+import { generateId } from "@/utils/id";
 import { logger } from "@/utils/logger";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
@@ -36,7 +37,7 @@ api.interceptors.request.use((config) => {
   }
 
   const correlationId =
-    config.headers["x-correlation-id"]?.toString() ?? crypto.randomUUID();
+    config.headers["x-correlation-id"]?.toString() ?? generateId();
   config.headers["x-correlation-id"] = correlationId;
 
   logger.debug("API request", {
