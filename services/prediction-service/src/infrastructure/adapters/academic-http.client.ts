@@ -1,6 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
+import { correlationContext } from '@mentorapredict/shared-logger';
 import {
   IAcademicContextClient,
   AcademicContext,
@@ -40,7 +41,7 @@ export class AcademicHttpClient implements IAcademicContextClient {
 
   async getStudentContext(studentId: string, periodId: string): Promise<AcademicContext> {
     const url = `${this.baseUrl}/api/v1/academic/internal/students/${studentId}/grades?periodId=${periodId}`;
-    const corrId = randomUUID();
+    const corrId = correlationContext.getId() ?? randomUUID();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -115,7 +116,7 @@ export class AcademicHttpClient implements IAcademicContextClient {
   }
 
   private async get<T>(url: string, errorContext: string): Promise<T> {
-    const corrId = randomUUID();
+    const corrId = correlationContext.getId() ?? randomUUID();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 

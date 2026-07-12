@@ -1,8 +1,9 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { JwtModule } from "@nestjs/jwt";
 import { HttpModule } from "@nestjs/axios";
+import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
 import { UsersController } from "./infrastructure/controllers/users.controller";
 import { InternalUsersController } from "./infrastructure/controllers/internal-users.controller";
@@ -28,6 +29,7 @@ import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-i
 
 @Module({
   imports: [
+    createLoggerModule("user-service"),
     ConfigModule.forRoot({ isGlobal: true }),
     HttpModule,
     TypeOrmModule.forRootAsync({
@@ -91,4 +93,8 @@ import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-i
     RolesGuard,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(correlationContextMiddleware).forRoutes("*");
+  }
+}

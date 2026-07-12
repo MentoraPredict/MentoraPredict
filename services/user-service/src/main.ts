@@ -1,12 +1,14 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe, Logger } from "@nestjs/common";
+import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { Logger } from "@mentorapredict/shared-logger";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const logger = new Logger("Bootstrap");
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const logger = app.get(Logger);
+  app.useLogger(logger);
   const port = process.env.APP_PORT ?? 3002;
 
   app.useGlobalPipes(

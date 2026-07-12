@@ -2,7 +2,9 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { AxiosResponse } from "axios";
+import { randomUUID } from "node:crypto";
 import { ConfigService } from "@nestjs/config";
+import { correlationContext } from "@mentorapredict/shared-logger";
 import {
   IAuthServiceClient,
   AuthUserResponse,
@@ -23,6 +25,13 @@ export class AuthHttpClient implements IAuthServiceClient {
       "AUTH_SERVICE_URL",
       "http://auth-service:3001",
     );
+    this.http.axiosRef.interceptors.request.use((requestConfig) => {
+      requestConfig.headers.set(
+        "x-correlation-id",
+        correlationContext.getId() ?? randomUUID(),
+      );
+      return requestConfig;
+    });
   }
 
   async getUserById(userId: string): Promise<AuthUserResponse | undefined> {

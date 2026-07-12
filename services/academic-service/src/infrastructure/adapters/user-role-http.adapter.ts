@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { ITeacherRolePort } from '../../application/ports/output/i-teacher-role.port';
-import { InternalJwtService } from '../auth/internal-jwt.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { randomUUID } from "node:crypto";
+import { correlationContext } from "@mentorapredict/shared-logger";
+import { ITeacherRolePort } from "../../application/ports/output/i-teacher-role.port";
+import { InternalJwtService } from "../auth/internal-jwt.service";
 
 const TIMEOUT_MS = 5000;
 
@@ -14,7 +16,10 @@ export class UserRoleHttpAdapter implements ITeacherRolePort {
     private readonly config: ConfigService,
     private readonly internalJwt: InternalJwtService,
   ) {
-    this.baseUrl = config.get<string>('USER_SERVICE_URL', 'http://user-service:3002');
+    this.baseUrl = config.get<string>(
+      "USER_SERVICE_URL",
+      "http://user-service:3002",
+    );
   }
 
   async isTeacher(userId: string): Promise<boolean> {
@@ -23,13 +28,16 @@ export class UserRoleHttpAdapter implements ITeacherRolePort {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${this.internalJwt.createServiceToken()}` },
+        headers: {
+          Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+          "x-correlation-id": correlationContext.getId() ?? randomUUID(),
+        },
         signal: controller.signal,
       });
       clearTimeout(timer);
       if (!res.ok) return false;
-      const data = await res.json() as { role?: string };
-      return data.role === 'TEACHER';
+      const data = (await res.json()) as { role?: string };
+      return data.role === "TEACHER";
     } catch (err) {
       this.logger.warn(`Failed to verify teacher role for ${userId}`, err);
       return false;
