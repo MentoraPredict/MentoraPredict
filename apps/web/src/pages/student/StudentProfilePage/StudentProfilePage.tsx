@@ -1,6 +1,6 @@
 import StudentTemplate from "@/components/templates/StudentTemplate";
 import UserProfileManagement from "@/features/profile/components/UserProfileManagement";
-import useStudentCourses from "@/features/students/hooks/useStudentCourses";
+import useStudentCourses from "@/hooks/queries/useStudentCourses";
 
 export default function StudentProfilePage() {
   const { courses, isLoading, error } = useStudentCourses();
