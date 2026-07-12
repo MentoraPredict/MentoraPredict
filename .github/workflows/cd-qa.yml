@@ -370,7 +370,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mentorapredict-desktop-qa
-          path: apps/desktop/release/*.msi
+          path: apps/desktop/release/*.exe
           retention-days: 30
 
       - name: Publish installer to EC2 downloads folder
@@ -381,16 +381,16 @@ jobs:
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./apps/desktop/package.json').version")
-          FILE=$(ls apps/desktop/release/*.msi | head -n1)
+          FILE=$(ls apps/desktop/release/*.exe | head -n1)
           BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           UPDATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
           mkdir -p /tmp/downloads-publish/desktop
-          cp "$FILE" /tmp/downloads-publish/desktop/MentoraPredict-Setup-qa.msi
+          cp "$FILE" /tmp/downloads-publish/desktop/MentoraPredict-Setup-qa.exe
 
           jq -n \
             --arg environment "qa" \
-            --arg downloadUrl "/downloads/desktop/MentoraPredict-Setup-qa.msi" \
+            --arg downloadUrl "/downloads/desktop/MentoraPredict-Setup-qa.exe" \
             --arg buildUrl "$BUILD_URL" \
             --arg version "$VERSION" \
             --arg updatedAt "$UPDATED_AT" \
@@ -404,7 +404,7 @@ jobs:
           SCP="scp -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no"
 
           $SSH "sudo mkdir -p /opt/mentorapredict-downloads/mobile /opt/mentorapredict-downloads/desktop && sudo chown -R ubuntu:ubuntu /opt/mentorapredict-downloads"
-          $SCP /tmp/downloads-publish/desktop/MentoraPredict-Setup-qa.msi "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/desktop/MentoraPredict-Setup-qa.msi"
+          $SCP /tmp/downloads-publish/desktop/MentoraPredict-Setup-qa.exe "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/desktop/MentoraPredict-Setup-qa.exe"
           $SCP /tmp/downloads-publish/desktop.json "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/desktop.json"
 
   deploy-to-qa:
