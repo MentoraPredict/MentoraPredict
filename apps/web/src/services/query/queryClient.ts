@@ -1,10 +1,30 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { AxiosError } from "axios";
 
 import { registerCreateCourseMutationDefaults } from "./createCourseMutation";
 
+function shouldRetryQuery(failureCount: number, error: unknown) {
+  // TanStack Query's own default (retry: 3, no status awareness) blindly
+  // retries every failure, including 429s — piling more requests onto a
+  // client the server just told to slow down, and turning one rate-limit
+  // hit into a multi-request storm. No amount of retrying fixes a
+  // 401/403/404/429 either. Only retry genuinely transient failures
+  // (network errors, 5xx), up to 2 times.
+  if (error instanceof AxiosError && error.response) {
+    return false;
+  }
+
+  return failureCount < 2;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: shouldRetryQuery,
+      refetchOnWindowFocus: false,
+    },
     mutations: {
       networkMode: "online",
       retry: 0,
