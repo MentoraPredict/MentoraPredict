@@ -26,6 +26,7 @@ const mockEnrollRepo = (): jest.Mocked<IEnrollmentRepository> => ({
   findByStudentAndSubject: jest.fn(),
   findByStudentSubjectAndPeriod: jest.fn(),
   countActiveBySubject: jest.fn(),
+  hasActiveEnrollmentInActiveCourse: jest.fn(),
   findByStudentId: jest.fn(),
   findBySubjectIdPaginated: jest.fn(),
   findByStudentIdWithDetails: jest.fn(),

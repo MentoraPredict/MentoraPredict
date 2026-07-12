@@ -28,6 +28,7 @@ export interface ISubjectTeacherRepository {
     subjectId: string, teacherId: string, periodId: string,
   ): Promise<SubjectTeacherEntity | null>;
   save(assignment: SubjectTeacherEntity): Promise<SubjectTeacherEntity>;
+  hasActiveCourseAssignment(teacherId: string): Promise<boolean>;
   findByTeacherIdWithDetails(
     teacherId: string,
     filters: { periodId?: string; status?: string },

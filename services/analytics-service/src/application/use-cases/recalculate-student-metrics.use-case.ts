@@ -182,18 +182,18 @@ export class RecalculateStudentMetricsUseCase {
         // GenerateAlertsUseCase dedupes against existing UNREAD alerts per
         // (student, subject, type) so calling this every recalculation
         // doesn't spam a new row for the same ongoing problem.
-        if (riskLevel !== null && averageGrade !== null && attendanceRate !== null) {
+        if (averageGrade !== null) {
           try {
             await this.generateAlertsUC.execute(studentId, {
               subjectId,
-              riskLevel,
+              riskLevel: riskLevel ?? undefined,
               currentAverage: averageGrade,
               previousAverage:
                 historicalGrades.length > 0
                   ? historicalGrades[historicalGrades.length - 1]
                   : undefined,
               failedEvaluations,
-              attendance: attendanceRate,
+              attendance: attendanceRate ?? undefined,
             });
           } catch (err) {
             this.logger.error(

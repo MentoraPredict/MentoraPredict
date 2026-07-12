@@ -1,4 +1,4 @@
-import { FaArrowRight, FaBolt } from "react-icons/fa";
+import { FaArrowRight, FaBolt, FaDownload } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/atoms/Button";
@@ -81,22 +81,36 @@ export default function HeroSection() {
               riesgo y optimizar el éxito académico.
             </p>
 
-            <Button
-              className="
-                                mt-8
-                                gap-2
-                                rounded-lg
-                                bg-blue-700
-                                px-7
-                                shadow-[var(--shadow-primary)]
-                            "
-              onClick={() => {
-                navigate("/login");
-              }}
-            >
-              Empecemos
-              <FaArrowRight size={13} aria-hidden="true" />
-            </Button>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button
+                className="
+                                  gap-2
+                                  rounded-lg
+                                  bg-blue-700
+                                  px-7
+                                  shadow-[var(--shadow-primary)]
+                              "
+                onClick={() => {
+                  navigate("/login");
+                }}
+              >
+                Empecemos
+                <FaArrowRight size={13} aria-hidden="true" />
+              </Button>
+
+              <Button
+                variant="outline"
+                className="gap-2 rounded-lg px-7"
+                onClick={() => {
+                  document
+                    .getElementById("downloads")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                <FaDownload size={13} aria-hidden="true" />
+                Descargar App
+              </Button>
+            </div>
           </div>
 
           <LandingHeroVisual />

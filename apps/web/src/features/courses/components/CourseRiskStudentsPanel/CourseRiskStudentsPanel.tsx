@@ -7,11 +7,13 @@ import type { CourseRiskItem } from "@/types/course";
 interface CourseRiskStudentsPanelProps {
   students: CourseRiskItem[];
   title?: string;
+  higherIsBetter?: boolean;
 }
 
 export default function CourseRiskStudentsPanel({
   students,
   title = "Estudiantes con alto riesgo de pérdida",
+  higherIsBetter = false,
 }: CourseRiskStudentsPanelProps) {
   return (
     <section
@@ -28,7 +30,7 @@ export default function CourseRiskStudentsPanel({
         {title}
       </Heading>
 
-      <CourseRiskBars items={students} />
+      <CourseRiskBars items={students} higherIsBetter={higherIsBetter} />
     </section>
   );
 }

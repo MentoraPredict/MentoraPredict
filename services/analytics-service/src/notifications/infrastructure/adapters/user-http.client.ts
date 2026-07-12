@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'node:crypto';
+import { correlationContext } from '@mentorapredict/shared-logger';
 import { IUserServiceClient } from '../../domain/ports/i-user-service.client';
 import { InternalJwtService } from '../../../infrastructure/auth/internal-jwt.service';
 
@@ -27,6 +29,7 @@ export class UserHttpClient implements IUserServiceClient {
         headers: {
           Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
           Accept: 'application/json',
+          'x-correlation-id': correlationContext.getId() ?? randomUUID(),
         },
         signal: controller.signal,
       });

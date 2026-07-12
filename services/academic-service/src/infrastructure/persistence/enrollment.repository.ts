@@ -46,6 +46,23 @@ export class EnrollmentRepository implements IEnrollmentRepository {
     return this.repo.count({ where: { subjectId, status: "ACTIVE" } });
   }
 
+  async hasActiveEnrollmentInActiveCourse(studentId: string): Promise<boolean> {
+    const rows = (await this.repo.manager.query(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM enrollments e
+         INNER JOIN subjects s ON s.id = e.subject_id
+         INNER JOIN academic_periods p ON p.id = e.period_id
+         WHERE e.student_id = $1
+           AND e.status = 'ACTIVE'
+           AND s.is_active = true
+           AND p.status = 'ACTIVE'
+       ) AS "exists"`,
+      [studentId],
+    )) as { exists: boolean }[];
+    return rows[0]?.exists ?? false;
+  }
+
   async findByStudentId(studentId: string): Promise<EnrollmentEntity[]> {
     return (await this.repo.find({ where: { studentId } })).map(this.toDomain);
   }

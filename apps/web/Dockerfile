@@ -10,6 +10,7 @@ WORKDIR /app
 ENV CI=true \
     PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
+
 COPY apps/web/ ./apps/web/
 RUN pnpm --filter @mentorapredict/web build
 

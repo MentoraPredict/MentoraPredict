@@ -1,8 +1,9 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
 import { AnalyticsController } from "./infrastructure/controllers/analytics.controller";
 import { AlertsController } from "./infrastructure/controllers/alerts.controller";
@@ -64,6 +65,7 @@ import { GetRiskSnapshotUseCase } from "./application/use-cases/get-risk-snapsho
 import { RecalculateStudentMetricsUseCase } from "./application/use-cases/recalculate-student-metrics.use-case";
 import { GetStudentSubjectMetricsUseCase } from "./application/use-cases/get-student-subject-metrics.use-case";
 import { GetSubjectMetricsSummaryUseCase } from "./application/use-cases/get-subject-metrics-summary.use-case";
+import { GetSubjectWeeklyProgressUseCase } from "./application/use-cases/get-subject-weekly-progress.use-case";
 import { GetLatestSubjectMetricUseCase } from "./application/use-cases/get-latest-subject-metric.use-case";
 import { GetSubjectRiskUseCase } from "./application/use-cases/get-subject-risk.use-case";
 import { GetSubjectAlertsUseCase } from "./application/use-cases/get-subject-alerts.use-case";
@@ -72,6 +74,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
 
 @Module({
   imports: [
+    createLoggerModule("analytics-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
     TypeOrmModule.forRootAsync({
@@ -105,6 +108,16 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
+        serverSelectionTimeoutMS: 5000,
+        // Connects in the background instead of blocking Nest's bootstrap:
+        // without this, an unreachable MongoDB crashes the whole service
+        // (NestFactory.create() awaits the connection and rethrows once
+        // retries are exhausted). Queries just buffer/timeout individually
+        // while disconnected — handled by the try/catch in DatasetVersionRepository.
+        lazyConnection: true,
+        // Default is 10s per buffered query — too slow for a request path;
+        // fail faster so callers hit the try/catch sooner.
+        bufferTimeoutMS: 3000,
       }),
     }),
     MongooseModule.forFeature([
@@ -193,6 +206,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     RecalculateStudentMetricsUseCase,
     GetStudentSubjectMetricsUseCase,
     GetSubjectMetricsSummaryUseCase,
+    GetSubjectWeeklyProgressUseCase,
     GetLatestSubjectMetricUseCase,
     GetSubjectRiskUseCase,
     GetSubjectAlertsUseCase,
@@ -206,7 +220,11 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     UnregisterDeviceTokenUseCase,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(correlationContextMiddleware).forRoutes("*");
+  }
+}
 
 function buildMongoUri(cfg: ConfigService): string {
   const user = cfg.get("MONGO_USER", "mp_mongo_user");

@@ -22,6 +22,7 @@ const mockEnrollRepo = (): jest.Mocked<IEnrollmentRepository> => ({
   findByStudentAndSubject: jest.fn(),
   findByStudentSubjectAndPeriod: jest.fn(),
   countActiveBySubject: jest.fn(),
+  hasActiveEnrollmentInActiveCourse: jest.fn(),
   findByStudentId: jest.fn(),
   findBySubjectIdPaginated: jest.fn(),
   findByStudentIdWithDetails: jest.fn(),
@@ -58,6 +59,7 @@ const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
 const mockSubjectTeacherRepo = (): jest.Mocked<ISubjectTeacherRepository> => ({
   findBySubjectTeacherAndPeriod: jest.fn(),
   save: jest.fn(),
+  hasActiveCourseAssignment: jest.fn(),
   findByTeacherIdWithDetails: jest.fn(),
 });
 
@@ -111,7 +113,7 @@ describe('EnrollStudentUseCase', () => {
     userProfilePort.getProfile.mockResolvedValue(studentProfile);
     enrollRepo.saveWithCapacityCheck.mockResolvedValue('enrolled');
 
-    const result = await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1');
+    const result = await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1', 'TEACHER');
 
     expect(result.studentId).toBe('stud-1');
     expect(result.periodId).toBe('period-1');
@@ -129,7 +131,7 @@ describe('EnrollStudentUseCase', () => {
     );
     enrollRepo.saveWithCapacityCheck.mockResolvedValue('enrolled');
 
-    await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1');
+    await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1', 'TEACHER');
 
     expect(notificationClient.notify).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -141,7 +143,7 @@ describe('EnrollStudentUseCase', () => {
   it('throws when subject is inactive', async () => {
     subjectRepo.findById.mockResolvedValue(null);
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1', 'TEACHER'),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -151,7 +153,7 @@ describe('EnrollStudentUseCase', () => {
       new AcademicPeriodEntity('period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'PLANNED', 'SEMESTER', new Date(), new Date()),
     );
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1', 'TEACHER'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -162,7 +164,7 @@ describe('EnrollStudentUseCase', () => {
     userProfilePort.getProfile.mockResolvedValue(studentProfile);
     enrollRepo.saveWithCapacityCheck.mockResolvedValue('at_capacity');
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1', 'TEACHER'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -173,7 +175,38 @@ describe('EnrollStudentUseCase', () => {
     userProfilePort.getProfile.mockResolvedValue(studentProfile);
     enrollRepo.saveWithCapacityCheck.mockResolvedValue('already_enrolled');
     await expect(
-      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1'),
+      useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'teacher-1', 'TEACHER'),
     ).rejects.toThrow(ConflictException);
+  });
+
+  it('ADMIN caller enrolls into a course without an ownership assignment', async () => {
+    subjectRepo.findById.mockResolvedValue(subject);
+    periodRepo.findById.mockResolvedValue(period);
+    userProfilePort.getProfile.mockResolvedValue(studentProfile);
+    enrollRepo.saveWithCapacityCheck.mockResolvedValue('enrolled');
+
+    const result = await useCase.execute(
+      { studentId: 'stud-1', subjectId: 'subj-1' },
+      'admin-1',
+      'ADMIN',
+    );
+
+    expect(subjectTeacherRepo.findBySubjectTeacherAndPeriod).not.toHaveBeenCalled();
+    expect(result.studentId).toBe('stud-1');
+  });
+
+  it('ADMIN caller notification does not attribute the enrollment to a teacher', async () => {
+    subjectRepo.findById.mockResolvedValue(subject);
+    periodRepo.findById.mockResolvedValue(period);
+    userProfilePort.getProfile.mockResolvedValue(studentProfile);
+    enrollRepo.saveWithCapacityCheck.mockResolvedValue('enrolled');
+
+    await useCase.execute({ studentId: 'stud-1', subjectId: 'subj-1' }, 'admin-1', 'ADMIN');
+
+    expect(notificationClient.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Fuiste matriculado en Math.',
+      }),
+    );
   });
 });

@@ -4,7 +4,8 @@ export type NotificationType =
   | 'RISK_ESCALATION'
   | 'ENROLLMENT_CREATED'
   | 'ENROLLMENT_WITHDRAWN'
-  | 'COURSE_CREATED';
+  | 'COURSE_CREATED'
+  | 'ROLE_CHANGED';
 export type NotificationStatus = 'UNREAD' | 'READ';
 
 export class NotificationEntity {

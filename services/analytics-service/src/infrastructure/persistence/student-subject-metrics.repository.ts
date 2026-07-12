@@ -8,6 +8,7 @@ import {
 import {
   IStudentSubjectMetricsRepository,
   SubjectRiskCounts,
+  SubjectWeeklyProgress,
 } from '../../domain/ports/i-student-subject-metrics.repository';
 import { StudentSubjectMetricsOrmEntity } from './student-subject-metrics.orm-entity';
 
@@ -115,6 +116,43 @@ export class StudentSubjectMetricsRepository implements IStudentSubjectMetricsRe
       else if (row.riskLevel in counts) counts[row.riskLevel as SubjectRiskLevel] = row.count;
     }
     return counts;
+  }
+
+  async getAverageGradeBySubject(subjectId: string): Promise<number | null> {
+    const rows = (await this.repo.manager.query(
+      `SELECT AVG(average_grade)::float AS "averageGrade"
+       FROM (
+         SELECT DISTINCT ON (student_id) student_id, average_grade
+         FROM student_subject_metrics
+         WHERE subject_id = $1
+         ORDER BY student_id, academic_year DESC, academic_week DESC
+       ) latest
+       WHERE average_grade IS NOT NULL`,
+      [subjectId],
+    )) as { averageGrade: number | null }[];
+
+    return rows[0]?.averageGrade ?? null;
+  }
+
+  async getWeeklyProgressBySubject(subjectId: string): Promise<SubjectWeeklyProgress[]> {
+    const rows = (await this.repo.manager.query(
+      `SELECT
+         academic_year AS "academicYear",
+         academic_week AS "academicWeek",
+         AVG(average_grade)::float AS "averageGrade"
+       FROM student_subject_metrics
+       WHERE subject_id = $1
+         AND average_grade IS NOT NULL
+       GROUP BY academic_year, academic_week
+       ORDER BY academic_year ASC, academic_week ASC`,
+      [subjectId],
+    )) as SubjectWeeklyProgress[];
+
+    return rows.map((row) => ({
+      academicYear: Number(row.academicYear),
+      academicWeek: Number(row.academicWeek),
+      averageGrade: Number(row.averageGrade),
+    }));
   }
 
   private rowToDomain(row: Record<string, unknown>): StudentSubjectMetricsEntity {

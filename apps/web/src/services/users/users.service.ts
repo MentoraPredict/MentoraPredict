@@ -1,6 +1,9 @@
+import { AxiosError } from "axios";
+
 import api from "@/services/api";
 import { endpoints } from "@/services/api/endpoints";
 import { getStudentAcademicContext } from "@/services/academic.service";
+import { register } from "@/services/auth.service";
 import type { AuthSessionUser } from "@/types/auth/auth.types";
 import type { AppUser } from "@/types/user/user.types";
 import type { UserRole } from "@/types/user/role.types";
@@ -33,6 +36,30 @@ interface UpdateUserPayload {
     lastName?: string;
     role?: UserRole;
     status?: UserStatus;
+}
+
+export interface UsersQuery {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: UserRole | "";
+    status?: UserStatus;
+}
+
+export interface PaginatedUsersResult {
+    data: AppUser[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+interface PaginatedUsersApiResponse {
+    data: UserApiResponse[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
 }
 
 const fallbackUserRole: UserRole = "STUDENT";
@@ -101,11 +128,50 @@ export async function getCurrentUser() {
     return response.data;
 }
 
-export async function getUsers(): Promise<AppUser[]> {
-    const response = await api.get<UserApiResponse[]>(endpoints.users.list);
+function isPaginatedUsersResponse(
+    response: UserApiResponse[] | PaginatedUsersApiResponse
+): response is PaginatedUsersApiResponse {
+    return !Array.isArray(response) && Array.isArray(response.data);
+}
 
-    const loadedUsers = response.data.map(toAppUser);
-    return Promise.all(loadedUsers.map((user) => enrichStudentContext(user)));
+export async function getUsers(): Promise<AppUser[]>;
+export async function getUsers(query: UsersQuery): Promise<PaginatedUsersResult>;
+export async function getUsers(
+    query?: UsersQuery
+): Promise<AppUser[] | PaginatedUsersResult> {
+    const shouldPaginate = query?.page !== undefined || query?.limit !== undefined;
+    const response = await api.get<UserApiResponse[] | PaginatedUsersApiResponse>(
+        endpoints.users.list,
+        {
+            params: {
+                page: query?.page,
+                limit: query?.limit,
+                search: query?.search?.trim() || undefined,
+                role: query?.role || undefined,
+                status: query?.status,
+            },
+        }
+    );
+
+    const rawUsers = isPaginatedUsersResponse(response.data)
+        ? response.data.data
+        : response.data;
+    const loadedUsers = rawUsers.map(toAppUser);
+    const enrichedUsers = await Promise.all(
+        loadedUsers.map((user) => enrichStudentContext(user))
+    );
+
+    if (!shouldPaginate || !isPaginatedUsersResponse(response.data)) {
+        return enrichedUsers;
+    }
+
+    return {
+        data: enrichedUsers,
+        page: response.data.page,
+        limit: response.data.limit,
+        total: response.data.total,
+        totalPages: response.data.totalPages,
+    };
 }
 
 export async function uploadCurrentUserAvatar(file: File) {
@@ -121,6 +187,26 @@ export async function uploadCurrentUserAvatar(file: File) {
 export async function deleteCurrentUserAvatar() {
     const response = await api.delete<AuthSessionUser>(endpoints.users.avatar);
     return response.data;
+}
+
+export async function uploadUserAvatar(
+    userId: string,
+    file: File
+): Promise<AppUser> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<UserApiResponse>(
+        endpoints.users.userAvatar(userId),
+        formData,
+    );
+    return toAppUser(response.data);
+}
+
+export async function deleteUserAvatar(userId: string): Promise<AppUser> {
+    const response = await api.delete<UserApiResponse>(
+        endpoints.users.userAvatar(userId)
+    );
+    return toAppUser(response.data);
 }
 
 export async function getStudents(): Promise<AppUser[]> {
@@ -181,6 +267,11 @@ export async function updateUserStatus(
     });
 }
 
+export async function deleteUser(userId: string): Promise<void> {
+    await api.delete(endpoints.users.detail(userId));
+    studentsCache = undefined;
+}
+
 export async function updateUserRole(
     userId: string,
     role: UserRole
@@ -188,4 +279,100 @@ export async function updateUserRole(
     return updateUser(userId, {
         role,
     });
+}
+
+export async function getTeachers(): Promise<AppUser[]> {
+    const response = await api.get<UserApiResponse[]>(
+        endpoints.users.list,
+        {
+            params: {
+                role: "TEACHER",
+                status: "ACTIVE",
+            },
+        }
+    );
+
+    return response.data
+        .map(toAppUser)
+        .filter((user) => user.role === "TEACHER" && user.isActive);
+}
+
+export interface CreateUserWithRolePayload {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    role: UserRole;
+}
+
+const ROLE_SYNC_RETRY_DELAYS_MS = [500, 1000, 2000];
+
+function isNotFoundError(error: unknown): boolean {
+    return error instanceof AxiosError && error.response?.status === 404;
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// RegisterUserUseCase creates the user-service profile fire-and-forget, so a
+// PUT /users/:id issued right after register() can 404 before that profile
+// exists yet. Retry the role assignment a few times before giving up.
+async function assignRoleWithRetry(
+    userId: string,
+    role: UserRole
+): Promise<AppUser> {
+    for (let attempt = 0; attempt < ROLE_SYNC_RETRY_DELAYS_MS.length; attempt++) {
+        try {
+            return await updateUserRole(userId, role);
+        } catch (error) {
+            const isLastAttempt = attempt === ROLE_SYNC_RETRY_DELAYS_MS.length - 1;
+            if (!isNotFoundError(error) || isLastAttempt) {
+                throw error;
+            }
+            await sleep(ROLE_SYNC_RETRY_DELAYS_MS[attempt]);
+        }
+    }
+
+    throw new Error("No se pudo asignar el rol tras varios intentos.");
+}
+
+export class PartialUserCreationError extends Error {
+    constructor(public readonly user: AppUser) {
+        super(
+            "El usuario se creó como Estudiante, pero no se pudo asignar el rol solicitado. Asígnalo manualmente desde la tabla."
+        );
+        this.name = "PartialUserCreationError";
+    }
+}
+
+export async function createUserWithRole(
+    payload: CreateUserWithRolePayload
+): Promise<AppUser> {
+    const created = await register({
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        password: payload.password,
+    });
+
+    const createdUser: AppUser = {
+        id: created.id,
+        email: created.email,
+        firstName: created.firstName,
+        lastName: created.lastName,
+        role: "STUDENT",
+        isActive: true,
+        createdAt: created.createdAt,
+    };
+
+    if (payload.role === "STUDENT") {
+        return createdUser;
+    }
+
+    try {
+        return await assignRoleWithRetry(created.id, payload.role);
+    } catch {
+        throw new PartialUserCreationError(createdUser);
+    }
 }

@@ -33,5 +33,18 @@ sed -i "s/__WEB_UPSTREAM_PORT__/${WEB_UPSTREAM_PORT}/g" /etc/kong/kong.yml
 
 kong start
 
-echo 'Kong start exited with status:' $? && echo 'Keeping container alive.'
-sleep infinity
+echo 'Kong start exited with status:' $?
+
+# `kong start` daemonizes and returns almost immediately, so this script
+# reaching this point does not mean Kong is actually still running (e.g. it
+# can be OOM-killed moments later). Poll `kong health` and exit non-zero the
+# first time it fails, instead of `sleep infinity`, so the container actually
+# stops and gets restarted (restart policy is set on the service) rather than
+# staying "Up" forever with a dead Kong process inside.
+while true; do
+    sleep 5
+    if ! kong health >/dev/null 2>&1; then
+        echo "Kong health check failed — exiting so the container restarts."
+        exit 1
+    fi
+done

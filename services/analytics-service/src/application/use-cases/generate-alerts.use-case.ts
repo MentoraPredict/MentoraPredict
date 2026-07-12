@@ -36,7 +36,7 @@ export class GenerateAlertsUseCase {
         input.subjectId,
         input.riskLevel === 'CRITICAL' ? 'RISK_CRITICAL' : 'RISK_HIGH',
         input.riskLevel === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
-        `Student risk level is ${input.riskLevel}`,
+        `El nivel de riesgo académico es ${input.riskLevel}.`,
         { riskLevel: input.riskLevel },
       ));
     }
@@ -49,7 +49,7 @@ export class GenerateAlertsUseCase {
           input.subjectId,
           'AVERAGE_DROP',
           'MEDIUM',
-          `Average dropped ${dropPct.toFixed(1)}% vs previous period`,
+          `El promedio disminuyó ${dropPct.toFixed(1)}% respecto al registro anterior.`,
           { dropPct, previousAverage: input.previousAverage, currentAverage: input.currentAverage },
         ));
       }
@@ -61,18 +61,18 @@ export class GenerateAlertsUseCase {
         input.subjectId,
         'FAILED_EVALUATIONS',
         'HIGH',
-        `${input.failedEvaluations} evaluations below passing grade`,
+        `Tiene ${input.failedEvaluations} evaluaciones con una nota inferior a 14/20.`,
         { failedEvaluations: input.failedEvaluations },
       ));
     }
 
-    if (input.attendance < 70 && !existingTypes.has('LOW_ATTENDANCE')) {
+    if (input.attendance !== undefined && input.attendance < 70 && !existingTypes.has('LOW_ATTENDANCE')) {
       alerts.push(this.buildAlert(
         studentId,
         input.subjectId,
         'LOW_ATTENDANCE',
         'MEDIUM',
-        `Attendance is ${input.attendance}% (below 70%)`,
+        `La asistencia registrada es ${input.attendance}%, por debajo del mínimo recomendado de 70%.`,
         { attendance: input.attendance },
       ));
     }

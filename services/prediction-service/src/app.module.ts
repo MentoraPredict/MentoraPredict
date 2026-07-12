@@ -1,8 +1,9 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
 import { PredictionController } from "./infrastructure/controllers/prediction.controller";
 import { InternalPredictionController } from "./infrastructure/controllers/internal-prediction.controller";
@@ -43,6 +44,7 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
 
 @Module({
   imports: [
+    createLoggerModule("prediction-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
     // Fase 8 — first Postgres connection in prediction-service, for
@@ -68,6 +70,16 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
+        serverSelectionTimeoutMS: 5000,
+        // Connects in the background instead of blocking Nest's bootstrap:
+        // without this, an unreachable MongoDB crashes the whole service
+        // (NestFactory.create() awaits the connection and rethrows once
+        // retries are exhausted). Queries just buffer/timeout individually
+        // while disconnected — handled by the try/catch in PredictionLogRepository.
+        lazyConnection: true,
+        // Default is 10s per buffered query — too slow for a request path;
+        // fail faster so callers hit the try/catch sooner.
+        bufferTimeoutMS: 3000,
       }),
     }),
     MongooseModule.forFeature([
@@ -111,7 +123,11 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
     RequestSubjectPredictionUseCase,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(correlationContextMiddleware).forRoutes("*");
+  }
+}
 
 function buildMongoUri(cfg: ConfigService): string {
   const user = cfg.get("MONGO_USER", "mp_mongo_user");

@@ -47,7 +47,9 @@ export default function DashboardNavbar({
       ? APP_PATHS.teacher.profile
       : user?.role === "STUDENT"
         ? APP_PATHS.student.profile
-        : undefined;
+        : user?.role === "ADMIN"
+          ? APP_PATHS.admin.profile
+          : undefined;
 
   return (
     <>
@@ -151,6 +153,7 @@ export default function DashboardNavbar({
 
       <HelpDialog
         isOpen={isHelpOpen}
+        role={user?.role}
         onClose={() => {
           setIsHelpOpen(false);
         }}

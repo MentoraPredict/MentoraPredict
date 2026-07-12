@@ -28,6 +28,19 @@ interface SubjectMetric {
   trendSlope: number | null;
 }
 
+export type SubjectTrendClassification = "ASCENDING" | "STABLE" | "DESCENDING";
+
+export interface SubjectTrendSummary {
+  slope: number;
+  intercept: number;
+  classification: SubjectTrendClassification;
+  weeksAnalyzed: number;
+}
+
+interface SubjectMetricsResponse extends Paginated<SubjectMetric> {
+  trend: SubjectTrendSummary | null;
+}
+
 interface SubjectRisk {
   riskLevel: RiskLevel | null;
   trendSlope: number | null;
@@ -44,6 +57,7 @@ interface SubjectRisk {
 
 interface AlertResponse {
   id: string;
+  studentId?: string;
   message: string;
   severity: "MEDIUM" | "HIGH" | "CRITICAL" | null;
 }
@@ -68,6 +82,13 @@ interface SubjectRiskSummary {
   HIGH: number;
   CRITICAL: number;
   unclassified: number;
+  averageGrade?: number | null;
+}
+
+interface SubjectWeeklyProgress {
+  academicYear: number;
+  academicWeek: number;
+  averageGrade: number;
 }
 
 export type TeacherStudentPrediction = PredictionResponse;
@@ -105,6 +126,7 @@ export interface AiPrediction {
 export interface StudentSubjectAnalytics {
   average: number;
   progress: CourseProgressPoint[];
+  trend: SubjectTrendSummary | null;
   risk: SubjectRisk;
   riskFactors: CourseRiskItem[];
   alerts: CourseAlert[];
@@ -114,6 +136,34 @@ export interface StudentSubjectAnalytics {
     status: "loaded" | "empty" | "error";
     message: string;
   };
+}
+
+const PROJECTION_STEPS = 2;
+const AVERAGE_SCALE_MAX = 20;
+
+function clampAverage(value: number): number {
+  return Math.min(AVERAGE_SCALE_MAX, Math.max(0, value));
+}
+
+function withProjection(
+  progress: CourseProgressPoint[],
+  trend: SubjectTrendSummary | null
+): CourseProgressPoint[] {
+  if (!trend || progress.length === 0) return progress;
+
+  const points = [...progress];
+  const lastIndex = points.length - 1;
+  points[lastIndex] = { ...points[lastIndex], projection: points[lastIndex].actual };
+
+  for (let step = 1; step <= PROJECTION_STEPS; step += 1) {
+    const x = trend.weeksAnalyzed + step;
+    points.push({
+      week: `Proyección +${step}`,
+      projection: clampAverage(trend.intercept + trend.slope * x),
+    });
+  }
+
+  return points;
 }
 
 const emptyRisk: SubjectRisk = {
@@ -137,6 +187,7 @@ function round2(value: number): number {
 function toAlert(alert: AlertResponse): CourseAlert {
   return {
     id: alert.id,
+    studentId: alert.studentId,
     message: alert.message,
     severity: alert.severity ?? "LOW",
   };
@@ -147,7 +198,7 @@ export async function getStudentSubjectAnalytics(
 ): Promise<StudentSubjectAnalytics> {
   const [metricsResponse, riskResponse, alertsResponse, predictionResponse] =
     await Promise.allSettled([
-      api.get<Paginated<SubjectMetric>>(
+      api.get<SubjectMetricsResponse>(
         endpoints.analytics.studentSubjectMetrics(subjectId),
         { params: { page: 1, limit: 100 } }
       ),
@@ -162,6 +213,8 @@ export async function getStudentSubjectAnalytics(
 
   const metrics =
     metricsResponse.status === "fulfilled" ? metricsResponse.value.data.data : [];
+  const trend =
+    metricsResponse.status === "fulfilled" ? metricsResponse.value.data.trend : null;
   const risk =
     riskResponse.status === "fulfilled" ? riskResponse.value.data : emptyRisk;
   const alerts =
@@ -184,17 +237,18 @@ export async function getStudentSubjectAnalytics(
         : "Prediction-service no devolvio una prediccion para esta materia.";
 
   const latest = metrics[0] ?? null;
-  const progress: CourseProgressPoint[] = [...metrics]
-    .reverse()
-    .map((metric) => ({
+  const progress: CourseProgressPoint[] = withProjection(
+    [...metrics].reverse().map((metric) => ({
       week: `S${metric.academicWeek}`,
       actual: metric.averageGrade ?? 0,
-    }));
+    })),
+    trend
+  );
 
   const factors: CourseRiskItem[] = [
     {
       id: "average",
-      label: "Promedio",
+      label: "Promedio equivalente",
       value: round2((risk.factors.averageGrade ?? 0) * 5),
     },
     {
@@ -209,8 +263,8 @@ export async function getStudentSubjectAnalytics(
     },
     {
       id: "comprehension",
-      label: "Comprension",
-      value: round2(risk.factors.comprehensionAvg ?? 0),
+      label: "Comprensión declarada",
+      value: round2((risk.factors.comprehensionAvg ?? 0) * 20),
     },
   ];
 
@@ -224,12 +278,32 @@ export async function getStudentSubjectAnalytics(
       ]
     : [];
 
+  const studentWarnings: CourseAlert[] = [];
+  if (!latest || risk.riskLevel === null) {
+    studentWarnings.push({
+      id: "insufficient-data",
+      severity: "MEDIUM",
+      message:
+        "Aún faltan notas o un seguimiento semanal completo para evaluar tu riesgo con precisión.",
+    });
+  }
+  const currentAverage = latest?.averageGrade ?? risk.factors.averageGrade;
+  if (currentAverage !== null && currentAverage < 14) {
+    studentWarnings.push({
+      id: "current-average-below-passing",
+      severity: "HIGH",
+      message:
+        "Tu promedio actual está por debajo de la nota mínima de aprobación de 14/20.",
+    });
+  }
+
   return {
     average: latest?.averageGrade ?? risk.factors.averageGrade ?? 0,
     progress,
+    trend,
     risk,
     riskFactors: factors,
-    alerts: alerts.map(toAlert),
+    alerts: [...alerts.map(toAlert), ...studentWarnings],
     recommendations,
     prediction: {
       data: prediction,
@@ -240,9 +314,12 @@ export async function getStudentSubjectAnalytics(
 }
 
 export async function getTeacherSubjectAnalytics(subjectId: string) {
-  const [summaryResponse, alertsResponse, predictionsResponse] =
+  const [summaryResponse, progressResponse, alertsResponse, predictionsResponse] =
     await Promise.all([
       api.get<SubjectRiskSummary>(endpoints.analytics.subjectSummary(subjectId)),
+      api.get<SubjectWeeklyProgress[]>(
+        endpoints.analytics.subjectProgress(subjectId)
+      ),
       api.get<Paginated<AlertResponse>>(
         endpoints.analytics.subjectAlerts(subjectId),
         {
@@ -284,17 +361,57 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
       description: prediction.recommendation!,
     }));
 
+  const courseWarnings: CourseAlert[] = [];
+  if ((summary.averageGrade ?? 20) < 14) {
+    courseWarnings.push({
+      id: "course-average-below-passing",
+      severity: "HIGH",
+      message: `El promedio general del curso es ${round2(summary.averageGrade ?? 0)}/20, por debajo de la nota mínima de aprobación.`,
+    });
+  }
+  if (summary.HIGH + summary.CRITICAL > 1) {
+    courseWarnings.push({
+      id: "multiple-high-risk-students",
+      severity: summary.CRITICAL > 0 ? "CRITICAL" : "HIGH",
+      message: `${summary.HIGH + summary.CRITICAL} estudiantes presentan riesgo alto o crítico y requieren seguimiento.`,
+    });
+  }
+  if (summary.unclassified > 0) {
+    courseWarnings.push({
+      id: "unclassified-students",
+      severity: "MEDIUM",
+      message: `${summary.unclassified} estudiantes aún no tienen datos suficientes para calcular su nivel de riesgo.`,
+    });
+  }
+
   return {
+    progress: progressResponse.data.map((point) => ({
+      week: `S${point.academicWeek}`,
+      actual: round2(point.averageGrade),
+    })),
     riskDistribution,
     riskCounts: {
       low: summary.LOW,
       medium: summary.MEDIUM,
       high: summary.HIGH + summary.CRITICAL,
     },
-    alerts: alertsResponse.data.data.map(toAlert),
+    alerts: [...courseWarnings, ...alertsResponse.data.data.map(toAlert)],
     recommendations,
     predictions: predictionsResponse.data.data,
   };
+}
+
+// Lightweight companion to getTeacherSubjectAnalytics for callers that only
+// need the course-level average (e.g. the admin course card), so they don't
+// pay for the alerts/predictions calls that function also makes.
+export async function getSubjectAverageGrade(
+  subjectId: string
+): Promise<number | null> {
+  const response = await api.get<SubjectRiskSummary>(
+    endpoints.analytics.subjectSummary(subjectId)
+  );
+
+  return response.data.averageGrade ?? null;
 }
 
 export async function getTeacherStudentSubjectPrediction(

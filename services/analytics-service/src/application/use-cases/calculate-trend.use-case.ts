@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { IStudentMetricsRepository } from '../../domain/ports/i-student-metrics.repository';
 import { IDatasetVersionRepository } from '../../domain/ports/i-dataset-version.repository';
+import { linearRegression } from '../../infrastructure/wasm/linear-regression.wasm';
 
 export type TrendClassification = 'ASCENDING' | 'STABLE' | 'DESCENDING';
 
@@ -29,8 +30,7 @@ export class CalculateTrendUseCase {
       averages.push(m?.globalAverage ?? 0);
     }
 
-    const points = averages.map((y, i) => ({ x: i + 1, y }));
-    const { slope, intercept } = linearRegression(points);
+    const { slope, intercept } = linearRegression(averages);
 
     const classification: TrendClassification =
       slope > 0.5 ? 'ASCENDING' : slope < -0.5 ? 'DESCENDING' : 'STABLE';
@@ -52,16 +52,4 @@ export class CalculateTrendUseCase {
 
     return result;
   }
-}
-
-function linearRegression(points: { x: number; y: number }[]): { slope: number; intercept: number } {
-  const n = points.length;
-  const sumX = points.reduce((s, p) => s + p.x, 0);
-  const sumY = points.reduce((s, p) => s + p.y, 0);
-  const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-  const sumXX = points.reduce((s, p) => s + p.x * p.x, 0);
-  const denom = n * sumXX - sumX * sumX;
-  const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
-  const intercept = (sumY - slope * sumX) / n;
-  return { slope, intercept };
 }

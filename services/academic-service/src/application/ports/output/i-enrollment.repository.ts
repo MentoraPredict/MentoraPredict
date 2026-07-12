@@ -51,6 +51,7 @@ export interface IEnrollmentRepository {
     periodId: string,
   ): Promise<EnrollmentEntity | null>;
   countActiveBySubject(subjectId: string): Promise<number>;
+  hasActiveEnrollmentInActiveCourse(studentId: string): Promise<boolean>;
   findByStudentId(studentId: string): Promise<EnrollmentEntity[]>;
   findBySubjectIdPaginated(
     subjectId: string,

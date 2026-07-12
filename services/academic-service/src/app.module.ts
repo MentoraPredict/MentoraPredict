@@ -1,8 +1,9 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
+import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
 import { AcademicController } from "./infrastructure/controllers/academic.controller";
 import { InternalAcademicController } from "./infrastructure/controllers/internal-academic.controller";
@@ -44,6 +45,7 @@ import { TeacherObservationRepository } from "./infrastructure/persistence/teach
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { NotificationHttpClient } from "./infrastructure/adapters/notification-http.client";
+import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-image-storage.adapter";
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
@@ -99,6 +101,7 @@ import { DeleteSubjectUseCase } from "./application/use-cases/delete-subject.use
 import { GetTeacherSubjectsUseCase } from "./application/use-cases/get-teacher-subjects.use-case";
 import { GetTeacherStudentsUseCase } from "./application/use-cases/get-teacher-students.use-case";
 import { GetSubjectTopicsInternalUseCase } from "./application/use-cases/get-subject-topics-internal.use-case";
+import { CheckUserDeactivationEligibilityUseCase } from "./application/use-cases/check-user-deactivation-eligibility.use-case";
 import { GetSubjectEnrollmentsUseCase } from "./application/use-cases/get-subject-enrollments.use-case";
 import { BatchEnrollStudentsUseCase } from "./application/use-cases/batch-enroll-students.use-case";
 import { UpdateEnrollmentStatusUseCase } from "./application/use-cases/update-enrollment-status.use-case";
@@ -134,6 +137,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
 
 @Module({
   imports: [
+    createLoggerModule("academic-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
     TypeOrmModule.forRootAsync({
@@ -183,6 +187,15 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
+        serverSelectionTimeoutMS: 5000,
+        // Connects in the background instead of blocking Nest's bootstrap:
+        // without this, an unreachable MongoDB crashes the whole service
+        // (NestFactory.create() awaits the connection and rethrows once
+        // retries are exhausted).
+        lazyConnection: true,
+        // Default is 10s per buffered query — too slow for a request path;
+        // fail faster so callers hit the try/catch sooner.
+        bufferTimeoutMS: 3000,
       }),
     }),
     MongooseModule.forFeature([
@@ -252,6 +265,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
     { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },
     { provide: "INotificationClientPort", useClass: NotificationHttpClient },
+    { provide: "IImageStoragePort", useClass: SupabaseImageStorageAdapter },
     RecordGradeUseCase,
     RegisterGradeUseCase,
     UpdateGradeUseCase,
@@ -296,6 +310,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     GetTeacherSubjectsUseCase,
     GetTeacherStudentsUseCase,
     GetSubjectTopicsInternalUseCase,
+    CheckUserDeactivationEligibilityUseCase,
     // Enrollment use-cases (Phase 3)
     GetSubjectEnrollmentsUseCase,
     BatchEnrollStudentsUseCase,
@@ -330,7 +345,11 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     DeleteTopicFileUseCase,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(correlationContextMiddleware).forRoutes("*");
+  }
+}
 
 function buildMongoUri(cfg: ConfigService): string {
   const user = cfg.get("MONGO_USER", "mp_mongo_user");
