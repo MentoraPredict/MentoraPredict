@@ -323,6 +323,7 @@ export default function StudentCoursePerformance({
           data={data.progress}
           title="Progreso semanal"
           subtitle="Promedio real de la materia por semana"
+          classification={data.trend?.classification}
         />
       </div>
     </div>
