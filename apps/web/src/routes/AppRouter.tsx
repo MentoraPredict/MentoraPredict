@@ -150,23 +150,17 @@ function AnimatedRoutes() {
               path={APP_PATHS.admin.courses}
               element={<AdminCoursesPage />}
             />
+            <Route
+              path={APP_PATHS.admin.courseStudents}
+              element={<AdminCourseStudentsPage />}
+            />
+            <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
           </Route>
 
           <Route
             path="*"
             element={<Navigate to={APP_PATHS.public.landing} replace />}
           />
-          <Route
-            path={APP_PATHS.admin.courseStudents}
-            element={<AdminCourseStudentsPage />}
-          />
-          <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
-        </Route>
-
-        <Route
-          path="*"
-          element={<Navigate to={APP_PATHS.public.landing} replace />}
-        />
         </Routes>
       </motion.div>
     </AnimatePresence>
