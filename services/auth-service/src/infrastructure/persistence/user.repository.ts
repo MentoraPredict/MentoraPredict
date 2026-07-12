@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { UserEntity, UserRole } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../application/ports/output/i-user.repository';
 import { UserOrmEntity } from './user.orm-entity';
@@ -15,6 +15,33 @@ export class UserRepository implements IUserRepository {
   async findById(id: string): Promise<UserEntity | null> {
     const orm = await this.repo.findOne({ where: { id } });
     return orm ? this.toDomain(orm) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<UserEntity[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const orms = await this.repo.find({ where: { id: In(ids) } });
+    return orms.map((orm) => this.toDomain(orm));
+  }
+
+  async searchByText(search: string, limit = 200): Promise<UserEntity[]> {
+    const term = search.trim();
+    if (!term) {
+      return [];
+    }
+
+    const orms = await this.repo
+      .createQueryBuilder('u')
+      .where('LOWER(u.email) LIKE LOWER(:search)', { search: `%${term}%` })
+      .orWhere('LOWER(u.firstName) LIKE LOWER(:search)', { search: `%${term}%` })
+      .orWhere('LOWER(u.lastName) LIKE LOWER(:search)', { search: `%${term}%` })
+      .orderBy('u.createdAt', 'DESC')
+      .take(Math.min(Math.max(1, limit), 500))
+      .getMany();
+
+    return orms.map((orm) => this.toDomain(orm));
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {

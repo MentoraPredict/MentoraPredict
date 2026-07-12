@@ -44,4 +44,13 @@ export class CreateSubjectDto {
   @Min(1)
   @IsOptional()
   maxCapacity?: number;
+
+  @ApiPropertyOptional({
+    example: 'uuid-of-teacher',
+    description:
+      'Required when an ADMIN creates the course (assigns the real teacher). Ignored for TEACHER callers — their own id from the JWT is always used.',
+  })
+  @IsUUID()
+  @IsOptional()
+  teacherId?: string;
 }

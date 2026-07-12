@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'node:crypto';
+import { correlationContext } from '@mentorapredict/shared-logger';
 import { IUserProfilePort, UserProfileData } from '../../application/ports/output/i-user-profile.port';
 import { InternalJwtService } from '../auth/internal-jwt.service';
 
@@ -23,7 +25,10 @@ export class UserProfileAdapter implements IUserProfilePort {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${this.internalJwt.createServiceToken()}` },
+        headers: {
+          Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+          'x-correlation-id': correlationContext.getId() ?? randomUUID(),
+        },
         signal: ctrl.signal,
       });
       clearTimeout(timer);

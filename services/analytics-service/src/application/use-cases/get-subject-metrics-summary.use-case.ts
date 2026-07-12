@@ -11,11 +11,23 @@ export class GetSubjectMetricsSummaryUseCase {
     private readonly academic: IAcademicServiceClient,
   ) {}
 
-  async execute(subjectId: string, teacherId: string): Promise<SubjectRiskCounts> {
-    const { isOwner } = await this.academic.getSubjectOwnership(teacherId, subjectId);
-    if (!isOwner) {
-      throw new ForbiddenException('No tienes acceso a este curso');
+  async execute(
+    subjectId: string,
+    callerId: string,
+    callerRole: string,
+  ): Promise<SubjectRiskCounts & { averageGrade: number | null }> {
+    if (callerRole !== 'ADMIN') {
+      const { isOwner } = await this.academic.getSubjectOwnership(callerId, subjectId);
+      if (!isOwner) {
+        throw new ForbiddenException('No tienes acceso a este curso');
+      }
     }
-    return this.metricsRepo.getRiskCountsBySubject(subjectId);
+
+    const [riskCounts, averageGrade] = await Promise.all([
+      this.metricsRepo.getRiskCountsBySubject(subjectId),
+      this.metricsRepo.getAverageGradeBySubject(subjectId),
+    ]);
+
+    return { ...riskCounts, averageGrade };
   }
 }

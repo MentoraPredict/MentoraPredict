@@ -347,8 +347,10 @@ function toCourse(
   return {
     id: subject.id,
     name: subject.name,
+    teacherId: subject.teacherId ?? subject.teacher_id ?? undefined,
     teacherName: teacherNameFallback ?? getTeacherName(subject),
     semester: period?.name ?? period?.code ?? "Periodo no asignado",
+    isActive,
     description: subject.description ?? "Sin descripcion registrada.",
     riskLevel: "LOW",
     riskLabel: isActive ? "Curso activo" : "Curso inactivo",
@@ -550,15 +552,30 @@ interface BatchEnrollApiResponse {
   failed: Array<{ studentId: string; reason: string }>;
 }
 
-export async function getCourseCreationOptions(): Promise<{
+export async function getActivePeriodOptions(): Promise<CoursePeriodOption[]> {
+  const loadedPeriods = await getPeriods();
+
+  return loadedPeriods
+    .filter((period) => !period.status || period.status === "ACTIVE")
+    .map((period) => ({
+      id: period.id,
+      name: period.name,
+      code: period.code,
+      status: period.status,
+    }));
+}
+
+// Faculty/career dropdown options are only needed once a course-creation
+// form is actually open — callers with their own "create course" flow
+// (e.g. the periods list) should defer this instead of loading it eagerly
+// alongside periods.
+export async function getFacultyAndCareerOptions(): Promise<{
   faculties: CourseFacultyOption[];
   careers: CourseCareerOption[];
-  periods: CoursePeriodOption[];
 }> {
-  const [loadedFaculties, loadedCareers, loadedPeriods] = await Promise.all([
+  const [loadedFaculties, loadedCareers] = await Promise.all([
     getFaculties(),
     getCareers(),
-    getPeriods(),
   ]);
 
   const faculties = loadedFaculties
@@ -582,20 +599,20 @@ export async function getCourseCreationOptions(): Promise<{
       facultyId: career.facultyId ?? career.faculty_id ?? "",
     }));
 
-  const periods = loadedPeriods
-    .filter((period) => !period.status || period.status === "ACTIVE")
-    .map((period) => ({
-      id: period.id,
-      name: period.name,
-      code: period.code,
-      status: period.status,
-    }));
+  return { faculties, careers };
+}
 
-  return {
-    faculties,
-    careers,
-    periods,
-  };
+export async function getCourseCreationOptions(): Promise<{
+  faculties: CourseFacultyOption[];
+  careers: CourseCareerOption[];
+  periods: CoursePeriodOption[];
+}> {
+  const [{ faculties, careers }, periods] = await Promise.all([
+    getFacultyAndCareerOptions(),
+    getActivePeriodOptions(),
+  ]);
+
+  return { faculties, careers, periods };
 }
 
 export async function enrollStudentsInCourse(
@@ -684,6 +701,34 @@ export async function createTeacherCourse(
   return toCourse(response.data, periodsById, payload.teacherName);
 }
 
+// Admin variant of createTeacherCourse: the backend resolves teacherId from
+// the JWT for TEACHER callers, but requires (and trusts) an explicit
+// teacherId in the body when the caller is ADMIN — validated server-side
+// against ITeacherRolePort in CreateSubjectUseCase.
+export async function createAdminCourse(
+  payload: CreateTeacherCoursePayload
+): Promise<Course> {
+  const response = await api.post<SubjectApiResponse>(
+    endpoints.academic.subjects,
+    {
+      name: payload.name,
+      code: payload.code,
+      description: payload.description,
+      credits: payload.credits,
+      careerId: payload.careerId,
+      maxCapacity: payload.maxCapacity,
+      teacherId: payload.teacherId,
+    }
+  );
+
+  const periods = await getPeriods();
+  const periodsById = new Map(periods.map((period) => [period.id, period]));
+
+  invalidateSubjectsCache();
+
+  return toCourse(response.data, periodsById, payload.teacherName);
+}
+
 export async function deleteTeacherCourse(courseId: string): Promise<void> {
   await api.delete(endpoints.academic.subject(courseId));
   invalidateSubjectsCache();
@@ -705,6 +750,14 @@ export async function updateTeacherCourse(
     name: response.data.name,
     description: response.data.description ?? "",
   };
+}
+
+export async function changeCourseStatus(
+  courseId: string,
+  isActive: boolean
+): Promise<void> {
+  await api.patch(endpoints.academic.subjectStatus(courseId), { isActive });
+  invalidateSubjectsCache();
 }
 
 export async function uploadTeacherCourseImage(courseId: string, file: File) {

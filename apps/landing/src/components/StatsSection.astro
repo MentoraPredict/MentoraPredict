@@ -11,13 +11,13 @@ interface Props {
 const { stats } = Astro.props;
 ---
 
-<section id="stats" class="scroll-mt-20 bg-primary-950 py-20">
+<section id="stats" class="scroll-mt-20 bg-blue-950 py-20">
   <div class="mx-auto max-w-container px-6">
     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
-        <div class="rounded-xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur-sm">
-          <p class="text-3xl font-extrabold text-white sm:text-4xl">{stat.value}</p>
-          <p class="mt-2 text-sm font-medium text-blue-200/80">{stat.label}</p>
+        <div class="rounded-2xl bg-white p-6 text-center shadow-md">
+          <p class="text-3xl font-semibold text-blue-700">{stat.value}</p>
+          <p class="mt-2 text-base text-gray-600">{stat.label}</p>
         </div>
       ))}
     </div>

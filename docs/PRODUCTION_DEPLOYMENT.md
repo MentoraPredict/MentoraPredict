@@ -183,7 +183,7 @@ sudo certbot certonly --standalone \
 | **Academic Service** | 3003 | No (solo Kong) | http://localhost:3003/api/docs |
 | **PostgreSQL** | 5432 | No (solo Docker network) | postgres:5432 |
 | **Redis** | 6379 | No (solo Docker network) | redis:6379 |
-| **MongoDB** | 27017 | No (solo Docker network) | mongo:27017 |
+| **MongoDB** | 27017 | Sí (externo, MongoDB Atlas) | `MONGO_URL` (mongodb+srv://...) |
 
 ---
 

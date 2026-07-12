@@ -39,18 +39,21 @@ export class BatchEnrollStudentsUseCase {
 
   async execute(
     subjectId: string,
-    teacherId: string,
+    callerId: string,
+    callerRole: string,
     studentIds: string[],
   ): Promise<BatchEnrollResult> {
     const subject = await this.subjectRepo.findById(subjectId);
     if (!subject) throw new NotFoundException('Subject not found');
 
-    const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
-      subjectId,
-      teacherId,
-      subject.academicPeriodId,
-    );
-    if (!assignment) throw new ForbiddenException('No tienes acceso a este curso');
+    if (callerRole === 'TEACHER') {
+      const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
+        subjectId,
+        callerId,
+        subject.academicPeriodId,
+      );
+      if (!assignment) throw new ForbiddenException('No tienes acceso a este curso');
+    }
 
     const period = await this.periodRepo.findById(subject.academicPeriodId);
     if (!period || !period.isActive) {
@@ -62,7 +65,10 @@ export class BatchEnrollStudentsUseCase {
       studentIds.map((id) => this.userProfilePort.getProfile(id)),
     );
 
-    const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
+    const teacherProfile =
+      callerRole === 'TEACHER'
+        ? await this.userProfilePort.getProfile(callerId).catch(() => null)
+        : null;
     const teacherName = teacherProfile
       ? `${teacherProfile.firstName} ${teacherProfile.lastName}`.trim()
       : null;

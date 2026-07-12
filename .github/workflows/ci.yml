@@ -40,6 +40,7 @@ jobs:
             grep -Fvx "PWMP-152 feat(infra): add monitoring stack, fix CD visibility, and optimize CI for dev (#122)" |
             grep -Ev '^Release v[0-9]+\.[0-9]+\.[0-9]+' |
             grep -Ev '^Release PR #[0-9]+' |
+            grep -Ev '^Promote development to QA — release v[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+\(#[0-9]+\)$' |
             grep -Ev '^Fix/.+ \(\#[0-9]+\)$' |
             grep -Ev '^[[:space:]]*fix\(cd\): encode multiline jwt secrets as base64 in deploy env \(\#75\)$' |
             grep -Ev '^[[:space:]]*pwmp-188 fronted creation landin page login page \(\#42\)$' |
@@ -50,6 +51,7 @@ jobs:
             grep -Fvx "Release v1.3.0 – Development to QA  (#141)" |
             grep -Fvx "feat(landing): implement JAMStack landing page with Astro (#152)" |
             grep -Fvx "Release QA a Producción – MentoraPredict (qa-v0.0.0)  (#98)" |
+            grep -Fvx 'fix(monitoring): resolve Grafana "origin not allowed" 403 errors (#199)' |
             while IFS= read -r commit_message; do
               printf '%s\n' "$commit_message" | npx commitlint
             done

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'node:crypto';
+import { correlationContext } from '@mentorapredict/shared-logger';
 import { IAnalyticsClientPort, LatestSubjectMetric } from '../../application/ports/output/i-analytics-client.port';
 import { InternalJwtService } from '../auth/internal-jwt.service';
 
@@ -29,6 +31,7 @@ export class AnalyticsHttpClient implements IAnalyticsClientPort {
         headers: {
           Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
           'Content-Type': 'application/json',
+          'x-correlation-id': correlationContext.getId() ?? randomUUID(),
         },
         body: JSON.stringify({ subjectId, periodId, studentIds }),
         signal: controller.signal,
@@ -56,6 +59,7 @@ export class AnalyticsHttpClient implements IAnalyticsClientPort {
         headers: {
           Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
           Accept: 'application/json',
+          'x-correlation-id': correlationContext.getId() ?? randomUUID(),
         },
         signal: controller.signal,
       });

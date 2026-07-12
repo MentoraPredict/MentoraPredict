@@ -1,11 +1,13 @@
 import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalyticsLayout";
 import CourseSidebar from "@/features/courses/components/CourseSidebar";
 import StudentCoursesManagement from "@/features/students/components/StudentCoursesManagement";
-import useStudentCourses from "@/features/students/hooks/useStudentCourses";
+import useStudentCourses from "@/hooks/queries/useStudentCourses";
 
 export default function StudentCoursesPage() {
   const { courses, isLoading, error, reload } = useStudentCourses();
   const activeCourseId = courses[0]?.id ?? "";
+
+  const reloadCourses = async () => (await reload()).data ?? [];
 
   return (
     <CourseAnalyticsLayout
@@ -22,7 +24,7 @@ export default function StudentCoursesPage() {
         courses={courses}
         isLoading={isLoading}
         error={error}
-        reload={reload}
+        reload={reloadCourses}
       />
     </CourseAnalyticsLayout>
   );

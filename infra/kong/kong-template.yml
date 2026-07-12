@@ -12,9 +12,13 @@ plugins:
         - http://localhost:3003
         - http://localhost:3004
         - http://localhost:5173
+        - http://127.0.0.1:5173
         - http://localhost:8081
         - http://127.0.0.1:8081
         - http://localhost:8000
+        - http://127.0.0.1:8000
+        - mentorapredict://app
+        - "null"
         - http://mentorapredictqa.programacionwebuce.net
         - https://mentorapredictqa.programacionwebuce.net
         - http://mentorapredictprod.programacionwebuce.net
@@ -83,9 +87,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
       - name: auth-internal-routes
         paths:
@@ -168,9 +172,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
 
   - name: academic-service
@@ -252,9 +256,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
       - name: notifications-internal-routes
         paths:
@@ -281,9 +285,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
       - name: analytics-socket-io
         paths:
@@ -328,9 +332,9 @@ services:
                 - exp
           - name: rate-limiting
             config:
-              minute: 100
+              minute: 300
               policy: local
-              limit_by: ip
+              limit_by: consumer
               fault_tolerant: true
 
   - name: grafana
@@ -369,6 +373,8 @@ services:
             config:
               origins:
                 - http://localhost
+                - mentorapredict://app
+                - "null"
                 - http://mentorapredictqa.programacionwebuce.net
                 - https://mentorapredictqa.programacionwebuce.net
                 - http://mentorapredictprod.programacionwebuce.net
@@ -400,6 +406,8 @@ services:
             config:
               origins:
                 - http://localhost
+                - mentorapredict://app
+                - "null"
                 - http://localhost:8081
                 - http://127.0.0.1:8081
                 - http://mentorapredictqa.programacionwebuce.net

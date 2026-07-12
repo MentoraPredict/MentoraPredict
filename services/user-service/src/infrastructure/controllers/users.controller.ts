@@ -79,18 +79,45 @@ export class UsersController {
     @Req() req: AuthenticatedRequest,
     @Query("role") role?: string,
     @Query("status") status?: string,
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ) {
     const callerRole = req.user?.role;
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    const pagination = {
+      page: Number.parseInt(page ?? "1", 10),
+      limit: Number.parseInt(limit ?? "20", 10),
+    };
 
     if (callerRole === "TEACHER") {
       if (role && role !== "STUDENT") {
         throw new ForbiddenException("Teachers can only list students");
       }
 
+      if (shouldPaginate) {
+        return this.listUsersUC.executePaginated(
+          {
+            role: "STUDENT",
+            status: status ?? "ACTIVE",
+          },
+          pagination,
+          search,
+        );
+      }
+
       return this.listUsersUC.execute({
         role: "STUDENT",
         status: status ?? "ACTIVE",
       });
+    }
+
+    if (shouldPaginate) {
+      return this.listUsersUC.executePaginated(
+        { role, status },
+        pagination,
+        search,
+      );
     }
 
     return this.listUsersUC.execute({ role, status });
@@ -127,6 +154,29 @@ export class UsersController {
     const userId = req.user?.sub;
     if (!userId) throw new UnauthorizedException("Invalid authorization token");
     return this.deleteAvatarUC.execute(userId);
+  }
+
+  @Post(":id/avatar")
+  @Roles("ADMIN")
+  @UseFilters(MulterExceptionFilter)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Upload/replace another user's avatar (ADMIN only, jpg/jpeg/png, max 2MB)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 413, description: "File too large" })
+  @ApiResponse({ status: 415, description: "Unsupported file type" })
+  uploadUserAvatar(@Param("id") id: string, @UploadedFile() file: MulterUploadedFile) {
+    return this.uploadAvatarUC.execute(id, file);
+  }
+
+  @Delete(":id/avatar")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remove another user's avatar (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  deleteUserAvatar(@Param("id") id: string) {
+    return this.deleteAvatarUC.execute(id);
   }
 
   @Get(":id")

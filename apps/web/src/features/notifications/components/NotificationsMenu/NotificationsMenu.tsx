@@ -21,6 +21,7 @@ export default function NotificationsMenu() {
     unreadCount,
     isLoading,
     error,
+    loadReadOnce,
     markAsRead,
     markAllAsRead,
   } = useNotifications();
@@ -32,6 +33,12 @@ export default function NotificationsMenu() {
     document.addEventListener("mousedown", closeOnOutsideClick);
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      void loadReadOnce();
+    }
+  }, [isOpen, loadReadOnce]);
 
   return (
     <div ref={containerRef} className="relative">

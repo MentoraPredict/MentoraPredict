@@ -31,9 +31,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug push event refs
+        run: |
+          echo "github.event.before: ${{ github.event.before }}"
+          echo "github.sha (after):  ${{ github.sha }}"
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # Pin the diff base explicitly instead of relying on the action's
+          # default push-event inference — twice now a QA merge-commit push
+          # (e.g. #192, #193) has caused every filter to evaluate true even
+          # though the actual file diff was tiny and scoped, redeploying
+          # every service on a web-only change. github.event.before is the
+          # branch's exact previous tip for a push event; being explicit
+          # here removes any ambiguity in how the action resolves it.
+          base: ${{ github.event.before }}
           filters: |
             auth-service:
               - 'services/auth-service/**'
@@ -54,6 +67,7 @@ jobs:
             desktop:
               - 'apps/desktop/**'
               - 'apps/web/**'
+              - '.github/workflows/cd-qa.yml'
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
@@ -115,8 +129,20 @@ jobs:
 
           matrix=$(jq -c . matrix.json)
           docker_matrix=$(jq -c '.include |= map(select(.type=="docker"))' matrix.json)
-          has_changes=$(jq -c '.include | length > 0' matrix.json)
           changed_services=$(jq -r '[.include[].service] | join(", ")' matrix.json)
+
+          # Monitoring isn't a buildable/deployable matrix entry (it's just a
+          # compose file restarted inside deploy-to-qa), so it never lands in
+          # matrix.json's include array. Without this, a monitoring-only
+          # change never sets has_changes, deploy-to-qa never runs, and the
+          # updated infra/monitoring/docker-compose.monitoring.yml never
+          # actually reaches the server.
+          matrix_has_changes=$(jq -c '.include | length > 0' matrix.json)
+          if [ "$matrix_has_changes" = "true" ] || [ "$MONITORING_CHANGED" = "true" ]; then
+            has_changes="true"
+          else
+            has_changes="false"
+          fi
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "docker_matrix=$docker_matrix" >> $GITHUB_OUTPUT
@@ -125,6 +151,7 @@ jobs:
 
       - name: Debug outputs
         run: |
+          echo "RAW FILTER OUTPUTS: ${{ toJson(steps.filter.outputs) }}"
           echo "HAS CHANGES: ${{ steps.generate-matrix.outputs.has_changes }}"
           echo "CHANGED SERVICES: ${{ steps.generate-matrix.outputs.changed_services }}"
           echo "MATRIX: ${{ steps.generate-matrix.outputs.matrix }}"
@@ -207,6 +234,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            CONTENTFUL_SPACE_ID=${{ secrets.CONTENTFUL_SPACE_ID }}
+            CONTENTFUL_ACCESS_TOKEN=${{ secrets.CONTENTFUL_ACCESS_TOKEN }}
 
   build-mobile-apk:
     name: Build Mobile APK (QA)
@@ -298,11 +328,49 @@ jobs:
           path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
+      - name: Publish APK to EC2 downloads folder
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./apps/mobile/package.json').version")
+          BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          UPDATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          mkdir -p /tmp/downloads-publish/mobile
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk \
+            /tmp/downloads-publish/mobile/MentoraPredict-qa.apk
+
+          # downloadUrl is relative — React and Astro are same-origin behind
+          # Kong, and /downloads is served straight off this app's own
+          # nginx (see the web service volume in docker-compose.qa.yml).
+          jq -n \
+            --arg environment "qa" \
+            --arg downloadUrl "/downloads/mobile/MentoraPredict-qa.apk" \
+            --arg buildUrl "$BUILD_URL" \
+            --arg version "$VERSION" \
+            --arg updatedAt "$UPDATED_AT" \
+            '{environment: $environment, downloadUrl: $downloadUrl, buildUrl: $buildUrl, version: $version, updatedAt: $updatedAt}' \
+            > /tmp/downloads-publish/mobile.json
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/mp_deploy_key
+          chmod 600 ~/.ssh/mp_deploy_key
+          SSH="ssh -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST"
+          SCP="scp -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no"
+
+          $SSH "sudo mkdir -p /opt/mentorapredict-downloads/mobile /opt/mentorapredict-downloads/desktop && sudo chown -R ubuntu:ubuntu /opt/mentorapredict-downloads"
+          $SCP /tmp/downloads-publish/mobile/MentoraPredict-qa.apk "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/mobile/MentoraPredict-qa.apk"
+          $SCP /tmp/downloads-publish/mobile.json "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/mobile.json"
+
   build-desktop-app:
     name: Build Desktop App (QA)
     runs-on: windows-latest
     needs: detect-changes
     timeout-minutes: 30
+    environment: QA enviroment
     if: >
       needs.detect-changes.outputs.desktop_changed == 'true' &&
       github.ref == 'refs/heads/QA'
@@ -329,8 +397,48 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mentorapredict-desktop-qa
-          path: apps/desktop/release/*.msi
+          path: apps/desktop/release/*.exe
           retention-days: 30
+
+      - name: Publish installer to EC2 downloads folder
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          # windows-latest's `shell: bash` is Git Bash (MSYS2), which
+          # auto-rewrites any argument starting with "/" into a Windows path
+          # (e.g. "/downloads/..." -> "C:/Program Files/Git/downloads/...").
+          # That corrupted the downloadUrl written into desktop.json. Disable
+          # the conversion for this step only.
+          MSYS_NO_PATHCONV: "1"
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./apps/desktop/package.json').version")
+          FILE=$(ls apps/desktop/release/*.exe | head -n1)
+          BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          UPDATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          mkdir -p /tmp/downloads-publish/desktop
+          cp "$FILE" /tmp/downloads-publish/desktop/MentoraPredict-Setup-qa.exe
+
+          jq -n \
+            --arg environment "qa" \
+            --arg downloadUrl "/downloads/desktop/MentoraPredict-Setup-qa.exe" \
+            --arg buildUrl "$BUILD_URL" \
+            --arg version "$VERSION" \
+            --arg updatedAt "$UPDATED_AT" \
+            '{environment: $environment, downloadUrl: $downloadUrl, buildUrl: $buildUrl, version: $version, updatedAt: $updatedAt}' \
+            > /tmp/downloads-publish/desktop.json
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/mp_deploy_key
+          chmod 600 ~/.ssh/mp_deploy_key
+          SSH="ssh -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST"
+          SCP="scp -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no"
+
+          $SSH "sudo mkdir -p /opt/mentorapredict-downloads/mobile /opt/mentorapredict-downloads/desktop && sudo chown -R ubuntu:ubuntu /opt/mentorapredict-downloads"
+          $SCP /tmp/downloads-publish/desktop/MentoraPredict-Setup-qa.exe "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/desktop/MentoraPredict-Setup-qa.exe"
+          $SCP /tmp/downloads-publish/desktop.json "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/desktop.json"
 
   deploy-to-qa:
     name: Deploy to EC2 QA
@@ -394,15 +502,23 @@ jobs:
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
-            MONGO_USER=${{ secrets.MONGO_USER }}
-            MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
-            MONGO_DB=${{ secrets.MONGO_DB }}
+            MONGO_URL=${{ secrets.MONGO_URL }}
             KONG_PROXY_PORT=${{ secrets.KONG_PROXY_PORT }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
             SWAGGER_SERVER_URL=${{ secrets.SWAGGER_SERVER_URL }}
+            MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
+            MICROSOFT_CLIENT_SECRET=${{ secrets.MICROSOFT_CLIENT_SECRET }}
+            MICROSOFT_TENANT_ID=${{ secrets.MICROSOFT_TENANT_ID }}
+            MICROSOFT_REDIRECT_URI=https://mentorapredictqa.programacionwebuce.net/api/v1/auth/microsoft/callback
+            FRONTEND_URL=https://mentorapredictqa.programacionwebuce.net
             EXPO_PUBLIC_API_ENV=qa
             EXPO_PUBLIC_API_BASE_URL=https://mentorapredictqa.programacionwebuce.net/api
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            SUPABASE_STORAGE_BUCKET=${{ secrets.SUPABASE_STORAGE_BUCKET }}
+            GRAFANA_ROOT_URL=https://mentorapredictqa.programacionwebuce.net/grafana
+            GRAFANA_TRUSTED_ORIGIN=mentorapredictqa.programacionwebuce.net
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
@@ -426,7 +542,7 @@ jobs:
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
             echo "[INFRA] Starting infrastructure"
-            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis
+            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres redis
 
             echo "[WAIT DB READY]"
             for i in {1..20}; do
@@ -449,10 +565,18 @@ jobs:
             df -h
 
             echo "[PULL IMAGES] Changed: $CHANGED_SERVICES"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull $SERVICES_LIST
+            if [ -n "$SERVICES_LIST" ]; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull $SERVICES_LIST
+            else
+              echo "[PULL IMAGES] No changed services — skipping (an empty list would pull every service)"
+            fi
 
             echo "[START SERVICES] Starting only changed: $CHANGED_SERVICES"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
+            if [ -n "$SERVICES_LIST" ]; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
+            else
+              echo "[START SERVICES] No changed services — skipping (an empty list would force-recreate every service)"
+            fi
 
             echo "[SEEDS] Running database seeds (idempotent safe mode)"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up \

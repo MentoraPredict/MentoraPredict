@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
+import { correlationContext } from '@mentorapredict/shared-logger';
 import { IAuthSyncClient } from '../../application/ports/output/i-auth-sync.client';
 import { InternalJwtService } from '../auth/internal-jwt.service';
 
@@ -40,7 +41,7 @@ export class AuthSyncClient implements IAuthSyncClient {
 
   private async patch(path: string, body: Record<string, unknown>): Promise<void> {
     const url = `${this.baseUrl}${path}`;
-    const corrId = randomUUID();
+    const corrId = correlationContext.getId() ?? randomUUID();
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

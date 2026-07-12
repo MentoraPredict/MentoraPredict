@@ -31,6 +31,22 @@ export class SubjectTeacherRepository implements ISubjectTeacherRepository {
     return assignment;
   }
 
+  async hasActiveCourseAssignment(teacherId: string): Promise<boolean> {
+    const rows = (await this.repo.manager.query(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM subject_teachers st
+         INNER JOIN subjects s ON s.id = st.subject_id
+         INNER JOIN academic_periods p ON p.id = st.period_id
+         WHERE st.teacher_id = $1
+           AND s.is_active = true
+           AND p.status = 'ACTIVE'
+       ) AS "exists"`,
+      [teacherId],
+    )) as { exists: boolean }[];
+    return rows[0]?.exists ?? false;
+  }
+
   async findByTeacherIdWithDetails(
     teacherId: string,
     filters: { periodId?: string; status?: string },

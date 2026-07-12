@@ -4,9 +4,16 @@ import type { CourseRiskItem } from "@/types/course";
 
 interface CourseRiskBarsProps {
   items: CourseRiskItem[];
+  higherIsBetter?: boolean;
 }
 
-function getRiskBarColor(value: number) {
+function getRiskBarColor(value: number, higherIsBetter: boolean) {
+  if (higherIsBetter) {
+    if (value >= 80) return "bg-green-700";
+    if (value >= 60) return "bg-amber-500";
+    return "bg-red-700";
+  }
+
   if (value >= 80) {
     return "bg-red-700";
   }
@@ -18,7 +25,10 @@ function getRiskBarColor(value: number) {
   return "bg-green-700";
 }
 
-export default function CourseRiskBars({ items }: CourseRiskBarsProps) {
+export default function CourseRiskBars({
+  items,
+  higherIsBetter = false,
+}: CourseRiskBarsProps) {
   return (
     <div className="space-y-5">
       {items.map((item) => (
@@ -38,7 +48,7 @@ export default function CourseRiskBars({ items }: CourseRiskBarsProps) {
               className={`
                                 h-full
                                 rounded-full
-                                ${getRiskBarColor(item.value)}
+                ${getRiskBarColor(item.value, higherIsBetter)}
                             `}
               style={{
                 width: `${item.value}%`,

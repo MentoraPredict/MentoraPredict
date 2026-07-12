@@ -7,6 +7,7 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
     PNPM_HOME="/root/.pnpm"
 RUN corepack enable
 COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/shared-logger/package.json ./packages/shared-logger/package.json
 COPY services/analytics-service/package.json ./services/analytics-service/package.json
 RUN pnpm install --frozen-lockfile
 
@@ -18,11 +19,15 @@ WORKDIR /app
 ENV CI=true \
     PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
+COPY packages/shared-logger ./packages/shared-logger
 COPY services/analytics-service ./services/analytics-service
-RUN pnpm --filter @mentorapredict/analytics-service build
+RUN pnpm --filter @mentorapredict/shared-logger build \
+    && pnpm --filter @mentorapredict/analytics-service build
 
 FROM prod-deps AS runner
 WORKDIR /app/services/analytics-service
+COPY --from=builder /app/packages/shared-logger/dist /app/packages/shared-logger/dist
+COPY --from=builder /app/packages/shared-logger/package.json /app/packages/shared-logger/package.json
 COPY --from=builder /app/services/analytics-service/dist ./dist
 COPY --from=builder /app/services/analytics-service/package.json ./
 USER node

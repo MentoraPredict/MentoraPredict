@@ -49,7 +49,10 @@ export class OAuthLoginUseCase {
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException("Account is disabled");
+      throw new UnauthorizedException({
+        code: "ACCOUNT_DISABLED",
+        message: "Tu cuenta ha sido desactivada. Comunícate con un administrador.",
+      });
     }
 
     const tokens = this.tokenGen.generatePair(user.id, user.email, user.role);

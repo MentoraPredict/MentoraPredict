@@ -1,6 +1,32 @@
-import type { Preview } from '@storybook/react-vite'
+import "@fontsource/inter/index.css";
+import "../src/styles/globals.css";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { Preview } from "@storybook/react-vite";
+import { MemoryRouter } from "react-router-dom";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
 
 const preview: Preview = {
+  decorators: [
+    (Story) => (
+      <MemoryRouter initialEntries={["/"]}>
+        <QueryClientProvider client={queryClient}>
+          <Story />
+        </QueryClientProvider>
+      </MemoryRouter>
+    ),
+  ],
   parameters: {
     controls: {
       matchers: {

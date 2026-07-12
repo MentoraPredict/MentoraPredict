@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 
 import Container from "@/components/atoms/Container";
+import Modal from "@/components/molecules/Modal";
 
 import CourseGrid from "@/features/courses/components/CourseGrid";
 import CreateCourseForm from "@/features/teachers/components/CreateCourseForm";
-import CreateCourseModal from "@/features/teachers/components/CreateCourseModal";
 import TeacherCoursesEmptyState from "@/features/teachers/components/TeacherCoursesEmptyState";
 import TeacherCoursesHeader from "@/features/teachers/components/TeacherCoursesHeader/TeacherCoursesHeader";
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
 import useOnlineStatus from "@/hooks/useOnlineStatus";
-import { getCourseEnrolledStudents } from "@/services/academic.service";
-import { getTeacherSubjectAnalytics } from "@/services/course-analytics.service";
+import { getSubjectMetricsSummary } from "@/services/course-analytics.service";
 
 import Text from "@/components/atoms/Text";
 
@@ -70,24 +69,25 @@ export default function TeacherCoursesManagement({
 
     async function loadCourseAnalytics() {
       const syncedCourses = courses.filter((course) => !course.isPendingSync);
+      // subjects/:id/metrics/summary already computes both the course
+      // average and the risk-count distribution server-side — this used to
+      // additionally fetch progress/alerts/predictions (unused here, that's
+      // for the course detail page) plus the full enrolled-students list
+      // just to recompute this same average client-side.
       const entries = await Promise.all(
         syncedCourses.map(async (course) => {
           try {
-            const [analytics, enrolledStudents] = await Promise.all([
-              getTeacherSubjectAnalytics(course.id),
-              getCourseEnrolledStudents(course.id),
-            ]);
-            const averages = enrolledStudents
-              .filter((student) => student.isEnrolled && student.average !== null)
-              .map((student) => student.average as number);
+            const summary = await getSubjectMetricsSummary(course.id);
 
             return [
               course.id,
               {
-                average: averages.length > 0
-                  ? averages.reduce((sum, value) => sum + value, 0) / averages.length
-                  : 0,
-                riskCounts: analytics.riskCounts,
+                average: summary.averageGrade ?? 0,
+                riskCounts: {
+                  low: summary.LOW,
+                  medium: summary.MEDIUM,
+                  high: summary.HIGH + summary.CRITICAL,
+                },
               },
             ] as const;
           } catch {
@@ -99,7 +99,7 @@ export default function TeacherCoursesManagement({
               },
             ] as const;
           }
-        })
+        }),
       );
 
       if (isMounted) {
@@ -214,8 +214,9 @@ export default function TeacherCoursesManagement({
         </Container>
       </section>
 
-      <CreateCourseModal
+      <Modal
         isOpen={isCreateModalOpen}
+        ariaLabel="Crear curso"
         onClose={() => {
           setIsCreateModalOpen(false);
           clearCreateError();
@@ -238,7 +239,7 @@ export default function TeacherCoursesManagement({
             setIsCreateModalOpen(false);
           }}
         />
-      </CreateCourseModal>
+      </Modal>
     </>
   );
 }

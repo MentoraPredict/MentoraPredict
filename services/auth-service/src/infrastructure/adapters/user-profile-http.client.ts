@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "crypto";
+import { correlationContext } from "@mentorapredict/shared-logger";
 import { IUserProfileClient } from "../../application/ports/output/i-user-profile.client";
 import { InternalJwtService } from "../auth/internal-jwt.service";
 
@@ -24,7 +25,7 @@ export class UserProfileHttpClient implements IUserProfileClient {
 
   async createProfile(userId: string): Promise<void> {
     const url = `${this.baseUrl}/api/v1/users/internal/profiles`;
-    const corrId = randomUUID();
+    const corrId = correlationContext.getId() ?? randomUUID();
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -77,7 +78,7 @@ export class UserProfileHttpClient implements IUserProfileClient {
 
   async updateProfile(userId: string, dto: any): Promise<void> {
     const url = `${this.baseUrl}/api/v1/users/internal/profiles/${userId}`;
-    const corrId = randomUUID();
+    const corrId = correlationContext.getId() ?? randomUUID();
 
     const res = await fetch(url, {
       method: "PUT",

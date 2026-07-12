@@ -1,60 +1,26 @@
 {
   "title": "Service Health",
   "uid": "service-health",
-  "version": 1,
+  "version": 2,
   "tags": ["mentorapredict", "services"],
   "timezone": "browser",
   "editable": true,
   "panels": [
     {
-      "title": "Service Status",
-      "type": "table",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "targets": [
-        {
-          "expr": "up",
-          "format": "table",
-          "instant": true
-        }
-      ],
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "renameByName": {
-              "instance": "Instance",
-              "job": "Job",
-              "up": "Status"
-            }
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 1 }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "title": "Services Up",
+      "title": "Total Containers",
       "type": "stat",
-      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 0 },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "count(up == 1)",
-          "legendFormat": "Up"
+          "expr": "count(container_last_seen{name!=\"\"})",
+          "legendFormat": "Total"
         }
       ],
       "options": {
         "reduceOptions": { "values": false, "calcs": ["mean"] },
         "colorMode": "background",
-        "graphMode": "none"
+        "graphMode": "none",
+        "justifyMode": "auto"
       },
       "fieldConfig": {
         "defaults": {
@@ -62,21 +28,21 @@
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "yellow", "value": 2 },
-              { "color": "green", "value": 4 }
+              { "color": "yellow", "value": 5 },
+              { "color": "green", "value": 10 }
             ]
           }
         }
       }
     },
     {
-      "title": "Services Down",
+      "title": "Containers with CPU > 50%",
       "type": "stat",
-      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 0 },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
       "targets": [
         {
-          "expr": "count(up == 0) or vector(0)",
-          "legendFormat": "Down"
+          "expr": "count(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]) * 100 > 50) or vector(0)",
+          "legendFormat": "High CPU"
         }
       ],
       "options": {
@@ -91,20 +57,106 @@
             "steps": [
               { "color": "green", "value": null },
               { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 2 }
+              { "color": "red", "value": 3 }
             ]
           }
         }
       }
     },
     {
-      "title": "Uptime Percentage",
+      "title": "Containers with Memory > 500MB",
       "type": "stat",
-      "gridPos": { "h": 6, "w": 4, "x": 20, "y": 0 },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
       "targets": [
         {
-          "expr": "avg(up) * 100",
-          "legendFormat": "Uptime"
+          "expr": "count(container_memory_usage_bytes{name!=\"\"} > 500000000) or vector(0)",
+          "legendFormat": "High Memory"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["mean"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Host CPU Usage",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["mean"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Host Memory Usage",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "Memory"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["mean"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Host Disk Usage",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 6 },
+      "targets": [
+        {
+          "expr": "(node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"}) / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} * 100",
+          "legendFormat": "Disk"
         }
       ],
       "options": {
@@ -115,53 +167,78 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "min": 0,
-          "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 80 },
-              { "color": "green", "value": 99 }
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
             ]
           }
         }
       }
     },
     {
-      "title": "Scrape Duration",
+      "title": "Container CPU Usage Over Time",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "targets": [
         {
-          "expr": "scrape_duration_seconds",
-          "legendFormat": "{{ job }}"
+          "expr": "rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]) * 100",
+          "legendFormat": "{{ name }}"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s"
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         }
       }
     },
     {
-      "title": "Scrape Samples",
+      "title": "Container Memory Usage Over Time",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
       "targets": [
         {
-          "expr": "scrape_samples_scraped",
-          "legendFormat": "{{ job }}"
+          "expr": "container_memory_usage_bytes{name!=\"\"}",
+          "legendFormat": "{{ name }}"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      }
     },
     {
-      "title": "Container Status by Service",
-      "type": "table",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "title": "Container Network I/O",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
       "targets": [
         {
-          "expr": "container_last_seen{name=~\"mp_.*\"}",
+          "expr": "rate(container_network_receive_bytes_total{name!=\"\"}[5m])",
+          "legendFormat": "RX {{ name }}"
+        },
+        {
+          "expr": "rate(container_network_transmit_bytes_total{name!=\"\"}[5m])",
+          "legendFormat": "TX {{ name }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps"
+        }
+      }
+    },
+    {
+      "title": "Container List",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "targets": [
+        {
+          "expr": "container_last_seen{name!=\"\"}",
           "format": "table",
           "instant": true
         }
@@ -170,8 +247,10 @@
         {
           "id": "organize",
           "options": {
+            "excludeByName": {},
+            "indexByName": {},
             "renameByName": {
-              "name": "Container Name",
+              "name": "Container",
               "image": "Image",
               "container_last_seen": "Last Seen"
             }
