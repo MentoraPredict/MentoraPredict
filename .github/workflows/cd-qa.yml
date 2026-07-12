@@ -116,8 +116,20 @@ jobs:
 
           matrix=$(jq -c . matrix.json)
           docker_matrix=$(jq -c '.include |= map(select(.type=="docker"))' matrix.json)
-          has_changes=$(jq -c '.include | length > 0' matrix.json)
           changed_services=$(jq -r '[.include[].service] | join(", ")' matrix.json)
+
+          # Monitoring isn't a buildable/deployable matrix entry (it's just a
+          # compose file restarted inside deploy-to-qa), so it never lands in
+          # matrix.json's include array. Without this, a monitoring-only
+          # change never sets has_changes, deploy-to-qa never runs, and the
+          # updated infra/monitoring/docker-compose.monitoring.yml never
+          # actually reaches the server.
+          matrix_has_changes=$(jq -c '.include | length > 0' matrix.json)
+          if [ "$matrix_has_changes" = "true" ] || [ "$MONITORING_CHANGED" = "true" ]; then
+            has_changes="true"
+          else
+            has_changes="false"
+          fi
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "docker_matrix=$docker_matrix" >> $GITHUB_OUTPUT
@@ -537,10 +549,18 @@ jobs:
             df -h
 
             echo "[PULL IMAGES] Changed: $CHANGED_SERVICES"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull $SERVICES_LIST
+            if [ -n "$SERVICES_LIST" ]; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull $SERVICES_LIST
+            else
+              echo "[PULL IMAGES] No changed services — skipping (an empty list would pull every service)"
+            fi
 
             echo "[START SERVICES] Starting only changed: $CHANGED_SERVICES"
-            docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
+            if [ -n "$SERVICES_LIST" ]; then
+              docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up -d --force-recreate $SERVICES_LIST
+            else
+              echo "[START SERVICES] No changed services — skipping (an empty list would force-recreate every service)"
+            fi
 
             echo "[SEEDS] Running database seeds (idempotent safe mode)"
             docker compose --env-file .env -f infra/docker/docker-compose.qa.yml up \
