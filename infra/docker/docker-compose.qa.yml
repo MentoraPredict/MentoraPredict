@@ -37,6 +37,13 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      # nginx is the only thing that ever talks to Kong directly; without
+      # this, Kong ignores the X-Forwarded-For/X-Real-IP it sends and uses
+      # nginx's own container IP as the "client ip" for every request —
+      # collapsing rate-limiting's limit_by: ip into one bucket shared by
+      # every real user of the app.
+      KONG_TRUSTED_IPS: "0.0.0.0/0,::/0"
+      KONG_REAL_IP_HEADER: "X-Real-IP"
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
     volumes:
