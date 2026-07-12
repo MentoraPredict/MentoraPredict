@@ -132,3 +132,5 @@ For a manual web check, open a student course with at least three weekly metric 
 ## Scope
 
 WASM currently does not handle authentication, persistence, HTTP requests, weighted averages, compliance, risk classification, or AI recommendations. The regression module only supplies trend coefficients, while the browser module only advances animation physics.
+
+See also [Web Architecture](./WEB_ARCHITECTURE.md) and [Web Technologies](./WEB_TECHNOLOGIES.md).

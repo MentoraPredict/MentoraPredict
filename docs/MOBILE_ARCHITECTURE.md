@@ -25,4 +25,10 @@ After login, the app loads `/v1/users/me`, selects the workspace from the user r
 
 Foreground notifications use an Expo notification handler to show a banner and sound. Background delivery is handled by the operating system and Expo Push Service. Push registration requires a physical device, permission, and the EAS project ID.
 
+Push delivery and the in-app notification list are separate. A push banner can arrive automatically, while the list from `/v1/notifications/me` is loaded with dashboard data and updated when the workspace is refreshed. The app does not currently maintain a Socket.IO connection.
+
 The API target is selected with `EXPO_PUBLIC_API_ENV` (`local`, `qa`, or `prod`) and can be overridden with `EXPO_PUBLIC_API_BASE_URL`.
+
+Session state is held in the root screen and is not persisted across an application restart. Dashboard requests use local component state and `Promise.allSettled` where partial data is acceptable; there is no mobile query cache.
+
+See also [Mobile Project Structure](./MOBILE_STRUCTURE.md) and [Mobile Technologies](./MOBILE_TECHNOLOGIES.md).

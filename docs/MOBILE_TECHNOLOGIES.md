@@ -13,3 +13,7 @@
 | Metro | Bundles React Native source and assets |
 
 The application uses the native `fetch` API for backend requests and React state for its small session flow. It does not currently require Axios, Zustand, or TanStack Query.
+
+Versions in this document reflect `apps/mobile/package.json`; upgrade guidance must be checked against the matching Expo SDK documentation before changing native code.
+
+See [Mobile Architecture](./MOBILE_ARCHITECTURE.md) and [Mobile Project Structure](./MOBILE_STRUCTURE.md).

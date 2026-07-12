@@ -11,3 +11,5 @@
 | pnpm workspaces | Coordinates the desktop and shared web packages. |
 
 The desktop application has no separate UI framework. It embeds the production build of `apps/web` and connects to backend services through Kong using the environment-specific API URL compiled by Vite.
+
+See [Desktop Architecture](./DESKTOP_ARCHITECTURE.md) and [Desktop Project Structure](./DESKTOP_STRUCTURE.md).

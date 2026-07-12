@@ -33,7 +33,7 @@ Contentful + local fallback content
         Nginx -> Kong -> user
 ```
 
-There is no application server or CMS request when a visitor opens the page. Contentful credentials remain in the build environment and are not shipped to the browser.
+There is no application server or Contentful request when a visitor opens the page. Contentful credentials remain in the build environment and are not shipped to the browser. A small client script separately requests optional download manifests; it does not contact the CMS.
 
 ## Architecture
 
@@ -83,7 +83,9 @@ The current queries expect these Contentful content types:
 | `feature` | Title, description, icon, and order |
 | `downloadOption` | Platform, label, URL, availability, and order |
 
-The hero, statistics, and features are currently loaded by `index.astro`. Download cards use local configuration; `getDownloadOptions()` exists but is not connected to the page.
+The hero, statistics, and features are currently loaded by `index.astro`. `getDownloadOptions()` and `src/config/downloads.ts` exist but are not connected to the page.
+
+`DownloadSection.astro` renders local placeholders and then requests `/downloads/desktop.json` and `/downloads/mobile.json` in the browser. When a manifest exists, it can publish a download URL, build URL, environment, and update time without rebuilding the Astro HTML. Failed or missing manifest requests preserve the unavailable state.
 
 Because content is fetched at build time, publishing in Contentful does not update the deployed page automatically. A new landing image must be built and deployed unless a CMS webhook is later connected to the delivery pipeline.
 
@@ -149,7 +151,9 @@ They do not share components or content automatically. The Astro site is the ded
 ## Current limitations
 
 - Content updates require a rebuild and deployment.
-- Download links are local placeholders and currently unavailable.
+- Download links remain placeholders until deployment provides valid manifest JSON files.
 - The queried Contentful download options are not rendered.
 - There is no automated CMS preview or webhook deployment flow in the repository.
 - Marketing content has local fallbacks, so CMS failures can remain invisible without build monitoring.
+
+See also [Web Architecture](./WEB_ARCHITECTURE.md), [Desktop Project Structure](./DESKTOP_STRUCTURE.md), and [Mobile Project Structure](./MOBILE_STRUCTURE.md).

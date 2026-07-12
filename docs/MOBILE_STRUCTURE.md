@@ -47,3 +47,7 @@ pnpm --filter @mentorapredict/mobile run build:android:apk:prod
 ```
 
 The `apk` and `apk-prod` profiles in `eas.json` create internal installable APKs connected to the QA and production gateways respectively.
+
+The `development` EAS profile also creates an internal APK with a development client and the local API environment. Push notifications require a physical device; simulators and emulators return no Expo push token.
+
+See [Mobile Architecture](./MOBILE_ARCHITECTURE.md) for session, dashboard, and notification behavior.

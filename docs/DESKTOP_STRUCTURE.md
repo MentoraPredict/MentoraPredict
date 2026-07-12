@@ -36,3 +36,7 @@ pnpm --filter @mentorapredict/desktop package:prod
 ```
 
 Packaging first builds the selected web mode, compiles Electron, and then creates `apps/desktop/release/MentoraPredict_Setup_<version>_<arch>.exe`.
+
+The installer is unsigned and configured per user with a selectable installation directory, desktop and Start Menu shortcuts, and preserved application data on uninstall.
+
+See [Desktop Architecture](./DESKTOP_ARCHITECTURE.md) for runtime behavior and [Desktop User Guide](./DESKTOP_USER_GUIDE.md) for installation instructions.

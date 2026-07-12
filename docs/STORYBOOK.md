@@ -55,6 +55,8 @@ pnpm --filter @mentorapredict/web exec vitest --project storybook
 
 The browser test project is configured in `apps/web/vite.config.ts` and requires Playwright's Chromium browser to be installed.
 
+Both the static build and browser project compile imports reachable from stories. Unresolved merge markers or syntax errors elsewhere in an imported frontend dependency can therefore stop Storybook even when the story file itself is valid.
+
 ## Story location and naming
 
 Place a story beside its component:
@@ -114,3 +116,5 @@ Before accepting a new or changed component:
 3. Review the Accessibility panel.
 4. Confirm callbacks appear in the Actions panel or test spy output.
 5. Build Storybook and run the browser project before merging significant design-system changes.
+
+See also [Web Component Design](./WEB_COMPONENT_DESIGN.md) and [Web Technologies](./WEB_TECHNOLOGIES.md).

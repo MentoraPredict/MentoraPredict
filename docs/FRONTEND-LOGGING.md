@@ -1,148 +1,87 @@
-# Logging en el frontend
+# Web Logging
 
-## Objetivo
+MentoraPredict Web uses structured browser-console logging to diagnose client errors and correlate HTTP requests with Kong and backend services.
 
-El frontend de MentoraPredict cuenta con un sistema centralizado de logging para observar el comportamiento de la aplicación, diagnosticar errores del navegador y relacionar solicitudes del cliente con Kong y los microservicios.
-
-La implementación está ubicada en `apps/web`, construido con React, Vite, TypeScript y Axios.
-
-Los logs permiten:
-
-- Conocer cuándo comienza y termina una solicitud HTTP.
-- Identificar el método, la ruta y el código de estado de una solicitud.
-- Capturar errores de Axios, del navegador y de promesas no controladas.
-- Relacionar una operación del frontend con el backend mediante `x-correlation-id`.
-- Investigar errores sin exponer tokens ni cuerpos completos de las solicitudes.
-
-## Arquitectura
-
-### Logger centralizado
-
-El archivo `apps/web/src/utils/logger.ts` es el único punto encargado de escribir logs.
-
-Expone cuatro niveles:
-
-| Nivel   | Uso                                               |
-| ------- | ------------------------------------------------- |
-| `debug` | Detalles técnicos útiles durante el desarrollo.   |
-| `info`  | Eventos normales e importantes de la aplicación.  |
-| `warn`  | Situaciones inesperadas que no impiden continuar. |
-| `error` | Fallos que deben investigarse.                    |
-
-Ejemplo de uso:
-
-```ts
-import { logger } from "@/utils/logger";
-
-logger.info("Users loaded", { userCount: 20 });
-
-try {
-  await saveUser();
-} catch (error) {
-  logger.error("User update failed", error, { userId });
-}
-```
-
-Cada entrada tiene una estructura común:
-
-```ts
-{
-  timestamp: "2026-07-11T20:00:00.000Z",
-  level: "error",
-  message: "API request failed",
-  method: "GET",
-  url: "/v1/academic/enrollments",
-  status: 429,
-  correlationId: "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-Los logs `debug` solo se escriben cuando Vite está en modo de desarrollo. Los niveles `info`, `warn` y `error` también están disponibles en una compilación de producción.
-
-Cuando el valor recibido es un objeto `Error`, el logger conserva su nombre y mensaje. El stack trace se incluye únicamente en desarrollo.
-
-### Captura de errores globales
-
-El archivo `apps/web/src/utils/register-global-error-handlers.ts` registra dos manejadores:
-
-- `window.error`: errores del navegador o excepciones no controladas.
-- `window.unhandledrejection`: promesas rechazadas sin un `catch` apropiado.
-
-`apps/web/src/main.tsx` inicializa estos manejadores antes de renderizar React:
-
-```ts
-registerGlobalErrorHandlers();
-```
-
-Esta organización es compatible con Atomic Design. Atomic Design clasifica componentes visuales; el logger y los manejadores globales son infraestructura transversal. Por eso la lógica se mantiene fuera de átomos, moléculas, organismos, templates y páginas.
-
-### Integración con Axios
-
-Los interceptores de `apps/web/src/services/api.ts` registran automáticamente las solicitudes realizadas con la instancia compartida de Axios.
-
-Antes de enviar una solicitud:
-
-1. Se recupera el access token.
-2. Se agrega el header `Authorization`, cuando existe una sesión.
-3. Se genera un `x-correlation-id` con `crypto.randomUUID()`.
-4. Se escribe un log `API request`.
-
-El logger no guarda el token ni el conjunto completo de headers.
-
-Cuando llega una respuesta correcta, se escribe `API response` con:
-
-- Método HTTP.
-- URL.
-- Estado HTTP.
-- Correlation ID devuelto por el servidor o enviado por el cliente.
-
-Cuando la solicitud falla, se escribe `API request failed` con los mismos datos y el error serializado.
-
-Si un access token expiró, Axios intenta renovarlo y repite la solicitud. El mismo correlation ID se conserva durante el reintento para representar una sola operación lógica.
-
-## Correlation ID
-
-`x-correlation-id` es un identificador único que permite seguir una operación a través de:
+## Implementation
 
 ```text
-Navegador -> Axios -> Kong -> Microservicio
+apps/web/src/utils/
+├── logger.ts
+├── logger.spec.ts
+└── register-global-error-handlers.ts
 ```
 
-Para comprobarlo:
-
-1. Abrir DevTools con `F12`.
-2. Entrar en `Console` y localizar un objeto `API request`.
-3. Copiar su propiedad `correlationId`.
-4. Abrir `Network` y seleccionar la solicitud correspondiente.
-5. Revisar `Request Headers` y `Response Headers`.
-6. Comprobar el valor de `x-correlation-id`.
-
-El mismo valor puede buscarse posteriormente en los logs de infraestructura y backend.
-
-## Seguridad y privacidad
-
-Nunca se deben registrar:
-
-- Contraseñas.
-- Access tokens o refresh tokens.
-- El header `Authorization`.
-- Cuerpos completos de formularios.
-- Notas académicas o información emocional.
-- Correos u otros datos personales si no son indispensables.
-
-Ejemplo incorrecto:
+`logger.ts` is the only logging abstraction. It exposes `debug`, `info`, `warn`, and `error` and writes structured objects through the matching console method.
 
 ```ts
-logger.info("Login", { email, password, accessToken });
+logger.info("Users loaded", { userCount: 20 });
+logger.error("User update failed", error, { userId });
 ```
 
-Ejemplo correcto:
+Every entry includes an ISO timestamp, level, and message. `Error` values are reduced to their name and message; stack traces are included only during development. `debug` output is disabled in production builds.
+
+## Global errors
+
+`main.tsx` calls `registerGlobalErrorHandlers()` before rendering React. It observes:
+
+- `window.error` for uncaught browser errors;
+- `window.unhandledrejection` for promises rejected without a handler.
+
+This covers runtime failures outside React error handling. The project does not currently use an Error Boundary or a remote observability provider.
+
+## HTTP logging and correlation IDs
+
+The shared Axios client in `services/api.ts` logs requests, successful responses, and failures. Its request interceptor:
+
+1. attaches the access token when available;
+2. preserves an existing `x-correlation-id` or generates one;
+3. logs method, URL, and correlation ID.
+
+Response logs add the HTTP status. Error logs prefer the correlation ID returned by the server and fall back to the request value. Tokens, request bodies, and complete headers are not logged.
+
+```text
+Browser logger -> x-correlation-id -> Kong -> microservice logs
+```
+
+The ID makes one operation searchable across browser Network tools and backend logs. A retried request preserves its header because the original Axios configuration is reused.
+
+## Token refresh behavior
+
+A `401` can start one shared refresh operation. Concurrent failed requests wait for that operation and retry with the new access token. Refresh requests themselves are not recursively refreshed. If renewal fails, the session is cleared.
+
+This behavior is authentication infrastructure; logs must never include either token.
+
+## Rate limiting
+
+Browser messages such as `429 (Too Many Requests)` come from DevTools. The structured `API request failed` object is the corresponding MentoraPredict log.
+
+The admin user table enriches student rows with academic context. This creates additional requests per displayed student. TanStack Query does not retry HTTP responses, including `429`, so it does not amplify rate-limit failures. A backend batch context endpoint would be the long-term way to remove the per-user request pattern.
+
+## Security rules
+
+Never log:
+
+- passwords or reset tokens;
+- access or refresh tokens;
+- `Authorization` headers;
+- complete form or API payloads;
+- grades, wellbeing data, email addresses, or other personal data unless strictly required.
+
+Prefer identifiers and aggregate counts:
 
 ```ts
-logger.info("Login completed", { role: user.role });
+logger.info("Course analytics loaded", { courseId, alertCount });
 ```
 
-## Error 429 en la administración
+Do not log every render or click. Log events that explain what failed, where it failed, and how to trace it.
+
+## Manual verification
+
+1. Run `pnpm --filter @mentorapredict/web dev` in Git Bash.
+2. Open browser DevTools and enable Verbose output for `console.debug`.
+3. Perform an authenticated request.
+4. Match `API request` and `API response` by `correlationId`.
+5. Confirm the same `x-correlation-id` in the Network request headers.
 
 Un mensaje rojo similar al siguiente es generado por DevTools, no directamente por el logger:
 
@@ -208,80 +147,29 @@ Chrome también mostrará su propio mensaje rojo de red. Es normal ver ambos men
 En la consola del navegador:
 
 ```js
-window.dispatchEvent(
-  new ErrorEvent("error", {
-    error: new Error("Prueba controlada del logger"),
-  }),
-);
+window.dispatchEvent(new ErrorEvent("error", {
+  error: new Error("Controlled logging test"),
+}));
+
+Promise.reject(new Error("Controlled rejection test"));
 ```
 
-Debe aparecer un log con:
+Expected messages are `Unhandled browser error` and `Unhandled promise rejection`.
 
-```text
-message: "Unhandled browser error"
+## Automated verification
+
+```bash
+pnpm --filter @mentorapredict/web exec vitest run --project unit src/utils/logger.spec.ts
+pnpm --filter @mentorapredict/web build
 ```
 
-Para probar una promesa no controlada:
+The first command validates serialization and context handling. The second validates integration with the production frontend build.
 
-```js
-Promise.reject(new Error("Prueba de promesa rechazada"));
-```
+## Current limits
 
-Debe aparecer:
+- Logs remain on the user's device.
+- There is no Sentry, OpenTelemetry exporter, retention policy, or sampling policy.
+- Request duration is not recorded.
+- React render failures do not have a dedicated Error Boundary.
 
-```text
-message: "Unhandled promise rejection"
-```
-
-## Pruebas automatizadas
-
-`apps/web/src/utils/logger.spec.ts` verifica que:
-
-- Un log `info` tenga una estructura consistente.
-- Un error conserve su nombre y mensaje.
-- El contexto adicional se incorpore en la entrada.
-
-Ejecutar las pruebas unitarias:
-
-```powershell
-pnpm.cmd --filter @mentorapredict/web exec vitest run --project unit
-```
-
-La configuración del proyecto unitario se encuentra en `apps/web/vite.config.ts` y no reemplaza las pruebas de Storybook.
-
-Para verificar TypeScript y la compilación de producción:
-
-```powershell
-pnpm.cmd --filter @mentorapredict/web build
-```
-
-## Uso recomendado en código nuevo
-
-Registrar eventos que ayuden a responder preguntas concretas: qué operación falló, dónde falló y con qué identificador puede rastrearse.
-
-```ts
-logger.debug("Loading course analytics", { courseId });
-
-try {
-  const analytics = await loadCourseAnalytics(courseId);
-  logger.info("Course analytics loaded", { courseId });
-  return analytics;
-} catch (error) {
-  logger.error("Course analytics failed", error, { courseId });
-  throw error;
-}
-```
-
-No es necesario registrar cada clic, cada render ni objetos completos. Un exceso de logs dificulta encontrar los eventos importantes y puede exponer información innecesaria.
-
-## Alcance actual y siguientes pasos
-
-Actualmente los logs se escriben en la consola del navegador. Esto resulta útil para desarrollo y diagnóstico local, pero no envía automáticamente errores ocurridos en los dispositivos de los usuarios.
-
-Posibles mejoras futuras:
-
-- Integrar una plataforma de observabilidad como Sentry u OpenTelemetry.
-- Incorporar un `ErrorBoundary` para errores durante el renderizado de React.
-- Agregar medición de duración de solicitudes.
-- Definir políticas de muestreo y retención para producción.
-- Crear un endpoint batch para el contexto académico de estudiantes.
+See also [Web Architecture](./WEB_ARCHITECTURE.md) and [Web Endpoint Management](./WEB_ENDPOINTS.md).
