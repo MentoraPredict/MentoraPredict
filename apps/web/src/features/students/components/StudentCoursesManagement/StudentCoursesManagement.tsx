@@ -31,21 +31,22 @@ import {
 } from "@/routes/paths";
 import {
   getLatestAiPrediction,
-  getStudentSubjectAnalytics,
+  getStudentSubjectPrediction,
+  getStudentSubjectsOverview,
   requestAiPrediction,
   type AiPrediction,
-  type StudentSubjectAnalytics,
+  type StudentSubjectOverview,
 } from "@/services/course-analytics.service";
 import { getActiveAcademicPeriod } from "@/services/student-performance.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { Course, CourseAlert, CourseRecommendation } from "@/types/course";
 import { mapWithConcurrency } from "@/utils/mapWithConcurrency";
 
-// Each course's analytics fire 4 parallel requests (metrics/risk/alerts/
-// prediction) — capping how many courses load at once bounds the burst
-// against the backend instead of firing 4 * course-count requests at the
-// same instant.
-const SUBJECT_ANALYTICS_CONCURRENCY = 3;
+// Predictions still need one request per subject (they live in
+// prediction-service) — metrics/risk/alerts/progress no longer do, they all
+// come from one call to getStudentSubjectsOverview(). Capping how many
+// prediction calls run at once still bounds that remaining burst.
+const PREDICTION_CONCURRENCY = 3;
 
 const RECOMMENDATIONS_PAGE_SIZE = 3;
 
@@ -72,9 +73,10 @@ const metricToneStyles = {
 
 type MetricTone = keyof typeof metricToneStyles;
 
-interface CourseInsight {
-  course: Course;
-  analytics: StudentSubjectAnalytics;
+interface SubjectPrediction {
+  subjectId: string;
+  recommendation: string | null;
+  predictionId: string | null;
 }
 
 interface DashboardAlert extends CourseAlert {
@@ -163,7 +165,8 @@ export default function StudentCoursesManagement({
 }: StudentCoursesManagementProps) {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const [insights, setInsights] = useState<CourseInsight[]>([]);
+  const [overview, setOverview] = useState<StudentSubjectOverview[]>([]);
+  const [predictions, setPredictions] = useState<SubjectPrediction[]>([]);
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [showAlerts, setShowAlerts] = useState(false);
@@ -175,7 +178,8 @@ export default function StudentCoursesManagement({
 
   const loadInsights = useCallback(async (studentCourses: Course[]) => {
     if (studentCourses.length === 0) {
-      setInsights([]);
+      setOverview([]);
+      setPredictions([]);
       setInsightsError(null);
       return;
     }
@@ -184,15 +188,23 @@ export default function StudentCoursesManagement({
     setInsightsError(null);
 
     try {
-      const loadedInsights = await mapWithConcurrency(
-        studentCourses,
-        SUBJECT_ANALYTICS_CONCURRENCY,
-        async (course) => ({
-          course,
-          analytics: await getStudentSubjectAnalytics(course.id),
-        }),
-      );
-      setInsights(loadedInsights);
+      const [loadedOverview, loadedPredictions] = await Promise.all([
+        getStudentSubjectsOverview(),
+        mapWithConcurrency(
+          studentCourses,
+          PREDICTION_CONCURRENCY,
+          async (course): Promise<SubjectPrediction> => {
+            const prediction = await getStudentSubjectPrediction(course.id);
+            return {
+              subjectId: course.id,
+              recommendation: prediction?.recommendation ?? null,
+              predictionId: prediction?.id ?? null,
+            };
+          },
+        ),
+      ]);
+      setOverview(loadedOverview);
+      setPredictions(loadedPredictions);
     } catch {
       setInsightsError(
         "No se pudo actualizar la analitica predictiva de tus materias."
@@ -297,30 +309,49 @@ export default function StudentCoursesManagement({
     };
   }, [courses]);
 
+  const coursesById = useMemo(
+    () => new Map(courses.map((course) => [course.id, course])),
+    [courses]
+  );
+
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
-    const backendAlerts = insights.flatMap(({ course, analytics }) =>
-      analytics.alerts.map((alert) => ({
-        ...alert,
+    const backendAlerts = overview.flatMap((subject): DashboardAlert[] => {
+      const course = coursesById.get(subject.subjectId);
+      if (!course) return [];
+
+      return subject.alerts.map((alert) => ({
+        id: alert.id,
+        message: alert.message,
+        severity: alert.severity ?? "LOW",
         courseId: course.id,
         courseName: course.name,
-      }))
-    );
+      }));
+    });
 
     return backendAlerts.length > 0
       ? backendAlerts
       : getRiskDerivedAlerts(courses);
-  }, [courses, insights]);
+  }, [courses, coursesById, overview]);
 
   const dashboardRecommendations = useMemo<DashboardRecommendation[]>(
     () =>
-      insights.flatMap(({ course, analytics }) =>
-        analytics.recommendations.map((recommendation) => ({
-          ...recommendation,
-          courseId: course.id,
-          courseName: course.name,
-        }))
-      ),
-    [insights]
+      predictions.flatMap((prediction) => {
+        const course = coursesById.get(prediction.subjectId);
+        if (!course || !prediction.recommendation || !prediction.predictionId) {
+          return [];
+        }
+
+        return [
+          {
+            id: prediction.predictionId,
+            title: "Recomendacion",
+            description: prediction.recommendation,
+            courseId: course.id,
+            courseName: course.name,
+          },
+        ];
+      }),
+    [coursesById, predictions]
   );
 
   const recommendationsPageCount = Math.max(
@@ -337,22 +368,26 @@ export default function StudentCoursesManagement({
   );
 
   const weeklyProgress = useMemo(() => {
-    const latestPoints = insights
-      .map(({ course, analytics }) => {
-        const latest = analytics.progress[analytics.progress.length - 1];
-        const previous = analytics.progress[analytics.progress.length - 2];
+    const latestPoints = overview
+      .map((subject) => {
+        const course = coursesById.get(subject.subjectId);
+        // recentProgress is newest-first (index 0 = latest week).
+        const [latest, previous] = subject.recentProgress;
 
         return {
           course,
-          latest: latest?.actual ?? null,
-          previous: previous?.actual ?? null,
-          weeks: analytics.progress.length,
+          latest: latest?.averageGrade ?? null,
+          previous: previous?.averageGrade ?? null,
+          weeks: subject.recentProgress.length,
         };
       })
-      .filter((item) => item.latest !== null);
+      .filter(
+        (item): item is typeof item & { course: Course; latest: number } =>
+          !!item.course && item.latest !== null
+      );
 
     return latestPoints.slice(0, 4);
-  }, [insights]);
+  }, [coursesById, overview]);
 
   const academicStatus = getAcademicStatus(
     dashboard.coursesAtRisk,

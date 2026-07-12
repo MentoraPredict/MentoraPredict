@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AxiosError } from "axios";
 
 import {
   changeCourseStatus,
   createAdminCourse,
   deleteTeacherCourse,
+  getActivePeriodOptions,
   getAdminCourses,
-  getCourseCreationOptions,
+  getFacultyAndCareerOptions,
   updateTeacherCourse,
   type CourseCareerOption,
   type CourseFacultyOption,
@@ -119,15 +120,20 @@ export default function useAdminCourses() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
   const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
+  const hasLoadedFacultyAndCareerOptions = useRef(false);
 
   const loadCourses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     setCreationDataError(null);
 
-    const [coursesResult, creationOptionsResult, teachersResult] = await Promise.allSettled([
+    // Faculty/career options are only needed once the create-course modal
+    // is actually open (loadFacultyAndCareerOptionsOnce) — periods are
+    // fetched here because the page's own stats/filters need them
+    // regardless of that modal.
+    const [coursesResult, periodsResult, teachersResult] = await Promise.allSettled([
       getAdminCourses(),
-      getCourseCreationOptions(),
+      getActivePeriodOptions(),
       getTeachers(),
     ]);
 
@@ -137,15 +143,11 @@ export default function useAdminCourses() {
       return;
     }
 
-    if (creationOptionsResult.status === "fulfilled") {
-      setFaculties(creationOptionsResult.value.faculties);
-      setCareers(creationOptionsResult.value.careers);
-      setPeriods(creationOptionsResult.value.periods);
+    if (periodsResult.status === "fulfilled") {
+      setPeriods(periodsResult.value);
     } else {
-      setFaculties([]);
-      setCareers([]);
       setPeriods([]);
-      setCreationDataError(getCreationDataErrorMessage(creationOptionsResult.reason));
+      setCreationDataError(getCreationDataErrorMessage(periodsResult.reason));
     }
 
     const loadedTeachers = teachersResult.status === "fulfilled" ? teachersResult.value : [];
@@ -169,6 +171,23 @@ export default function useAdminCourses() {
   useEffect(() => {
     void loadCourses();
   }, [loadCourses]);
+
+  const loadFacultyAndCareerOptionsOnce = useCallback(async () => {
+    if (hasLoadedFacultyAndCareerOptions.current) {
+      return;
+    }
+    hasLoadedFacultyAndCareerOptions.current = true;
+
+    try {
+      const { faculties: loadedFaculties, careers: loadedCareers } =
+        await getFacultyAndCareerOptions();
+      setFaculties(loadedFaculties);
+      setCareers(loadedCareers);
+    } catch (creationOptionsError) {
+      hasLoadedFacultyAndCareerOptions.current = false;
+      setCreationDataError(getCreationDataErrorMessage(creationOptionsError));
+    }
+  }, []);
 
   const createCourse = useCallback(
     async (payload: AdminCreateCoursePayload) => {
@@ -275,6 +294,7 @@ export default function useAdminCourses() {
     deletingCourseId,
     updatingCourseId,
     reload: loadCourses,
+    loadFacultyAndCareerOptionsOnce,
     createCourse,
     updateCourse,
     updateCourseStatus,

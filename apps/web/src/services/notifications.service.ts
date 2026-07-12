@@ -35,13 +35,20 @@ async function getByStatus(status: NotificationStatus) {
   return response.data.data;
 }
 
-export async function getMyNotifications() {
-  const [unread, read] = await Promise.all([
-    getByStatus("UNREAD"),
-    getByStatus("READ"),
-  ]);
+// Unread-only — this is all the bell icon's badge count needs, so it's
+// fetched on mount regardless of whether the dropdown is ever opened.
+export async function getUnreadNotifications() {
+  return getByStatus("UNREAD");
+}
 
-  return [...unread, ...read].sort(
+// Read notifications are only ever displayed once the dropdown is open —
+// callers should defer this until then instead of fetching it eagerly.
+export async function getReadNotifications() {
+  return getByStatus("READ");
+}
+
+export function sortNotificationsByNewest(notifications: AppNotification[]) {
+  return [...notifications].sort(
     (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
   );
 }

@@ -14,6 +14,7 @@ import { GetSubjectWeeklyProgressUseCase } from '../../application/use-cases/get
 import { GetSubjectRiskUseCase } from '../../application/use-cases/get-subject-risk.use-case';
 import { GetAlertsUseCase } from '../../application/use-cases/get-alerts.use-case';
 import { GetSubjectAlertsUseCase } from '../../application/use-cases/get-subject-alerts.use-case';
+import { GetStudentSubjectsOverviewUseCase } from '../../application/use-cases/get-student-subjects-overview.use-case';
 import { ComplianceInputDto } from '../../application/dtos/compliance-input.dto';
 import { RiskInputDto } from '../../application/dtos/risk-input.dto';
 import { GenerateAlertsDto } from '../../application/dtos/generate-alerts.dto';
@@ -44,9 +45,28 @@ export class AnalyticsController {
     private readonly getSubjectRiskUC: GetSubjectRiskUseCase,
     private readonly getAlertsUC: GetAlertsUseCase,
     private readonly getSubjectAlertsUC: GetSubjectAlertsUseCase,
+    private readonly getStudentSubjectsOverviewUC: GetStudentSubjectsOverviewUseCase,
   ) {}
 
   // ─── Per-subject metrics (Fase 6) ────────────────────────────────────────
+
+  @Get('students/me/subjects/overview')
+  @Roles('STUDENT')
+  @ApiOperation({
+    summary:
+      'Average grade, risk level, trend, and alert count for every one of the authenticated ' +
+      "student's active subjects in a single call — replaces firing metrics/risk/alerts " +
+      'separately for each subject.',
+  })
+  @ApiResponse({ status: 200 })
+  async getMySubjectsOverview(
+    @Req() req: JwtRequest,
+    @Headers('x-correlation-id') correlationId?: string,
+  ) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException('Missing student identity');
+    return this.getStudentSubjectsOverviewUC.execute(studentId, correlationId);
+  }
 
   @Get('students/me/subjects/:subjectId/metrics')
   @Roles('STUDENT')
