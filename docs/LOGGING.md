@@ -18,7 +18,7 @@ Comandos en **PowerShell** (shell por defecto en Windows). Si usás Git Bash/WSL
 
 ```powershell
 Copy-Item infra\.env.example infra\.env
-docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file infra/.env up -d --build postgres redis mongo auth-service user-service academic-service analytics-service prediction-service
+docker compose -p mentorapredict -f infra/docker/docker-compose.dev.yml --env-file infra/.env up -d --build postgres redis auth-service user-service academic-service analytics-service prediction-service
 ```
 
 Esperá a que todos estén `healthy`:

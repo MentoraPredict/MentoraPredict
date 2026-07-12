@@ -44,9 +44,8 @@ The Prediction Service requires additional configuration:
 ```env
 PYTHONUNBUFFERED=1
 
-MONGO_HOST=
-MONGO_PORT=
-MONGO_DB=
+# MongoDB Atlas — single connection string, no local Mongo container
+MONGO_URL=
 
 REDIS_HOST=
 REDIS_PORT=

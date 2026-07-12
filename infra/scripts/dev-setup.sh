@@ -65,11 +65,11 @@ cleanup_old_containers() {
 
 start_infrastructure() {
     cd "$DEPLOY_DIR"
-    echo "[INFRA] Starting infrastructure services (postgres, mongo, redis)"
+    echo "[INFRA] Starting infrastructure services (postgres, redis)"
     docker compose -p "$PROJECT_NAME" \
         -f "$COMPOSE_FILE" \
         --env-file "$ENV_FILE" \
-        up -d postgres mongo redis
+        up -d postgres redis
 }
 
 wait_for_postgres() {
@@ -134,7 +134,6 @@ show_status() {
     echo "  Kong Proxy  : http://localhost:8000"
     echo "  Kong Admin  : http://localhost:8001"
     echo "  Konga UI    : http://localhost:1337"
-    echo "  Mongo Express: http://localhost:8082"
     echo "  Redis Commander: http://localhost:8081"
     echo ""
     echo "To view logs: docker compose -p $PROJECT_NAME -f $COMPOSE_FILE logs -f"
