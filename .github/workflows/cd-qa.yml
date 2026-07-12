@@ -54,6 +54,7 @@ jobs:
             desktop:
               - 'apps/desktop/**'
               - 'apps/web/**'
+              - '.github/workflows/cd-qa.yml'
             kong:
               - 'infra/kong/**'
               - 'infra/keys/**'
@@ -378,6 +379,12 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          # windows-latest's `shell: bash` is Git Bash (MSYS2), which
+          # auto-rewrites any argument starting with "/" into a Windows path
+          # (e.g. "/downloads/..." -> "C:/Program Files/Git/downloads/...").
+          # That corrupted the downloadUrl written into desktop.json. Disable
+          # the conversion for this step only.
+          MSYS_NO_PATHCONV: "1"
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./apps/desktop/package.json').version")
