@@ -202,11 +202,15 @@ export default function StudentCoursePerformance({
           <CourseRiskStudentsPanel
             students={data.riskFactors}
             title="Factores del riesgo"
+            higherIsBetter
           />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <CourseAlertsPanel alerts={data.alerts} />
+          <CourseAlertsPanel
+            alerts={data.alerts}
+            title="Advertencias sobre tu rendimiento"
+          />
 
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-5">
@@ -323,6 +327,7 @@ export default function StudentCoursePerformance({
           data={data.progress}
           title="Progreso semanal"
           subtitle="Promedio real de la materia por semana"
+          classification={data.trend?.classification}
         />
       </div>
     </div>

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { randomUUID } from "node:crypto";
+import { correlationContext } from "@mentorapredict/shared-logger";
 import { ITeacherRolePort } from "../../application/ports/output/i-teacher-role.port";
 import { InternalJwtService } from "../auth/internal-jwt.service";
 
@@ -28,6 +30,7 @@ export class UserRoleHttpAdapter implements ITeacherRolePort {
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+          "x-correlation-id": correlationContext.getId() ?? randomUUID(),
         },
         signal: controller.signal,
       });

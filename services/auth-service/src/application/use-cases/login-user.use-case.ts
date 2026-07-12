@@ -27,7 +27,12 @@ export class LoginUserUseCase implements ILoginUseCase {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (!user.isActive) throw new UnauthorizedException('Account is disabled');
+    if (!user.isActive) {
+      throw new UnauthorizedException({
+        code: 'ACCOUNT_DISABLED',
+        message: 'Tu cuenta ha sido desactivada. Comunícate con un administrador.',
+      });
+    }
 
     if (!user.passwordHash) {
       throw new UnauthorizedException(

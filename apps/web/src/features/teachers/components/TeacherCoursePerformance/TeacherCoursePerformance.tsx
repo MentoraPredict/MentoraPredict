@@ -204,7 +204,10 @@ export default function TeacherCoursePerformance({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <CourseAlertsPanel alerts={data.alerts} />
+        <CourseAlertsPanel
+          alerts={data.alerts}
+          title="Advertencias del curso"
+        />
         <CourseRecommendationsPanel
           recommendations={data.recommendations}
           showDescription={false}
@@ -213,9 +216,9 @@ export default function TeacherCoursePerformance({
 
       <div className="w-full">
         <CourseProgressChart
-          data={[]}
+          data={data.progress}
           title="Progreso del curso"
-          subtitle="Analytics todavia no entrega historial semanal agregado del curso"
+          subtitle="Promedio general de todos los estudiantes por semana"
         />
       </div>
     </div>

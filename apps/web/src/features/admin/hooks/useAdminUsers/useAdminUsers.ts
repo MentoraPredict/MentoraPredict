@@ -2,27 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 import {
+    createUserWithRole,
+    deleteUser,
+    deleteUserAvatar,
     getUsers,
+    PartialUserCreationError,
     updateUser,
     updateUserRole,
     updateUserStatus,
+    uploadUserAvatar,
+    type CreateUserWithRolePayload,
 } from "@/services/users/users.service";
 import type { AppUser } from "@/types/user/user.types";
+import type { UserRole } from "@/types/user/role.types";
 
-function getUserSearchText(user: AppUser) {
-    return [
-        user.firstName,
-        user.lastName,
-        user.email,
-        user.role,
-        user.facultyName,
-        user.careerName,
-        user.semester,
-    ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-}
+const USERS_PAGE_SIZE = 10;
 
 function getRequestErrorMessage(
     fallbackMessage: string,
@@ -33,6 +27,11 @@ function getRequestErrorMessage(
     }
 
     const status = error.response?.status;
+    const backendMessage = error.response?.data?.message;
+
+    if (typeof backendMessage === "string" && backendMessage.trim()) {
+        return backendMessage;
+    }
 
     if (!status) {
         return `${fallbackMessage} No hubo respuesta de Kong o del backend.`;
@@ -41,22 +40,28 @@ function getRequestErrorMessage(
     return `${fallbackMessage} Codigo HTTP: ${status}.`;
 }
 
-export default function useAdminUsers() {
-    const [search, setSearch] = useState("");
-    const [roleFilter, setRoleFilter] = useState("");
-    const [facultyFilter, setFacultyFilter] = useState("");
-    const [careerFilter, setCareerFilter] = useState("");
+function useRoleScopedUsers(role: UserRole, search: string) {
     const [users, setUsers] = useState<AppUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const loadUsers = useCallback(async () => {
+    const load = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const loadedUsers = await getUsers();
-            setUsers(loadedUsers);
+            const result = await getUsers({
+                page: currentPage,
+                limit: USERS_PAGE_SIZE,
+                search,
+                role,
+            });
+            setUsers(result.data);
+            setTotalUsers(result.total);
+            setTotalPages(result.totalPages);
         } catch (requestError) {
             setError(
                 getRequestErrorMessage(
@@ -67,48 +72,66 @@ export default function useAdminUsers() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentPage, role, search]);
 
     useEffect(() => {
-        void loadUsers();
-    }, [loadUsers]);
+        void load();
+    }, [load]);
 
-    const filteredUsers = useMemo(() => {
-        const normalizedSearch = search.trim().toLowerCase();
-        const normalizedRole = roleFilter.trim().toLowerCase();
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search]);
+
+    return {
+        users,
+        isLoading,
+        error,
+        currentPage,
+        pageSize: USERS_PAGE_SIZE,
+        totalUsers,
+        totalPages,
+        setCurrentPage,
+        reload: load,
+    };
+}
+
+export default function useAdminUsers() {
+    const [search, setSearch] = useState("");
+    const [facultyFilter, setFacultyFilter] = useState("");
+    const [careerFilter, setCareerFilter] = useState("");
+    const [isCreatingUser, setIsCreatingUser] = useState(false);
+    const [createUserError, setCreateUserError] = useState<string | null>(null);
+    const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+    const [mutationError, setMutationError] = useState<string | null>(null);
+
+    const admins = useRoleScopedUsers("ADMIN", search);
+    const teachers = useRoleScopedUsers("TEACHER", search);
+    const students = useRoleScopedUsers("STUDENT", search);
+
+    const reloadAll = useCallback(async () => {
+        await Promise.all([admins.reload(), teachers.reload(), students.reload()]);
+    }, [admins, teachers, students]);
+
+    const filteredStudents = useMemo(() => {
         const normalizedFaculty = facultyFilter.trim().toLowerCase();
         const normalizedCareer = careerFilter.trim().toLowerCase();
 
-        return users.filter((user) => {
-            const matchesSearch =
-                !normalizedSearch ||
-                getUserSearchText(user).includes(normalizedSearch);
-            const matchesRole =
-                !normalizedRole || user.role.toLowerCase() === normalizedRole;
+        return students.users.filter((user) => {
             const matchesFaculty =
                 !normalizedFaculty ||
-                (user.facultyName ?? "")
-                    .toLowerCase()
-                    .includes(normalizedFaculty);
+                (user.facultyName ?? "").toLowerCase().includes(normalizedFaculty);
             const matchesCareer =
                 !normalizedCareer ||
-                (user.careerName ?? "")
-                    .toLowerCase()
-                    .includes(normalizedCareer);
+                (user.careerName ?? "").toLowerCase().includes(normalizedCareer);
 
-            return (
-                matchesSearch &&
-                matchesRole &&
-                matchesFaculty &&
-                matchesCareer
-            );
+            return matchesFaculty && matchesCareer;
         });
-    }, [careerFilter, facultyFilter, roleFilter, search, users]);
+    }, [careerFilter, facultyFilter, students.users]);
 
-    const filterOptions = useMemo(() => {
+    const studentFilterOptions = useMemo(() => {
         const faculties = Array.from(
             new Set(
-                users
+                students.users
                     .map((user) => user.facultyName?.trim())
                     .filter((value): value is string => Boolean(value))
             )
@@ -116,37 +139,31 @@ export default function useAdminUsers() {
 
         const careers = Array.from(
             new Set(
-                users
+                students.users
                     .map((user) => user.careerName?.trim())
                     .filter((value): value is string => Boolean(value))
             )
         ).sort((a, b) => a.localeCompare(b));
 
         return { faculties, careers };
-    }, [users]);
+    }, [students.users]);
 
     const clearSearch = useCallback(() => {
         setSearch("");
     }, []);
 
-    const clearFilters = useCallback(() => {
-        setSearch("");
-        setRoleFilter("");
+    const clearMutationError = useCallback(() => {
+        setMutationError(null);
+    }, []);
+
+    const clearStudentFilters = useCallback(() => {
         setFacultyFilter("");
         setCareerFilter("");
     }, []);
 
-    const replaceUser = useCallback((updatedUser: AppUser) => {
-        setUsers((currentUsers) =>
-            currentUsers.map((user) =>
-                user.id === updatedUser.id ? updatedUser : user
-            )
-        );
-    }, []);
-
     const toggleStatus = useCallback(
         async (userId: string) => {
-            const user = users.find(
+            const user = [...admins.users, ...teachers.users, ...students.users].find(
                 (currentUser) => currentUser.id === userId
             );
 
@@ -154,16 +171,13 @@ export default function useAdminUsers() {
                 return;
             }
 
-            setError(null);
+            setMutationError(null);
 
             try {
-                const updatedUser = await updateUserStatus(
-                    userId,
-                    !user.isActive
-                );
-                replaceUser(updatedUser);
+                await updateUserStatus(userId, !user.isActive);
+                await reloadAll();
             } catch (requestError) {
-                setError(
+                setMutationError(
                     getRequestErrorMessage(
                         "No se pudo actualizar el estado del usuario.",
                         requestError
@@ -171,29 +185,29 @@ export default function useAdminUsers() {
                 );
             }
         },
-        [replaceUser, users]
+        [admins.users, teachers.users, students.users, reloadAll]
     );
 
     const toggleTeacherRole = useCallback(
         async (userId: string) => {
-            const user = users.find(
+            const user = [...teachers.users, ...students.users].find(
                 (currentUser) => currentUser.id === userId
             );
 
-            if (!user || user.role === "ADMIN") {
+            if (!user) {
                 return;
             }
 
-            setError(null);
+            setMutationError(null);
 
             try {
-                const updatedUser = await updateUserRole(
+                await updateUserRole(
                     userId,
                     user.role === "STUDENT" ? "TEACHER" : "STUDENT"
                 );
-                replaceUser(updatedUser);
+                await reloadAll();
             } catch (requestError) {
-                setError(
+                setMutationError(
                     getRequestErrorMessage(
                         "No se pudo actualizar el rol del usuario.",
                         requestError
@@ -201,7 +215,7 @@ export default function useAdminUsers() {
                 );
             }
         },
-        [replaceUser, users]
+        [teachers.users, students.users, reloadAll]
     );
 
     const saveUserProfile = useCallback(
@@ -213,14 +227,14 @@ export default function useAdminUsers() {
                 lastName?: string;
             }
         ) => {
-            setError(null);
+            setMutationError(null);
 
             try {
                 const updatedUser = await updateUser(userId, payload);
-                replaceUser(updatedUser);
+                await reloadAll();
                 return updatedUser;
             } catch (requestError) {
-                setError(
+                setMutationError(
                     getRequestErrorMessage(
                         "No se pudo actualizar la informacion del usuario.",
                         requestError
@@ -229,27 +243,167 @@ export default function useAdminUsers() {
                 throw requestError;
             }
         },
-        [replaceUser]
+        [reloadAll]
+    );
+
+    const uploadAvatar = useCallback(
+        async (userId: string, file: File) => {
+            setMutationError(null);
+
+            try {
+                const updatedUser = await uploadUserAvatar(userId, file);
+                await reloadAll();
+                return updatedUser;
+            } catch (requestError) {
+                setMutationError(
+                    getRequestErrorMessage(
+                        "No se pudo actualizar la foto de perfil.",
+                        requestError
+                    )
+                );
+                throw requestError;
+            }
+        },
+        [reloadAll]
+    );
+
+    const deleteAvatar = useCallback(
+        async (userId: string) => {
+            setMutationError(null);
+
+            try {
+                const updatedUser = await deleteUserAvatar(userId);
+                await reloadAll();
+                return updatedUser;
+            } catch (requestError) {
+                setMutationError(
+                    getRequestErrorMessage(
+                        "No se pudo eliminar la foto de perfil.",
+                        requestError
+                    )
+                );
+                throw requestError;
+            }
+        },
+        [reloadAll]
+    );
+
+    const createUser = useCallback(
+        async (payload: CreateUserWithRolePayload, avatarFile?: File) => {
+            setCreateUserError(null);
+            setIsCreatingUser(true);
+
+            try {
+                const created = await createUserWithRole(payload);
+                if (avatarFile) {
+                    await uploadUserAvatar(created.id, avatarFile).catch(() => null);
+                }
+                await reloadAll();
+                return true;
+            } catch (requestError) {
+                if (requestError instanceof PartialUserCreationError) {
+                    // The user was still created (as STUDENT) — refresh the
+                    // tables so it shows up, but keep the modal open with the
+                    // message so the admin knows the role needs a manual fix.
+                    await reloadAll();
+                    setCreateUserError(requestError.message);
+                    return false;
+                }
+
+                setCreateUserError(
+                    getRequestErrorMessage(
+                        "No se pudo crear el usuario.",
+                        requestError
+                    )
+                );
+                return false;
+            } finally {
+                setIsCreatingUser(false);
+            }
+        },
+        [reloadAll]
+    );
+
+    const clearCreateUserError = useCallback(() => {
+        setCreateUserError(null);
+    }, []);
+
+    const removeUser = useCallback(
+        async (userId: string) => {
+            setMutationError(null);
+            setDeletingUserId(userId);
+
+            try {
+                await deleteUser(userId);
+                await reloadAll();
+                return true;
+            } catch (requestError) {
+                setMutationError(
+                    getRequestErrorMessage(
+                        "No se pudo eliminar el usuario.",
+                        requestError
+                    )
+                );
+                return false;
+            } finally {
+                setDeletingUserId(null);
+            }
+        },
+        [reloadAll]
     );
 
     return {
         search,
         setSearch,
-        roleFilter,
-        setRoleFilter,
-        facultyFilter,
-        setFacultyFilter,
-        careerFilter,
-        setCareerFilter,
-        filterOptions,
-        users: filteredUsers,
-        isLoading,
-        error,
-        reload: loadUsers,
         clearSearch,
-        clearFilters,
+        mutationError,
+        clearMutationError,
+        admins: {
+            users: admins.users,
+            isLoading: admins.isLoading,
+            error: admins.error,
+            currentPage: admins.currentPage,
+            pageSize: admins.pageSize,
+            totalUsers: admins.totalUsers,
+            totalPages: admins.totalPages,
+            setCurrentPage: admins.setCurrentPage,
+        },
+        teachers: {
+            users: teachers.users,
+            isLoading: teachers.isLoading,
+            error: teachers.error,
+            currentPage: teachers.currentPage,
+            pageSize: teachers.pageSize,
+            totalUsers: teachers.totalUsers,
+            totalPages: teachers.totalPages,
+            setCurrentPage: teachers.setCurrentPage,
+        },
+        students: {
+            users: filteredStudents,
+            isLoading: students.isLoading,
+            error: students.error,
+            currentPage: students.currentPage,
+            pageSize: students.pageSize,
+            totalUsers: students.totalUsers,
+            totalPages: students.totalPages,
+            setCurrentPage: students.setCurrentPage,
+            facultyFilter,
+            setFacultyFilter,
+            careerFilter,
+            setCareerFilter,
+            filterOptions: studentFilterOptions,
+            clearFilters: clearStudentFilters,
+        },
         toggleStatus,
         toggleTeacherRole,
         saveUserProfile,
+        uploadAvatar,
+        deleteAvatar,
+        createUser,
+        isCreatingUser,
+        createUserError,
+        clearCreateUserError,
+        deletingUserId,
+        removeUser,
     };
 }

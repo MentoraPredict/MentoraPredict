@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Logger } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { InjectConnection } from "@nestjs/mongoose";
@@ -11,11 +11,20 @@ type HealthStatus = "UP" | "degraded" | "DOWN";
 @ApiTags("health")
 @Controller("health")
 export class HealthController {
+  private readonly logger = new Logger(HealthController.name);
+
   constructor(
     @InjectDataSource() private readonly db: DataSource,
     @InjectConnection() private readonly mongo: Connection,
     private readonly redis: RedisClient,
-  ) {}
+  ) {
+    // MongoDB connects in the background (lazyConnection: true in
+    // app.module.ts). Without a listener, an unhandled "error" event on this
+    // EventEmitter crashes the whole process — this just logs it instead.
+    this.mongo.on("error", (error: Error) => {
+      this.logger.warn(`MongoDB connection error: ${error.message}`);
+    });
+  }
 
   @Get()
   @HttpCode(HttpStatus.OK)

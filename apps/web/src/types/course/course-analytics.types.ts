@@ -1,11 +1,12 @@
 export interface CourseProgressPoint {
   week: string;
-  actual: number;
+  actual?: number;
   projection?: number;
 }
 
 export interface CourseAlert {
   id: string;
+  studentId?: string;
   message: string;
   severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 }

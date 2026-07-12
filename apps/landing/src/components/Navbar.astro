@@ -13,10 +13,10 @@ const navItems = [
 ---
 
 <header
-  class="sticky top-0 z-[100] isolate border-b border-primary-900/10 bg-neutral-50/80 backdrop-blur"
+  class="sticky top-0 z-[100] isolate border-b border-blue-900/10 bg-gray-50/80 backdrop-blur"
 >
-  <div class="mx-auto flex h-[4.5rem] max-w-container items-center justify-between px-6">
-    <a href={basePath} class="flex items-center gap-2.5 text-lg font-bold tracking-tight text-primary-700">
+  <div class="mx-auto flex h-[4.5rem] max-w-container items-center justify-between px-6 sm:px-8">
+    <a href={basePath} class="flex items-center gap-2.5 text-lg font-bold tracking-tight text-blue-700">
       <svg
         class="size-8"
         viewBox="0 0 32 32"
@@ -43,7 +43,7 @@ const navItems = [
       {navItems.map((item) => (
         <a
           href={item.href}
-          class="text-sm font-medium text-neutral-600 transition-colors hover:text-primary-700"
+          class="text-sm font-medium text-gray-600 transition-colors hover:text-blue-700"
         >
           {item.label}
         </a>
@@ -52,7 +52,7 @@ const navItems = [
 
     <a
       href={`${SITE_CONFIG.webAppUrl}/login`}
-      class="rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-800 hover:shadow-md"
+      class="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-800 hover:shadow-md"
     >
       Sign In
     </a>

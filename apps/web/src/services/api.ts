@@ -7,6 +7,8 @@ import {
   setAccessToken,
 } from "./api/tokenStorage";
 import { useAuthStore } from "@/store/auth.store";
+import { generateId } from "@/utils/id";
+import { logger } from "@/utils/logger";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
@@ -33,6 +35,16 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  const correlationId =
+    config.headers["x-correlation-id"]?.toString() ?? generateId();
+  config.headers["x-correlation-id"] = correlationId;
+
+  logger.debug("API request", {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    correlationId,
+  });
 
   return config;
 });
@@ -75,8 +87,28 @@ function shouldRefreshToken(error: AxiosError<ApiErrorResponse>) {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    logger.debug("API response", {
+      method: response.config.method?.toUpperCase(),
+      url: response.config.url,
+      status: response.status,
+      correlationId:
+        response.headers["x-correlation-id"] ??
+        response.config.headers["x-correlation-id"],
+    });
+
+    return response;
+  },
   async (error: AxiosError<ApiErrorResponse>) => {
+    logger.error("API request failed", error, {
+      method: error.config?.method?.toUpperCase(),
+      url: error.config?.url,
+      status: error.response?.status,
+      correlationId:
+        error.response?.headers["x-correlation-id"] ??
+        error.config?.headers["x-correlation-id"],
+    });
+
     const originalRequest = error.config as RetriableRequestConfig | undefined;
 
     if (

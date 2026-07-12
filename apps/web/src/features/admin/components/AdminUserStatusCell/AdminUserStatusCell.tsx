@@ -23,11 +23,16 @@ export default function AdminUserStatusCell({
             "
     >
       <span className="group-hover:hidden">
-        <Badge>{isActive ? "Activo" : "Inactivo"}</Badge>
+        <Badge tone={isActive ? "blue" : "red"} className="min-w-20">
+          {isActive ? "Activo" : "Inactivo"}
+        </Badge>
       </span>
 
       <span className="hidden group-hover:block">
-        <Text variant="caption" className="font-semibold text-blue-700">
+        <Text
+          variant="caption"
+          className={`font-semibold ${isActive ? "text-red-700" : "text-blue-700"}`}
+        >
           {isActive ? "Desactivar" : "Activar"}
         </Text>
       </span>

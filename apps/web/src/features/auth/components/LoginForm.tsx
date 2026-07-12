@@ -19,6 +19,7 @@ import {
   MicrosoftSignInButton,
   PasswordField,
 } from "@/components/molecules";
+import DisabledAccountDialog from "@/features/auth/components/DisabledAccountDialog";
 import { APP_PATHS } from "@/routes/paths";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -32,6 +33,8 @@ export default function LoginForm() {
   const login = useAuthStore((state) => state.login);
   const [serverError, setServerError] = useState<string>();
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
+  const [isDisabledAccountDialogOpen, setIsDisabledAccountDialogOpen] =
+    useState(false);
   const {
     register,
     handleSubmit,
@@ -49,6 +52,11 @@ export default function LoginForm() {
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        if (error.response?.data?.code === "ACCOUNT_DISABLED") {
+          setIsDisabledAccountDialogOpen(true);
+          return;
+        }
+
         const message = error.response?.data?.message;
 
         setServerError(
@@ -66,7 +74,8 @@ export default function LoginForm() {
   };
 
   return (
-    <section
+    <>
+      <section
       className="
                 flex
                 items-center
@@ -158,6 +167,14 @@ export default function LoginForm() {
 
         <AuthFooter />
       </MotionEntrance>
-    </section>
+      </section>
+
+      <DisabledAccountDialog
+        isOpen={isDisabledAccountDialogOpen}
+        onClose={() => {
+          setIsDisabledAccountDialogOpen(false);
+        }}
+      />
+    </>
   );
 }

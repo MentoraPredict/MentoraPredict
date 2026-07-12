@@ -1,6 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
+import { correlationContext } from '@mentorapredict/shared-logger';
 import { IAnalyticsClient, LatestSubjectMetric } from '../../application/ports/output/i-analytics.client';
 import { RiskSnapshot } from '../../domain/entities/prediction-result.entity';
 import { InternalJwtService } from '../auth/internal-jwt.service';
@@ -21,7 +22,7 @@ export class AnalyticsHttpClient implements IAnalyticsClient {
 
   async getRiskSnapshot(studentId: string, periodId: string): Promise<RiskSnapshot> {
     const url = `${this.baseUrl}/api/v1/analytics/internal/risk-snapshot/${studentId}/${periodId}`;
-    const corrId = randomUUID();
+    const corrId = correlationContext.getId() ?? randomUUID();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -52,7 +53,7 @@ export class AnalyticsHttpClient implements IAnalyticsClient {
 
   async getLatestSubjectMetric(studentId: string, subjectId: string): Promise<LatestSubjectMetric | null> {
     const url = `${this.baseUrl}/api/v1/analytics/internal/students/${studentId}/subjects/${subjectId}/metrics/latest`;
-    const corrId = randomUUID();
+    const corrId = correlationContext.getId() ?? randomUUID();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 

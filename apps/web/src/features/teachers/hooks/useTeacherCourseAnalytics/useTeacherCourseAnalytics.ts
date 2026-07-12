@@ -51,9 +51,23 @@ export default function useTeacherCourseAnalytics(courseId: string) {
             title: studentName || recommendation.title,
           };
         });
+        const alerts = analytics.alerts.map((alert) => {
+          if (!alert.studentId) return alert;
+          const student = studentsById.get(alert.studentId);
+          const studentName = student
+            ? [student.user.firstName, student.user.lastName]
+                .filter(Boolean)
+                .join(" ") || student.user.email
+            : alert.studentId;
+
+          return {
+            ...alert,
+            message: `${studentName}: ${alert.message}`,
+          };
+        });
 
         if (!isCancelled) {
-          setData({ ...analytics, average, recommendations, students });
+          setData({ ...analytics, average, alerts, recommendations, students });
         }
       })
       .catch((requestError) => {

@@ -26,8 +26,6 @@ networks:
 volumes:
   postgres_data:
     name: mp_dev_postgres_data
-  mongo_data:
-    name: mp_dev_mongo_data
   redis_data:
     name: mp_dev_redis_data
   academic_uploads_data:
@@ -45,6 +43,11 @@ services:
         limits:
           cpus: "0.75"
           memory: 768M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mp_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
@@ -67,61 +70,6 @@ services:
       retries: 5
       start_period: 10s
 
-  mongo:
-    image: mongo:7.0
-    container_name: mp_dev_mongo
-    restart: unless-stopped
-    command: ["mongod", "--quiet"]
-    deploy:
-      resources:
-        limits:
-          cpus: "0.75"
-          memory: 768M
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mp_mongo_user}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_INITDB_DATABASE: ${MONGO_DB:-mentorapredict_nosql}
-    expose:
-      - "27017"
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - mentorapredict-net
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'mongosh --quiet --username "$${MONGO_INITDB_ROOT_USERNAME}" --password "$${MONGO_INITDB_ROOT_PASSWORD}" --authenticationDatabase admin --eval "db.adminCommand(''ping'').ok" | grep 1',
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
-  mongo-express:
-    image: mongo-express:1.0.2-20
-    container_name: mp_mongo_ui
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "0.15"
-          memory: 192M
-    profiles: ["tools"]
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
-      ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/"
-      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_UI_USER:-admin}
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_UI_PASSWORD:-admin}
-    ports:
-      - "8082:8081"
-    networks:
-      - mentorapredict-net
-    depends_on:
-      mongo:
-        condition: service_healthy
-
   redis:
     image: redis:7.2-alpine
     container_name: mp_dev_redis
@@ -131,6 +79,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 192M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     command: >
       redis-server
       --requirepass ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
@@ -166,6 +119,11 @@ services:
         limits:
           cpus: "0.15"
           memory: 192M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     profiles: ["tools"]
     environment:
       REDIS_HOSTS: "local:redis:6379:0:${REDIS_PASSWORD}"
@@ -189,9 +147,16 @@ services:
         limits:
           cpus: "0.35"
           memory: 384M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_NGINX_WORKER_PROCESSES: "1"
+      KONG_NGINX_HTTP_CLIENT_MAX_BODY_SIZE: "12m"
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
@@ -231,6 +196,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     profiles: ["tools"]
     environment:
       NODE_ENV: development
@@ -255,8 +225,13 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
+          cpus: "0.5"
           memory: 384M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3001:3001"
     environment:
@@ -278,6 +253,11 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-http://localhost:8000/api/v1/auth/microsoft/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8000}
     volumes:
       - ../keys:/secrets:ro
     networks:
@@ -310,6 +290,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 384M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3002:3002"
     environment:
@@ -331,7 +316,12 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
+      ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
+      ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://analytics-service:3004}
       UPLOADS_DIR: /app/services/user-service/uploads
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mentorapredict-images}
     volumes:
       - ../keys:/secrets:ro
       - user_uploads_data:/app/services/user-service/uploads
@@ -365,6 +355,11 @@ services:
         limits:
           cpus: "0.35"
           memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3003:3003"
     environment:
@@ -378,11 +373,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
-      MONGO_HOST: ${MONGO_HOST:-mongo}
-      MONGO_PORT: ${MONGO_PORT:-27017}
-      MONGO_USER: ${MONGO_USER:-mp_mongo_user}
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
+      MONGO_URL: ${MONGO_URL}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
@@ -393,6 +384,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       UPLOADS_DIR: /app/services/academic-service/uploads
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mentorapredict-images}
     volumes:
       - ../keys:/secrets:ro
       - academic_uploads_data:/app/services/academic-service/uploads
@@ -426,6 +420,11 @@ services:
         limits:
           cpus: "0.35"
           memory: 640M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3004:3004"
     environment:
@@ -439,11 +438,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
-      MONGO_HOST: ${MONGO_HOST:-mongo}
-      MONGO_PORT: ${MONGO_PORT:-27017}
-      MONGO_USER: ${MONGO_USER:-mp_mongo_user}
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
+      MONGO_URL: ${MONGO_URL}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
@@ -487,6 +482,11 @@ services:
         limits:
           cpus: "0.35"
           memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3006:3006"
     environment:
@@ -497,11 +497,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mp_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
       POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
-      MONGO_HOST: ${MONGO_HOST:-mongo}
-      MONGO_PORT: ${MONGO_PORT:-27017}
-      MONGO_USER: ${MONGO_USER:-mp_mongo_user}
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-mp_mongo_secret_change_in_prod}
-      MONGO_DB: ${MONGO_DB:-mentorapredict_nosql}
+      MONGO_URL: ${MONGO_URL}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
@@ -547,6 +543,11 @@ services:
         limits:
           cpus: "0.20"
           memory: 192M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     expose:
       - "80"
     environment:
@@ -569,6 +570,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     expose:
       - "80"
     networks:
@@ -584,6 +590,11 @@ services:
         limits:
           cpus: "0.25"
           memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: "no"
     init: true
     environment:

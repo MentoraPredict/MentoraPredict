@@ -1,8 +1,9 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { JwtModule } from "@nestjs/jwt";
 import { HttpModule } from "@nestjs/axios";
+import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
 import { UsersController } from "./infrastructure/controllers/users.controller";
 import { InternalUsersController } from "./infrastructure/controllers/internal-users.controller";
@@ -20,13 +21,17 @@ import { InternalServiceGuard } from "./infrastructure/guards/internal-service.g
 import { RolesGuard } from "./infrastructure/guards/roles.guard";
 import { AuthHttpClient } from "./infrastructure/adapters/auth-http.client";
 import { AuthSyncClient } from "./infrastructure/adapters/auth-sync.client";
+import { AcademicStatusHttpClient } from "./infrastructure/adapters/academic-status-http.client";
+import { NotificationHttpClient } from "./infrastructure/adapters/notification-http.client";
 import { GetUserUseCase } from "./application/use-cases/get-user.use-case";
 import { UploadAvatarUseCase } from "./application/use-cases/upload-avatar.use-case";
 import { DeleteAvatarUseCase } from "./application/use-cases/delete-avatar.use-case";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
+import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-image-storage.adapter";
 
 @Module({
   imports: [
+    createLoggerModule("user-service"),
     ConfigModule.forRoot({ isGlobal: true }),
     HttpModule,
     TypeOrmModule.forRootAsync({
@@ -77,6 +82,9 @@ import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
     { provide: "IUserProfileRepository", useClass: UserProfileRepository },
     { provide: "IAuthServiceClient", useClass: AuthHttpClient },
     { provide: "IAuthSyncClient", useClass: AuthSyncClient },
+    { provide: "IAcademicStatusClient", useClass: AcademicStatusHttpClient },
+    { provide: "INotificationClient", useClass: NotificationHttpClient },
+    { provide: "IImageStoragePort", useClass: SupabaseImageStorageAdapter },
     GetUserUseCase,
     UpdateUserUseCase,
     SoftDeleteUserUseCase,
@@ -89,4 +97,8 @@ import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
     RolesGuard,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(correlationContextMiddleware).forRoutes("*");
+  }
+}

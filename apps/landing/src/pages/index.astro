@@ -6,13 +6,12 @@ import StatsSection from "../components/StatsSection.astro";
 import FeaturesSection from "../components/FeaturesSection.astro";
 import DownloadSection from "../components/DownloadSection.astro";
 import Footer from "../components/Footer.astro";
-import { getHero, getStats, getFeatures, getDownloadOptions } from "../lib/queries";
+import { getHero, getStats, getFeatures } from "../lib/queries";
 
-const [hero, stats, features, downloads] = await Promise.all([
+const [hero, stats, features] = await Promise.all([
   getHero(),
   getStats(),
   getFeatures(),
-  getDownloadOptions(),
 ]);
 ---
 
@@ -34,7 +33,7 @@ const [hero, stats, features, downloads] = await Promise.all([
       />
       <StatsSection stats={stats} />
       <FeaturesSection features={features} />
-      <DownloadSection downloads={downloads} />
+      <DownloadSection />
     </main>
 
     <Footer />

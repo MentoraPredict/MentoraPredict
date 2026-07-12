@@ -210,6 +210,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            CONTENTFUL_SPACE_ID=${{ secrets.CONTENTFUL_SPACE_ID }}
+            CONTENTFUL_ACCESS_TOKEN=${{ secrets.CONTENTFUL_ACCESS_TOKEN }}
 
   build-mobile-apk:
     name: Build Mobile APK (Production)
@@ -301,11 +304,49 @@ jobs:
           path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
+      - name: Publish APK to EC2 downloads folder
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./apps/mobile/package.json').version")
+          BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          UPDATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          mkdir -p /tmp/downloads-publish/mobile
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk \
+            /tmp/downloads-publish/mobile/MentoraPredict.apk
+
+          # downloadUrl is relative — React and Astro are same-origin behind
+          # Kong, and /downloads is served straight off this app's own
+          # nginx (see the web service volume in docker-compose.prod.yml).
+          jq -n \
+            --arg environment "prod" \
+            --arg downloadUrl "/downloads/mobile/MentoraPredict.apk" \
+            --arg buildUrl "$BUILD_URL" \
+            --arg version "$VERSION" \
+            --arg updatedAt "$UPDATED_AT" \
+            '{environment: $environment, downloadUrl: $downloadUrl, buildUrl: $buildUrl, version: $version, updatedAt: $updatedAt}' \
+            > /tmp/downloads-publish/mobile.json
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/mp_deploy_key
+          chmod 600 ~/.ssh/mp_deploy_key
+          SSH="ssh -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST"
+          SCP="scp -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no"
+
+          $SSH "sudo mkdir -p /opt/mentorapredict-downloads/mobile /opt/mentorapredict-downloads/desktop && sudo chown -R ubuntu:ubuntu /opt/mentorapredict-downloads"
+          $SCP /tmp/downloads-publish/mobile/MentoraPredict.apk "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/mobile/MentoraPredict.apk"
+          $SCP /tmp/downloads-publish/mobile.json "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/mobile.json"
+
   build-desktop-app:
     name: Build Desktop App (Production)
     runs-on: windows-latest
     needs: detect-changes
     timeout-minutes: 30
+    environment: Prod Enviroment
     if: >
       needs.detect-changes.outputs.desktop_changed == 'true' &&
       github.ref == 'refs/heads/main'
@@ -332,8 +373,42 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mentorapredict-desktop-prod
-          path: apps/desktop/release/*.msi
+          path: apps/desktop/release/*.exe
           retention-days: 30
+
+      - name: Publish installer to EC2 downloads folder
+        shell: bash
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./apps/desktop/package.json').version")
+          FILE=$(ls apps/desktop/release/*.exe | head -n1)
+          BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          UPDATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          mkdir -p /tmp/downloads-publish/desktop
+          cp "$FILE" /tmp/downloads-publish/desktop/MentoraPredict-Setup.exe
+
+          jq -n \
+            --arg environment "prod" \
+            --arg downloadUrl "/downloads/desktop/MentoraPredict-Setup.exe" \
+            --arg buildUrl "$BUILD_URL" \
+            --arg version "$VERSION" \
+            --arg updatedAt "$UPDATED_AT" \
+            '{environment: $environment, downloadUrl: $downloadUrl, buildUrl: $buildUrl, version: $version, updatedAt: $updatedAt}' \
+            > /tmp/downloads-publish/desktop.json
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/mp_deploy_key
+          chmod 600 ~/.ssh/mp_deploy_key
+          SSH="ssh -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no ubuntu@$EC2_HOST"
+          SCP="scp -i ~/.ssh/mp_deploy_key -o StrictHostKeyChecking=no"
+
+          $SSH "sudo mkdir -p /opt/mentorapredict-downloads/mobile /opt/mentorapredict-downloads/desktop && sudo chown -R ubuntu:ubuntu /opt/mentorapredict-downloads"
+          $SCP /tmp/downloads-publish/desktop/MentoraPredict-Setup.exe "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/desktop/MentoraPredict-Setup.exe"
+          $SCP /tmp/downloads-publish/desktop.json "ubuntu@$EC2_HOST:/opt/mentorapredict-downloads/desktop.json"
 
   deploy-to-prod:
     name: Deploy to EC2 Production
@@ -397,15 +472,21 @@ jobs:
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
-            MONGO_USER=${{ secrets.MONGO_USER }}
-            MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
-            MONGO_DB=${{ secrets.MONGO_DB }}
+            MONGO_URL=${{ secrets.MONGO_URL }}
             KONG_PROXY_PORT=${{ secrets.KONG_PROXY_PORT }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
             SWAGGER_SERVER_URL=${{ secrets.SWAGGER_SERVER_URL }}
+            MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
+            MICROSOFT_CLIENT_SECRET=${{ secrets.MICROSOFT_CLIENT_SECRET }}
+            MICROSOFT_TENANT_ID=${{ secrets.MICROSOFT_TENANT_ID }}
+            MICROSOFT_REDIRECT_URI=https://mentorapredictprod.programacionwebuce.net/api/v1/auth/microsoft/callback
+            FRONTEND_URL=https://mentorapredictprod.programacionwebuce.net
             EXPO_PUBLIC_API_ENV=prod
             EXPO_PUBLIC_API_BASE_URL=https://mentorapredictprod.programacionwebuce.net/api
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            SUPABASE_STORAGE_BUCKET=${{ secrets.SUPABASE_STORAGE_BUCKET }}
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
@@ -429,7 +510,7 @@ jobs:
             sudo chown ubuntu:ubuntu /opt/mentorapredict/infra/keys
 
             echo "[INFRA] Starting infrastructure"
-            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres mongo redis
+            docker compose --env-file .env -f infra/docker/docker-compose.infra.yml up -d postgres redis
 
             echo "[WAIT DB READY]"
             for i in {1..20}; do

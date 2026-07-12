@@ -16,10 +16,13 @@ export default defineConfig(({ mode }) => ({
   base: mode.startsWith("desktop") ? "./" : "/",
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: process.env.VITE_ALLOW_ALL_HOSTS === "true" ? true : ["localhost", "127.0.0.1", "web"],
+    allowedHosts:
+      process.env.VITE_ALLOW_ALL_HOSTS === "true"
+        ? true
+        : ["localhost", "127.0.0.1", "web"],
     proxy: {
       "/api": {
-        target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
+        target: process.env.VITE_API_PROXY_TARGET ?? "http://127.0.0.1:8000",
         changeOrigin: true,
       },
     },
@@ -28,12 +31,21 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode === "qa",
   },
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
   test: {
     projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          environment: "node",
+          include: ["src/**/*.spec.ts", "src/**/*.spec.tsx"],
+        },
+      },
       {
         extends: true,
         plugins: [

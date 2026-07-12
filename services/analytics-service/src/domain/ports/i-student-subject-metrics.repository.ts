@@ -8,6 +8,12 @@ export interface SubjectRiskCounts {
   unclassified: number;
 }
 
+export interface SubjectWeeklyProgress {
+  academicYear: number;
+  academicWeek: number;
+  averageGrade: number;
+}
+
 export interface IStudentSubjectMetricsRepository {
   // Atomic upsert on (studentId, subjectId, academicWeek, academicYear) via ON CONFLICT —
   // same pattern as weekly_check_ins in academic-service (Fase 5).
@@ -31,4 +37,8 @@ export interface IStudentSubjectMetricsRepository {
   ): Promise<StudentSubjectMetricsEntity[]>;
   // Latest riskLevel per student in the subject, grouped into counts.
   getRiskCountsBySubject(subjectId: string): Promise<SubjectRiskCounts>;
+  // Average of each student's latest averageGrade in the subject (course-level average).
+  getAverageGradeBySubject(subjectId: string): Promise<number | null>;
+  // Course average grouped by academic year and week.
+  getWeeklyProgressBySubject(subjectId: string): Promise<SubjectWeeklyProgress[]>;
 }

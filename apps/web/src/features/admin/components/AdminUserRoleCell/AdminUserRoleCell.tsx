@@ -13,35 +13,53 @@ const roleLabels: Record<UserRole, string> = {
   ADMIN: "Admin",
 };
 
+const roleTones: Record<UserRole, "blue" | "green" | "violet"> = {
+  ADMIN: "blue",
+  TEACHER: "green",
+  STUDENT: "violet",
+};
+
 export default function AdminUserRoleCell({
   role,
   onToggleTeacherRole,
 }: AdminUserRoleCellProps) {
-  if (role === "ADMIN") {
-    return <Badge>{roleLabels[role]}</Badge>;
-  }
-
   return (
-    <button
-      type="button"
-      onClick={onToggleTeacherRole}
+    <div
       className="
-                group
-                inline-flex
-                min-w-32
-                items-center
-                justify-center
-            "
+        flex
+        min-w-32
+        items-center
+        justify-center
+      "
     >
-      <span className="group-hover:hidden">
-        <Badge>{roleLabels[role]}</Badge>
-      </span>
+      {role === "ADMIN" ? (
+        <Badge tone={roleTones[role]} className="min-w-24">
+          {roleLabels[role]}
+        </Badge>
+      ) : (
+        <button
+          type="button"
+          onClick={onToggleTeacherRole}
+          className="group inline-flex min-w-32 items-center justify-center"
+          aria-label={
+            role === "STUDENT"
+              ? "Asignar rol de docente"
+              : "Quitar rol de docente"
+          }
+        >
+          <span className="group-hover:hidden">
+            <Badge tone={roleTones[role]} className="min-w-24">
+              {roleLabels[role]}
+            </Badge>
+          </span>
 
-      <span className="hidden group-hover:block">
-        <Text variant="caption" className="font-semibold text-blue-700">
-          {role === "STUDENT" ? "Asignar docente" : "Quitar docente"}
-        </Text>
-      </span>
-    </button>
+          <span className="hidden group-hover:block">
+            <Text variant="caption" className="font-semibold text-blue-700">
+              {role === "STUDENT" ? "Asignar docente" : "Quitar docente"}
+            </Text>
+          </span>
+        </button>
+      )}
+    </div>
   );
 }
