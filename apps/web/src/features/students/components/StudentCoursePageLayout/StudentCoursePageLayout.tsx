@@ -5,7 +5,7 @@ import Text from "@/components/atoms/Text";
 import CourseActionsToolbar from "@/features/courses/components/CourseActionsToolbar";
 import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalyticsLayout";
 import CourseSidebar from "@/features/courses/components/CourseSidebar";
-import useStudentCourses from "@/features/students/hooks/useStudentCourses";
+import useStudentCourses from "@/hooks/queries/useStudentCourses";
 
 import type { Course } from "@/types/course";
 
