@@ -39,6 +39,13 @@ import {
 import { getActiveAcademicPeriod } from "@/services/student-performance.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { Course, CourseAlert, CourseRecommendation } from "@/types/course";
+import { mapWithConcurrency } from "@/utils/mapWithConcurrency";
+
+// Each course's analytics fire 4 parallel requests (metrics/risk/alerts/
+// prediction) — capping how many courses load at once bounds the burst
+// against the backend instead of firing 4 * course-count requests at the
+// same instant.
+const SUBJECT_ANALYTICS_CONCURRENCY = 3;
 
 const RECOMMENDATIONS_PAGE_SIZE = 3;
 
@@ -177,11 +184,13 @@ export default function StudentCoursesManagement({
     setInsightsError(null);
 
     try {
-      const loadedInsights = await Promise.all(
-        studentCourses.map(async (course) => ({
+      const loadedInsights = await mapWithConcurrency(
+        studentCourses,
+        SUBJECT_ANALYTICS_CONCURRENCY,
+        async (course) => ({
           course,
           analytics: await getStudentSubjectAnalytics(course.id),
-        }))
+        }),
       );
       setInsights(loadedInsights);
     } catch {

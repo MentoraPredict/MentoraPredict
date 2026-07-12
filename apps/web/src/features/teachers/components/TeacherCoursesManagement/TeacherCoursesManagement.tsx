@@ -11,11 +11,18 @@ import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
 import useOnlineStatus from "@/hooks/useOnlineStatus";
 import { getCourseEnrolledStudents } from "@/services/academic.service";
 import { getTeacherSubjectAnalytics } from "@/services/course-analytics.service";
+import { mapWithConcurrency } from "@/utils/mapWithConcurrency";
 
 import Text from "@/components/atoms/Text";
 
 import { useNavigate } from "react-router-dom";
 import { getTeacherCoursePerformancePath } from "@/routes/paths";
+
+// Each course fires ~6 parallel requests (analytics summary/progress/
+// alerts/predictions + enrolled students active/withdrawn) — capping how
+// many courses load at once bounds the burst against the backend instead
+// of firing them all for every course at the same instant.
+const COURSE_ANALYTICS_CONCURRENCY = 3;
 
 interface TeacherCoursesManagementProps {
   teacherName: string;
@@ -70,8 +77,10 @@ export default function TeacherCoursesManagement({
 
     async function loadCourseAnalytics() {
       const syncedCourses = courses.filter((course) => !course.isPendingSync);
-      const entries = await Promise.all(
-        syncedCourses.map(async (course) => {
+      const entries = await mapWithConcurrency(
+        syncedCourses,
+        COURSE_ANALYTICS_CONCURRENCY,
+        async (course) => {
           try {
             const [analytics, enrolledStudents] = await Promise.all([
               getTeacherSubjectAnalytics(course.id),
@@ -99,7 +108,7 @@ export default function TeacherCoursesManagement({
               },
             ] as const;
           }
-        })
+        },
       );
 
       if (isMounted) {
