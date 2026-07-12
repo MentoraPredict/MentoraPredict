@@ -517,6 +517,8 @@ jobs:
             SUPABASE_URL=${{ secrets.SUPABASE_URL }}
             SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             SUPABASE_STORAGE_BUCKET=${{ secrets.SUPABASE_STORAGE_BUCKET }}
+            GRAFANA_ROOT_URL=https://mentorapredictqa.programacionwebuce.net/grafana
+            GRAFANA_TRUSTED_ORIGIN=mentorapredictqa.programacionwebuce.net
             EOF
 
             echo "JWT_PRIVATE_KEY=$(printf '%s' '${{ secrets.JWT_PRIVATE_KEY }}' | base64 -w0)" >> .env
