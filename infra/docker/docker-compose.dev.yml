@@ -163,6 +163,11 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      # See docker-compose.qa.yml — keeps dev's rate-limiting/ip-restriction
+      # plugins consistent with QA/prod instead of everyone sharing nginx's
+      # own container IP.
+      KONG_TRUSTED_IPS: "0.0.0.0/0,::/0"
+      KONG_REAL_IP_HEADER: "X-Real-IP"
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       WEB_UPSTREAM_PORT: ${WEB_UPSTREAM_PORT:-80}
