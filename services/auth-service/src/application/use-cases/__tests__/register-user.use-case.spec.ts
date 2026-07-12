@@ -7,6 +7,8 @@ import { IUserProfileClient } from "../../ports/output/i-user-profile.client";
 
 const mockRepo = (): jest.Mocked<IUserRepository> => ({
   findById: jest.fn(),
+  findByIds: jest.fn(),
+  searchByText: jest.fn(),
   findByEmail: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),

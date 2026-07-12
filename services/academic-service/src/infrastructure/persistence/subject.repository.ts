@@ -32,6 +32,7 @@ export class SubjectRepository implements ISubjectRepository {
     if (filters?.periodId) {
       qb.andWhere("s.academicPeriodId = :periodId", { periodId: filters.periodId });
     }
+    qb.orderBy("s.createdAt", "ASC");
     const list = await qb.getMany();
     return list.map((o) => this.toDomain(o));
   }

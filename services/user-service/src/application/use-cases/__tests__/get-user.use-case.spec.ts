@@ -26,10 +26,13 @@ const mockRepo = (): jest.Mocked<IUserProfileRepository> => ({
   update: jest.fn(),
   softDelete: jest.fn(),
   findAll: jest.fn(),
+  findPaginated: jest.fn(),
 });
 
 const mockAuthClient = (): jest.Mocked<IAuthServiceClient> => ({
   getUserById: jest.fn(),
+  getUsersByIds: jest.fn(),
+  searchUsers: jest.fn(),
 });
 
 describe("GetUserUseCase", () => {

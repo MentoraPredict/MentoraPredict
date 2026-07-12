@@ -31,4 +31,6 @@ export interface IStudentSubjectMetricsRepository {
   ): Promise<StudentSubjectMetricsEntity[]>;
   // Latest riskLevel per student in the subject, grouped into counts.
   getRiskCountsBySubject(subjectId: string): Promise<SubjectRiskCounts>;
+  // Average of each student's latest averageGrade in the subject (course-level average).
+  getAverageGradeBySubject(subjectId: string): Promise<number | null>;
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -13,6 +14,7 @@ import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.rep
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
 import { INotificationClientPort } from '../ports/output/i-notification-client.port';
 import { IUserProfilePort } from '../ports/output/i-user-profile.port';
+import { ITeacherRolePort } from '../ports/output/i-teacher-role.port';
 
 export interface CreateSubjectDto {
   name: string;
@@ -21,6 +23,7 @@ export interface CreateSubjectDto {
   credits: number;
   careerId: string;
   maxCapacity?: number;
+  teacherId?: string;
 }
 
 @Injectable()
@@ -38,9 +41,17 @@ export class CreateSubjectUseCase {
     private readonly notificationClient: INotificationClientPort,
     @Inject('IUserProfilePort')
     private readonly userProfilePort: IUserProfilePort,
+    @Inject('ITeacherRolePort')
+    private readonly teacherRolePort: ITeacherRolePort,
   ) {}
 
-  async execute(dto: CreateSubjectDto, teacherId: string): Promise<SubjectEntity> {
+  async execute(
+    dto: CreateSubjectDto,
+    callerId: string,
+    callerRole: string,
+  ): Promise<SubjectEntity> {
+    const teacherId = await this.resolveTeacherId(dto, callerId, callerRole);
+
     const activePeriod = await this.periodRepo.findActive();
     if (!activePeriod) {
       throw new ConflictException(
@@ -108,5 +119,33 @@ export class CreateSubjectUseCase {
     });
 
     return saved;
+  }
+
+  // ADMIN must name the real teacher (validated against user-service);
+  // TEACHER callers always get their own id — any teacherId in the body is
+  // ignored so a teacher can't create courses on someone else's behalf.
+  private async resolveTeacherId(
+    dto: CreateSubjectDto,
+    callerId: string,
+    callerRole: string,
+  ): Promise<string> {
+    if (callerRole !== 'ADMIN') {
+      return callerId;
+    }
+
+    if (!dto.teacherId) {
+      throw new BadRequestException(
+        'Debes asignar un docente (teacherId) al crear un curso como administrador.',
+      );
+    }
+
+    const isTeacher = await this.teacherRolePort.isTeacher(dto.teacherId);
+    if (!isTeacher) {
+      throw new BadRequestException(
+        'El usuario asignado no tiene rol TEACHER.',
+      );
+    }
+
+    return dto.teacherId;
   }
 }

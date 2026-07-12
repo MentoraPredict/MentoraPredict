@@ -5,7 +5,7 @@ import {
   AuthProvider, UserProfileEntity, UserProfileStatus,
 } from '../../domain/entities/user-profile.entity';
 import {
-  IUserProfileRepository, UserProfileFilters,
+  IUserProfileRepository, UserProfileFilters, UserProfilePagination,
 } from '../../domain/ports/i-user-profile.repository';
 import { UserProfileOrmEntity } from './user-profile.orm-entity';
 
@@ -61,6 +61,31 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   async findAll(filters: UserProfileFilters): Promise<UserProfileEntity[]> {
+    const qb = this.createFilteredQuery(filters);
+    const list = await qb.getMany();
+    return list.map((o) => this.toDomain(o));
+  }
+
+  async findPaginated(
+    filters: UserProfileFilters,
+    pagination: UserProfilePagination,
+  ): Promise<{ items: UserProfileEntity[]; total: number }> {
+    const page = Math.max(1, pagination.page);
+    const limit = Math.min(Math.max(1, pagination.limit), 100);
+    const qb = this.createFilteredQuery(filters)
+      .orderBy('u.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      items: items.map((o) => this.toDomain(o)),
+      total,
+    };
+  }
+
+  private createFilteredQuery(filters: UserProfileFilters) {
     const qb = this.repo.createQueryBuilder('u');
     if (filters.role) {
       qb.andWhere('LOWER(u.role) = LOWER(:role)', { role: filters.role });
@@ -68,8 +93,14 @@ export class UserProfileRepository implements IUserProfileRepository {
     if (filters.status) {
       qb.andWhere('LOWER(u.status) = LOWER(:status)', { status: filters.status });
     }
-    const list = await qb.getMany();
-    return list.map((o) => this.toDomain(o));
+    if (filters.ids) {
+      if (filters.ids.length === 0) {
+        qb.andWhere('1 = 0');
+      } else {
+        qb.andWhere('u.id IN (:...ids)', { ids: filters.ids });
+      }
+    }
+    return qb;
   }
 
   private toDomain(orm: UserProfileOrmEntity): UserProfileEntity {

@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { CreateSubjectUseCase } from '../create-subject.use-case';
 import { ISubjectRepository } from '../../ports/output/i-subject.repository';
 import { ICareerRepository } from '../../ports/output/i-career.repository';
@@ -6,6 +6,7 @@ import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.
 import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
 import { INotificationClientPort } from '../../ports/output/i-notification-client.port';
 import { IUserProfilePort } from '../../ports/output/i-user-profile.port';
+import { ITeacherRolePort } from '../../ports/output/i-teacher-role.port';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { CareerEntity } from '../../../domain/entities/career.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
@@ -60,6 +61,10 @@ const mockUserProfilePort = (): jest.Mocked<IUserProfilePort> => ({
   getProfile: jest.fn().mockResolvedValue(null),
 });
 
+const mockTeacherRolePort = (): jest.Mocked<ITeacherRolePort> => ({
+  isTeacher: jest.fn().mockResolvedValue(true),
+});
+
 const makeCareer = () =>
   new CareerEntity('career-1', 'Ing. Sistemas', 'IS', '', 'ACTIVE', 'faculty-1', 10, new Date(), new Date());
 
@@ -89,6 +94,7 @@ describe('CreateSubjectUseCase', () => {
   let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
   let notificationClient: jest.Mocked<INotificationClientPort>;
   let userProfilePort: jest.Mocked<IUserProfilePort>;
+  let teacherRolePort: jest.Mocked<ITeacherRolePort>;
 
   beforeEach(() => {
     subjectRepo = mockSubjectRepo();
@@ -97,6 +103,7 @@ describe('CreateSubjectUseCase', () => {
     subjectTeacherRepo = mockSubjectTeacherRepo();
     notificationClient = mockNotificationClient();
     userProfilePort = mockUserProfilePort();
+    teacherRolePort = mockTeacherRolePort();
     useCase = new CreateSubjectUseCase(
       subjectRepo,
       careerRepo,
@@ -104,6 +111,7 @@ describe('CreateSubjectUseCase', () => {
       subjectTeacherRepo,
       notificationClient,
       userProfilePort,
+      teacherRolePort,
     );
   });
 
@@ -115,7 +123,7 @@ describe('CreateSubjectUseCase', () => {
     subjectRepo.save.mockImplementation(async (s) => s);
     subjectTeacherRepo.save.mockImplementation(async (a) => a);
 
-    const result = await useCase.execute(validDto, 'teacher-1');
+    const result = await useCase.execute(validDto, 'teacher-1', 'TEACHER');
 
     expect(result.name).toBe('Prog Web');
     expect(result.code).toBe('PW-701');
@@ -129,14 +137,14 @@ describe('CreateSubjectUseCase', () => {
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     careerRepo.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute(validDto, 'teacher-1', 'TEACHER')).rejects.toThrow(NotFoundException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 
   it('throws ConflictException when there is no active period', async () => {
     periodRepo.findActive.mockResolvedValue(null);
 
-    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(ConflictException);
+    await expect(useCase.execute(validDto, 'teacher-1', 'TEACHER')).rejects.toThrow(ConflictException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 
@@ -145,7 +153,7 @@ describe('CreateSubjectUseCase', () => {
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectRepo.findByNameAndPeriod.mockResolvedValue(makeExistingSubject());
 
-    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(ConflictException);
+    await expect(useCase.execute(validDto, 'teacher-1', 'TEACHER')).rejects.toThrow(ConflictException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 
@@ -155,7 +163,7 @@ describe('CreateSubjectUseCase', () => {
     subjectRepo.findByNameAndPeriod.mockResolvedValue(null);
     subjectRepo.findByCode.mockResolvedValue(makeExistingSubject());
 
-    await expect(useCase.execute(validDto, 'teacher-1')).rejects.toThrow(ConflictException);
+    await expect(useCase.execute(validDto, 'teacher-1', 'TEACHER')).rejects.toThrow(ConflictException);
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 
@@ -167,11 +175,71 @@ describe('CreateSubjectUseCase', () => {
     subjectRepo.save.mockImplementation(async (s) => s);
     subjectTeacherRepo.save.mockImplementation(async (a) => a);
 
-    await useCase.execute({ ...validDto, code: '  pw-701  ' }, 'teacher-1');
+    await useCase.execute({ ...validDto, code: '  pw-701  ' }, 'teacher-1', 'TEACHER');
 
     expect(subjectRepo.findByCode).toHaveBeenCalledWith('PW-701');
     expect(subjectRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'PW-701' }),
     );
+  });
+
+  it('ADMIN caller without teacherId throws BadRequestException', async () => {
+    careerRepo.findById.mockResolvedValue(makeCareer());
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
+
+    await expect(
+      useCase.execute(validDto, 'admin-1', 'ADMIN'),
+    ).rejects.toThrow(BadRequestException);
+    expect(subjectRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('ADMIN caller with a teacherId that is not a TEACHER throws BadRequestException', async () => {
+    teacherRolePort.isTeacher.mockResolvedValue(false);
+
+    await expect(
+      useCase.execute({ ...validDto, teacherId: 'not-a-teacher' }, 'admin-1', 'ADMIN'),
+    ).rejects.toThrow(BadRequestException);
+    expect(teacherRolePort.isTeacher).toHaveBeenCalledWith('not-a-teacher');
+    expect(subjectRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('ADMIN caller with a valid teacherId creates the subject assigned to that teacher', async () => {
+    careerRepo.findById.mockResolvedValue(makeCareer());
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
+    subjectRepo.findByNameAndPeriod.mockResolvedValue(null);
+    subjectRepo.findByCode.mockResolvedValue(null);
+    subjectRepo.save.mockImplementation(async (s) => s);
+    subjectTeacherRepo.save.mockImplementation(async (a) => a);
+    teacherRolePort.isTeacher.mockResolvedValue(true);
+
+    const result = await useCase.execute(
+      { ...validDto, teacherId: 'teacher-9' },
+      'admin-1',
+      'ADMIN',
+    );
+
+    expect(teacherRolePort.isTeacher).toHaveBeenCalledWith('teacher-9');
+    expect(result.teacherId).toBe('teacher-9');
+    expect(subjectTeacherRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ teacherId: 'teacher-9' }),
+    );
+  });
+
+  it('TEACHER caller ignores any teacherId in the body and uses their own id', async () => {
+    careerRepo.findById.mockResolvedValue(makeCareer());
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
+    subjectRepo.findByNameAndPeriod.mockResolvedValue(null);
+    subjectRepo.findByCode.mockResolvedValue(null);
+    subjectRepo.save.mockImplementation(async (s) => s);
+    subjectTeacherRepo.save.mockImplementation(async (a) => a);
+
+    const result = await useCase.execute(
+      { ...validDto, teacherId: 'someone-elses-id' },
+      'teacher-1',
+      'TEACHER',
+    );
+
+    expect(teacherRolePort.isTeacher).not.toHaveBeenCalled();
+    expect(result.teacherId).toBe('teacher-1');
   });
 });

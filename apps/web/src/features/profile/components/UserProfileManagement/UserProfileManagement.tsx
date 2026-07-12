@@ -33,7 +33,7 @@ interface ProfileCourse {
 }
 
 interface UserProfileManagementProps {
-  role: Extract<UserRole, "TEACHER" | "STUDENT">;
+  role: Extract<UserRole, "TEACHER" | "STUDENT" | "ADMIN">;
   courses: ProfileCourse[];
   isCoursesLoading?: boolean;
   coursesError?: string | null;
@@ -84,7 +84,11 @@ export default function UserProfileManagement({
   }, [courses]);
 
   const dashboardPath =
-    role === "STUDENT" ? APP_PATHS.student.dashboard : APP_PATHS.teacher.dashboard;
+    role === "STUDENT"
+      ? APP_PATHS.student.dashboard
+      : role === "TEACHER"
+        ? APP_PATHS.teacher.dashboard
+        : APP_PATHS.admin.users;
 
   const handleChangeImage = (file: File) => {
     setSelectedImage(file);
@@ -175,15 +179,17 @@ export default function UserProfileManagement({
             resetToken={imageResetToken}
           />
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className={`grid gap-6 ${role === "ADMIN" ? "" : "lg:grid-cols-2"}`}>
             <UserProfileDetailsCard email={user.email} role={user.role} />
 
-            <UserProfileCoursesCard
-              title={courseTitle}
-              courses={courses}
-              isLoading={isCoursesLoading}
-              error={coursesError}
-            />
+            {role === "ADMIN" ? null : (
+              <UserProfileCoursesCard
+                title={courseTitle}
+                courses={courses}
+                isLoading={isCoursesLoading}
+                error={coursesError}
+              />
+            )}
           </div>
 
           {role === "STUDENT" ? (

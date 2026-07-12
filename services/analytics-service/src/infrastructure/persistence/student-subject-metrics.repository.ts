@@ -117,6 +117,22 @@ export class StudentSubjectMetricsRepository implements IStudentSubjectMetricsRe
     return counts;
   }
 
+  async getAverageGradeBySubject(subjectId: string): Promise<number | null> {
+    const rows = (await this.repo.manager.query(
+      `SELECT AVG(average_grade)::float AS "averageGrade"
+       FROM (
+         SELECT DISTINCT ON (student_id) student_id, average_grade
+         FROM student_subject_metrics
+         WHERE subject_id = $1
+         ORDER BY student_id, academic_year DESC, academic_week DESC
+       ) latest
+       WHERE average_grade IS NOT NULL`,
+      [subjectId],
+    )) as { averageGrade: number | null }[];
+
+    return rows[0]?.averageGrade ?? null;
+  }
+
   private rowToDomain(row: Record<string, unknown>): StudentSubjectMetricsEntity {
     return new StudentSubjectMetricsEntity(
       row.id as string,

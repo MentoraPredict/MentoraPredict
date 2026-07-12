@@ -1,17 +1,19 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ReactNode, useEffect } from "react";
 
-interface CreateCourseModalProps {
+interface ModalProps {
   isOpen: boolean;
   children: ReactNode;
   onClose?: () => void;
+  ariaLabel?: string;
 }
 
-export default function CreateCourseModal({
+export default function Modal({
   isOpen,
   children,
   onClose,
-}: CreateCourseModalProps) {
+  ariaLabel = "Dialogo",
+}: ModalProps) {
   useEffect(() => {
     if (!isOpen || !onClose) return;
 
@@ -39,7 +41,7 @@ export default function CreateCourseModal({
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Crear curso"
+            aria-label={ariaLabel}
             className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-lg"
             initial={{ opacity: 0, scale: 0.96, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

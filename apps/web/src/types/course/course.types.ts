@@ -3,8 +3,10 @@ export type CourseRiskLevel = "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
 export interface Course {
   id: string;
   name: string;
+  teacherId?: string;
   teacherName: string;
   semester: string;
+  isActive?: boolean;
   description: string;
   riskLevel: CourseRiskLevel;
   imageUrl?: string;

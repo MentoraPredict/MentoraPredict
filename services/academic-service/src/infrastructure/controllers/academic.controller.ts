@@ -222,15 +222,16 @@ export class AcademicController {
   // ─── Enrollments ──────────────────────────────────────────────────────────────
 
   @Post("enrollments")
-  @Roles("TEACHER")
-  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (TEACHER only)" })
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (TEACHER: own courses only; ADMIN: any course)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 409, description: "Already enrolled or no capacity" })
   async enroll(@Body() dto: EnrollStudentDto, @Req() req: JwtRequest) {
-    const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
-    return this.enrollStudentUC.execute(dto, teacherId);
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    return this.enrollStudentUC.execute(dto, callerId, callerRole);
   }
 
   @Get("subjects/:subjectId/enrollments")
@@ -258,9 +259,9 @@ export class AcademicController {
   }
 
   @Post("subjects/:subjectId/enrollments/batch")
-  @Roles("TEACHER")
+  @Roles("TEACHER", "ADMIN")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Batch enroll multiple students in a subject (TEACHER only)" })
+  @ApiOperation({ summary: "Batch enroll multiple students in a subject (TEACHER: own courses only; ADMIN: any course)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 404 })
@@ -269,9 +270,10 @@ export class AcademicController {
     @Body() dto: BatchEnrollDto,
     @Req() req: JwtRequest,
   ) {
-    const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
-    return this.batchEnrollUC.execute(subjectId, teacherId, dto.studentIds);
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    return this.batchEnrollUC.execute(subjectId, callerId, callerRole, dto.studentIds);
   }
 
   @Patch("enrollments/:enrollmentId/status")
@@ -869,17 +871,21 @@ export class AcademicController {
   }
 
   @Post("subjects")
-  @Roles("TEACHER")
+  @Roles("TEACHER", "ADMIN")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new subject (TEACHER only)" })
+  @ApiOperation({
+    summary:
+      "Create a new subject (TEACHER creates their own; ADMIN must assign a teacherId)",
+  })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 400 })
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
   async createSubject(@Body() dto: CreateSubjectDto, @Req() req: JwtRequest) {
-    const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException('Missing teacher identity');
-    return this.createSubjectUC.execute(dto, teacherId);
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException('Missing caller identity');
+    return this.createSubjectUC.execute(dto, callerId, callerRole);
   }
 
   @Get("teachers/me/subjects")
@@ -937,12 +943,12 @@ export class AcademicController {
   // ─── Subject image (Phase 10) ──────────────────────────────────────────
 
   @Post("subjects/:subjectId/image")
-  @Roles("TEACHER")
+  @Roles("TEACHER", "ADMIN")
   @UseFilters(MulterExceptionFilter)
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
   @ApiConsumes("multipart/form-data")
   @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
-  @ApiOperation({ summary: "Upload/replace a subject's cover image (TEACHER owner, jpg/jpeg/png, max 2MB)" })
+  @ApiOperation({ summary: "Upload/replace a subject's cover image (TEACHER owner or ADMIN, jpg/jpeg/png, max 2MB)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 413, description: "File too large" })
@@ -952,28 +958,30 @@ export class AcademicController {
     @UploadedFile() file: MulterUploadedFile,
     @Req() req: JwtRequest,
   ) {
-    const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
-    return this.uploadSubjectImageUC.execute(subjectId, teacherId, file);
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    return this.uploadSubjectImageUC.execute(subjectId, callerId, callerRole, file);
   }
 
   @Delete("subjects/:subjectId/image")
-  @Roles("TEACHER")
+  @Roles("TEACHER", "ADMIN")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Remove a subject's cover image (TEACHER owner)" })
+  @ApiOperation({ summary: "Remove a subject's cover image (TEACHER owner or ADMIN)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   async deleteSubjectImage(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
-    const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
-    return this.deleteSubjectImageUC.execute(subjectId, teacherId);
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    return this.deleteSubjectImageUC.execute(subjectId, callerId, callerRole);
   }
 
   // ─── Temario / Topics (Phase 10b) ────────────────────────────────────────
 
   @Get("subjects/:subjectId/topics")
-  @Roles("TEACHER", "STUDENT")
-  @ApiOperation({ summary: "List a subject's topics, ordered (TEACHER owner or STUDENT actively enrolled)" })
+  @Roles("TEACHER", "STUDENT", "ADMIN")
+  @ApiOperation({ summary: "List a subject's topics, ordered (TEACHER owner, STUDENT actively enrolled, or ADMIN)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })

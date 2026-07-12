@@ -48,4 +48,69 @@ export class AuthHttpClient implements IAuthServiceClient {
       return undefined;
     }
   }
+
+  async getUsersByIds(userIds: string[]): Promise<AuthUserResponse[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const url = `${this.baseUrl}/api/v1/auth/internal/users/batch`;
+
+    try {
+      const response = (await firstValueFrom(
+        this.http.post<AuthUserResponse[]>(
+          url,
+          { ids: userIds },
+          {
+            headers: {
+              Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+            },
+            timeout: 5000,
+          },
+        ),
+      )) as AxiosResponse<AuthUserResponse[]>;
+
+      return response.data;
+    } catch (error) {
+      this.logger.warn(
+        `Could not batch-fetch ${userIds.length} auth users from auth-service: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return [];
+    }
+  }
+
+  async searchUsers(search: string, limit = 200): Promise<AuthUserResponse[]> {
+    const normalizedSearch = search.trim();
+    if (!normalizedSearch) {
+      return [];
+    }
+
+    const url = `${this.baseUrl}/api/v1/auth/internal/users/search`;
+
+    try {
+      const response = (await firstValueFrom(
+        this.http.get<AuthUserResponse[]>(url, {
+          params: {
+            q: normalizedSearch,
+            limit,
+          },
+          headers: {
+            Authorization: `Bearer ${this.internalJwt.createServiceToken()}`,
+          },
+          timeout: 5000,
+        }),
+      )) as AxiosResponse<AuthUserResponse[]>;
+
+      return response.data;
+    } catch (error) {
+      this.logger.warn(
+        `Could not search auth users from auth-service: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return [];
+    }
+  }
 }

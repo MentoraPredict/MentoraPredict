@@ -9,12 +9,14 @@ interface TextProps {
     children: ReactNode;
     variant?: TextVariant;
     className?: string;
+    title?: string;
 }
 
 export default function Text({
     children,
     variant = "body",
     className = "",
+    title,
 }: TextProps) {
     const variants = {
         body: "text-base text-gray-600",
@@ -23,7 +25,7 @@ export default function Text({
     };
 
     return (
-        <p className={`${variants[variant]} ${className}`}>
+        <p className={`${variants[variant]} ${className}`} title={title}>
             {children}
         </p>
     );

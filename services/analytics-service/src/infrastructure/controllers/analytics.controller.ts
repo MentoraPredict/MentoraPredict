@@ -65,14 +65,15 @@ export class AnalyticsController {
   }
 
   @Get('subjects/:subjectId/metrics/summary')
-  @Roles('TEACHER')
-  @ApiOperation({ summary: 'Risk-level distribution across a subject group (TEACHER owner)' })
+  @Roles('TEACHER', 'ADMIN')
+  @ApiOperation({ summary: 'Risk-level distribution and average grade across a subject group (TEACHER owner or ADMIN)' })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: 'Teacher does not own this course' })
   async getSubjectMetricsSummary(@Param('subjectId') subjectId: string, @Req() req: JwtRequest) {
-    const teacherId = req.user?.sub;
-    if (!teacherId) throw new UnauthorizedException('Missing teacher identity');
-    return this.getSubjectMetricsSummaryUC.execute(subjectId, teacherId);
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException('Missing caller identity');
+    return this.getSubjectMetricsSummaryUC.execute(subjectId, callerId, callerRole);
   }
 
   // ─── Riesgo consolidado + alertas (Fase 7) ───────────────────────────────
