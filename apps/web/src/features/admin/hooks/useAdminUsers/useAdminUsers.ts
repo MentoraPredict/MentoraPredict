@@ -27,6 +27,11 @@ function getRequestErrorMessage(
     }
 
     const status = error.response?.status;
+    const backendMessage = error.response?.data?.message;
+
+    if (typeof backendMessage === "string" && backendMessage.trim()) {
+        return backendMessage;
+    }
 
     if (!status) {
         return `${fallbackMessage} No hubo respuesta de Kong o del backend.`;
@@ -145,6 +150,10 @@ export default function useAdminUsers() {
 
     const clearSearch = useCallback(() => {
         setSearch("");
+    }, []);
+
+    const clearMutationError = useCallback(() => {
+        setMutationError(null);
     }, []);
 
     const clearStudentFilters = useCallback(() => {
@@ -348,6 +357,7 @@ export default function useAdminUsers() {
         setSearch,
         clearSearch,
         mutationError,
+        clearMutationError,
         admins: {
             users: admins.users,
             isLoading: admins.isLoading,

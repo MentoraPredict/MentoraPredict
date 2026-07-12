@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { IsArray, IsString } from 'class-validator';
+import { IsArray, IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
 import { GetAuthUserUseCase } from '../../application/use-cases/get-auth-user.use-case';
 import { GetAuthUsersByIdsUseCase } from '../../application/use-cases/get-auth-users-by-ids.use-case';
 import { SyncAuthUserUseCase } from '../../application/use-cases/sync-auth-user.use-case';
@@ -8,11 +8,25 @@ import { UpdateAuthUserUseCase } from '../../application/use-cases/update-user.u
 import { SearchAuthUsersUseCase } from '../../application/use-cases/search-auth-users.use-case';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
-class SyncRoleDto { role!: string; }
-class SyncStatusDto { status!: string; }
+class SyncRoleDto {
+  @IsIn(['ADMIN', 'TEACHER', 'STUDENT'])
+  role!: string;
+}
+class SyncStatusDto {
+  @IsIn(['ACTIVE', 'INACTIVE'])
+  status!: string;
+}
 class SyncProfileDto {
+  @IsOptional()
+  @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsString()
   firstName?: string;
+
+  @IsOptional()
+  @IsString()
   lastName?: string;
 }
 class GetUsersByIdsDto {

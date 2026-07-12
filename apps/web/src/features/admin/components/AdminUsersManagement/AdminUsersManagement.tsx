@@ -12,6 +12,7 @@ import StatCard from "@/components/molecules/StatCard";
 
 import AdminUsersTable from "@/features/admin/components/AdminUsersTable";
 import CreateUserForm from "@/features/admin/components/CreateUserForm";
+import AdminUserRestrictionDialog from "@/features/admin/components/AdminUserRestrictionDialog";
 import useAdminUsers from "@/features/admin/hooks/useAdminUsers";
 import type { AppUser } from "@/types/user/user.types";
 
@@ -160,6 +161,7 @@ export default function AdminUsersManagement() {
     setSearch,
     clearSearch,
     mutationError,
+    clearMutationError,
     admins,
     teachers,
     students,
@@ -243,14 +245,6 @@ export default function AdminUsersManagement() {
             onSearch={() => {}}
           />
         </div>
-
-        {mutationError ? (
-          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-6 py-4">
-            <Text variant="small" className="font-medium text-red-700">
-              {mutationError}
-            </Text>
-          </div>
-        ) : null}
 
         <UserRoleSection
           title="Administradores"
@@ -347,6 +341,11 @@ export default function AdminUsersManagement() {
           }}
         />
       </Modal>
+
+      <AdminUserRestrictionDialog
+        message={mutationError}
+        onClose={clearMutationError}
+      />
     </section>
   );
 }

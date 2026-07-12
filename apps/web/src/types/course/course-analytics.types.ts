@@ -6,6 +6,7 @@ export interface CourseProgressPoint {
 
 export interface CourseAlert {
   id: string;
+  studentId?: string;
   message: string;
   severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 }

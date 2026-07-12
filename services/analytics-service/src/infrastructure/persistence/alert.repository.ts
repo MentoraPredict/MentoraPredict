@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { AlertEntity, AlertSeverity, AlertStatus, AlertType } from '../../domain/entities/alert.entity';
 import { IAlertRepository } from '../../domain/ports/i-alert.repository';
 import { AlertOrmEntity } from './alert.orm-entity';
@@ -44,7 +44,10 @@ export class AlertRepository implements IAlertRepository {
     filters: { status?: string; subjectId?: string; periodId?: string },
     pagination: { page: number; limit: number },
   ): Promise<{ items: AlertEntity[]; total: number }> {
-    const where: Record<string, unknown> = { studentId, status: filters.status ?? 'ACTIVE' };
+    const where: Record<string, unknown> = {
+      studentId,
+      status: filters.status ?? In(['ACTIVE', 'UNREAD']),
+    };
     if (filters.subjectId) where.subjectId = filters.subjectId;
     if (filters.periodId) where.periodId = filters.periodId;
 
@@ -62,7 +65,10 @@ export class AlertRepository implements IAlertRepository {
     filters: { status?: string; severity?: string },
     pagination: { page: number; limit: number },
   ): Promise<{ items: AlertEntity[]; total: number }> {
-    const where: Record<string, unknown> = { subjectId, status: filters.status ?? 'ACTIVE' };
+    const where: Record<string, unknown> = {
+      subjectId,
+      status: filters.status ?? In(['ACTIVE', 'UNREAD']),
+    };
     if (filters.severity) where.severity = filters.severity;
 
     const [orms, total] = await this.repo.findAndCount({

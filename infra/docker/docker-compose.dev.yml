@@ -316,6 +316,8 @@ services:
       JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/public.pem}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
+      ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
+      ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://analytics-service:3004}
       UPLOADS_DIR: /app/services/user-service/uploads
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}

@@ -21,6 +21,8 @@ import { InternalServiceGuard } from "./infrastructure/guards/internal-service.g
 import { RolesGuard } from "./infrastructure/guards/roles.guard";
 import { AuthHttpClient } from "./infrastructure/adapters/auth-http.client";
 import { AuthSyncClient } from "./infrastructure/adapters/auth-sync.client";
+import { AcademicStatusHttpClient } from "./infrastructure/adapters/academic-status-http.client";
+import { NotificationHttpClient } from "./infrastructure/adapters/notification-http.client";
 import { GetUserUseCase } from "./application/use-cases/get-user.use-case";
 import { UploadAvatarUseCase } from "./application/use-cases/upload-avatar.use-case";
 import { DeleteAvatarUseCase } from "./application/use-cases/delete-avatar.use-case";
@@ -80,6 +82,8 @@ import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-i
     { provide: "IUserProfileRepository", useClass: UserProfileRepository },
     { provide: "IAuthServiceClient", useClass: AuthHttpClient },
     { provide: "IAuthSyncClient", useClass: AuthSyncClient },
+    { provide: "IAcademicStatusClient", useClass: AcademicStatusHttpClient },
+    { provide: "INotificationClient", useClass: NotificationHttpClient },
     { provide: "IImageStoragePort", useClass: SupabaseImageStorageAdapter },
     GetUserUseCase,
     UpdateUserUseCase,

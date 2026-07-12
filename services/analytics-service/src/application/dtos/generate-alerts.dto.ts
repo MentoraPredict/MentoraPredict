@@ -3,9 +3,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GenerateAlertsDto {
   @ApiProperty() @IsUUID() subjectId!: string;
-  @ApiProperty() @IsString() riskLevel!: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() riskLevel?: string;
   @ApiProperty() @IsNumber() @Min(0) @Max(20) currentAverage!: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() previousAverage?: number;
   @ApiProperty() @IsNumber() @Min(0) failedEvaluations!: number;
-  @ApiProperty() @IsNumber() @Min(0) @Max(100) attendance!: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) @Max(100) attendance?: number;
 }
