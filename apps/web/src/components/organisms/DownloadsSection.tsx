@@ -9,6 +9,19 @@ import {
 import Button from "@/components/atoms/Button";
 import Container from "@/components/atoms/Container";
 
+// The web app resolves "/downloads/..." relative to its own origin, proxied
+// by nginx — fine, since it's served from that same origin. The desktop app
+// loads from a custom mentorapredict:// origin, where a relative path
+// resolves to a resource the protocol handler doesn't serve at all. Desktop
+// builds set VITE_API_BASE_URL to an absolute URL (e.g.
+// https://mentorapredictqa.programacionwebuce.net/api); strip the trailing
+// "/api" to get the real origin to fetch downloads from. Web's default
+// ("/api") strips down to "", preserving today's relative behavior.
+const DOWNLOADS_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(
+  /\/api\/?$/,
+  "",
+);
+
 interface DownloadManifest {
   environment?: string;
   downloadUrl?: string;
@@ -23,7 +36,7 @@ function useDownloadManifest(fileName: string) {
   useEffect(() => {
     let isMounted = true;
 
-    fetch(`/downloads/${fileName}`, { cache: "no-store" })
+    fetch(`${DOWNLOADS_BASE_URL}/downloads/${fileName}`, { cache: "no-store" })
       .then((response) => {
         if (!response.ok) {
           throw new Error("Download manifest not available");
@@ -112,7 +125,11 @@ function PlatformDownloadCard({
             disabled={!hasDownload}
             onClick={() => {
               if (manifest?.downloadUrl) {
-                window.open(manifest.downloadUrl, "_blank", "noopener");
+                window.open(
+                  `${DOWNLOADS_BASE_URL}${manifest.downloadUrl}`,
+                  "_blank",
+                  "noopener",
+                );
               }
             }}
           >
