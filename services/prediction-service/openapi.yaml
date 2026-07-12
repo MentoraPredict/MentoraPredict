@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: prediction-service API
-  version: '1.0.0'
+  version: "1.0.0"
   description: >
     Combina el riesgo determinístico de analytics-service con el contexto académico
     del estudiante y genera, vía OpenAI, un resumen + plan de recomendaciones.
@@ -28,7 +28,15 @@ components:
       properties:
         type:
           type: string
-          enum: [STUDY_HABIT, TUTORING, TIME_MANAGEMENT, ATTENDANCE, SUBJECT_FOCUS, WELLBEING]
+          enum:
+            [
+              STUDY_HABIT,
+              TUTORING,
+              TIME_MANAGEMENT,
+              ATTENDANCE,
+              SUBJECT_FOCUS,
+              WELLBEING,
+            ]
         title: { type: string }
         reason: { type: string }
         priority: { type: string, enum: [LOW, MEDIUM, HIGH] }
@@ -37,11 +45,11 @@ components:
       properties:
         studentId: { type: string }
         periodId: { type: string }
-        risk: { $ref: '#/components/schemas/RiskSnapshot' }
+        risk: { $ref: "#/components/schemas/RiskSnapshot" }
         summary: { type: string }
         recommendations:
           type: array
-          items: { $ref: '#/components/schemas/RecommendationItem' }
+          items: { $ref: "#/components/schemas/RecommendationItem" }
         modelVersion: { type: string }
         generatedAt: { type: string, format: date-time }
 security:
@@ -60,12 +68,12 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Prediction result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PredictionResult'
+                $ref: "#/components/schemas/PredictionResult"
   /students/{studentId}/history:
     get:
       summary: List past predictions for a student
@@ -79,11 +87,11 @@ paths:
           required: false
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Prediction history
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PredictionResult'
+                  $ref: "#/components/schemas/PredictionResult"

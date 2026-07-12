@@ -57,38 +57,38 @@ components:
     PaginationMeta:
       type: object
       properties:
-        page:        { type: integer, example: 1 }
-        limit:       { type: integer, example: 20 }
-        total:       { type: integer, example: 150 }
-        totalPages:  { type: integer, example: 8 }
+        page: { type: integer, example: 1 }
+        limit: { type: integer, example: 20 }
+        total: { type: integer, example: 150 }
+        totalPages: { type: integer, example: 8 }
 
     PaginatedResponse:
       type: object
       properties:
-        data:  { type: array, items: {} }
-        meta:  { $ref: '#/components/schemas/PaginationMeta' }
+        data: { type: array, items: {} }
+        meta: { $ref: "#/components/schemas/PaginationMeta" }
 
     # ── Standard Error ─────────────────────────────────────
     ErrorResponse:
       type: object
       required: [statusCode, message, timestamp, path]
       properties:
-        statusCode:  { type: integer, example: 400 }
-        message:     { type: string,  example: "Validation failed" }
-        errors:      { type: array, items: { type: string } }
-        timestamp:   { type: string, format: date-time }
-        path:        { type: string, example: "/api/v1/auth/login" }
-        requestId:   { type: string, format: uuid }
+        statusCode: { type: integer, example: 400 }
+        message: { type: string, example: "Validation failed" }
+        errors: { type: array, items: { type: string } }
+        timestamp: { type: string, format: date-time }
+        path: { type: string, example: "/api/v1/auth/login" }
+        requestId: { type: string, format: uuid }
 
     # ── Health Check ───────────────────────────────────────
     HealthResponse:
       type: object
       properties:
-        status:    { $ref: '#/components/schemas/ServiceStatus' }
+        status: { $ref: "#/components/schemas/ServiceStatus" }
         services:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/ServiceStatus'
+            $ref: "#/components/schemas/ServiceStatus"
         timestamp: { type: string, format: date-time }
       example:
         status: "UP"
@@ -103,14 +103,21 @@ components:
 # Covers: RF-001, RF-002, RF-003, RF-004, RF-005
 # ─────────────────────────────────────────────────────────────
 paths:
-
   # ── Health ──────────────────────────────────────────────
   /health:
     get:
       tags: [Health]
       summary: Service health check
       responses:
-        "200": { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/HealthResponse' } } } }
+        "200":
+          {
+            description: OK,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/HealthResponse" } },
+              },
+          }
 
   # ── Auth ────────────────────────────────────────────────
   /api/v1/auth/register:
@@ -126,9 +133,9 @@ paths:
               required: [firstName, lastName, email, password]
               properties:
                 firstName: { type: string, example: "Victor" }
-                lastName:  { type: string, example: "Cañar" }
-                email:     { type: string, format: email }
-                password:  { type: string, minLength: 8 }
+                lastName: { type: string, example: "Cañar" }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
       responses:
         "201":
           description: User registered successfully
@@ -137,9 +144,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  id:        { type: string, format: uuid }
-                  email:     { type: string }
-                  role:      { $ref: '#/components/schemas/Role' }
+                  id: { type: string, format: uuid }
+                  email: { type: string }
+                  role: { $ref: "#/components/schemas/Role" }
                   createdAt: { type: string, format: date-time }
         "409": { description: Email already exists }
         "422": { description: Validation error }
@@ -156,7 +163,7 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email:    { type: string, format: email }
+                email: { type: string, format: email }
                 password: { type: string }
       responses:
         "200":
@@ -166,10 +173,12 @@ paths:
               schema:
                 type: object
                 properties:
-                  accessToken:  { type: string, description: "JWT RS256, expires 15min" }
-                  refreshToken: { type: string, description: "Opaque token, expires 7d" }
-                  expiresIn:    { type: integer, example: 900 }
-                  tokenType:    { type: string, example: "Bearer" }
+                  accessToken:
+                    { type: string, description: "JWT RS256, expires 15min" }
+                  refreshToken:
+                    { type: string, description: "Opaque token, expires 7d" }
+                  expiresIn: { type: integer, example: 900 }
+                  tokenType: { type: string, example: "Bearer" }
         "401": { description: Invalid credentials }
 
   /api/v1/auth/refresh:
@@ -194,7 +203,7 @@ paths:
                 type: object
                 properties:
                   accessToken: { type: string }
-                  expiresIn:   { type: integer, example: 900 }
+                  expiresIn: { type: integer, example: 900 }
         "401": { description: Invalid or expired refresh token }
 
   /api/v1/auth/logout:
@@ -243,17 +252,17 @@ paths:
               type: object
               required: [token, newPassword]
               properties:
-                token:       { type: string }
+                token: { type: string }
                 newPassword: { type: string, minLength: 8 }
       responses:
         "204": { description: Password updated }
         "400": { description: Invalid or expired token }
 
-# ─────────────────────────────────────────────────────────────
-# 2. USER-SERVICE  (port 3002)
-# ─────────────────────────────────────────────────────────────
-# Covers: RF-005, RF-014
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────
+  # 2. USER-SERVICE  (port 3002)
+  # ─────────────────────────────────────────────────────────────
+  # Covers: RF-005, RF-014
+  # ─────────────────────────────────────────────────────────────
 
   /api/v1/users/me:
     get:
@@ -268,12 +277,12 @@ paths:
               schema:
                 type: object
                 properties:
-                  id:        { type: string, format: uuid }
+                  id: { type: string, format: uuid }
                   firstName: { type: string }
-                  lastName:  { type: string }
-                  email:     { type: string }
-                  role:      { $ref: '#/components/schemas/Role' }
-                  isActive:  { type: boolean }
+                  lastName: { type: string }
+                  email: { type: string }
+                  role: { $ref: "#/components/schemas/Role" }
+                  isActive: { type: boolean }
                   createdAt: { type: string, format: date-time }
 
   /api/v1/users:
@@ -284,7 +293,7 @@ paths:
       parameters:
         - in: query
           name: role
-          schema: { $ref: '#/components/schemas/Role' }
+          schema: { $ref: "#/components/schemas/Role" }
         - in: query
           name: page
           schema: { type: integer, default: 1 }
@@ -296,7 +305,7 @@ paths:
           description: Paginated user list
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PaginatedResponse' }
+              schema: { $ref: "#/components/schemas/PaginatedResponse" }
         "403": { description: Forbidden — ADMIN role required }
 
   /api/v1/users/{id}/role:
@@ -317,17 +326,17 @@ paths:
               type: object
               required: [role]
               properties:
-                role: { $ref: '#/components/schemas/Role' }
+                role: { $ref: "#/components/schemas/Role" }
       responses:
         "200": { description: Role updated }
         "403": { description: Forbidden }
         "404": { description: User not found }
 
-# ─────────────────────────────────────────────────────────────
-# 3. ACADEMIC-SERVICE  (port 3003)
-# ─────────────────────────────────────────────────────────────
-# Covers: RF-006 to RF-013
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────
+  # 3. ACADEMIC-SERVICE  (port 3003)
+  # ─────────────────────────────────────────────────────────────
+  # Covers: RF-006 to RF-013
+  # ─────────────────────────────────────────────────────────────
 
   /api/v1/faculties:
     get:
@@ -348,7 +357,8 @@ paths:
               type: object
               required: [name, code]
               properties:
-                name: { type: string, example: "Ingeniería y Ciencias Aplicadas" }
+                name:
+                  { type: string, example: "Ingeniería y Ciencias Aplicadas" }
                 code: { type: string, example: "FICA" }
 
   /api/v1/careers:
@@ -368,8 +378,12 @@ paths:
               type: object
               required: [name, code, facultyId]
               properties:
-                name:      { type: string, example: "Ingeniería en Sistemas de Información" }
-                code:      { type: string, example: "ISI" }
+                name:
+                  {
+                    type: string,
+                    example: "Ingeniería en Sistemas de Información",
+                  }
+                code: { type: string, example: "ISI" }
                 facultyId: { type: string, format: uuid }
 
   /api/v1/academic-periods:
@@ -389,11 +403,11 @@ paths:
               type: object
               required: [name, startDate, endDate, careerId]
               properties:
-                name:      { type: string, example: "2026-A" }
+                name: { type: string, example: "2026-A" }
                 startDate: { type: string, format: date }
-                endDate:   { type: string, format: date }
-                careerId:  { type: string, format: uuid }
-                isActive:  { type: boolean, default: true }
+                endDate: { type: string, format: date }
+                careerId: { type: string, format: uuid }
+                isActive: { type: boolean, default: true }
 
   /api/v1/subjects:
     get:
@@ -419,9 +433,9 @@ paths:
               type: object
               required: [name, code, credits, periodId]
               properties:
-                name:     { type: string, example: "Programación Web" }
-                code:     { type: string, example: "PW-701" }
-                credits:  { type: integer, example: 4 }
+                name: { type: string, example: "Programación Web" }
+                code: { type: string, example: "PW-701" }
+                credits: { type: integer, example: 4 }
                 periodId: { type: string, format: uuid }
 
   /api/v1/subjects/{id}/teacher:
@@ -495,10 +509,10 @@ paths:
               type: object
               required: [name, weight, subjectId, dueDate]
               properties:
-                name:      { type: string, example: "Parcial 1" }
-                weight:    { type: number, minimum: 0, maximum: 100, example: 30 }
+                name: { type: string, example: "Parcial 1" }
+                weight: { type: number, minimum: 0, maximum: 100, example: 30 }
                 subjectId: { type: string, format: uuid }
-                dueDate:   { type: string, format: date }
+                dueDate: { type: string, format: date }
 
   /api/v1/grades:
     post:
@@ -513,9 +527,9 @@ paths:
               type: object
               required: [studentId, evaluationId, value]
               properties:
-                studentId:    { type: string, format: uuid }
+                studentId: { type: string, format: uuid }
                 evaluationId: { type: string, format: uuid }
-                value:        { type: number, minimum: 0, maximum: 10 }
+                value: { type: number, minimum: 0, maximum: 10 }
       responses:
         "201": { description: Grade recorded }
 
@@ -532,17 +546,17 @@ paths:
               type: object
               required: [file, periodId]
               properties:
-                file:     { type: string, format: binary }
+                file: { type: string, format: binary }
                 periodId: { type: string, format: uuid }
-                format:   { type: string, enum: [excel, csv, json] }
+                format: { type: string, enum: [excel, csv, json] }
       responses:
         "202": { description: Ingestion job accepted }
 
-# ─────────────────────────────────────────────────────────────
-# 4. ANALYTICS METRICS  (analytics-service)
-# ─────────────────────────────────────────────────────────────
-# Covers: RF-015, RF-016, RF-017
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────
+  # 4. ANALYTICS METRICS  (analytics-service)
+  # ─────────────────────────────────────────────────────────────
+  # Covers: RF-015, RF-016, RF-017
+  # ─────────────────────────────────────────────────────────────
 
   /api/v1/analytics/metrics/overview:
     get:
@@ -561,11 +575,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  periodId:                 { type: string, format: uuid }
+                  periodId: { type: string, format: uuid }
                   totalStudentsWithMetrics: { type: integer }
-                  institutionalAverage:     { type: number, example: 7.4 }
-                  subjectCount:             { type: integer }
-                  generatedAt:              { type: string, format: date-time }
+                  institutionalAverage: { type: number, example: 7.4 }
+                  subjectCount: { type: integer }
+                  generatedAt: { type: string, format: date-time }
 
   /api/v1/analytics/metrics/users/{userId}:
     get:
@@ -588,12 +602,13 @@ paths:
               schema:
                 type: object
                 properties:
-                  userId:          { type: string, format: uuid }
-                  periodId:        { type: string, format: uuid }
-                  globalAverage:   { type: number, example: 7.4 }
-                  subjectAverages: { type: object, additionalProperties: { type: number } }
-                  calculatedAt:    { type: string, format: date-time }
-                  version:         { type: integer }
+                  userId: { type: string, format: uuid }
+                  periodId: { type: string, format: uuid }
+                  globalAverage: { type: number, example: 7.4 }
+                  subjectAverages:
+                    { type: object, additionalProperties: { type: number } }
+                  calculatedAt: { type: string, format: date-time }
+                  version: { type: integer }
 
   /api/v1/analytics/metrics/subjects/{subjectId}:
     get:
@@ -616,19 +631,19 @@ paths:
               schema:
                 type: object
                 properties:
-                  subjectId:           { type: string, format: uuid }
-                  periodId:            { type: string, format: uuid }
+                  subjectId: { type: string, format: uuid }
+                  periodId: { type: string, format: uuid }
                   studentsWithMetrics: { type: integer }
-                  classAverage:        { type: number }
-                  passRate:            { type: number }
-                  atRiskCount:         { type: integer }
-                  generatedAt:         { type: string, format: date-time }
+                  classAverage: { type: number }
+                  passRate: { type: number }
+                  atRiskCount: { type: integer }
+                  generatedAt: { type: string, format: date-time }
 
-# ─────────────────────────────────────────────────────────────
-# 5. ANALYTICS-SERVICE  (port 3004)
-# ─────────────────────────────────────────────────────────────
-# Covers: RF-018, RF-021, RF-023, RF-024, RF-025
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────
+  # 5. ANALYTICS-SERVICE  (port 3004)
+  # ─────────────────────────────────────────────────────────────
+  # Covers: RF-018, RF-021, RF-023, RF-024, RF-025
+  # ─────────────────────────────────────────────────────────────
 
   /api/v1/analytics/risk/{studentId}:
     get:
@@ -648,10 +663,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  studentId:   { type: string, format: uuid }
-                  riskLevel:   { $ref: '#/components/schemas/RiskLevel' }
-                  score:       { type: number, minimum: 0, maximum: 100 }
-                  factors:     { type: array, items: { type: string } }
+                  studentId: { type: string, format: uuid }
+                  riskLevel: { $ref: "#/components/schemas/RiskLevel" }
+                  score: { type: number, minimum: 0, maximum: 100 }
+                  factors: { type: array, items: { type: string } }
                   classifiedAt: { type: string, format: date-time }
 
   /api/v1/analytics/alerts:
@@ -668,7 +683,7 @@ paths:
           schema: { type: string, format: uuid }
         - in: query
           name: level
-          schema: { $ref: '#/components/schemas/RiskLevel' }
+          schema: { $ref: "#/components/schemas/RiskLevel" }
         - in: query
           name: resolved
           schema: { type: boolean }
@@ -677,7 +692,7 @@ paths:
           description: Alert list
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PaginatedResponse' }
+              schema: { $ref: "#/components/schemas/PaginatedResponse" }
 
   /api/v1/analytics/dashboard/student/{studentId}:
     get:
@@ -697,10 +712,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  profile:         { type: object }
-                  currentMetrics:  { type: object }
-                  riskLevel:       { $ref: '#/components/schemas/RiskLevel' }
-                  activeAlerts:    { type: array, items: { type: object } }
+                  profile: { type: object }
+                  currentMetrics: { type: object }
+                  riskLevel: { $ref: "#/components/schemas/RiskLevel" }
+                  activeAlerts: { type: array, items: { type: object } }
                   recommendations: { type: array, items: { type: object } }
 
   /api/v1/analytics/dashboard/teacher/{teacherId}:
@@ -715,11 +730,11 @@ paths:
       summary: "RF-025: Admin dashboard — institution-wide indicators"
       security: [{ BearerAuth: [] }]
 
-# ─────────────────────────────────────────────────────────────
-# 6. PREDICTION-SERVICE  (port 3006)
-# ─────────────────────────────────────────────────────────────
-# Covers: RF-019, RF-020
-# ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────
+  # 6. PREDICTION-SERVICE  (port 3006)
+  # ─────────────────────────────────────────────────────────────
+  # Covers: RF-019, RF-020
+  # ─────────────────────────────────────────────────────────────
 
   /api/v1/prediction/students/{studentId}/periods/{periodId}:
     get:
@@ -744,13 +759,14 @@ paths:
               schema:
                 type: object
                 properties:
-                  studentId:       { type: string, format: uuid }
-                  periodId:        { type: string, format: uuid }
-                  risk:            { type: object }
-                  summary:         { type: string }
+                  studentId: { type: string, format: uuid }
+                  periodId: { type: string, format: uuid }
+                  risk: { type: object }
+                  summary: { type: string }
                   recommendations: { type: array, items: { type: object } }
-                  modelVersion:    { type: string, example: "gpt-recommendation-v1" }
-                  generatedAt:     { type: string, format: date-time }
+                  modelVersion:
+                    { type: string, example: "gpt-recommendation-v1" }
+                  generatedAt: { type: string, format: date-time }
 
   /api/v1/prediction/students/{studentId}/history:
     get:

@@ -27,7 +27,7 @@ export class UpdateUserUseCase {
     options: { skipAuthSync?: boolean } = {},
   ): Promise<UserProfileEntity> {
     const existing = await this.repo.findById(id);
-    if (!existing) throw new NotFoundException('User not found');
+    if (!existing) throw new NotFoundException("User not found");
 
     // Always validate an INACTIVE request. The profile and auth databases are
     // separate and a previous failed synchronization may have left only one
