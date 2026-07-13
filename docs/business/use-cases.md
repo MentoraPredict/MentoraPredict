@@ -1,6 +1,6 @@
 # Use Cases
 
-> Functional/narrative use cases by role and by cross-cutting flow. For the technical inventory of backend use-case classes (application layer), see each service's doc under [../backend/](../backend/). For requirement IDs, see [functional-requirements.md](./functional-requirements.md).
+> Functional/narrative use cases by role and by cross-cutting flow. For the technical inventory of backend use-case classes (application layer), see each service's doc under [../backend/](../backend/), or the fully formalized IEEE-style specification of all 123 of them in [use-cases-technical-index.md](./use-cases-technical-index.md). For requirement IDs, see [functional-requirements.md](./functional-requirements.md).
 
 ## Actors
 
