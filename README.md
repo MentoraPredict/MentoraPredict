@@ -1,120 +1,162 @@
 # MentoraPredict
 
-AI-powered early academic-risk detection platform. MentoraPredict tracks student performance across enrolled subjects, computes a deterministic risk classification from grades/attendance/compliance, and layers an AI-generated (OpenAI) natural-language summary and recommendation plan on top — so teachers and admins can intervene before a student loses a subject, and students get actionable feedback mid-semester.
+![MentoraPredict Banner](/assets/mentorapredict-banner.jpg)
+
+AI-Powered Academic Success and Student Retention Platform
+
+Predict academic risk, generate personalized recommendations, and empower educational institutions through intelligent analytics.
 
 ---
+
+## What is MentoraPredict?
+
+MentoraPredict tracks student performance across enrolled subjects, computes a deterministic risk classification from grades, attendance, and compliance data, and layers an AI-generated natural-language summary and recommendation plan on top. The goal: teachers and admins intervene before a student loses a subject, and students get actionable feedback mid-semester.
+
+The system solves three core problems:
+
+- **Early detection** -- Identifies at-risk students before it is too late, using a transparent classification model rather than opaque predictions.
+- **Actionable intelligence** -- Generates subject-specific recommendation plans via OpenAI, so every stakeholder knows what to do next.
+- **Unified access** -- A single REST API serves four client applications (web, mobile, desktop, landing), making the platform available anywhere.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | NestJS 10/11, TypeScript, TypeORM (PostgreSQL), Mongoose (MongoDB Atlas), ioredis (Redis) |
+| Frontend (web) | React 19, Vite 8, React Router 7, TanStack Query 5, Zustand 5, Tailwind 4 |
+| Landing | Astro 5, Contentful CMS, Tailwind 4 |
+| Mobile | Expo SDK 54, React Native 0.81, Expo Router 6 |
+| Desktop | Electron 37, wraps the web application |
+| API Gateway | Kong 3.6 -- JWT (RS256), CORS, per-consumer rate limiting |
+| Databases | PostgreSQL 16, MongoDB Atlas, Redis 7 |
+| AI | OpenAI API (prediction-service only) |
+| Infra | Docker Compose, nginx, Cloudflare |
+| CI/CD | GitHub Actions |
+| Monorepo | Turborepo, pnpm workspaces |
+
+## Project Modules
+
+### Client Applications
+
+| Module | Path | Description |
+|---|---|---|
+| **Web** | `apps/web/` | Primary SPA -- student, teacher, and admin dashboards |
+| **Landing** | `apps/landing/` | Public marketing page built with Astro |
+| **Mobile** | `apps/mobile/` | Android companion app built with Expo/React Native |
+| **Desktop** | `apps/desktop/` | Windows desktop installer built with Electron |
+
+### Backend Services
+
+| Service |  Description |
+|---|---|
+| **auth-service** |  Credentials, JWT (RS256), OAuth (Microsoft) |
+| **user-service** |  User profiles, avatars |
+| **academic-service** |  Faculties, careers, periods, subjects, enrollments, grades, check-ins |
+| **analytics-service** |  Risk classification, alerts, dashboards, WebSocket notifications |
+| **prediction-service** |  AI-generated summaries and recommendations via OpenAI |
+
+### Shared Packages
+
+| Package | Status | Description |
+|---|---|---|
+| `shared-logger` | Active | Structured logging (pino-based, used by all services) |
+| `shared-types` | Scaffolded | Shared TypeScript type definitions |
+| `shared-utils` | Scaffolded | Shared utility functions |
+| `shared-config` | Scaffolded | Shared configuration |
+| `ui` | Scaffolded | Shared UI components |
+| `hooks` | Scaffolded | Shared React hooks |
+| `services` | Scaffolded | Shared service utilities |
+
+## Architecture
+
+```
+Client apps (web / landing / mobile / desktop)
+              |
+              v
+   Cloudflare -> nginx -> Kong (JWT, CORS, rate limiting)
+              |
+   +----------+----------+----------+----------+
+   v          v          v          v          v
+auth-svc  user-svc  academic-svc analytics-svc prediction-svc
+ :3001     :3002      :3003        :3004        :3006
+   |         |          |            |            |
+   +---------+----+-----+-----+-----+------------+
+                    v           v
+              PostgreSQL   MongoDB Atlas   Redis
+```
+
+Five independent NestJS microservices in hexagonal architecture, no message broker (synchronous internal HTTP only, authenticated via a `service:internal`-scoped JWT), behind a single Kong gateway. See [docs/architecture/](./docs/architecture/) for details.
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) v20 or later
+- [pnpm](https://pnpm.io/) v11 (`npm install -g pnpm@11`)
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- [Git](https://git-scm.com/)
+
+Optional (for mobile builds):
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- Java JDK 17+ and Android SDK (for local Android builds)
+
+Optional (for desktop builds):
+- Windows 10/11 (Electron target)
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/mentorapredict.git
+cd mentorapredict
+
+# Install dependencies
+pnpm install
+
+# Configure environment
+cp infra/.env.example infra/.env
+# Edit infra/.env and fill in the required values (JWT keys, OPENAI_API_KEY, MONGO_URL, etc.)
+bash infra/kong/generate-kong-keys.sh
+
+# Start the full stack (builds every service, seeds the database)
+docker compose --env-file infra/.env -f infra/docker/docker-compose.dev.yml up -d --build
+
+# Verify
+curl http://localhost:8000/health
+```
+
+For the complete step-by-step guide, including seed login credentials, QA/production deployment procedures, and troubleshooting: [docs/deployment/environments.md](./docs/deployment/environments.md).
 
 ## Documentation
 
 Full technical documentation lives in [`docs/`](./docs/), organized by topic:
 
-| Section | Contents |
+| Section | Description |
 |---|---|
-| [`docs/business/`](./docs/business/) | Domain model, actors, business rules ([business-logic.md](./docs/business/business-logic.md)); functional ([functional-requirements.md](./docs/business/functional-requirements.md)) and non-functional ([non-functional-requirements.md](./docs/business/non-functional-requirements.md)) requirement catalogs (RF-/RNF-); role-by-role scenarios ([use-cases.md](./docs/business/use-cases.md)) |
-| [`docs/architecture/`](./docs/architecture/) | System context, request flow, and the reasoning behind the shape of the system ([high-level-architecture.md](./docs/architecture/high-level-architecture.md)); the hexagonal pattern every backend service follows ([low-level-architecture.md](./docs/architecture/low-level-architecture.md)) |
-| [`docs/backend/`](./docs/backend/README.md) | The 5 NestJS microservices — tech stack, entities, use cases, endpoints, integrations per service |
-| [`docs/frontend/`](./docs/frontend/README.md) | The 4 client apps (web, landing, mobile, desktop) — tech stack, structure, routing |
-| [`docs/database/`](./docs/database/database-architecture.md) | PostgreSQL/MongoDB/Redis split, real entity-to-table mapping, seed data, known gaps |
-| [`docs/api/`](./docs/api/api-contracts.md) | Full endpoint reference (route, method, required role) per service |
-| [`docs/infrastructure/`](./docs/infrastructure/) | Docker Compose topology, Kong API Gateway routing/rate-limiting, monitoring stack |
-| [`docs/deployment/`](./docs/deployment/README.md) | CI/CD pipeline detail ([ci-cd-pipeline.md](./docs/deployment/ci-cd-pipeline.md)) and step-by-step local/QA/production deployment ([environments.md](./docs/deployment/environments.md)) |
-
-This documentation set was produced by a full code-level audit (not copied from design docs) — where the running code disagrees with an older design artifact (`contracts/openapi-contracts.yaml`, `data-models/data-models.yaml`, prior `docs/*.md`), the docs above say so explicitly rather than silently picking one.
-
-## Architecture at a glance
-
-```
-Client apps (web / landing / mobile / desktop)
-              │  same REST API for all 4, no client-specific backend
-              ▼
-   Cloudflare → nginx → Kong (JWT, CORS, rate limiting)
-              │
-   ┌──────────┼──────────┬──────────┬──────────┐
-   ▼          ▼          ▼          ▼          ▼
-auth-svc   user-svc  academic-svc analytics-svc prediction-svc
- :3001       :3002       :3003        :3004         :3006
-   │          │           │            │             │
-   └──────────┴─────┬─────┴─────┬──────┴─────────────┘
-                     ▼           ▼
-               PostgreSQL   MongoDB Atlas   Redis
-```
-
-5 independent NestJS microservices in hexagonal architecture, no message broker (synchronous internal HTTP only, authenticated via a `service:internal`-scoped JWT), behind a single Kong gateway. Full detail: [docs/architecture/high-level-architecture.md](./docs/architecture/high-level-architecture.md).
-
-## Monorepo structure
-
-```
-mentorapredict/
-├── apps/
-│   ├── web/          React 19 SPA — primary client (student/teacher/admin dashboards)
-│   ├── landing/       Astro 5 — public marketing page
-│   ├── mobile/        Expo/React Native — companion Android app
-│   └── desktop/       Electron — packaged Windows installer wrapping apps/web
-├── services/
-│   ├── auth-service/       Credentials, JWT, OAuth
-│   ├── user-service/       Profiles, avatars
-│   ├── academic-service/   Faculties/careers/periods/subjects/enrollments/grades/check-ins (largest, 69 use cases)
-│   ├── analytics-service/  Risk classification, alerts, dashboards, notifications (WebSocket + push)
-│   └── prediction-service/ AI-generated summaries/recommendations (OpenAI, never computes risk itself)
-├── packages/          Shared logging (in real use) + shared types/utils/config/ui (scaffolded, not yet consumed)
-├── infra/
-│   ├── docker/         Compose files per environment (dev/qa/prod/infra)
-│   ├── kong/            API Gateway declarative config
-│   ├── monitoring/       Grafana + cAdvisor + Node Exporter
-│   └── scripts/          Dev bootstrap, seed runner
-├── database/           Postgres seed SQL (11 files) + seed-runner Dockerfile
-├── docs/               Full documentation (see table above)
-├── contracts/          Historical OpenAPI design draft (superseded by docs/api/)
-├── data-models/        Historical data-model design draft (superseded by docs/database/)
-└── .github/workflows/  ci.yml, cd-qa.yml, cd-main.yml, release.yml
-```
-
-## Technology stack
-
-| Layer | Technology |
-|---|---|
-| Backend | NestJS 10/11, TypeScript, TypeORM (PostgreSQL), Mongoose (MongoDB Atlas), ioredis (Redis) |
-| Frontend (web) | React 19, Vite 8, React Router 7, TanStack Query 5, Zustand 5, Tailwind 4, Storybook 10 |
-| Frontend (other clients) | Astro 5 (landing), Expo/React Native (mobile), Electron 37 (desktop) |
-| API Gateway | Kong 3.6 — JWT (RS256), CORS, per-consumer rate limiting |
-| Databases | PostgreSQL 16, MongoDB Atlas, Redis 7 |
-| AI | OpenAI API (prediction-service only — consumes risk from analytics-service, never computes it) |
-| Infra | Docker Compose (no orchestrator), nginx, Cloudflare (QA/prod) |
-| CI/CD | GitHub Actions — `ci.yml`, `cd-qa.yml`, `cd-main.yml`, `release.yml` |
-| Monorepo tooling | Turborepo, pnpm workspaces |
-
-Full per-app/service tech stack with exact versions: [docs/backend/README.md](./docs/backend/README.md), [docs/frontend/README.md](./docs/frontend/README.md).
-
-## Quick start (local development)
-
-```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Configure environment
-cp infra/.env.example infra/.env   # fill in JWT keys, OPENAI_API_KEY, MONGO_URL, etc.
-bash infra/kong/generate-kong-keys.sh
-
-# 3. Start the full stack (builds every service from source, seeds the database)
-docker compose --env-file infra/.env -f infra/docker/docker-compose.dev.yml up -d --build
-
-# 4. Verify
-curl http://localhost:8000/health
-```
-
-Full step-by-step guide (including QA/production deploy procedures and seed login credentials): [docs/deployment/environments.md](./docs/deployment/environments.md).
+| [`docs/business/`](./docs/business/) | Domain model, actors, business rules, functional and non-functional requirements |
+| [`docs/architecture/`](./docs/architecture/) | System context, request flow, hexagonal pattern explanation |
+| [`docs/backend/`](./docs/backend/) | The 5 NestJS microservices -- tech stack, entities, use cases, endpoints |
+| [`docs/frontend/`](./docs/frontend/) | The 4 client apps -- tech stack, structure, routing |
+| [`docs/database/`](./docs/database/) | PostgreSQL/MongoDB/Redis split, entity mapping, seed data |
+| [`docs/api/`](./docs/api/) | Full endpoint reference per service |
+| [`docs/infrastructure/`](./docs/infrastructure/) | Docker Compose topology, Kong API Gateway, monitoring |
+| [`docs/deployment/`](./docs/deployment/) | CI/CD pipeline detail and deployment procedures |
+| [`docs/adr/`](./docs/adr/) | Architecture Decision Records |
 
 ## Environments
 
 | Environment | Domain | Branch | Deploy |
 |---|---|---|---|
-| Local | `localhost` | `dev` | Manual (`docker compose up` / `dev-setup.sh`) |
-| QA | `mentorapredictqa.programacionwebuce.net` | `QA` | Automatic on push (`cd-qa.yml`) |
-| Production | `mentorapredictprod.programacionwebuce.net` | `main` / `v*` tag | Automatic on push/tag, or manual dispatch (`cd-main.yml`) |
+| Local | `localhost` | `dev` | Manual |
+| QA | `mentorapredictqa.programacionwebuce.net` | `QA` | Automatic on push |
+| Production | `mentorapredictprod.programacionwebuce.net` | `main` / `v*` tag | Automatic on push/tag |
 
 ## Contributing
 
-- **Branching**: `main` (production) ← `QA` ← `dev` ← `feature/*` / `fix/*` / `chore/*`. Promotion happens via PR (`dev` → `QA` → `main`).
-- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/), enforced by `commitlint` on every PR. Scope must be one of the values in `.commitlintrc.json`'s `scope-enum`.
-- **Before opening a PR**: `pnpm lint && pnpm build && pnpm test` (same gate `ci.yml`'s `validate` job runs for PRs into `QA`/`main`).
-- Keep documentation in [`docs/`](./docs/) updated alongside code changes — this doc set is meant to track real code state, not go stale like its predecessors did.
+We welcome contributions. Please read the [Contributing Guide](./CONTRIBUTING.md) before submitting a PR.
+
+- **Branching**: `main` <- `QA` <- `dev` <- `feature/*` / `fix/*` / `chore/*`
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/), enforced by commitlint
+- **Before opening a PR**: `pnpm lint && pnpm build && pnpm test`
+
+## License
+
+This project is private and proprietary.
