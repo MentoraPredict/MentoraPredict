@@ -8,445 +8,155 @@ Predict academic risk, generate personalized recommendations, and empower educat
 
 ---
 
-## Overview
+## What is MentoraPredict?
 
-MentoraPredict is an AI-powered educational platform designed to help educational institutions identify students at risk of academic failure or dropout before critical intervention opportunities are missed.
+MentoraPredict tracks student performance across enrolled subjects, computes a deterministic risk classification from grades, attendance, and compliance data, and layers an AI-generated natural-language summary and recommendation plan on top. The goal: teachers and admins intervene before a student loses a subject, and students get actionable feedback mid-semester.
 
-The platform combines predictive analytics, recommendation systems, academic intelligence, and performance monitoring to transform educational data into actionable insights for students, teachers, and administrators.
+The system solves three core problems:
 
-By leveraging modern cloud-native technologies and artificial intelligence, MentoraPredict aims to improve student retention, support academic success, and enable data-driven decision-making across educational organizations.
+- **Early detection** -- Identifies at-risk students before it is too late, using a transparent classification model rather than opaque predictions.
+- **Actionable intelligence** -- Generates subject-specific recommendation plans via OpenAI, so every stakeholder knows what to do next.
+- **Unified access** -- A single REST API serves four client applications (web, mobile, desktop, landing), making the platform available anywhere.
 
----
+## Tech Stack
 
-## Problem Statement
+| Layer | Technology |
+|---|---|
+| Backend | NestJS 10/11, TypeScript, TypeORM (PostgreSQL), Mongoose (MongoDB Atlas), ioredis (Redis) |
+| Frontend (web) | React 19, Vite 8, React Router 7, TanStack Query 5, Zustand 5, Tailwind 4 |
+| Landing | Astro 5, Contentful CMS, Tailwind 4 |
+| Mobile | Expo SDK 54, React Native 0.81, Expo Router 6 |
+| Desktop | Electron 37, wraps the web application |
+| API Gateway | Kong 3.6 -- JWT (RS256), CORS, per-consumer rate limiting |
+| Databases | PostgreSQL 16, MongoDB Atlas, Redis 7 |
+| AI | OpenAI API (prediction-service only) |
+| Infra | Docker Compose, nginx, Cloudflare |
+| CI/CD | GitHub Actions |
+| Monorepo | Turborepo, pnpm workspaces |
 
-Educational institutions generate large volumes of academic data, yet identifying at-risk students often remains a reactive process.
+## Project Modules
 
-As a result, institutions face challenges such as:
+### Client Applications
 
-- High dropout rates
-- Delayed academic interventions
-- Limited visibility into student performance trends
-- Lack of personalized academic guidance
-- Difficulty measuring the effectiveness of support programs
+| Module | Path | Description |
+|---|---|---|
+| **Web** | `apps/web/` | Primary SPA -- student, teacher, and admin dashboards |
+| **Landing** | `apps/landing/` | Public marketing page built with Astro |
+| **Mobile** | `apps/mobile/` | Android companion app built with Expo/React Native |
+| **Desktop** | `apps/desktop/` | Windows desktop installer built with Electron |
 
-MentoraPredict addresses these challenges through predictive analytics, intelligent recommendations, and early warning capabilities.
+### Backend Services
 
----
+| Service |  Description |
+|---|---|
+| **auth-service** |  Credentials, JWT (RS256), OAuth (Microsoft) |
+| **user-service** |  User profiles, avatars |
+| **academic-service** |  Faculties, careers, periods, subjects, enrollments, grades, check-ins |
+| **analytics-service** |  Risk classification, alerts, dashboards, WebSocket notifications |
+| **prediction-service** |  AI-generated summaries and recommendations via OpenAI |
 
-## System Objective
+### Shared Packages
 
-The primary objective of MentoraPredict is to provide an intelligent academic support platform capable of:
+| Package | Status | Description |
+|---|---|---|
+| `shared-logger` | Active | Structured logging (pino-based, used by all services) |
+| `shared-types` | Scaffolded | Shared TypeScript type definitions |
+| `shared-utils` | Scaffolded | Shared utility functions |
+| `shared-config` | Scaffolded | Shared configuration |
+| `ui` | Scaffolded | Shared UI components |
+| `hooks` | Scaffolded | Shared React hooks |
+| `services` | Scaffolded | Shared service utilities |
 
-- Predicting dropout risk before critical academic decline occurs
-- Generating personalized study recommendations
-- Supporting educators through actionable analytics
-- Improving institutional retention strategies
-- Enabling proactive academic intervention
+## Architecture
 
----
-
-## Architecture Overview
-
-MentoraPredict follows a microservices-based architecture deployed through containerized services.
-
-The platform is organized into three primary layers:
-
-### Frontend Layer
-
-Provides user-facing applications for different platforms:
-
-- Web Application (React)
-- Mobile Application (React Native)
-- Desktop Application (Electron)
-
-### Backend Layer
-
-Implements independent microservices located in the `services/` directory.
-
-Each service is responsible for a specific domain and communicates through the API Gateway.
-
-- Authentication and authorization
-- Academic management
-- User management
-- Metrics and reporting
-- Recommendations
-- Predictions and analytics
-
-### Intelligence & Analytics Layer
-
-Responsible for processing educational data and generating insights through:
-
-- Predictive models
-- Recommendation engines
-- Academic analytics
-- Performance indicators
-
-### API Gateway
-
-All client applications communicate through a centralized API Gateway.
-
-The API Gateway is responsible for:
-
-- Request routing
-- Authentication validation
-- Service discovery
-- Cross-cutting concerns
-- API aggregation
-
----
-
-## Core Platform Capabilities
-
-### Early Risk Detection
-
-Identify students at risk of academic failure or dropout using predictive models.
-
-### Personalized Recommendations
-
-Generate study plans and academic recommendations tailored to individual student needs.
-
-### Academic Analytics
-
-Provide actionable metrics and dashboards for teachers and administrators.
-
-### Intelligent Course Suggestions
-
-Recommend academic paths based on performance history and learning trends.
-
-### Early Alert System
-
-Notify stakeholders when intervention opportunities are detected.
-
----
-
-## Monorepo Structure
-
-MentoraPredict uses a Turborepo-based monorepo architecture.
-
-```text
-mentorapredict/
-│
-├── apps/
-│   ├── web/
-│   ├── mobile/
-│   └── desktop/
-│
-├── services/
-│   ├── auth-service/
-│   ├── user-service/
-│   ├── academic-service/
-│   ├── prediction-service/
-│   └── analytics-service/
-│
-├── packages/
-│   ├── ui/
-│   ├── types/
-│   ├── utils/
-│   ├── services/
-│   ├── hooks/
-│   ├── config/
-│   ├── shared/
-│   ├── shared-config/
-│   ├── shared-types/
-│   ├── shared-utils/
-│   ├── eslint-config/
-│   └── tsconfig/
-│
-├── docs/
-├── assets/
-├── .github/
-├── turbo.json
-└── README.md
+```
+Client apps (web / landing / mobile / desktop)
+              |
+              v
+   Cloudflare -> nginx -> Kong (JWT, CORS, rate limiting)
+              |
+   +----------+----------+----------+----------+
+   v          v          v          v          v
+auth-svc  user-svc  academic-svc analytics-svc prediction-svc
+ :3001     :3002      :3003        :3004        :3006
+   |         |          |            |            |
+   +---------+----+-----+-----+-----+------------+
+                    v           v
+              PostgreSQL   MongoDB Atlas   Redis
 ```
 
-### Apps
-
-Contains all frontend applications of the platform:
-
-- Web application (React)
-- Mobile application (React Native)
-- Desktop application (Electron)
-
-These applications consume backend services via the API Gateway.
-
-### Services
-
-Contains all backend microservices responsible for business logic, including authentication, academic processing, analytics, and AI-powered predictions.
-
-All services are accessed through the API Gateway.
-
-### Packages
-
-Contains shared libraries, configurations, utilities, types, and reusable components consumed throughout the monorepo.
-
----
-
-## Technology Stack
-
-### Frontend
-
-| Technology   | Version |
-| ------------ | ------- |
-| React        | 18.x    |
-| React Native | 0.73.x  |
-| Electron     | 27.x    |
-| TypeScript   | 5.x     |
-
-### Backend
-
-| Technology | Version |
-| ---------- | ------- |
-| NestJS     | 11.x    |
-| FastAPI    | 0.115.x |
-| Node.js    | 22.x    |
-| Python     | 3.12.x  |
-
-### Data & Caching
-
-| Technology | Version |
-| ---------- | ------- |
-| PostgreSQL | 15.x    |
-| MongoDB    | 6.x     |
-| Redis      | 7.x     |
-
-### Infrastructure
-
-| Technology     | Version |
-| -------------- | ------- |
-| Docker         | 28.x    |
-| Docker Compose | Latest  |
-| AWS EC2        | Managed |
-| Turborepo      | 2.x     |
-
-### CI/CD
-
-| Technology     | Purpose                                      |
-| -------------- | -------------------------------------------- |
-| GitHub Actions | Continuous Integration & Deployment (Future) |
-
----
+Five independent NestJS microservices in hexagonal architecture, no message broker (synchronous internal HTTP only, authenticated via a `service:internal`-scoped JWT), behind a single Kong gateway. See [docs/architecture/](./docs/architecture/) for details.
 
 ## Prerequisites
 
-Before working with the project, ensure the following software is installed:
+- [Node.js](https://nodejs.org/) v20 or later
+- [pnpm](https://pnpm.io/) v11 (`npm install -g pnpm@11`)
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- [Git](https://git-scm.com/)
 
-- Node.js 22.x or later
-- pnpm 10.x or npm
-- Docker
-- Docker Compose
-- Python 3.12.x
-- Git
+Optional (for mobile builds):
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- Java JDK 17+ and Android SDK (for local Android builds)
 
----
+Optional (for desktop builds):
+- Windows 10/11 (Electron target)
 
-## Installation & Local Development
+## Quick Start
 
-### Prerequisites
+```bash
+# Clone the repository
+git clone https://github.com/your-org/mentorapredict.git
+cd mentorapredict
 
-- Node.js 22.x
-- pnpm 10.x
-- Docker
-- Docker Compose
-- Python 3.12.x
-
-### Quick Start
-
-````bash
 # Install dependencies
 pnpm install
 
-# Copy root environment variables for local development
-cp .env.example .env
-
-# Copy infrastructure environment variables for Docker
+# Configure environment
 cp infra/.env.example infra/.env
-
-# Optional: generate Kong declarative config locally if you want to pre-fill the public key
+# Edit infra/.env and fill in the required values (JWT keys, OPENAI_API_KEY, MONGO_URL, etc.)
 bash infra/kong/generate-kong-keys.sh
 
-# Start infrastructure and services
-docker compose --env-file infra/.env -f docker-compose.dev.yml up -d --build
+# Start the full stack (builds every service, seeds the database)
+docker compose --env-file infra/.env -f infra/docker/docker-compose.dev.yml up -d --build
 
-# Start development mode
-pnpm dev
-
----
-
-## Environment Variables
-
-Each service maintains its own environment configuration.
-
-Environment templates will be provided through:
-
-```text
-.env.example
-````
-
-Sensitive information must never be committed to source control.
-
----
-
-## Architecture Flow
-
-The platform follows a gateway-centric communication model.
-
-```text
- Frontend Applications (apps/)
-        │
-        ▼
-    API Gateway (services/)
-        │
-        ▼
-  Microservices (services/)
-        │
-        ▼
- Databases & Analytics
+# Verify
+curl http://localhost:8000/health
 ```
 
-### Request Flow
+For the complete step-by-step guide, including seed login credentials, QA/production deployment procedures, and troubleshooting: [docs/deployment/environments.md](./docs/deployment/environments.md).
 
-1. Users interact with Web, Mobile, or Desktop applications.
-2. Requests are sent to the API Gateway.
-3. The API Gateway validates authentication and routes requests.
-4. Microservices process business operations independently.
-5. Services communicate with their respective databases.
-6. Prediction and recommendation services generate intelligent insights.
-7. Responses are returned through the API Gateway.
+## Documentation
 
----
+Full technical documentation lives in [`docs/`](./docs/), organized by topic:
 
-### Containerization
+| Section | Description |
+|---|---|
+| [`docs/business/`](./docs/business/) | Domain model, actors, business rules, functional and non-functional requirements |
+| [`docs/architecture/`](./docs/architecture/) | System context, request flow, hexagonal pattern explanation |
+| [`docs/backend/`](./docs/backend/) | The 5 NestJS microservices -- tech stack, entities, use cases, endpoints |
+| [`docs/frontend/`](./docs/frontend/) | The 4 client apps -- tech stack, structure, routing |
+| [`docs/database/`](./docs/database/) | PostgreSQL/MongoDB/Redis split, entity mapping, seed data |
+| [`docs/api/`](./docs/api/) | Full endpoint reference per service |
+| [`docs/infrastructure/`](./docs/infrastructure/) | Docker Compose topology, Kong API Gateway, monitoring |
+| [`docs/deployment/`](./docs/deployment/) | CI/CD pipeline detail and deployment procedures |
+| [`docs/adr/`](./docs/adr/) | Architecture Decision Records |
 
-All applications and services are intended to run inside Docker containers to ensure environment consistency across development and deployment stages.
+## Environments
 
-## Containerization Strategy
-
-MentoraPredict is designed as a containerized platform.
-
-Each application and microservice maintains its own Dockerfile, enabling independent builds, deployments, and scalability across environments.
-
-Containerization provides:
-
-- Consistent development and deployment environments
-- Service isolation
-- Simplified infrastructure provisioning
-- Scalable deployment strategies
-- Reproducible builds across the platform
-
-Detailed Docker documentation, build procedures, and deployment workflows are maintained separately from this README.
-
----
+| Environment | Domain | Branch | Deploy |
+|---|---|---|---|
+| Local | `localhost` | `dev` | Manual |
+| QA | `mentorapredictqa.programacionwebuce.net` | `QA` | Automatic on push |
+| Production | `mentorapredictprod.programacionwebuce.net` | `main` / `v*` tag | Automatic on push/tag |
 
 ## Contributing
 
-We welcome contributions from all project members.
+We welcome contributions. Please read the [Contributing Guide](./CONTRIBUTING.md) before submitting a PR.
 
-### Branch Strategy
+- **Branching**: `main` <- `QA` <- `dev` <- `feature/*` / `fix/*` / `chore/*`
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/), enforced by commitlint
+- **Before opening a PR**: `pnpm lint && pnpm build && pnpm test`
 
-The project follows a simplified GitFlow model.
+## License
 
-Main branches:
-
-```text
-main
-qa
-```
-
-Working branches:
-
-```text
-feature/*
-bugfix/*
-hotfix/*
-chore/*
-docs/*
-```
-
-### Commit Convention
-
-The project follows Conventional Commits.
-
-Examples:
-
-```bash
-feat(auth): implement JWT authentication
-
-fix(api): resolve enrollment validation error
-
-docs(readme): update project overview
-```
-
-### Development Guidelines
-
-- Keep services independent and loosely coupled
-- Follow established coding standards
-- Create Pull Requests for all changes
-- Keep documentation updated
-- Reuse shared packages whenever possible
-
----
-
-## Vision
-
-MentoraPredict aims to empower educational institutions through predictive analytics, intelligent recommendations, and proactive academic support.
-
-By transforming educational data into actionable insights, the platform seeks to improve student outcomes, strengthen retention strategies, and enable evidence-based decision-making at every level of the institution.
-
----
-
-### Turborepo Configuration
-
-The monorepo is configured with Turborepo and pnpm workspaces.
-
-| Item                       | Status                 |
-| -------------------------- | ---------------------- |
-| Turborepo initialization   | ✅ Completed           |
-| `turbo.json` configuration | ✅ Configured          |
-| Workspaces definition      | ✅ Active              |
-| Global scripts             | ✅ Available           |
-| Apps structure             | ✅ 11 apps detected    |
-| Packages structure         | ✅ 9 packages detected |
-
-### Available Scripts
-
-From the repository root:
-
-| Command        | Description                            |
-| -------------- | -------------------------------------- |
-| `pnpm install` | Install all dependencies               |
-| `pnpm dev`     | Start all services in development mode |
-| `pnpm build`   | Build all projects                     |
-| `pnpm lint`    | Run linting across all projects        |
-| `pnpm clean`   | Remove builds and caches               |
-
-### Workspace Structure
-
-**Applications (3 Frontend Apps):**
-
-- `apps/web` - React frontend
-- `apps/mobile` - React Native app
-- `apps/desktop` - Electron app
-
-**Backend Services (5 Microservices):**
-
-- `services/auth-service` - Authentication service
-- `services/user-service` - User management
-- `services/academic-service` - Academic data
-- `services/prediction-service` - AI predictions
-- `services/analytics-service` - Advanced analytics
-
-**Shared Packages (9):**
-
-- `packages/ui` - React UI components
-- `packages/types` - TypeScript types
-- `packages/utils` - Common utilities
-- `packages/services` - Shared services
-- `packages/hooks` - React hooks
-- `packages/config` - Global configurations
-- `packages/shared` - DTOs and interfaces
-- `packages/shared-config` - Shared configs
-- `packages/shared-types` - Shared types
-- `packages/shared-utils` - Shared utilities
-- `packages/eslint-config` - ESLint configuration
-- `packages/tsconfig` - TypeScript configuration
+This project is private and proprietary.

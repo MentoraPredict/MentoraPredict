@@ -1,0 +1,47 @@
+graph LR
+  APIGW[Kong API Gateway]
+  subgraph Services
+    AUTH[auth-service :3001]
+    USER[user-service :3002]
+    ACADEMIC[academic-service :3003]
+    ANALYTICS[analytics-service :3004]
+    PRED[prediction-service :3006]
+  end
+  subgraph Databases
+    PG[(PostgreSQL<br/>mentorapredict)]
+    MONGO[(MongoDB Atlas<br/>mentorapredict_nosql)]
+    REDIS[(Redis)]
+  end
+  EXT[OpenAI API]
+
+  APIGW -->|/api/v1/auth| AUTH
+  APIGW -->|/api/v1/users| USER
+  APIGW -->|/api/v1/academic| ACADEMIC
+  APIGW -->|/api/v1/analytics<br/>/api/v1/notifications<br/>/api/socket.io| ANALYTICS
+  APIGW -->|/api/v1/prediction| PRED
+
+  AUTH --> PG
+  USER --> PG
+  ACADEMIC --> PG
+  ANALYTICS --> PG
+  PRED --> PG
+
+  ACADEMIC --> MONGO
+  ANALYTICS --> MONGO
+  PRED --> MONGO
+
+  AUTH --> REDIS
+  ANALYTICS --> REDIS
+
+  PRED --> EXT
+
+  AUTH -.->|internal, sync profile| USER
+  USER -.->|internal, auth sync| AUTH
+  USER -.->|internal, deactivation eligibility| ACADEMIC
+  USER -.->|internal, notify| ANALYTICS
+  ACADEMIC -.->|internal, metrics/notify| ANALYTICS
+  ACADEMIC -.->|internal, user lookup| USER
+  ANALYTICS -.->|internal, academic context| ACADEMIC
+  ANALYTICS -.->|internal, recalc| PRED
+  PRED -.->|internal, risk snapshot| ANALYTICS
+  PRED -.->|internal, academic context| ACADEMIC
