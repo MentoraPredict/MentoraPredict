@@ -40,6 +40,7 @@ jobs:
             grep -Fvx "PWMP-152 feat(infra): add monitoring stack, fix CD visibility, and optimize CI for dev (#122)" |
             grep -Ev '^Release v[0-9]+\.[0-9]+\.[0-9]+' |
             grep -Ev '^Release PR #[0-9]+' |
+            grep -Ev '^Promote development to QA — release v[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+\(#[0-9]+\)$' |
             grep -Ev '^Fix/.+ \(\#[0-9]+\)$' |
             grep -Ev '^[[:space:]]*fix\(cd\): encode multiline jwt secrets as base64 in deploy env \(\#75\)$' |
             grep -Ev '^[[:space:]]*pwmp-188 fronted creation landin page login page \(\#42\)$' |
