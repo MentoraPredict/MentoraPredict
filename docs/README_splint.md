@@ -11,14 +11,14 @@ Bienvenido a la documentación del proyecto **MentoraPredict**, una plataforma d
 
 ### Arquitectura y Diseño
 
-- **[Arquitectura General](./ARCHITECTURE.md)** - Diseño del sistema, patrones y decisiones
-- **[Servicios Disponibles](./SERVICES.md)** - Lista completa de microservicios
-- **[Estructura de Carpetas](./PROJECT_STRUCTURE.md)** - Organización del código
+- **[Arquitectura General](./architecture/high-level-architecture.md)** - Diseño del sistema, patrones y decisiones
+- **[Servicios Disponibles](./backend/README.md)** - Lista completa de microservicios
+- **[Estructura de Carpetas](../README.md)** - Organización del código
 
 ### Servicios (Microservicios)
 
-- **[Auth Service](./services/auth-service.md)** ✅ Autenticación y autorización (FUNCIONAL)
-- **[Academic Service](./services/academic-service.md)** ✅ Gestión académica (FUNCIONAL)
+- **[Auth Service](./backend/auth-service.md)** ✅ Autenticación y autorización (FUNCIONAL)
+- **[Academic Service](./backend/academic-service.md)** ✅ Gestión académica (FUNCIONAL)
 - **[Analytics Service](./services/analytics-service.md)** - Análisis de datos académicos
 - **[Prediction Service](./services/prediction-service.md)** - Predicción de riesgo académico y recomendaciones personalizadas
 - **[User Service](./services/user-service.md)** - Gestión de usuarios y perfiles
@@ -31,8 +31,8 @@ Bienvenido a la documentación del proyecto **MentoraPredict**, una plataforma d
 
 ### API y Contratos
 
-- **[API Reference](./API.md)** - Endpoints y contratos OpenAPI
-- **[Contratos Compartidos](./CONTRACTS.md)** - DTOs y interfaces compartidas
+- **[API Reference](./api/api-contracts.md)** - Endpoints y contratos OpenAPI
+- **[Contratos Compartidos](./api/api-contracts.md)** - DTOs y interfaces compartidas
 
 ### Operación
 
