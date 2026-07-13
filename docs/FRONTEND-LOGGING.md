@@ -172,4 +172,4 @@ The first command validates serialization and context handling. The second valid
 - Request duration is not recorded.
 - React render failures do not have a dedicated Error Boundary.
 
-See also [Web Architecture](./WEB_ARCHITECTURE.md) and [Web Endpoint Management](./WEB_ENDPOINTS.md).
+See also [Web Architecture & Endpoint Management](./frontend/web.md).

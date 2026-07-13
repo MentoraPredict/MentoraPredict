@@ -39,4 +39,4 @@ Kong explicitly allowlists `mentorapredict://app` and the `null` origin for CORS
 
 Built via the `build-desktop-app` job in `cd-qa.yml`/`cd-main.yml` (runs on `windows-latest`, `pnpm package:qa`/`package:prod`), published as `MentoraPredict-Setup-qa.exe` / `MentoraPredict-Setup.exe` to `/opt/mentorapredict-downloads/desktop/`. See [../deployment/ci-cd-pipeline.md](../deployment/ci-cd-pipeline.md).
 
-For deeper technical and end-user detail, see [../DESKTOP_APPLICATION.md](../DESKTOP_APPLICATION.md) and [../DESKTOP_USER_GUIDE.md](../DESKTOP_USER_GUIDE.md) — this file is a summary that links out to them rather than duplicating their content.
+For deeper technical detail, see [../DESKTOP_ARCHITECTURE.md](../DESKTOP_ARCHITECTURE.md), [../DESKTOP_STRUCTURE.md](../DESKTOP_STRUCTURE.md), and [../DESKTOP_TECHNOLOGIES.md](../DESKTOP_TECHNOLOGIES.md); for end-user instructions see [../DESKTOP_USER_GUIDE.md](../DESKTOP_USER_GUIDE.md) — this file is a summary that links out to them rather than duplicating their content.

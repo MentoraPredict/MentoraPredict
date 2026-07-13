@@ -4,11 +4,7 @@ This index covers the user-facing applications and specialized frontend integrat
 
 ## Web
 
-- [Architecture](./WEB_ARCHITECTURE.md)
-- [Project Structure](./WEB_STRUCTURE.md)
-- [Technologies](./WEB_TECHNOLOGIES.md)
-- [Component Design](./WEB_COMPONENT_DESIGN.md)
-- [Endpoint Management](./WEB_ENDPOINTS.md)
+- [Architecture, Structure, Technologies, Component Design & Endpoint Management](./frontend/web.md)
 - [Logging](./FRONTEND-LOGGING.md)
 - [Storybook](./STORYBOOK.md)
 - [WebAssembly](./WEBASSEMBLY.md)

@@ -117,4 +117,4 @@ Before accepting a new or changed component:
 4. Confirm callbacks appear in the Actions panel or test spy output.
 5. Build Storybook and run the browser project before merging significant design-system changes.
 
-See also [Web Component Design](./WEB_COMPONENT_DESIGN.md) and [Web Technologies](./WEB_TECHNOLOGIES.md).
+See also [Web Component Design & Technologies](./frontend/web.md).

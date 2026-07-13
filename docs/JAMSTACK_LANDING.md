@@ -156,4 +156,4 @@ They do not share components or content automatically. The Astro site is the ded
 - There is no automated CMS preview or webhook deployment flow in the repository.
 - Marketing content has local fallbacks, so CMS failures can remain invisible without build monitoring.
 
-See also [Web Architecture](./WEB_ARCHITECTURE.md), [Desktop Project Structure](./DESKTOP_STRUCTURE.md), and [Mobile Project Structure](./MOBILE_STRUCTURE.md).
+See also [Web Architecture](./frontend/web.md), [Desktop Project Structure](./DESKTOP_STRUCTURE.md), and [Mobile Project Structure](./MOBILE_STRUCTURE.md).
