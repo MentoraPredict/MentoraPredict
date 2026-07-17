@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { randomUUID as uuidv4 } from "crypto";
-import { UserEntity, UserRole } from "../../domain/entities/user.entity";
+import { UserEntity, UserRole, AuthProvider } from "../../domain/entities/user.entity";
 import { IUserRepository } from "../ports/output/i-user.repository";
 import { ITokenGenerator } from "../ports/output/i-token.generator";
 import { ITokenCache } from "../ports/output/i-token.cache";
@@ -36,7 +36,7 @@ export class OAuthLoginUseCase {
           now,
           profile.firstName,
           profile.lastName,
-          "MICROSOFT",
+          AuthProvider.MICROSOFT,
         ),
       );
 

@@ -1,7 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { RiskLevel as SharedRiskLevel } from "@mentorapredict/shared-types";
 import { RiskInputDto } from "../dtos/risk-input.dto";
 
-export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type RiskLevel = `${SharedRiskLevel}`;
 
 const RISK_RANK: Record<RiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mentorapredict/shared-logger": "workspace:*",
+    "@mentorapredict/shared-types": "workspace:*",
     "nestjs-pino": "^4.1.0",
     "pino-http": "^10.3.0",
     "@nestjs/common": "^11.1.24",

@@ -1,8 +1,7 @@
 import {
   Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
-
-export type OrmUserRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
+import { Role, AuthProvider } from '@mentorapredict/shared-types';
 
 @Entity('users')
 export class UserOrmEntity {
@@ -16,10 +15,10 @@ export class UserOrmEntity {
   passwordHash!: string | null;
 
   @Column({ type: 'varchar', default: 'STUDENT' })
-  role!: OrmUserRole;
+  role!: Role;
 
   @Column({ name: 'auth_provider', type: 'varchar', default: 'LOCAL' })
-  authProvider!: 'LOCAL' | 'MICROSOFT';
+  authProvider!: AuthProvider;
 
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;

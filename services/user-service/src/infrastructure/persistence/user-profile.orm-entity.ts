@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
 } from "typeorm";
+import { AuthProvider } from "@mentorapredict/shared-types";
 
 @Entity("user_profiles")
 export class UserProfileOrmEntity {
@@ -19,7 +20,7 @@ export class UserProfileOrmEntity {
   @Column({ name: "avatar_url", type: "varchar", length: 500, nullable: true })
   avatarUrl!: string | null;
   @Column({ name: "auth_provider", type: "varchar", default: "LOCAL" })
-  authProvider!: string;
+  authProvider!: AuthProvider;
   @Column({ type: "varchar", default: "STUDENT" }) role!: string;
   @Column({ type: "varchar", default: "ACTIVE" }) status!: string;
   @DeleteDateColumn({ name: "deleted_at", type: "timestamptz", nullable: true })

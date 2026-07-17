@@ -33,7 +33,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       bio: null,
       cedula: profile.cedula ?? null,
       avatarUrl: null,
-      authProvider: "LOCAL",
+      authProvider: AuthProvider.LOCAL,
       status: "ACTIVE",
     });
     const saved = await this.repo.save(orm);
@@ -120,7 +120,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       orm.photo,
       orm.bio,
       orm.cedula,
-      orm.authProvider as AuthProvider,
+      orm.authProvider,
       orm.role,
       orm.status as UserProfileStatus,
       orm.deletedAt,

@@ -5,6 +5,7 @@ export * from './enums/trend.enum';
 export * from './enums/enrollment-status.enum';
 export * from './enums/service-status.enum';
 export * from './enums/ingestion-format.enum';
+export * from './enums/auth-provider.enum';
 
 // ── Interfaces ─────────────────────────────────────────────
 export * from './interfaces/paginated-response.interface';
