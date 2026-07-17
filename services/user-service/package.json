@@ -9,11 +9,16 @@
     "start": "node dist/main",
     "lint": "eslint src/",
     "test": "jest --config jest.config.js --no-coverage",
-    "test:cov": "jest --config jest.config.js --coverage"
+    "test:cov": "jest --config jest.config.js --coverage",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "pnpm typeorm -- migration:generate -d src/data-source.ts",
+    "migration:run": "pnpm typeorm -- migration:run -d src/data-source.ts",
+    "migration:revert": "pnpm typeorm -- migration:revert -d src/data-source.ts"
   },
   "dependencies": {
     "@mentorapredict/shared-logger": "workspace:*",
     "@mentorapredict/shared-types": "workspace:*",
+    "dotenv": "^16.4.5",
     "nestjs-pino": "^4.1.0",
     "pino-http": "^10.3.0",
     "@nestjs/axios": "^4.0.1",

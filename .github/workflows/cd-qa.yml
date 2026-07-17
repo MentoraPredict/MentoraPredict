@@ -495,6 +495,7 @@ jobs:
 
             echo "[ENV] Creating .env"
             cat > .env << EOF
+            NODE_ENV=production
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
@@ -569,6 +570,17 @@ jobs:
               docker compose --env-file .env -f infra/docker/docker-compose.qa.yml pull $SERVICES_LIST
             else
               echo "[PULL IMAGES] No changed services — skipping (an empty list would pull every service)"
+            fi
+
+            echo "[MIGRATIONS] Running pending TypeORM migrations for changed services"
+            if [ -n "$SERVICES_LIST" ]; then
+              for svc in $SERVICES_LIST; do
+                echo "[MIGRATIONS] $svc"
+                docker compose --env-file .env -f infra/docker/docker-compose.qa.yml run --rm --no-deps "$svc" \
+                  node node_modules/.bin/typeorm migration:run -d dist/data-source.js
+              done
+            else
+              echo "[MIGRATIONS] No changed services — skipping"
             fi
 
             echo "[START SERVICES] Starting only changed: $CHANGED_SERVICES"

@@ -61,7 +61,9 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
         entities: [StudentSubjectPredictionOrmEntity],
-        synchronize: cfg.get("NODE_ENV") !== "production",
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) —
+        // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
+        synchronize: false,
       }),
     }),
     TypeOrmModule.forFeature([StudentSubjectPredictionOrmEntity]),

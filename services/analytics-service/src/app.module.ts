@@ -94,7 +94,9 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
           NotificationOrmEntity,
           DeviceTokenOrmEntity,
         ],
-        synchronize: cfg.get("NODE_ENV") !== "production",
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) —
+        // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
+        synchronize: false,
       }),
     }),
     TypeOrmModule.forFeature([

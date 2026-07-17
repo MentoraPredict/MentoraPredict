@@ -50,7 +50,9 @@ import { SearchAuthUsersUseCase } from "./application/use-cases/search-auth-user
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
         entities: [UserOrmEntity],
-        synchronize: cfg.get("NODE_ENV") !== "production",
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) —
+        // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
+        synchronize: false,
         logging: cfg.get("NODE_ENV") === "development",
       }),
     }),

@@ -1,6 +1,8 @@
 # Database Architecture
 
 > Verified directly against each service's `app.module.ts` TypeORM/Mongoose registrations and the seed SQL files — **not** against `data-models/data-models.yaml` or `docs/adr/0001-database-strategy.md`, both of which are stale design-phase artifacts (see §5). If those two documents and this one disagree, trust this one; it was cross-checked against running code.
+>
+> For the visual entity-relationship diagram, the proposed physical-FK/`onDelete` layer, and the cross-service reference table, see [entity-relationship-diagram.md](./entity-relationship-diagram.md).
 
 ## 1. Technology split
 
