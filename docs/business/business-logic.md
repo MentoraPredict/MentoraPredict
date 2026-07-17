@@ -1,6 +1,6 @@
 # Business Logic
 
-> Domain model, actors, and end-to-end business rules for MentoraPredict. For requirement IDs (RF-/RNF-) see [functional-requirements.md](./functional-requirements.md) and [non-functional-requirements.md](./non-functional-requirements.md). For role-by-role scenarios see [use-cases.md](./use-cases.md).
+> Domain model, actors, and end-to-end business rules for MentoraPredict. For requirement IDs (RF-/RNF-) see [functional-requirements.md](./functional-requirements.md) and [non-functional-requirements.md](./non-functional-requirements.md). For role-by-role scenarios see [use-cases.md](./use-cases.md). **Note**: this document covers subject-level academic risk, the only risk model actually implemented. Institution-level dropout/desertion is a distinct, unimplemented concept — see [dropout-prediction-proposal.md](./dropout-prediction-proposal.md) for a design proposal, not current behavior.
 
 ## 1. Domain summary
 
