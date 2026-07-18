@@ -1,6 +1,13 @@
 -- =====================================================
 -- STUDENT ANALYTICS SAMPLE DATA
 -- Weekly check-ins, subject metrics, and predictions
+--
+-- Originally 09_student_analytics.sql, renumbered twice while closing a
+-- fresh-database seeding gap (docs/database/database-architecture.md §4):
+-- the per-topic comprehension block below needs real topic UUIDs from
+-- `topics` (seeded first, 10_topics.sql — Fase C), and the metrics/
+-- predictions blocks need analytics_*/prediction_*_references populated
+-- (11_subject_period_references.sql) before they can insert.
 -- =====================================================
 
 DO $$
@@ -74,7 +81,6 @@ BEGIN
       study_hours,
       emotional_state,
       general_comprehension,
-      topic_responses,
       notes,
       created_at,
       updated_at
@@ -92,11 +98,6 @@ BEGIN
       study_hours,
       emotional_state,
       general_comprehension,
-      jsonb_build_array(
-        jsonb_build_object('topicId', '1', 'comprehension', general_comprehension),
-        jsonb_build_object('topicId', '2', 'comprehension', LEAST(100, general_comprehension + 8)),
-        jsonb_build_object('topicId', '3', 'comprehension', GREATEST(0, general_comprehension - 10))
-      ),
       'Registro semanal generado por seed para validar analitica por materia.',
       now(),
       now()
@@ -109,9 +110,58 @@ BEGIN
       study_hours = EXCLUDED.study_hours,
       emotional_state = EXCLUDED.emotional_state,
       general_comprehension = EXCLUDED.general_comprehension,
-      topic_responses = EXCLUDED.topic_responses,
       notes = EXCLUDED.notes,
       updated_at = now();
+  END IF;
+END $$;
+
+-- Fase C (docs/database/database-update-plan.md): topic_responses (jsonb)
+-- fue reemplazada por weekly_check_in_topic_responses, con FK real a
+-- `topics`. Se generan hasta 3 respuestas por check-in (una por cada uno de
+-- los primeros 3 temas del silabo de la materia, por "order"), derivadas del
+-- mismo general_comprehension que ya calculo el bloque anterior — mismos
+-- valores que antes vivian en el jsonb, ahora como filas normalizadas.
+-- Alcance limitado a los check-ins generados por este seed (marcados por su
+-- `notes` fijo) para no tocar respuestas reales de check-ins hechos desde
+-- la app.
+DO $$
+BEGIN
+  IF to_regclass('public.weekly_check_in_topic_responses') IS NOT NULL
+     AND to_regclass('public.topics') IS NOT NULL THEN
+    WITH target_check_ins AS (
+      SELECT wc.id AS check_in_id, wc.subject_id, wc.general_comprehension
+      FROM weekly_check_ins wc
+      WHERE wc.notes = 'Registro semanal generado por seed para validar analitica por materia.'
+    ),
+
+    subject_topics AS (
+      SELECT
+        t.subject_id,
+        t.id AS topic_id,
+        ROW_NUMBER() OVER (PARTITION BY t.subject_id ORDER BY t."order") AS topic_rank
+      FROM topics t
+    ),
+
+    topic_response_rows AS (
+      SELECT
+        tci.check_in_id,
+        st.topic_id,
+        CASE st.topic_rank
+          WHEN 1 THEN tci.general_comprehension
+          WHEN 2 THEN LEAST(100, tci.general_comprehension + 8)
+          ELSE GREATEST(0, tci.general_comprehension - 10)
+        END AS comprehension
+      FROM target_check_ins tci
+      INNER JOIN subject_topics st
+        ON st.subject_id = tci.subject_id
+       AND st.topic_rank <= 3
+    )
+
+    INSERT INTO weekly_check_in_topic_responses (id, check_in_id, topic_id, comprehension)
+    SELECT gen_random_uuid(), check_in_id, topic_id, comprehension
+    FROM topic_response_rows
+    ON CONFLICT (check_in_id, topic_id) DO UPDATE SET
+      comprehension = EXCLUDED.comprehension;
   END IF;
 END $$;
 

@@ -162,7 +162,10 @@ subjects_topics AS (
     tc.description,
     md5(s.id::text || ':topic:' || tc.rn::text) AS seed_hash
   FROM subjects s
-  INNER JOIN topic_catalog tc ON tc.subject_code = s.code
+  -- Fase A (docs/database/database-update-plan.md): subjects.code se movio
+  -- a subject_catalog.code, subjects solo guarda subject_catalog_id.
+  INNER JOIN subject_catalog sc ON sc.id = s.subject_catalog_id
+  INNER JOIN topic_catalog tc ON tc.subject_code = sc.code
 ),
 
 topics_seed AS (
@@ -219,9 +222,10 @@ ON CONFLICT (id) DO UPDATE SET
 -- otherwise a stale "Unidad 6: Repaso y evaluacion final" could linger
 -- past the real syllabus for subjects with fewer catalog entries.
 DELETE FROM topics t
-USING subjects s
+USING subjects s, subject_catalog sc
 WHERE t.subject_id = s.id
-  AND s.code IN (SELECT DISTINCT subject_code FROM (
+  AND sc.id = s.subject_catalog_id
+  AND sc.code IN (SELECT DISTINCT subject_code FROM (
     VALUES
       ('FP101'), ('MAT101'), ('LOG101'), ('FP201'), ('CAL201'),
       ('BD301'), ('AC301'), ('SO301'), ('ED301'), ('NET401'),
@@ -236,5 +240,5 @@ WHERE t.subject_id = s.id
         ('BD401', 6), ('AA501', 6), ('IS501', 5), ('PI901', 5), ('SD601', 5),
         ('CC601', 5), ('IA701', 6), ('ML801', 5), ('PT1001', 5)
     ) AS topic_counts(subject_code, topic_count)
-    WHERE topic_counts.subject_code = s.code
+    WHERE topic_counts.subject_code = sc.code
   );
