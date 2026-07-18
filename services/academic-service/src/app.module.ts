@@ -24,6 +24,13 @@ import { GradeHistoryOrmEntity } from "./infrastructure/persistence/grade-histor
 import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-teacher.orm-entity";
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
+import { WeeklyCheckInTopicResponseOrmEntity } from "./infrastructure/persistence/weekly-check-in-topic-response.orm-entity";
+import { SurveyQuestionOrmEntity } from "./infrastructure/persistence/survey-question.orm-entity";
+import { SurveyResponseOrmEntity } from "./infrastructure/persistence/survey-response.orm-entity";
+import { SurveyAnswerOrmEntity } from "./infrastructure/persistence/survey-answer.orm-entity";
+import { ClassScheduleOrmEntity } from "./infrastructure/persistence/class-schedule.orm-entity";
+import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-session.orm-entity";
+import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 import {
@@ -43,6 +50,11 @@ import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-t
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
 import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
 import { WeeklyCheckInRepository } from "./infrastructure/persistence/weekly-check-in.repository";
+import { SurveyQuestionRepository } from "./infrastructure/persistence/survey-question.repository";
+import { SurveyResponseRepository } from "./infrastructure/persistence/survey-response.repository";
+import { ClassScheduleRepository } from "./infrastructure/persistence/class-schedule.repository";
+import { ClassSessionRepository } from "./infrastructure/persistence/class-session.repository";
+import { SessionAttendanceRepository } from "./infrastructure/persistence/session-attendance.repository";
 import { TopicRepository } from "./infrastructure/persistence/topic.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
@@ -127,6 +139,13 @@ import { UpsertCheckInUseCase } from "./application/use-cases/upsert-check-in.us
 import { UpdateCheckInUseCase } from "./application/use-cases/update-check-in.use-case";
 import { ListCheckInsUseCase } from "./application/use-cases/list-check-ins.use-case";
 import { GetCheckInsSummaryUseCase } from "./application/use-cases/get-check-ins-summary.use-case";
+import { ListClassSessionsUseCase } from "./application/use-cases/list-class-sessions.use-case";
+import { RegisterSessionAttendanceUseCase } from "./application/use-cases/register-session-attendance.use-case";
+import { DefineSubjectScheduleUseCase } from "./application/use-cases/define-subject-schedule.use-case";
+import { CreateSurveyQuestionUseCase } from "./application/use-cases/create-survey-question.use-case";
+import { ListSurveyQuestionsUseCase } from "./application/use-cases/list-survey-questions.use-case";
+import { SubmitSurveyResponseUseCase } from "./application/use-cases/submit-survey-response.use-case";
+import { GetSurveyResponseHistoryUseCase } from "./application/use-cases/get-survey-response-history.use-case";
 import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
 import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subject-ownership.use-case";
 // File storage (Phase 10)
@@ -167,6 +186,13 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           SubjectTeacherOrmEntity,
           GradeImportOrmEntity,
           WeeklyCheckInOrmEntity,
+          WeeklyCheckInTopicResponseOrmEntity,
+          SurveyQuestionOrmEntity,
+          SurveyResponseOrmEntity,
+          SurveyAnswerOrmEntity,
+          ClassScheduleOrmEntity,
+          ClassSessionOrmEntity,
+          SessionAttendanceOrmEntity,
           TopicOrmEntity,
           UserReferenceOrmEntity,
         ],
@@ -190,6 +216,13 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       SubjectTeacherOrmEntity,
       GradeImportOrmEntity,
       WeeklyCheckInOrmEntity,
+      WeeklyCheckInTopicResponseOrmEntity,
+      SurveyQuestionOrmEntity,
+      SurveyResponseOrmEntity,
+      SurveyAnswerOrmEntity,
+      ClassScheduleOrmEntity,
+      ClassSessionOrmEntity,
+      SessionAttendanceOrmEntity,
       TopicOrmEntity,
       UserReferenceOrmEntity,
     ]),
@@ -268,6 +301,11 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
     { provide: "IGradeImportRepository", useClass: GradeImportRepository },
     { provide: "IWeeklyCheckInRepository", useClass: WeeklyCheckInRepository },
+    { provide: "ISurveyQuestionRepository", useClass: SurveyQuestionRepository },
+    { provide: "ISurveyResponseRepository", useClass: SurveyResponseRepository },
+    { provide: "IClassScheduleRepository", useClass: ClassScheduleRepository },
+    { provide: "IClassSessionRepository", useClass: ClassSessionRepository },
+    { provide: "ISessionAttendanceRepository", useClass: SessionAttendanceRepository },
     { provide: "ITopicRepository", useClass: TopicRepository },
     {
       provide: "ITeacherObservationRepository",
@@ -346,6 +384,13 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateCheckInUseCase,
     ListCheckInsUseCase,
     GetCheckInsSummaryUseCase,
+    ListClassSessionsUseCase,
+    RegisterSessionAttendanceUseCase,
+    DefineSubjectScheduleUseCase,
+    CreateSurveyQuestionUseCase,
+    ListSurveyQuestionsUseCase,
+    SubmitSurveyResponseUseCase,
+    GetSurveyResponseHistoryUseCase,
     GetLatestCheckInUseCase,
     CheckSubjectOwnershipUseCase,
     // File storage (Phase 10)

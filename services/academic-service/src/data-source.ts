@@ -14,6 +14,13 @@ import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-te
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
 import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
+import { WeeklyCheckInTopicResponseOrmEntity } from "./infrastructure/persistence/weekly-check-in-topic-response.orm-entity";
+import { SurveyQuestionOrmEntity } from "./infrastructure/persistence/survey-question.orm-entity";
+import { SurveyResponseOrmEntity } from "./infrastructure/persistence/survey-response.orm-entity";
+import { SurveyAnswerOrmEntity } from "./infrastructure/persistence/survey-answer.orm-entity";
+import { ClassScheduleOrmEntity } from "./infrastructure/persistence/class-schedule.orm-entity";
+import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-session.orm-entity";
+import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 
 export default new DataSource({
@@ -37,6 +44,13 @@ export default new DataSource({
     GradeImportOrmEntity,
     TopicOrmEntity,
     WeeklyCheckInOrmEntity,
+    WeeklyCheckInTopicResponseOrmEntity,
+    SurveyQuestionOrmEntity,
+    SurveyResponseOrmEntity,
+    SurveyAnswerOrmEntity,
+    ClassScheduleOrmEntity,
+    ClassSessionOrmEntity,
+    SessionAttendanceOrmEntity,
     UserReferenceOrmEntity,
   ],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
