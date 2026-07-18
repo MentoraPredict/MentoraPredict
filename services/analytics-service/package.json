@@ -11,9 +11,10 @@
     "test": "jest --config jest.config.js --no-coverage",
     "test:cov": "jest --config jest.config.js --coverage",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "pnpm typeorm -- migration:generate -d src/data-source.ts",
-    "migration:run": "pnpm typeorm -- migration:run -d src/data-source.ts",
-    "migration:revert": "pnpm typeorm -- migration:revert -d src/data-source.ts"
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
+    "backfill:reference-tables": "ts-node src/scripts/backfill-reference-tables.ts"
   },
   "dependencies": {
     "@mentorapredict/shared-logger": "workspace:*",
@@ -49,6 +50,7 @@
     "@types/node": "^25.9.2",
     "jest": "^29.7.0",
     "ts-jest": "^29.4.11",
+    "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }
 }

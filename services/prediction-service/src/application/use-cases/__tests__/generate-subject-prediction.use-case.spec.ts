@@ -16,6 +16,8 @@ const mockAcademicClient = (): jest.Mocked<IAcademicContextClient> => ({
   getSubjectOwnership: jest.fn(),
   getSubjectGradesContext: jest.fn(),
   getSubjectTopics: jest.fn(),
+  getSubjectDetails: jest.fn(),
+  getPeriodDetails: jest.fn(),
 });
 
 const mockAiProvider = (): jest.Mocked<IAiRecommendationProvider> => ({

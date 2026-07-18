@@ -10,9 +10,9 @@
     "test": "jest --passWithNoTests",
     "test:cov": "jest --coverage",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "pnpm typeorm -- migration:generate -d src/data-source.ts",
-    "migration:run": "pnpm typeorm -- migration:run -d src/data-source.ts",
-    "migration:revert": "pnpm typeorm -- migration:revert -d src/data-source.ts"
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts"
   },
   "dependencies": {
     "@mentorapredict/shared-logger": "workspace:*",

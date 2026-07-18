@@ -11,9 +11,10 @@
     "test": "jest --config jest.config.js --no-coverage",
     "test:cov": "jest --config jest.config.js --coverage",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "pnpm typeorm -- migration:generate -d src/data-source.ts",
-    "migration:run": "pnpm typeorm -- migration:run -d src/data-source.ts",
-    "migration:revert": "pnpm typeorm -- migration:revert -d src/data-source.ts"
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
+    "backfill:user-references": "ts-node src/scripts/backfill-user-references.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

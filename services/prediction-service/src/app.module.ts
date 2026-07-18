@@ -14,10 +14,14 @@ import { PredictionLogDoc, PredictionLogSchema } from "./infrastructure/persiste
 import { PredictionLogRepository } from "./infrastructure/persistence/prediction-log.repository";
 import { StudentSubjectPredictionOrmEntity } from "./infrastructure/persistence/student-subject-prediction.orm-entity";
 import { StudentSubjectPredictionRepository } from "./infrastructure/persistence/student-subject-prediction.repository";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
+import { SubjectReferenceOrmEntity } from "./infrastructure/persistence/subject-reference.orm-entity";
+import { PeriodReferenceOrmEntity } from "./infrastructure/persistence/period-reference.orm-entity";
 
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
+import { UserHttpClient } from "./infrastructure/adapters/user-http.client";
 import { OpenAiRecommendationProvider } from "./infrastructure/adapters/openai-recommendation.provider";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 import { RolesGuard } from "./infrastructure/guards/roles.guard";
@@ -34,6 +38,7 @@ import { GetPredictionHistoryUseCase } from "./application/use-cases/get-predict
 import {
   RecalculateSubjectPredictionUseCase,
   STUDENT_SUBJECT_PREDICTION_REPO,
+  USER_SERVICE_CLIENT,
 } from "./application/use-cases/recalculate-subject-prediction.use-case";
 import { GetMySubjectPredictionUseCase } from "./application/use-cases/get-my-subject-prediction.use-case";
 import { GetStudentSubjectPredictionUseCase } from "./application/use-cases/get-student-subject-prediction.use-case";
@@ -60,13 +65,23 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
         username: cfg.get("POSTGRES_USER", "mp_user"),
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
-        entities: [StudentSubjectPredictionOrmEntity],
+        entities: [
+          StudentSubjectPredictionOrmEntity,
+          UserReferenceOrmEntity,
+          SubjectReferenceOrmEntity,
+          PeriodReferenceOrmEntity,
+        ],
         // Schema changes go through TypeORM migrations (see src/data-source.ts) —
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
         synchronize: false,
       }),
     }),
-    TypeOrmModule.forFeature([StudentSubjectPredictionOrmEntity]),
+    TypeOrmModule.forFeature([
+      StudentSubjectPredictionOrmEntity,
+      UserReferenceOrmEntity,
+      SubjectReferenceOrmEntity,
+      PeriodReferenceOrmEntity,
+    ]),
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
@@ -111,6 +126,7 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
     InternalServiceGuard,
     { provide: ANALYTICS_CLIENT, useClass: AnalyticsHttpClient },
     { provide: ACADEMIC_CONTEXT_CLIENT, useClass: AcademicHttpClient },
+    { provide: USER_SERVICE_CLIENT, useClass: UserHttpClient },
     { provide: AI_PROVIDER, useClass: OpenAiRecommendationProvider },
     { provide: PREDICTION_LOG_REPO, useClass: PredictionLogRepository },
     { provide: STUDENT_SUBJECT_PREDICTION_REPO, useClass: StudentSubjectPredictionRepository },

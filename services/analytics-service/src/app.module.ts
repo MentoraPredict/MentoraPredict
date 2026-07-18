@@ -14,6 +14,9 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { StudentMetricsOrmEntity } from "./infrastructure/persistence/student-metrics.orm-entity";
 import { AlertOrmEntity } from "./infrastructure/persistence/alert.orm-entity";
 import { StudentSubjectMetricsOrmEntity } from "./infrastructure/persistence/student-subject-metrics.orm-entity";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
+import { SubjectReferenceOrmEntity } from "./infrastructure/persistence/subject-reference.orm-entity";
+import { PeriodReferenceOrmEntity } from "./infrastructure/persistence/period-reference.orm-entity";
 import { StudentMetricsRepository } from "./infrastructure/persistence/student-metrics.repository";
 import { AlertRepository } from "./infrastructure/persistence/alert.repository";
 import { StudentSubjectMetricsRepository } from "./infrastructure/persistence/student-subject-metrics.repository";
@@ -93,6 +96,9 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
           StudentSubjectMetricsOrmEntity,
           NotificationOrmEntity,
           DeviceTokenOrmEntity,
+          UserReferenceOrmEntity,
+          SubjectReferenceOrmEntity,
+          PeriodReferenceOrmEntity,
         ],
         // Schema changes go through TypeORM migrations (see src/data-source.ts) —
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
@@ -105,6 +111,9 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
       StudentSubjectMetricsOrmEntity,
       NotificationOrmEntity,
       DeviceTokenOrmEntity,
+      UserReferenceOrmEntity,
+      SubjectReferenceOrmEntity,
+      PeriodReferenceOrmEntity,
     ]),
 
     MongooseModule.forRootAsync({

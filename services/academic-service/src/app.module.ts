@@ -24,6 +24,7 @@ import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-te
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 import {
   TeacherObservationDoc,
   TeacherObservationSchema,
@@ -162,6 +163,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           GradeImportOrmEntity,
           WeeklyCheckInOrmEntity,
           TopicOrmEntity,
+          UserReferenceOrmEntity,
         ],
         // Schema changes go through TypeORM migrations (see src/data-source.ts) —
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
@@ -183,6 +185,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       GradeImportOrmEntity,
       WeeklyCheckInOrmEntity,
       TopicOrmEntity,
+      UserReferenceOrmEntity,
     ]),
 
     MongooseModule.forRootAsync({

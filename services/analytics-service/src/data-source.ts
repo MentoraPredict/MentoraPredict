@@ -6,6 +6,9 @@ import { StudentSubjectMetricsOrmEntity } from "./infrastructure/persistence/stu
 import { AlertOrmEntity } from "./infrastructure/persistence/alert.orm-entity";
 import { DeviceTokenOrmEntity } from "./notifications/infrastructure/persistence/device-token.orm-entity";
 import { NotificationOrmEntity } from "./notifications/infrastructure/persistence/notification.orm-entity";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
+import { SubjectReferenceOrmEntity } from "./infrastructure/persistence/subject-reference.orm-entity";
+import { PeriodReferenceOrmEntity } from "./infrastructure/persistence/period-reference.orm-entity";
 
 export default new DataSource({
   type: "postgres",
@@ -20,6 +23,9 @@ export default new DataSource({
     AlertOrmEntity,
     DeviceTokenOrmEntity,
     NotificationOrmEntity,
+    UserReferenceOrmEntity,
+    SubjectReferenceOrmEntity,
+    PeriodReferenceOrmEntity,
   ],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   migrationsTableName: "migrations_analytics",

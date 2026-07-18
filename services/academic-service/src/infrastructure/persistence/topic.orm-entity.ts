@@ -1,4 +1,5 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { SubjectOrmEntity } from './subject.orm-entity';
 
 @Entity('topics')
 @Index('idx_topic_subject_order', ['subjectId', 'order'])
@@ -6,6 +7,9 @@ export class TopicOrmEntity {
   @PrimaryColumn('uuid') id!: string;
 
   @Column({ name: 'subject_id', type: 'uuid' }) subjectId!: string;
+  @ManyToOne(() => SubjectOrmEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'subject_id', foreignKeyConstraintName: 'FK_topics_subject_id' })
+  subject?: SubjectOrmEntity;
   @Column({ length: 200 }) title!: string;
   @Column({ type: 'text', nullable: true }) description!: string | null;
   @Column({ type: 'int' }) order!: number;

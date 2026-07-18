@@ -34,6 +34,7 @@ const mockAcademicClient = (): jest.Mocked<IAcademicServiceClient> => ({
   getSubjectOwnership: jest.fn(),
   getSubjectDetails: jest.fn(),
   getStudentsByTeacher: jest.fn(),
+  getPeriodDetails: jest.fn(),
 });
 
 function enrollment(subjectId: string, status = 'ACTIVE'): Enrollment {

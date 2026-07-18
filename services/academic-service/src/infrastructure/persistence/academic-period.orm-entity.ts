@@ -2,6 +2,7 @@ import {
   Entity,
   PrimaryColumn,
   Column,
+  Check,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
@@ -9,6 +10,8 @@ import {
 
 @Index('uq_one_active_period', ['status'], { unique: true, where: "status = 'ACTIVE'" })
 @Entity('academic_periods')
+@Check('CHK_academic_periods_status', `"status" IN ('PLANNED','ACTIVE','FINISHED','CANCELLED')`)
+@Check('CHK_academic_periods_type', `"type" IN ('SEMESTER','QUARTER')`)
 export class AcademicPeriodOrmEntity {
   @PrimaryColumn('uuid') id!: string;
   @Column({ length: 100, unique: true }) name!: string;

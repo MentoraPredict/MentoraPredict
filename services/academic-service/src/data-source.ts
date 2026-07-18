@@ -13,6 +13,7 @@ import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-te
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
 import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 
 export default new DataSource({
   type: "postgres",
@@ -34,6 +35,7 @@ export default new DataSource({
     GradeImportOrmEntity,
     TopicOrmEntity,
     WeeklyCheckInOrmEntity,
+    UserReferenceOrmEntity,
   ],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   migrationsTableName: "migrations_academic",
