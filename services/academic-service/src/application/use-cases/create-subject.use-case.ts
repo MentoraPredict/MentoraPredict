@@ -17,6 +17,8 @@ import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.rep
 import { INotificationClientPort } from '../ports/output/i-notification-client.port';
 import { IUserProfilePort } from '../ports/output/i-user-profile.port';
 import { ITeacherRolePort } from '../ports/output/i-teacher-role.port';
+import { DefineSubjectScheduleUseCase } from './define-subject-schedule.use-case';
+import { ClassScheduleSlotDto } from '../dtos/define-subject-schedule.dto';
 
 export interface CreateSubjectDto {
   subjectCatalogId?: string;
@@ -27,6 +29,10 @@ export interface CreateSubjectDto {
   careerId?: string;
   maxCapacity?: number;
   teacherId?: string;
+  // Opcional: si se manda, define el horario (y genera sus class_sessions)
+  // de una vez. Si no, la materia queda sin horario hasta que alguien lo
+  // defina después vía DefineSubjectScheduleUseCase.
+  schedule?: ClassScheduleSlotDto[];
 }
 
 @Injectable()
@@ -42,6 +48,7 @@ export class CreateSubjectUseCase {
     private readonly periodRepo: IAcademicPeriodRepository,
     @Inject('ISubjectTeacherRepository')
     private readonly subjectTeacherRepo: ISubjectTeacherRepository,
+    private readonly defineScheduleUC: DefineSubjectScheduleUseCase,
     @Inject('INotificationClientPort')
     private readonly notificationClient: INotificationClientPort,
     @Inject('IUserProfilePort')
@@ -99,6 +106,10 @@ export class CreateSubjectUseCase {
     await this.subjectTeacherRepo.save(
       new SubjectTeacherEntity(saved.id, teacherId, activePeriod.id),
     );
+
+    if (dto.schedule?.length) {
+      await this.defineScheduleUC.execute(saved.id, dto.schedule, callerId, callerRole);
+    }
 
     const teacherProfile = await this.userProfilePort.getProfile(teacherId).catch(() => null);
     const teacherName = teacherProfile

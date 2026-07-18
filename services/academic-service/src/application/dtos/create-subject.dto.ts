@@ -8,8 +8,13 @@ import {
   Max,
   MaxLength,
   ValidateIf,
+  IsArray,
+  ArrayMinSize,
+  ValidateNested,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ClassScheduleSlotDto } from './define-subject-schedule.dto';
 
 // Dos formas válidas de crear una oferta (ver
 // docs/database/database-update-plan.md §5.1 y create-subject.use-case.ts):
@@ -72,4 +77,15 @@ export class CreateSubjectDto {
   @IsUUID()
   @IsOptional()
   teacherId?: string;
+
+  @ApiPropertyOptional({
+    type: [ClassScheduleSlotDto],
+    description: 'Horario semanal de la oferta (día + hora). Opcional — si no se manda, la materia queda sin sesiones hasta que se defina después con POST /subjects/:id/schedule.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ClassScheduleSlotDto)
+  schedule?: ClassScheduleSlotDto[];
 }

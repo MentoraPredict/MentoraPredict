@@ -8,6 +8,7 @@ import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.
 import { INotificationClientPort } from '../../ports/output/i-notification-client.port';
 import { IUserProfilePort } from '../../ports/output/i-user-profile.port';
 import { ITeacherRolePort } from '../../ports/output/i-teacher-role.port';
+import { DefineSubjectScheduleUseCase } from '../define-subject-schedule.use-case';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { SubjectCatalogEntity } from '../../../domain/entities/subject-catalog.entity';
 import { CareerEntity } from '../../../domain/entities/career.entity';
@@ -63,6 +64,10 @@ const mockSubjectTeacherRepo = (): jest.Mocked<ISubjectTeacherRepository> => ({
   findByTeacherIdWithDetails: jest.fn(),
 });
 
+const mockDefineScheduleUC = (): jest.Mocked<Pick<DefineSubjectScheduleUseCase, 'execute'>> => ({
+  execute: jest.fn().mockResolvedValue(undefined),
+});
+
 const mockNotificationClient = (): jest.Mocked<INotificationClientPort> => ({
   notify: jest.fn().mockResolvedValue(undefined),
 });
@@ -109,6 +114,7 @@ describe('CreateSubjectUseCase', () => {
   let careerRepo: jest.Mocked<ICareerRepository>;
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
   let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
+  let defineScheduleUC: jest.Mocked<Pick<DefineSubjectScheduleUseCase, 'execute'>>;
   let notificationClient: jest.Mocked<INotificationClientPort>;
   let userProfilePort: jest.Mocked<IUserProfilePort>;
   let teacherRolePort: jest.Mocked<ITeacherRolePort>;
@@ -119,6 +125,7 @@ describe('CreateSubjectUseCase', () => {
     careerRepo = mockCareerRepo();
     periodRepo = mockPeriodRepo();
     subjectTeacherRepo = mockSubjectTeacherRepo();
+    defineScheduleUC = mockDefineScheduleUC();
     notificationClient = mockNotificationClient();
     userProfilePort = mockUserProfilePort();
     teacherRolePort = mockTeacherRolePort();
@@ -128,6 +135,7 @@ describe('CreateSubjectUseCase', () => {
       careerRepo,
       periodRepo,
       subjectTeacherRepo,
+      defineScheduleUC as unknown as DefineSubjectScheduleUseCase,
       notificationClient,
       userProfilePort,
       teacherRolePort,
@@ -152,6 +160,35 @@ describe('CreateSubjectUseCase', () => {
     expect(result.id).toBeDefined();
     expect(subjectCatalogRepo.save).toHaveBeenCalledTimes(1);
     expect(subjectRepo.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('defines the schedule when one is provided at creation time', async () => {
+    careerRepo.findById.mockResolvedValue(makeCareer());
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
+    subjectCatalogRepo.findByCode.mockResolvedValue(null);
+    subjectCatalogRepo.save.mockImplementation(async (c) => c);
+    subjectRepo.findByCatalogAndPeriod.mockResolvedValue(null);
+    subjectRepo.save.mockImplementation(async (s) => s);
+    subjectTeacherRepo.save.mockImplementation(async (a) => a);
+
+    const schedule = [{ dayOfWeek: 'MONDAY', startTime: '08:00', endTime: '10:00' }];
+    const result = await useCase.execute({ ...validDto, schedule }, 'teacher-1', 'TEACHER');
+
+    expect(defineScheduleUC.execute).toHaveBeenCalledWith(result.id, schedule, 'teacher-1', 'TEACHER');
+  });
+
+  it('does not define a schedule when none is provided', async () => {
+    careerRepo.findById.mockResolvedValue(makeCareer());
+    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
+    subjectCatalogRepo.findByCode.mockResolvedValue(null);
+    subjectCatalogRepo.save.mockImplementation(async (c) => c);
+    subjectRepo.findByCatalogAndPeriod.mockResolvedValue(null);
+    subjectRepo.save.mockImplementation(async (s) => s);
+    subjectTeacherRepo.save.mockImplementation(async (a) => a);
+
+    await useCase.execute(validDto, 'teacher-1', 'TEACHER');
+
+    expect(defineScheduleUC.execute).not.toHaveBeenCalled();
   });
 
   it('reoffers an existing catalog entry when subjectCatalogId is given', async () => {
