@@ -1,6 +1,6 @@
 # Diagrama Entidad-Relación
 
-> **Estado: implementado y verificado.** Todas las relaciones, políticas `onDelete`, tablas de referencia y restricciones (`CHECK`/`UNIQUE`) descritas en este documento están aplicadas en la base de datos real vía migraciones TypeORM versionadas (Fase 4 de la restructuración del modelo de datos), y cada una fue confirmada con `migration:generate` reportando "No changes in database schema were found" (diff cero) contra las entidades `*.orm-entity.ts` correspondientes. Este documento reemplaza a la versión anterior, que describía este mismo diseño como propuesta (`[PROPUESTO]`) antes de implementarlo.
+> **Estado: implementado y verificado.** Todas las relaciones, políticas `onDelete`, tablas de referencia y restricciones (`CHECK`/`UNIQUE`) descritas en este documento están aplicadas en la base de datos real vía migraciones TypeORM versionadas — Fase 4 de la restructuración original del modelo de datos, más las Fases A-E de `docs/database/database-update-plan.md` (catálogo de materias, asistencia por sesión, encuesta de comprensión normalizada, encuesta socioeconómica repetible, registro de acceso a la plataforma) — y cada una fue confirmada con `migration:generate` reportando "No changes in database schema were found" (diff cero) contra las entidades `*.orm-entity.ts` correspondientes. Este documento reemplaza a la versión anterior, que describía este mismo diseño como propuesta (`[PROPUESTO]`) antes de implementarlo.
 >
 > Inspirado en el formato de `docs/backend/database-model.md` de `SIGLA-Backend` (un proyecto externo, sin relación con MentoraPredict, usado acá solo como referencia de formato de documentación) — un único `mermaid erDiagram` con anotaciones inline de `PK`/`FK`/`UK`, listas de valores de enum, y política `onDelete` explícita por relación. La versión de MentoraPredict difiere en un punto estructural que SIGLA no necesitaba resolver: SIGLA es un monolito de un solo servicio, así que cada relación podía ser una FK física. MentoraPredict son 5 microservicios compartiendo una única Postgres física — así que este documento tiene que trazar una línea que SIGLA nunca tuvo que trazar.
 >
@@ -29,6 +29,16 @@ erDiagram
         varchar last_name
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    LOGIN_EVENTS {
+        uuid id PK
+        uuid user_id FK
+        timestamptz occurred_at
+        varchar login_method "LOCAL | MICROSOFT"
+        varchar ip_address "nullable"
+        text user_agent "nullable"
+        varchar device_type "nullable — reservada, sin poblar todavía"
     }
 
     %% ── user-service ──────────────────────────────────────
@@ -82,14 +92,22 @@ erDiagram
         timestamptz updated_at
     }
 
-    SUBJECTS {
+    SUBJECT_CATALOG {
         uuid id PK
         varchar name
         text description
         varchar code UK
         int credits
         uuid career_id FK
-        uuid academic_period_id FK
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SUBJECTS {
+        uuid id PK
+        uuid subject_catalog_id FK "UK junto con academic_period_id"
+        uuid academic_period_id FK "UK junto con subject_catalog_id"
         int max_capacity "default 30"
         uuid teacher_id FK "nullable"
         boolean is_active
@@ -173,6 +191,37 @@ erDiagram
         timestamptz updated_at
     }
 
+    CLASS_SCHEDULES {
+        uuid id PK
+        uuid subject_id FK
+        varchar day_of_week "MONDAY..SUNDAY, UK junto con subject_id"
+        time start_time
+        time end_time "CHECK end_time > start_time"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLASS_SESSIONS {
+        uuid id PK
+        uuid subject_id FK
+        uuid schedule_id FK
+        date session_date "UK junto con subject_id"
+        int academic_week
+        int academic_year
+        varchar status "PLANNED | HELD | CANCELLED"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SESSION_ATTENDANCES {
+        uuid id PK
+        uuid session_id FK
+        uuid student_id FK
+        boolean present
+        varchar recorded_by "STUDENT_SELF_REPORT | TEACHER"
+        timestamptz recorded_at
+    }
+
     WEEKLY_CHECK_INS {
         uuid id PK
         uuid student_id FK
@@ -186,10 +235,42 @@ erDiagram
         decimal study_hours
         varchar emotional_state "GREAT | GOOD | NEUTRAL | BAD | CRITICAL"
         int general_comprehension
-        jsonb topic_responses
         text notes "nullable"
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    WEEKLY_CHECK_IN_TOPIC_RESPONSES {
+        uuid id PK
+        uuid check_in_id FK
+        uuid topic_id FK "UK junto con check_in_id"
+        int comprehension "CHECK 0-100"
+    }
+
+    SURVEY_QUESTIONS {
+        uuid id PK
+        varchar code UK
+        varchar category
+        text question_text
+        varchar question_type "SINGLE_CHOICE | MULTI_CHOICE | NUMBER | TEXT | BOOLEAN"
+        jsonb options "nullable"
+        boolean is_active
+        int order
+    }
+
+    SURVEY_RESPONSES {
+        uuid id PK
+        uuid student_id FK
+        uuid period_id FK
+        varchar survey_code "sin UK — una encuesta se puede repetir"
+        timestamptz submitted_at
+    }
+
+    SURVEY_ANSWERS {
+        uuid id PK
+        uuid response_id FK
+        uuid question_id FK "UK junto con response_id"
+        jsonb answer_value
     }
 
     ACADEMIC_USER_REF {
@@ -321,8 +402,9 @@ erDiagram
     }
 
     %% ── Relaciones físicas academic-service ─────────────────
+    CAREERS ||--o{ SUBJECT_CATALOG : "ofrece RESTRICT"
     FACULTIES ||--o{ CAREERS : "posee RESTRICT"
-    CAREERS ||--o{ SUBJECTS : "ofrece RESTRICT"
+    SUBJECT_CATALOG ||--o{ SUBJECTS : "se oferta como RESTRICT"
     ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita RESTRICT"
     SUBJECTS ||--o{ EVALUATIONS : "define CASCADE"
     SUBJECTS ||--o{ ENROLLMENTS : "recibe RESTRICT"
@@ -334,8 +416,19 @@ erDiagram
     ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita RESTRICT"
     SUBJECTS ||--o{ GRADE_IMPORTS : "recibe RESTRICT"
     SUBJECTS ||--o{ TOPICS : "contiene CASCADE"
+    SUBJECTS ||--o{ CLASS_SCHEDULES : "define horario CASCADE"
+    SUBJECTS ||--o{ CLASS_SESSIONS : "programa CASCADE"
+    CLASS_SCHEDULES ||--o{ CLASS_SESSIONS : "genera RESTRICT"
+    CLASS_SESSIONS ||--o{ SESSION_ATTENDANCES : "registra asistencia CASCADE"
+    ACADEMIC_USER_REF ||--o{ SESSION_ATTENDANCES : "asiste RESTRICT"
     SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe RESTRICT"
     ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita RESTRICT"
+    WEEKLY_CHECK_INS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "detalla CASCADE"
+    TOPICS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "es evaluado en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SURVEY_RESPONSES : "responde RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SURVEY_RESPONSES : "delimita RESTRICT"
+    SURVEY_RESPONSES ||--o{ SURVEY_ANSWERS : "contiene CASCADE"
+    SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "es respondida en RESTRICT"
     ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de RESTRICT"
     ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula RESTRICT"
     ACADEMIC_USER_REF ||--o{ GRADES : "es calificado RESTRICT"
@@ -344,6 +437,9 @@ erDiagram
     ACADEMIC_USER_REF ||--o{ SUBJECT_TEACHERS : "es docente en RESTRICT"
     ACADEMIC_USER_REF ||--o{ GRADE_IMPORTS : "importa RESTRICT"
     ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta RESTRICT"
+
+    %% ── Relaciones físicas auth-service ──────────────────────
+    USERS ||--o{ LOGIN_EVENTS : "accede CASCADE"
 
     %% ── Relaciones físicas analytics-service ────────────────
     ALERTS |o--o{ NOTIFICATIONS : "dispara SET NULL"
@@ -397,14 +493,29 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
+
+    LOGIN_EVENTS {
+        uuid id PK
+        uuid user_id FK
+        timestamptz occurred_at
+        varchar login_method "LOCAL | MICROSOFT"
+        varchar ip_address "nullable"
+        text user_agent "nullable"
+        varchar device_type "nullable — reservada, sin poblar todavía"
+    }
+
+    USERS ||--o{ LOGIN_EVENTS : "accede CASCADE"
 ```
 
-No tiene ninguna FK, física ni cross-servicio — no referencia nada de otro servicio. Es la fuente de identidad a la que todos los demás apuntan (§5). No necesita tabla de referencia (no consume datos de nadie más). `role` y `auth_provider` ya están centralizados en `@mentorapredict/shared-types` (`Role`, `AuthProvider`) desde la Fase 1 — candidatos directos a `CHECK`/enum nativo de Postgres, sin necesidad de rediseño adicional.
+`USERS` no tiene ninguna FK, física ni cross-servicio — no referencia nada de otro servicio. Es la fuente de identidad a la que todos los demás apuntan (§5). No necesita tabla de referencia (no consume datos de nadie más). `role` y `auth_provider` ya están centralizados en `@mentorapredict/shared-types` (`Role`, `AuthProvider`) desde la Fase 1 — candidatos directos a `CHECK`/enum nativo de Postgres, sin necesidad de rediseño adicional.
+
+`LOGIN_EVENTS` (Fase E, `docs/database/database-update-plan.md` §5.5) registra cada acceso exitoso a la plataforma — objetivo: dejar base para análisis de patrones de acceso (frecuencia, franjas horarias) y, a futuro, detección de dispositivo. Es la única tabla de todo el proyecto con una **FK física directa a una tabla cross-servicio "conceptual"** que en realidad es intra-servicio: `user_id` apunta a `users.id`, pero como ambas tablas viven en `auth-service`, esto no rompe la regla de §1 (la FK sigue siendo entre dos tablas del mismo servicio) — no aplica el patrón de tabla de referencia de §3 porque no hace falta, `users` ya es la fuente real acá. Se escribe de forma *fire-and-forget* (no bloqueante) desde `LoginUserUseCase` (login local, `login_method = 'LOCAL'`) y `OAuthLoginUseCase` (login Microsoft, `login_method = 'MICROSOFT'`) — un fallo al registrar el evento nunca hace fallar el login. `device_type` queda `NULL` en todas las filas hasta que se implemente detección real de dispositivo (columna reservada a propósito, pedido explícito del usuario: "a futuro, pero dejarlo listo").
 
 | Restricción | Detalle |
 |---|---|
-| `CHECK` implementado | `role IN ('STUDENT','TEACHER','ADMIN')`, `auth_provider IN ('LOCAL','MICROSOFT')` |
+| `CHECK` implementado | `role IN ('STUDENT','TEACHER','ADMIN')`, `auth_provider IN ('LOCAL','MICROSOFT')` (`users`); `login_method IN ('LOCAL','MICROSOFT')` (`login_events`) |
 | Único ya existente | `email` (`UNIQUE`) |
+| FK física nueva (Fase E) | `login_events.user_id` → `users.id`, `CASCADE` — si se borra un usuario, su historial de accesos se borra con él (no es un registro de auditoría permanente como `grade_history`, es telemetría operacional). |
 
 ### 4.2 user-service
 
@@ -434,7 +545,7 @@ Caso especial: `id` **es** el mismo valor que `auth-service.users.id` por conven
 
 ### 4.3 academic-service
 
-El servicio más grande (12 tablas propias) y el que más referencia usuarios (7 columnas distintas).
+El servicio más grande (20 tablas propias, tras las Fases A-D) y el que más referencia usuarios (9 columnas distintas).
 
 ```mermaid
 erDiagram
@@ -473,14 +584,22 @@ erDiagram
         timestamptz updated_at
     }
 
-    SUBJECTS {
+    SUBJECT_CATALOG {
         uuid id PK
         varchar name
         text description
         varchar code UK
         int credits
         uuid career_id FK
-        uuid academic_period_id FK
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SUBJECTS {
+        uuid id PK
+        uuid subject_catalog_id FK "UK junto con academic_period_id"
+        uuid academic_period_id FK "UK junto con subject_catalog_id"
         int max_capacity "default 30"
         uuid teacher_id FK "nullable"
         boolean is_active
@@ -564,6 +683,37 @@ erDiagram
         timestamptz updated_at
     }
 
+    CLASS_SCHEDULES {
+        uuid id PK
+        uuid subject_id FK
+        varchar day_of_week "MONDAY..SUNDAY, UK junto con subject_id"
+        time start_time
+        time end_time "CHECK end_time > start_time"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLASS_SESSIONS {
+        uuid id PK
+        uuid subject_id FK
+        uuid schedule_id FK
+        date session_date "UK junto con subject_id"
+        int academic_week
+        int academic_year
+        varchar status "PLANNED | HELD | CANCELLED"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SESSION_ATTENDANCES {
+        uuid id PK
+        uuid session_id FK
+        uuid student_id FK
+        boolean present
+        varchar recorded_by "STUDENT_SELF_REPORT | TEACHER"
+        timestamptz recorded_at
+    }
+
     WEEKLY_CHECK_INS {
         uuid id PK
         uuid student_id FK
@@ -577,10 +727,42 @@ erDiagram
         decimal study_hours
         varchar emotional_state "GREAT | GOOD | NEUTRAL | BAD | CRITICAL"
         int general_comprehension
-        jsonb topic_responses
         text notes "nullable"
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    WEEKLY_CHECK_IN_TOPIC_RESPONSES {
+        uuid id PK
+        uuid check_in_id FK
+        uuid topic_id FK "UK junto con check_in_id"
+        int comprehension "CHECK 0-100"
+    }
+
+    SURVEY_QUESTIONS {
+        uuid id PK
+        varchar code UK
+        varchar category
+        text question_text
+        varchar question_type "SINGLE_CHOICE | MULTI_CHOICE | NUMBER | TEXT | BOOLEAN"
+        jsonb options "nullable"
+        boolean is_active
+        int order
+    }
+
+    SURVEY_RESPONSES {
+        uuid id PK
+        uuid student_id FK
+        uuid period_id FK
+        varchar survey_code "sin UK — una encuesta se puede repetir"
+        timestamptz submitted_at
+    }
+
+    SURVEY_ANSWERS {
+        uuid id PK
+        uuid response_id FK
+        uuid question_id FK "UK junto con response_id"
+        jsonb answer_value
     }
 
     ACADEMIC_USER_REF {
@@ -590,8 +772,9 @@ erDiagram
         timestamptz synced_at
     }
 
+    CAREERS ||--o{ SUBJECT_CATALOG : "ofrece RESTRICT"
     FACULTIES ||--o{ CAREERS : "posee RESTRICT"
-    CAREERS ||--o{ SUBJECTS : "ofrece RESTRICT"
+    SUBJECT_CATALOG ||--o{ SUBJECTS : "se oferta como RESTRICT"
     ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita RESTRICT"
     SUBJECTS ||--o{ EVALUATIONS : "define CASCADE"
     SUBJECTS ||--o{ ENROLLMENTS : "recibe RESTRICT"
@@ -603,8 +786,19 @@ erDiagram
     ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita RESTRICT"
     SUBJECTS ||--o{ GRADE_IMPORTS : "recibe RESTRICT"
     SUBJECTS ||--o{ TOPICS : "contiene CASCADE"
+    SUBJECTS ||--o{ CLASS_SCHEDULES : "define horario CASCADE"
+    SUBJECTS ||--o{ CLASS_SESSIONS : "programa CASCADE"
+    CLASS_SCHEDULES ||--o{ CLASS_SESSIONS : "genera RESTRICT"
+    CLASS_SESSIONS ||--o{ SESSION_ATTENDANCES : "registra asistencia CASCADE"
+    ACADEMIC_USER_REF ||--o{ SESSION_ATTENDANCES : "asiste RESTRICT"
     SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe RESTRICT"
     ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita RESTRICT"
+    WEEKLY_CHECK_INS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "detalla CASCADE"
+    TOPICS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "es evaluado en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SURVEY_RESPONSES : "responde RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SURVEY_RESPONSES : "delimita RESTRICT"
+    SURVEY_RESPONSES ||--o{ SURVEY_ANSWERS : "contiene CASCADE"
+    SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "es respondida en RESTRICT"
     ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de RESTRICT"
     ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula RESTRICT"
     ACADEMIC_USER_REF ||--o{ GRADES : "es calificado RESTRICT"
@@ -615,12 +809,13 @@ erDiagram
     ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta RESTRICT"
 ```
 
-**FK físicas (23, todas intra-servicio):**
+**FK físicas (35, todas intra-servicio):**
 
 | Desde | Hacia | `onDelete` | Por qué |
 |---|---|---|---|
 | `careers.faculty_id` | `faculties.id` | `RESTRICT` | Una facultad con carreras activas no debería desaparecer silenciosamente. |
-| `subjects.career_id` | `careers.id` | `RESTRICT` | Misma razón. |
+| `subject_catalog.career_id` | `careers.id` | `RESTRICT` | Misma razón — desde la Fase A, `career_id` vive en el catálogo, no en la oferta. |
+| `subjects.subject_catalog_id` | `subject_catalog.id` | `RESTRICT` | Una materia del catálogo con ofertas activas no debería desaparecer silenciosamente (Fase A). |
 | `subjects.academic_period_id` | `academic_periods.id` | `RESTRICT` | Un período con materias programadas no es eliminable. |
 | `subjects.teacher_id` | `academic_user_ref.id` | `RESTRICT` | Preserva la asignación docente en el registro histórico. |
 | `evaluations.subject_id` | `subjects.id` | `CASCADE` | Una evaluación no tiene sentido sin su materia. |
@@ -638,9 +833,20 @@ erDiagram
 | `grade_imports.subject_id` | `subjects.id` | `RESTRICT` | Rastro de auditoría de una operación masiva — se conserva. |
 | `grade_imports.imported_by` | `academic_user_ref.id` | `RESTRICT` | Rastro de auditoría. |
 | `topics.subject_id` | `subjects.id` | `CASCADE` | El contenido del sílabo no tiene sentido fuera de su materia. |
+| `class_schedules.subject_id` | `subjects.id` | `CASCADE` | El horario no tiene sentido fuera de la oferta a la que pertenece — se borra con ella (Fase B). |
+| `class_sessions.subject_id` | `subjects.id` | `CASCADE` | Igual. |
+| `class_sessions.schedule_id` | `class_schedules.id` | `RESTRICT` | Una franja horaria con sesiones ya generadas no debería poder borrarse silenciosamente. |
+| `session_attendances.session_id` | `class_sessions.id` | `CASCADE` | Un registro de asistencia no tiene sentido fuera de su sesión. |
+| `session_attendances.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de asistencia del estudiante. |
 | `weekly_check_ins.subject_id` | `subjects.id` | `RESTRICT` | Preservar el historial de autorreporte. |
 | `weekly_check_ins.period_id` | `academic_periods.id` | `RESTRICT` | Igual. |
 | `weekly_check_ins.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de autorreporte. |
+| `weekly_check_in_topic_responses.check_in_id` | `weekly_check_ins.id` | `CASCADE` | Una respuesta por tema no tiene sentido fuera de su check-in (Fase C). |
+| `weekly_check_in_topic_responses.topic_id` | `topics.id` | `RESTRICT` | Un tema del sílabo con respuestas ya registradas no debería poder borrarse silenciosamente. |
+| `survey_responses.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de encuestas del estudiante (Fase D). |
+| `survey_responses.period_id` | `academic_periods.id` | `RESTRICT` | Igual. |
+| `survey_answers.response_id` | `survey_responses.id` | `CASCADE` | Una respuesta individual no tiene sentido fuera del envío que la contiene. |
+| `survey_answers.question_id` | `survey_questions.id` | `RESTRICT` | Una pregunta del catálogo con respuestas ya registradas no debería poder borrarse silenciosamente — se desactiva (`is_active = false`), no se borra. |
 
 **Tabla de referencia local — `academic_user_references`:**
 
@@ -655,14 +861,26 @@ Se llena vía *upsert* en `UserProfileAdapter.getProfile()` (`services/academic-
 
 Nombrada `academic_user_references` (con prefijo) y no `user_references` a secas — las 3 tablas de referencia de usuario del monorepo (academic/analytics/prediction) comparten la misma Postgres física, y un nombre sin prefijo colisiona entre servicios. Detectado y corregido durante la implementación (migración `RenameUserReferencesTable`); el prefijo se aplicó preventivamente en analytics-service y prediction-service desde el principio.
 
+**Objetivo de cada tabla nueva (Fases A-D):**
+
+- **`subject_catalog`** — la materia como concepto, independiente del período (ej. "Bases de Datos I" existe una vez en el catálogo). Resuelve el problema estructural que motivó la Fase A: antes de este cambio, `subjects.code` era `UNIQUE` global y `academic_period_id` era `NOT NULL`, así que una materia solo podía existir en un único período *para siempre* — reofertarla en un semestre nuevo era imposible sin inventar un código distinto, y rompía la tendencia multi-período que `analytics-service`/`prediction-service` ya calculan.
+- **`subjects`** — desde la Fase A, ya no es "la materia": es la **oferta** de una fila de `subject_catalog` en un `academic_period_id` concreto (`UNIQUE(subject_catalog_id, academic_period_id)` — la misma materia puede ofertarse una vez por período, nunca dos veces en el mismo). `max_capacity`, `teacher_id` y `is_active` siguen viviendo acá porque son propiedades de la oferta, no de la materia (un mismo curso puede tener cupo/docente distinto cada semestre).
+- **`class_schedules`** — la franja horaria semanal real de una oferta (día + hora de inicio/fin), definida una vez por `DefineSubjectScheduleUseCase` al momento de crear/configurar la oferta. Existe porque el horario cambia cada semestre (una oferta nueva = un horario nuevo), a diferencia de un contador de semana relativo que no distingue entre semestres.
+- **`class_sessions`** — la ocurrencia concreta de una franja horaria en una fecha real dentro del rango del período (ej. "miércoles 12 de marzo de 2026"), generada automáticamente para todo el rango `start_date`-`end_date` del período al definir el horario. Es el ancla real de la asistencia: cada sesión "pasada" es una oportunidad de asistencia, con o sin registro.
+- **`session_attendances`** — el registro de asistencia de un estudiante a una sesión concreta, con dos orígenes posibles (`recorded_by`): `STUDENT_SELF_REPORT` (autorreporte del propio check-in semanal) o `TEACHER` (registro directo del docente). **Regla de precedencia**: si ambos existen para la misma sesión/estudiante, el registro `TEACHER` es la fuente de verdad — el `attendance` (0-100) que ve `analytics-service` en `weekly_check_ins` se recalcula como el porcentaje de sesiones "presentes" de la semana, priorizando siempre el dato del docente sobre el autorreporte del estudiante.
+- **`weekly_check_in_topic_responses`** — la comprensión autorreportada por el estudiante, tema por tema del sílabo, para un check-in semanal dado. Reemplaza la columna `jsonb topic_responses` que existía antes: ahora cada respuesta es una fila con FK real a `topics`, así Postgres (no solo el use-case) rechaza un `topic_id` que no exista o no pertenezca a la materia del check-in.
+- **`survey_questions`** — catálogo de preguntas de encuesta, hoy usado para la encuesta socioeconómica (`survey_code = 'SOCIOECONOMIC'`), pero genérico por diseño: agregar una pregunta nueva es una fila nueva en esta tabla, no una migración. `question_type` determina cómo se interpreta `options`/`answer_value` en el frontend.
+- **`survey_responses`** — un envío completo de una encuesta por un estudiante. Deliberadamente **sin ningún `UNIQUE`** sobre `(student_id, period_id, survey_code)` — un estudiante puede responder la misma encuesta más de una vez, incluso dentro del mismo período, para que MentoraPredict vaya refinando su entendimiento de la situación socioeconómica del estudiante con el tiempo (decisión explícita del usuario).
+- **`survey_answers`** — cada respuesta individual (una por pregunta) dentro de un envío. `answer_value` es `jsonb` porque el tipo de dato depende de `question_type` (texto, número, booleano, o un array de opciones elegidas).
+
 **Otras restricciones:**
 
 | Restricción | Detalle |
 |---|---|
-| Único implementado | `enrollments(student_id, subject_id, period_id)` — evita matrícula duplicada. |
+| Único implementado | `enrollments(student_id, subject_id, period_id)` — evita matrícula duplicada; `subjects(subject_catalog_id, academic_period_id)` — evita reofertar la misma materia dos veces en el mismo período (Fase A); `class_schedules(subject_id, day_of_week)` — un solo bloque horario por día por oferta (Fase B); `class_sessions(subject_id, session_date)` — una sesión por materia por fecha (Fase B); `session_attendances(session_id, student_id)` — un solo registro de asistencia por estudiante por sesión (Fase B); `weekly_check_in_topic_responses(check_in_id, topic_id)` — una respuesta por tema por check-in (Fase C); `survey_answers(response_id, question_id)` — una respuesta por pregunta por envío (Fase D); `subject_catalog.code`, `survey_questions.code` (Fase A/D). |
 | Índice único ya existente | `academic_periods` — parcial, `status = 'ACTIVE'` (un solo período activo) |
 | Índice único ya existente | `weekly_check_ins(student_id, subject_id, academic_week, academic_year)` |
-| `CHECK` implementado | `enrollments.status IN (...)` (4 valores, ya centralizado en shared-types desde Fase 1), `faculties.status`/`careers.status IN ('ACTIVE','INACTIVE')`, `academic_periods.status IN ('PLANNED','ACTIVE','FINISHED','CANCELLED')`, `academic_periods.type IN ('SEMESTER','QUARTER')`, `grade_imports.status IN ('COMPLETED','COMPLETED_WITH_ERRORS','FAILED')`, `weekly_check_ins.emotional_state IN ('GREAT','GOOD','NEUTRAL','BAD','CRITICAL')` |
+| `CHECK` implementado | `enrollments.status IN (...)` (4 valores, ya centralizado en shared-types desde Fase 1), `faculties.status`/`careers.status IN ('ACTIVE','INACTIVE')`, `academic_periods.status IN ('PLANNED','ACTIVE','FINISHED','CANCELLED')`, `academic_periods.type IN ('SEMESTER','QUARTER')`, `grade_imports.status IN ('COMPLETED','COMPLETED_WITH_ERRORS','FAILED')`, `weekly_check_ins.emotional_state IN ('GREAT','GOOD','NEUTRAL','BAD','CRITICAL')`; `class_schedules.day_of_week IN ('MONDAY'..'SUNDAY')` + `end_time > start_time` (Fase B); `class_sessions.status IN ('PLANNED','HELD','CANCELLED')` (Fase B); `session_attendances.recorded_by IN ('STUDENT_SELF_REPORT','TEACHER')` (Fase B); `weekly_check_in_topic_responses.comprehension BETWEEN 0 AND 100` (Fase C); `survey_questions.question_type IN ('SINGLE_CHOICE','MULTI_CHOICE','NUMBER','TEXT','BOOLEAN')` (Fase D) |
 
 ### 4.4 analytics-service
 
@@ -858,7 +1076,7 @@ Vista rápida de todas las referencias de §4 en un solo lugar. Cada una es una 
 | Columna | Apunta a | Servicio dueño del destino |
 |---|---|---|
 | `user_profiles.id` | `users.id` (1:1, valor compartido por convención) | auth-service |
-| `subjects.teacher_id`, `enrollments.student_id`, `grades.student_id`/`registered_by`, `grade_history.changed_by`, `subject_teachers.teacher_id`, `grade_imports.imported_by`, `weekly_check_ins.student_id` | `users.id` | auth-service |
+| `subjects.teacher_id`, `enrollments.student_id`, `grades.student_id`/`registered_by`, `grade_history.changed_by`, `subject_teachers.teacher_id`, `grade_imports.imported_by`, `weekly_check_ins.student_id`, `session_attendances.student_id`, `survey_responses.student_id` | `users.id` | auth-service |
 | `student_metrics.student_id`, `student_subject_metrics.student_id`, `alerts.student_id`, `alerts.resolved_by`, `device_tokens.user_id`, `notifications.recipient_id`, `notifications.student_id`, `student_subject_predictions.student_id` | `users.id` | auth-service |
 | `student_metrics.period_id`, `student_subject_metrics.period_id`, `alerts.period_id`, `notifications.period_id`, `student_subject_predictions.period_id` | `academic_periods.id` | academic-service |
 | `student_subject_metrics.subject_id`, `alerts.subject_id`, `notifications.subject_id`, `student_subject_predictions.subject_id` | `subjects.id` | academic-service |
@@ -877,19 +1095,28 @@ Una lente sobre el mismo diagrama, no un modelo de datos distinto — qué rol t
 | Entidad | STUDENT | TEACHER | ADMIN |
 |---|:---:|:---:|:---:|
 | `USERS`, `USER_PROFILES` | solo su propio registro | solo su propio registro | CRUD completo |
+| `LOGIN_EVENTS` | — (nunca expuesta al usuario) | — | — (sin endpoint de lectura todavía — solo escritura interna en el login) |
 | `FACULTIES`, `CAREERS`, `ACADEMIC_PERIODS` | solo lectura | solo lectura | CRUD completo |
+| `SUBJECT_CATALOG` | — (implícito vía `SUBJECTS`) | — (implícito vía `SUBJECTS`) | CRUD completo |
 | `SUBJECTS` | lectura (solo matriculadas) | lectura/escritura (solo propias) | CRUD completo |
 | `EVALUATIONS`, `GRADES`, `GRADE_HISTORY`, `GRADE_IMPORTS` | lectura (sus propias notas) | escritura (materias propias) | lectura completa |
 | `ENROLLMENTS` | lectura (propias) | escritura (materias propias) | CRUD completo |
 | `SUBJECT_TEACHERS` | — | lectura (propias) | CRUD completo |
 | `TOPICS` | lectura | escritura (materias propias) | lectura completa |
-| `WEEKLY_CHECK_INS` | escritura (propio, autorreporte) | lectura (materias propias) | lectura completa |
+| `CLASS_SCHEDULES` | lectura implícita (vía sesiones) | escritura (define horario, materias propias) | escritura (cualquier materia) |
+| `CLASS_SESSIONS` | — | lectura (materias propias, para marcar asistencia) | lectura (cualquier materia) |
+| `SESSION_ATTENDANCES` | escritura indirecta (autorreporte vía check-in) | escritura (registro directo, materias propias) | — |
+| `WEEKLY_CHECK_INS`, `WEEKLY_CHECK_IN_TOPIC_RESPONSES` | escritura (propio, autorreporte) | lectura (materias propias) | lectura completa |
+| `SURVEY_QUESTIONS` | lectura | lectura | CRUD completo (catálogo) |
+| `SURVEY_RESPONSES`, `SURVEY_ANSWERS` | escritura (propias, repetible) | — | — |
 | `STUDENT_METRICS`, `STUDENT_SUBJECT_METRICS`, `ALERTS` | lectura (propias) | lectura (estudiantes de materias propias) | lectura (institución completa) |
 | `DEVICE_TOKENS`, `NOTIFICATIONS` | solo propias | solo propias | solo propias |
 | `STUDENT_SUBJECT_PREDICTIONS` | lectura (propias, disparo con límite de tasa) | — | — |
 
 ## 8. Fuentes
 
-Inventario de entidades/columnas: auditoría dedicada de los 20 archivos `*.orm-entity.ts` de los 5 servicios (relaciones, `onDelete`, índices, columnas respaldadas por enum), cruzado contra la lista de tablas verificada por seeds de [database-architecture.md](./database-architecture.md). Diseño de relaciones/restricciones: tomando como referencia de formato `docs/backend/database-model.md` de `SIGLA-Backend` (proyecto externo de referencia, solo en formato — su dominio no tiene relación). Tablas de referencia local (§3-4): campos verificados contra los adaptadores HTTP reales existentes al momento de implementar (`i-user-profile.port.ts`/`user-profile.adapter.ts` en `academic-service`, `i-user-service.client.ts` en `analytics-service`; `i-user-service.client.ts` se construyó de cero en `prediction-service`, que no tenía ningún cliente HTTP hacia `user-service` antes de la Fase 4). Tabla de propiedad por rol: cruzada contra [../api/api-contracts.md](../api/api-contracts.md) y [../business/business-logic.md](../business/business-logic.md) §2-3.
+Inventario de entidades/columnas: auditoría dedicada de los 34 archivos `*.orm-entity.ts` de los 5 servicios (relaciones, `onDelete`, índices, columnas respaldadas por enum), cruzado contra la lista de tablas verificada por seeds de [database-architecture.md](./database-architecture.md). Diseño de relaciones/restricciones: tomando como referencia de formato `docs/backend/database-model.md` de `SIGLA-Backend` (proyecto externo de referencia, solo en formato — su dominio no tiene relación). Tablas de referencia local (§3-4): campos verificados contra los adaptadores HTTP reales existentes al momento de implementar (`i-user-profile.port.ts`/`user-profile.adapter.ts` en `academic-service`, `i-user-service.client.ts` en `analytics-service`; `i-user-service.client.ts` se construyó de cero en `prediction-service`, que no tenía ningún cliente HTTP hacia `user-service` antes de la Fase 4). Tabla de propiedad por rol: cruzada contra [../api/api-contracts.md](../api/api-contracts.md) y [../business/business-logic.md](../business/business-logic.md) §2-3.
 
 **Verificación de la implementación (Fase 4):** cada migración se corrió contra la base de datos local de desarrollo y se confirmó con `migration:generate` reportando "No changes in database schema were found" (diff cero) contra las entidades `*.orm-entity.ts`; las políticas `RESTRICT` se verificaron en vivo con un `DELETE` bloqueado sobre una fila de referencia en uso, en los 3 servicios con tablas de referencia (`academic-service`, `analytics-service`, `prediction-service`). Las suites de tests existentes de los 5 servicios pasan sin cambios tras la migración.
+
+**Verificación de la implementación (Fases A-E, `docs/database/database-update-plan.md`):** mismo criterio — cada una de las 8 migraciones nuevas (`AddSubjectCatalog`, `AddClassScheduleAndSessionDate`, `AddWeeklyCheckInTopicResponses`, `AddSurveyTables`, `AddLoginEvents`, entre otras de soporte) se corrió contra la base local y se confirmó con `migration:generate` reportando diff cero. Las Fases A y C incluyeron backfill de datos reales preexistentes (19 filas de `subjects` migradas a `subject_catalog` en Fase A; 1586 filas de `weekly_check_ins.topic_responses` migradas a `weekly_check_in_topic_responses` en Fase C, verificando primero el formato real de los datos — una mezcla de `topicId` como `order` numérico y como UUID real — antes de escribir el `INSERT ... SELECT`). Cada FK `RESTRICT`/`CASCADE` nueva se verificó en vivo (`DELETE` bloqueado o cascada confirmada con filas de prueba desechables). Las suites de tests de `academic-service` y `auth-service` pasan tras cada fase, incluyendo los tests nuevos agregados para cada caso de uso nuevo.
