@@ -57,9 +57,6 @@ export class WeeklyCheckInOrmEntity {
   @Column({ name: "general_comprehension", type: "int" })
   generalComprehension!: number;
 
-  @Column({ name: "topic_responses", type: "jsonb", default: "[]" })
-  topicResponses!: Record<string, unknown>[];
-
   @Column({ type: "text", nullable: true }) notes!: string | null;
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
