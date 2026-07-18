@@ -10,6 +10,8 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 
 import { UserOrmEntity } from "./infrastructure/persistence/user.orm-entity";
 import { UserRepository } from "./infrastructure/persistence/user.repository";
+import { LoginEventOrmEntity } from "./infrastructure/persistence/login-event.orm-entity";
+import { LoginEventRepository } from "./infrastructure/persistence/login-event.repository";
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { RedisAdapter } from "./infrastructure/cache/redis.adapter";
 import { JwtAdapter } from "./infrastructure/config/jwt.adapter";
@@ -49,7 +51,7 @@ import { SearchAuthUsersUseCase } from "./application/use-cases/search-auth-user
         username: cfg.get("POSTGRES_USER", "mp_user"),
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
-        entities: [UserOrmEntity],
+        entities: [UserOrmEntity, LoginEventOrmEntity],
         // Schema changes go through TypeORM migrations (see src/data-source.ts) —
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
         synchronize: false,
@@ -57,7 +59,7 @@ import { SearchAuthUsersUseCase } from "./application/use-cases/search-auth-user
       }),
     }),
 
-    TypeOrmModule.forFeature([UserOrmEntity]),
+    TypeOrmModule.forFeature([UserOrmEntity, LoginEventOrmEntity]),
 
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -105,6 +107,7 @@ import { SearchAuthUsersUseCase } from "./application/use-cases/search-auth-user
     { provide: "IPasswordHasher", useClass: BcryptAdapter },
     { provide: "ITokenGenerator", useClass: JwtAdapter },
     { provide: "IUserRepository", useClass: UserRepository },
+    { provide: "ILoginEventRepository", useClass: LoginEventRepository },
     InternalJwtService,
     InternalServiceGuard,
     { provide: "IUserProfileClient", useClass: UserProfileHttpClient },

@@ -4,6 +4,7 @@ import { IUserRepository } from '../../ports/output/i-user.repository';
 import { IPasswordHasher } from '../../ports/output/i-password.hasher';
 import { ITokenGenerator } from '../../ports/output/i-token.generator';
 import { ITokenCache } from '../../ports/output/i-token.cache';
+import { ILoginEventRepository } from '../../ports/output/i-login-event.repository';
 import { UserEntity, UserRole } from '../../../domain/entities/user.entity';
 
 const makeUser = (active = true) =>
@@ -17,6 +18,9 @@ const mockCache   = (): jest.Mocked<ITokenCache>       => ({
   setResetToken: jest.fn(), getResetToken: jest.fn(), deleteResetToken: jest.fn(),
   incrementLoginAttempts: jest.fn(), deleteLoginAttempts: jest.fn(),
 });
+const mockLoginEventRepo = (): jest.Mocked<ILoginEventRepository> => ({
+  save: jest.fn().mockResolvedValue(undefined),
+});
 
 describe('LoginUserUseCase', () => {
   let useCase: LoginUserUseCase;
@@ -24,17 +28,20 @@ describe('LoginUserUseCase', () => {
   let hasher: jest.Mocked<IPasswordHasher>;
   let tokenGen: jest.Mocked<ITokenGenerator>;
   let cache: jest.Mocked<ITokenCache>;
+  let loginEventRepo: jest.Mocked<ILoginEventRepository>;
 
   beforeEach(() => {
     repo     = mockRepo();
     hasher   = mockHasher();
     tokenGen = mockTokens();
     cache    = mockCache();
+    loginEventRepo = mockLoginEventRepo();
     useCase  = new LoginUserUseCase(
       repo,
       hasher,
       tokenGen,
       cache,
+      loginEventRepo,
     );
   });
 
@@ -85,5 +92,31 @@ describe('LoginUserUseCase', () => {
     await expect(useCase.execute({ email: 'v@uce.edu.ec', password: 'pass' }, '1.2.3.4'))
       .rejects.toThrow(ForbiddenException);
     expect(repo.findByEmail).not.toHaveBeenCalled();
+  });
+
+  it('records a LOCAL login event with ip/userAgent on success', async () => {
+    cache.incrementLoginAttempts.mockResolvedValue(1);
+    repo.findByEmail.mockResolvedValue(makeUser());
+    hasher.compare.mockResolvedValue(true);
+    tokenGen.generatePair.mockReturnValue({ accessToken: 'at', refreshToken: 'rt', expiresIn: 900 });
+
+    await useCase.execute({ email: 'v@uce.edu.ec', password: 'pass' }, '1.2.3.4', 'Mozilla/5.0');
+    await new Promise(process.nextTick); // deja correr el fire-and-forget
+
+    expect(loginEventRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'uid-1', loginMethod: 'LOCAL', ipAddress: '1.2.3.4', userAgent: 'Mozilla/5.0' }),
+    );
+  });
+
+  it('does not fail the login when recording the login event fails', async () => {
+    cache.incrementLoginAttempts.mockResolvedValue(1);
+    repo.findByEmail.mockResolvedValue(makeUser());
+    hasher.compare.mockResolvedValue(true);
+    tokenGen.generatePair.mockReturnValue({ accessToken: 'at', refreshToken: 'rt', expiresIn: 900 });
+    loginEventRepo.save.mockRejectedValue(new Error('db down'));
+
+    const result = await useCase.execute({ email: 'v@uce.edu.ec', password: 'pass' }, '127.0.0.1');
+
+    expect(result.accessToken).toBe('at');
   });
 });

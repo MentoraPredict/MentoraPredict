@@ -2,6 +2,7 @@
 import "dotenv/config";
 import { DataSource } from "typeorm";
 import { UserOrmEntity } from "./infrastructure/persistence/user.orm-entity";
+import { LoginEventOrmEntity } from "./infrastructure/persistence/login-event.orm-entity";
 
 export default new DataSource({
   type: "postgres",
@@ -10,7 +11,7 @@ export default new DataSource({
   username: process.env.POSTGRES_USER || "mp_user",
   password: process.env.POSTGRES_PASSWORD || "",
   database: process.env.POSTGRES_DB || "mentorapredict",
-  entities: [UserOrmEntity],
+  entities: [UserOrmEntity, LoginEventOrmEntity],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   migrationsTableName: "migrations_auth",
   synchronize: false,
