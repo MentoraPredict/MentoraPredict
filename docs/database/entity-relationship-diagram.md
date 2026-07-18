@@ -1,6 +1,6 @@
-# Diagrama Entidad-Relación — Propuesta
+# Diagrama Entidad-Relación
 
-> **Estado: las entidades/columnas de abajo son el estado actual, verificado (cruzado contra el `*.orm-entity.ts` de cada servicio, la misma fuente que [database-architecture.md](./database-architecture.md)). Relaciones, políticas `onDelete`, tablas de referencia y restricciones marcadas `[PROPUESTO]` no existen hoy en la base de datos** — son el diseño que este documento propone para las Fases 3-4 de la restructuración del modelo de datos. Hoy no existe ninguna foreign key física en todo el esquema; cada relación es una columna `uuid` suelta, reforzada solo por código de aplicación.
+> **Estado: implementado y verificado.** Todas las relaciones, políticas `onDelete`, tablas de referencia y restricciones (`CHECK`/`UNIQUE`) descritas en este documento están aplicadas en la base de datos real vía migraciones TypeORM versionadas (Fase 4 de la restructuración del modelo de datos), y cada una fue confirmada con `migration:generate` reportando "No changes in database schema were found" (diff cero) contra las entidades `*.orm-entity.ts` correspondientes. Este documento reemplaza a la versión anterior, que describía este mismo diseño como propuesta (`[PROPUESTO]`) antes de implementarlo.
 >
 > Inspirado en el formato de `docs/backend/database-model.md` de `SIGLA-Backend` (un proyecto externo, sin relación con MentoraPredict, usado acá solo como referencia de formato de documentación) — un único `mermaid erDiagram` con anotaciones inline de `PK`/`FK`/`UK`, listas de valores de enum, y política `onDelete` explícita por relación. La versión de MentoraPredict difiere en un punto estructural que SIGLA no necesitaba resolver: SIGLA es un monolito de un solo servicio, así que cada relación podía ser una FK física. MentoraPredict son 5 microservicios compartiendo una única Postgres física — así que este documento tiene que trazar una línea que SIGLA nunca tuvo que trazar.
 >
@@ -321,50 +321,50 @@ erDiagram
     }
 
     %% ── Relaciones físicas academic-service ─────────────────
-    FACULTIES ||--o{ CAREERS : "posee [PROPUESTO RESTRICT]"
-    CAREERS ||--o{ SUBJECTS : "ofrece [PROPUESTO RESTRICT]"
-    ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ EVALUATIONS : "define [PROPUESTO CASCADE]"
-    SUBJECTS ||--o{ ENROLLMENTS : "recibe [PROPUESTO RESTRICT]"
-    ACADEMIC_PERIODS ||--o{ ENROLLMENTS : "delimita [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ GRADES : "registra [PROPUESTO RESTRICT]"
-    EVALUATIONS |o--o{ GRADES : "respalda [PROPUESTO SET NULL]"
-    GRADES ||--o{ GRADE_HISTORY : "audita [PROPUESTO CASCADE]"
-    SUBJECTS ||--o{ SUBJECT_TEACHERS : "asigna [PROPUESTO CASCADE]"
-    ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ GRADE_IMPORTS : "recibe [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ TOPICS : "contiene [PROPUESTO CASCADE]"
-    SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe [PROPUESTO RESTRICT]"
-    ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADES : "es calificado [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADES : "registra [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADE_HISTORY : "modifica [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ SUBJECT_TEACHERS : "es docente en [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADE_IMPORTS : "importa [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta [PROPUESTO RESTRICT]"
+    FACULTIES ||--o{ CAREERS : "posee RESTRICT"
+    CAREERS ||--o{ SUBJECTS : "ofrece RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ EVALUATIONS : "define CASCADE"
+    SUBJECTS ||--o{ ENROLLMENTS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ ENROLLMENTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADES : "registra RESTRICT"
+    EVALUATIONS |o--o{ GRADES : "respalda SET NULL"
+    GRADES ||--o{ GRADE_HISTORY : "audita CASCADE"
+    SUBJECTS ||--o{ SUBJECT_TEACHERS : "asigna CASCADE"
+    ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADE_IMPORTS : "recibe RESTRICT"
+    SUBJECTS ||--o{ TOPICS : "contiene CASCADE"
+    SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de RESTRICT"
+    ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "es calificado RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "registra RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_HISTORY : "modifica RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECT_TEACHERS : "es docente en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_IMPORTS : "importa RESTRICT"
+    ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta RESTRICT"
 
     %% ── Relaciones físicas analytics-service ────────────────
-    ALERTS |o--o{ NOTIFICATIONS : "dispara [PROPUESTO SET NULL]"
-    ANALYTICS_USER_REF ||--o{ STUDENT_METRICS : "es medido [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medido [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ ALERTS : "recibe alerta [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ ALERTS : "resuelve [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ DEVICE_TOKENS : "posee [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ NOTIFICATIONS : "recibe [PROPUESTO RESTRICT]"
-    ANALYTICS_SUBJECT_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medida [PROPUESTO RESTRICT]"
-    ANALYTICS_SUBJECT_REF ||--o{ ALERTS : "es objeto de [PROPUESTO RESTRICT]"
-    ANALYTICS_SUBJECT_REF ||--o{ NOTIFICATIONS : "es objeto de [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ STUDENT_METRICS : "delimita [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ STUDENT_SUBJECT_METRICS : "delimita [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ ALERTS : "delimita [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ NOTIFICATIONS : "delimita [PROPUESTO RESTRICT]"
+    ALERTS |o--o{ NOTIFICATIONS : "dispara SET NULL"
+    ANALYTICS_USER_REF ||--o{ STUDENT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "recibe alerta RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "resuelve RESTRICT"
+    ANALYTICS_USER_REF ||--o{ DEVICE_TOKENS : "posee RESTRICT"
+    ANALYTICS_USER_REF ||--o{ NOTIFICATIONS : "recibe RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medida RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ ALERTS : "es objeto de RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ NOTIFICATIONS : "es objeto de RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_SUBJECT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ ALERTS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ NOTIFICATIONS : "delimita RESTRICT"
 
     %% ── Relaciones físicas prediction-service ───────────────
-    PREDICTION_USER_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "recibe predicción [PROPUESTO RESTRICT]"
-    PREDICTION_SUBJECT_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "es objeto de [PROPUESTO RESTRICT]"
-    PREDICTION_PERIOD_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "delimita [PROPUESTO RESTRICT]"
+    PREDICTION_USER_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "recibe predicción RESTRICT"
+    PREDICTION_SUBJECT_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "es objeto de RESTRICT"
+    PREDICTION_PERIOD_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "delimita RESTRICT"
 ```
 
 ## 3. Patrón de tablas de referencia local (concepto general)
@@ -403,7 +403,7 @@ No tiene ninguna FK, física ni cross-servicio — no referencia nada de otro se
 
 | Restricción | Detalle |
 |---|---|
-| `CHECK` propuesto | `role IN ('STUDENT','TEACHER','ADMIN')`, `auth_provider IN ('LOCAL','MICROSOFT')` |
+| `CHECK` implementado | `role IN ('STUDENT','TEACHER','ADMIN')`, `auth_provider IN ('LOCAL','MICROSOFT')` |
 | Único ya existente | `email` (`UNIQUE`) |
 
 ### 4.2 user-service
@@ -429,7 +429,7 @@ Caso especial: `id` **es** el mismo valor que `auth-service.users.id` por conven
 
 | Restricción | Detalle |
 |---|---|
-| `CHECK` propuesto | `auth_provider IN ('LOCAL','MICROSOFT')`, `status IN ('ACTIVE','INACTIVE')` |
+| `CHECK` implementado | `auth_provider IN ('LOCAL','MICROSOFT')`, `status IN ('ACTIVE','INACTIVE')` |
 | Único ya existente | `cedula` (`UNIQUE`, nullable) |
 
 ### 4.3 academic-service
@@ -590,32 +590,32 @@ erDiagram
         timestamptz synced_at
     }
 
-    FACULTIES ||--o{ CAREERS : "posee [PROPUESTO RESTRICT]"
-    CAREERS ||--o{ SUBJECTS : "ofrece [PROPUESTO RESTRICT]"
-    ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ EVALUATIONS : "define [PROPUESTO CASCADE]"
-    SUBJECTS ||--o{ ENROLLMENTS : "recibe [PROPUESTO RESTRICT]"
-    ACADEMIC_PERIODS ||--o{ ENROLLMENTS : "delimita [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ GRADES : "registra [PROPUESTO RESTRICT]"
-    EVALUATIONS |o--o{ GRADES : "respalda [PROPUESTO SET NULL]"
-    GRADES ||--o{ GRADE_HISTORY : "audita [PROPUESTO CASCADE]"
-    SUBJECTS ||--o{ SUBJECT_TEACHERS : "asigna [PROPUESTO CASCADE]"
-    ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ GRADE_IMPORTS : "recibe [PROPUESTO RESTRICT]"
-    SUBJECTS ||--o{ TOPICS : "contiene [PROPUESTO CASCADE]"
-    SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe [PROPUESTO RESTRICT]"
-    ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADES : "es calificado [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADES : "registra [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADE_HISTORY : "modifica [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ SUBJECT_TEACHERS : "es docente en [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ GRADE_IMPORTS : "importa [PROPUESTO RESTRICT]"
-    ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta [PROPUESTO RESTRICT]"
+    FACULTIES ||--o{ CAREERS : "posee RESTRICT"
+    CAREERS ||--o{ SUBJECTS : "ofrece RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ EVALUATIONS : "define CASCADE"
+    SUBJECTS ||--o{ ENROLLMENTS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ ENROLLMENTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADES : "registra RESTRICT"
+    EVALUATIONS |o--o{ GRADES : "respalda SET NULL"
+    GRADES ||--o{ GRADE_HISTORY : "audita CASCADE"
+    SUBJECTS ||--o{ SUBJECT_TEACHERS : "asigna CASCADE"
+    ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADE_IMPORTS : "recibe RESTRICT"
+    SUBJECTS ||--o{ TOPICS : "contiene CASCADE"
+    SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de RESTRICT"
+    ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "es calificado RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "registra RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_HISTORY : "modifica RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECT_TEACHERS : "es docente en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_IMPORTS : "importa RESTRICT"
+    ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta RESTRICT"
 ```
 
-**FK físicas propuestas (16, todas intra-servicio):**
+**FK físicas (23, todas intra-servicio):**
 
 | Desde | Hacia | `onDelete` | Por qué |
 |---|---|---|---|
@@ -642,7 +642,7 @@ erDiagram
 | `weekly_check_ins.period_id` | `academic_periods.id` | `RESTRICT` | Igual. |
 | `weekly_check_ins.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de autorreporte. |
 
-**Tabla de referencia local — `user_references`:**
+**Tabla de referencia local — `academic_user_references`:**
 
 | Columna | Tipo | Por qué |
 |---|---|---|
@@ -653,14 +653,16 @@ erDiagram
 
 Se llena vía *upsert* en `UserProfileAdapter.getProfile()` (`services/academic-service/src/infrastructure/adapters/user-profile.adapter.ts`), que ya hace esta llamada HTTP a `user-service` hoy. Campos tomados de `UserProfileData`, recortados: `firstName`/`lastName`/`email` **no se replican** — son datos de presentación, se siguen pidiendo en vivo cuando hace falta mostrarlos.
 
-**Otras restricciones propuestas:**
+Nombrada `academic_user_references` (con prefijo) y no `user_references` a secas — las 3 tablas de referencia de usuario del monorepo (academic/analytics/prediction) comparten la misma Postgres física, y un nombre sin prefijo colisiona entre servicios. Detectado y corregido durante la implementación (migración `RenameUserReferencesTable`); el prefijo se aplicó preventivamente en analytics-service y prediction-service desde el principio.
+
+**Otras restricciones:**
 
 | Restricción | Detalle |
 |---|---|
-| Único faltante | `enrollments(student_id, subject_id, period_id)` — hoy nada impide una matrícula duplicada. |
+| Único implementado | `enrollments(student_id, subject_id, period_id)` — evita matrícula duplicada. |
 | Índice único ya existente | `academic_periods` — parcial, `status = 'ACTIVE'` (un solo período activo) |
 | Índice único ya existente | `weekly_check_ins(student_id, subject_id, academic_week, academic_year)` |
-| `CHECK` propuesto | `enrollments.status IN (...)` (4 valores, ya centralizado en shared-types desde Fase 1), `faculties.status`/`careers.status IN ('ACTIVE','INACTIVE')`, `academic_periods.status IN ('PLANNED','ACTIVE','FINISHED','CANCELLED')`, `academic_periods.type IN ('SEMESTER','QUARTER')`, `grade_imports.status IN ('COMPLETED','COMPLETED_WITH_ERRORS','FAILED')`, `weekly_check_ins.emotional_state IN ('GREAT','GOOD','NEUTRAL','BAD','CRITICAL')` |
+| `CHECK` implementado | `enrollments.status IN (...)` (4 valores, ya centralizado en shared-types desde Fase 1), `faculties.status`/`careers.status IN ('ACTIVE','INACTIVE')`, `academic_periods.status IN ('PLANNED','ACTIVE','FINISHED','CANCELLED')`, `academic_periods.type IN ('SEMESTER','QUARTER')`, `grade_imports.status IN ('COMPLETED','COMPLETED_WITH_ERRORS','FAILED')`, `weekly_check_ins.emotional_state IN ('GREAT','GOOD','NEUTRAL','BAD','CRITICAL')` |
 
 ### 4.4 analytics-service
 
@@ -752,23 +754,23 @@ erDiagram
         timestamptz synced_at
     }
 
-    ALERTS |o--o{ NOTIFICATIONS : "dispara [PROPUESTO SET NULL]"
-    ANALYTICS_USER_REF ||--o{ STUDENT_METRICS : "es medido [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medido [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ ALERTS : "recibe alerta [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ ALERTS : "resuelve [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ DEVICE_TOKENS : "posee [PROPUESTO RESTRICT]"
-    ANALYTICS_USER_REF ||--o{ NOTIFICATIONS : "recibe [PROPUESTO RESTRICT]"
-    ANALYTICS_SUBJECT_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medida [PROPUESTO RESTRICT]"
-    ANALYTICS_SUBJECT_REF ||--o{ ALERTS : "es objeto de [PROPUESTO RESTRICT]"
-    ANALYTICS_SUBJECT_REF ||--o{ NOTIFICATIONS : "es objeto de [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ STUDENT_METRICS : "delimita [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ STUDENT_SUBJECT_METRICS : "delimita [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ ALERTS : "delimita [PROPUESTO RESTRICT]"
-    ANALYTICS_PERIOD_REF ||--o{ NOTIFICATIONS : "delimita [PROPUESTO RESTRICT]"
+    ALERTS |o--o{ NOTIFICATIONS : "dispara SET NULL"
+    ANALYTICS_USER_REF ||--o{ STUDENT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "recibe alerta RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "resuelve RESTRICT"
+    ANALYTICS_USER_REF ||--o{ DEVICE_TOKENS : "posee RESTRICT"
+    ANALYTICS_USER_REF ||--o{ NOTIFICATIONS : "recibe RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medida RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ ALERTS : "es objeto de RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ NOTIFICATIONS : "es objeto de RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_SUBJECT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ ALERTS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ NOTIFICATIONS : "delimita RESTRICT"
 ```
 
-**FK físicas propuestas:**
+**FK físicas:**
 
 | Desde | Hacia | `onDelete` | Por qué |
 |---|---|---|---|
@@ -777,18 +779,18 @@ erDiagram
 | `student_subject_metrics.subject_id`, `alerts.subject_id`, `notifications.subject_id` | `analytics_subject_ref.id` | `RESTRICT` | Igual. |
 | `student_metrics.period_id`, `student_subject_metrics.period_id`, `alerts.period_id`, `notifications.period_id` | `analytics_period_ref.id` | `RESTRICT` | Igual. |
 
-**Tablas de referencia local:**
+**Tablas de referencia local** (nombradas con prefijo `analytics_` — ver nota de colisión en §4.3):
 
-- **`user_references`**: mismos 4 campos que en `academic-service` (`id`, `role`, `is_active`, `synced_at`). El único consumo real hoy es `getUserIdsByRole()` (`services/analytics-service/src/notifications/domain/ports/i-user-service.client.ts`), que solo necesita `id` + `role` — `is_active` se agrega igual porque no deberían generarse alertas/notificaciones para usuarios desactivados.
-- **`subject_references`**: `id` (PK), `is_active`, `synced_at`.
-- **`period_references`**: `id` (PK), `status` (`PLANNED`/`ACTIVE`/`FINISHED`/`CANCELLED`), `synced_at` — `status` es el único campo realmente consultado en lógica (ej. no calcular tendencia sobre un período cancelado).
+- **`analytics_user_references`**: mismos 4 campos que en `academic-service` (`id`, `role`, `is_active`, `synced_at`). El único consumo real hoy es `getUserIdsByRole()` (`services/analytics-service/src/notifications/domain/ports/i-user-service.client.ts`), que solo necesita `id` + `role` — `is_active` se agrega igual porque no deberían generarse alertas/notificaciones para usuarios desactivados.
+- **`analytics_subject_references`**: `id` (PK), `is_active`, `synced_at`.
+- **`analytics_period_references`**: `id` (PK), `status` (`PLANNED`/`ACTIVE`/`FINISHED`/`CANCELLED`), `synced_at` — `status` es el único campo realmente consultado en lógica (ej. no calcular tendencia sobre un período cancelado).
 
-**Otras restricciones propuestas:**
+**Otras restricciones:**
 
 | Restricción | Detalle |
 |---|---|
 | Índice único ya existente | `student_subject_metrics(student_id, subject_id, academic_week, academic_year)`; `alerts` — parcial, `(student_id, subject_id)` donde `status = 'ACTIVE'`; `device_tokens.expo_push_token` |
-| `CHECK` propuesto | `student_subject_metrics.risk_level IN (...)` (4 valores, shared-types), `alerts.type`/`.status`/`.severity`, `device_tokens.platform IN ('ios','android','web')`, `notifications.recipient_role IN ('STUDENT','TEACHER','ADMIN')`/`.type`/`.status` |
+| `CHECK` implementado | `student_subject_metrics.risk_level IN (...)` (4 valores, shared-types), `alerts.type`/`.status`/`.severity`, `device_tokens.platform IN ('ios','android','web')`, `notifications.recipient_role IN ('STUDENT','TEACHER','ADMIN')`/`.type`/`.status` |
 
 ### 4.5 prediction-service
 
@@ -827,12 +829,12 @@ erDiagram
         timestamptz synced_at
     }
 
-    PREDICTION_USER_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "recibe predicción [PROPUESTO RESTRICT]"
-    PREDICTION_SUBJECT_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "es objeto de [PROPUESTO RESTRICT]"
-    PREDICTION_PERIOD_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "delimita [PROPUESTO RESTRICT]"
+    PREDICTION_USER_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "recibe predicción RESTRICT"
+    PREDICTION_SUBJECT_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "es objeto de RESTRICT"
+    PREDICTION_PERIOD_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "delimita RESTRICT"
 ```
 
-**FK físicas propuestas:**
+**FK físicas:**
 
 | Desde | Hacia | `onDelete` | Por qué |
 |---|---|---|---|
@@ -840,14 +842,14 @@ erDiagram
 | `student_subject_predictions.subject_id` | `prediction_subject_ref.id` | `RESTRICT` | Igual. |
 | `student_subject_predictions.period_id` | `prediction_period_ref.id` | `RESTRICT` | Igual. |
 
-**Tablas de referencia local**: mismo patrón y mismos campos mínimos que en `analytics-service` (§4.4). La fuente real hoy es `IAcademicContextClient` (`services/prediction-service/src/application/ports/output/i-academic-context.client.ts`), que ya trae `subjectId`/`name`/`credits` — `name`/`credits` se quedan como datos de presentación pedidos en vivo, no se replican.
+**Tablas de referencia local** (`prediction_user_references`/`prediction_subject_references`/`prediction_period_references`): mismos campos mínimos que en `analytics-service` (§4.4). A diferencia de academic-service y analytics-service, prediction-service no tenía ningún punto de enganche real con `user-service` para sincronizar la referencia de usuario — su único flujo de escritura real hacia `student_subject_predictions` (`RecalculateSubjectPredictionUseCase`) nunca llamaba a `user-service`, y su cliente de `academic-service` no traía `isActive` de materia ni `status` de período. Se agregó un `IUserServiceClient` nuevo y se extendió `IAcademicContextClient` (`services/prediction-service/src/application/ports/output/i-academic-context.client.ts`) con `getSubjectDetails`/`getPeriodDetails`, reutilizando los mismos endpoints internos que ya usa analytics-service — ambos wireados directamente en `RecalculateSubjectPredictionUseCase`, que además usa esos datos para una validación real: si el estudiante está inactivo, la materia inactiva, o el período `CANCELLED`, la predicción se marca `INSUFFICIENT_DATA` en vez de calcularse.
 
-**Otras restricciones propuestas:**
+**Otras restricciones:**
 
 | Restricción | Detalle |
 |---|---|
 | Índice único ya existente | `student_subject_predictions(student_id, subject_id, academic_week, academic_year)` |
-| `CHECK` propuesto | `status IN ('COMPUTED','INSUFFICIENT_DATA')`, `predicted_risk_level IN (...)` (4 valores, shared-types) |
+| `CHECK` implementado | `status IN ('COMPUTED','INSUFFICIENT_DATA')`, `predicted_risk_level IN (...)` (4 valores, shared-types) |
 
 ## 5. Referencias cross-servicio — tabla consolidada
 
@@ -861,12 +863,12 @@ Vista rápida de todas las referencias de §4 en un solo lugar. Cada una es una 
 | `student_metrics.period_id`, `student_subject_metrics.period_id`, `alerts.period_id`, `notifications.period_id`, `student_subject_predictions.period_id` | `academic_periods.id` | academic-service |
 | `student_subject_metrics.subject_id`, `alerts.subject_id`, `notifications.subject_id`, `student_subject_predictions.subject_id` | `subjects.id` | academic-service |
 
-## 6. Vacíos de restricciones transversales
+## 6. Vacíos de restricciones transversales — resueltos en Fase 4
 
-Ya desglosados por servicio en §4 — acá el resumen de los dos que no son específicos de un solo servicio:
+Ya desglosados por servicio en §4 — acá el resumen de los dos que no eran específicos de un solo servicio. Ambos quedaron cerrados durante la implementación de Fase 4:
 
-- **`enrollments` no tiene ningún unique constraint.** `(student_id, subject_id, period_id)` debería ser único. `[PROPUESTO]`
-- **No existe ningún `CHECK`/enum nativo de Postgres para ninguna columna de estado**, en ningún servicio. Cada una se valida solo en código de aplicación. Los datos semilla de `EnrollmentStatus` ya demostraron que esto no es teórico — ver [database-architecture.md](./database-architecture.md) y [../business/business-logic.md](../business/business-logic.md) §5.
+- ~~`enrollments` no tiene ningún unique constraint.~~ **Resuelto**: `(student_id, subject_id, period_id)` es único desde la migración `AddCheckConstraintsAndEnrollmentUnique` de academic-service.
+- ~~No existe ningún `CHECK`/enum nativo de Postgres para ninguna columna de estado, en ningún servicio.~~ **Resuelto**: cada columna de estado respaldada por un enum de TypeScript (centralizado en `shared-types` o interno de cada servicio) tiene ahora su `CHECK` correspondiente en Postgres — ver el detalle en cada sub-sección de §4. Los datos semilla de `EnrollmentStatus` habían demostrado que esto no era teórico — ver [database-architecture.md](./database-architecture.md) y [../business/business-logic.md](../business/business-logic.md) §5.
 
 ## 7. Entidades por rol (STUDENT / TEACHER / ADMIN)
 
@@ -888,4 +890,6 @@ Una lente sobre el mismo diagrama, no un modelo de datos distinto — qué rol t
 
 ## 8. Fuentes
 
-Inventario de entidades/columnas: auditoría dedicada de los 20 archivos `*.orm-entity.ts` de los 5 servicios (relaciones, `onDelete`, índices, columnas respaldadas por enum), cruzado contra la lista de tablas verificada por seeds de [database-architecture.md](./database-architecture.md). Propuesta de relaciones/restricciones: diseñada para este documento, tomando como referencia de formato `docs/backend/database-model.md` de `SIGLA-Backend` (proyecto externo de referencia, solo en formato — su dominio no tiene relación). Propuesta de tablas de referencia local (§3-4): campos verificados contra los adaptadores HTTP reales ya existentes (`i-user-profile.port.ts`/`user-profile.adapter.ts` en `academic-service`, `i-user-service.client.ts` en `analytics-service`, `i-academic-context.client.ts` en `prediction-service`). Tabla de propiedad por rol: cruzada contra [../api/api-contracts.md](../api/api-contracts.md) y [../business/business-logic.md](../business/business-logic.md) §2-3.
+Inventario de entidades/columnas: auditoría dedicada de los 20 archivos `*.orm-entity.ts` de los 5 servicios (relaciones, `onDelete`, índices, columnas respaldadas por enum), cruzado contra la lista de tablas verificada por seeds de [database-architecture.md](./database-architecture.md). Diseño de relaciones/restricciones: tomando como referencia de formato `docs/backend/database-model.md` de `SIGLA-Backend` (proyecto externo de referencia, solo en formato — su dominio no tiene relación). Tablas de referencia local (§3-4): campos verificados contra los adaptadores HTTP reales existentes al momento de implementar (`i-user-profile.port.ts`/`user-profile.adapter.ts` en `academic-service`, `i-user-service.client.ts` en `analytics-service`; `i-user-service.client.ts` se construyó de cero en `prediction-service`, que no tenía ningún cliente HTTP hacia `user-service` antes de la Fase 4). Tabla de propiedad por rol: cruzada contra [../api/api-contracts.md](../api/api-contracts.md) y [../business/business-logic.md](../business/business-logic.md) §2-3.
+
+**Verificación de la implementación (Fase 4):** cada migración se corrió contra la base de datos local de desarrollo y se confirmó con `migration:generate` reportando "No changes in database schema were found" (diff cero) contra las entidades `*.orm-entity.ts`; las políticas `RESTRICT` se verificaron en vivo con un `DELETE` bloqueado sobre una fila de referencia en uso, en los 3 servicios con tablas de referencia (`academic-service`, `analytics-service`, `prediction-service`). Las suites de tests existentes de los 5 servicios pasan sin cambios tras la migración.

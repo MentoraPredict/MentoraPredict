@@ -7,37 +7,56 @@ import {
   Min,
   Max,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+// Dos formas válidas de crear una oferta (ver
+// docs/database/database-update-plan.md §5.1 y create-subject.use-case.ts):
+// 1. Reofertar una materia ya existente en el catálogo -> solo `subjectCatalogId`.
+// 2. Ofertar una materia nueva -> `name`/`code`/`credits`/`careerId`, que
+//    crean la fila de catálogo de una vez (mismo comportamiento que antes
+//    de separar catálogo/oferta, para no romper a los llamadores actuales).
 export class CreateSubjectDto {
-  @ApiProperty({ example: 'Programación Web', maxLength: 200 })
+  @ApiPropertyOptional({
+    example: 'uuid-of-subject-catalog',
+    description: 'Reofertar una materia ya existente en el catálogo. Si se envía, el resto de los campos de catálogo (name/code/credits/careerId) se ignoran.',
+  })
+  @IsUUID()
+  @IsOptional()
+  subjectCatalogId?: string;
+
+  @ApiPropertyOptional({ example: 'Programación Web', maxLength: 200 })
+  @ValidateIf((o: CreateSubjectDto) => !o.subjectCatalogId)
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  name!: string;
+  name?: string;
 
-  @ApiProperty({ example: 'PW-701', maxLength: 20 })
+  @ApiPropertyOptional({ example: 'PW-701', maxLength: 20 })
+  @ValidateIf((o: CreateSubjectDto) => !o.subjectCatalogId)
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
-  code!: string;
+  code?: string;
 
   @ApiPropertyOptional({ example: 'Desarrollo de aplicaciones web modernas' })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ example: 4, minimum: 1, maximum: 10 })
+  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 10 })
+  @ValidateIf((o: CreateSubjectDto) => !o.subjectCatalogId)
   @IsInt()
   @Min(1)
   @Max(10)
-  credits!: number;
+  credits?: number;
 
-  @ApiProperty({ example: 'uuid-of-career' })
+  @ApiPropertyOptional({ example: 'uuid-of-career' })
+  @ValidateIf((o: CreateSubjectDto) => !o.subjectCatalogId)
   @IsUUID()
   @IsNotEmpty()
-  careerId!: string;
+  careerId?: string;
 
   @ApiPropertyOptional({ example: 30, minimum: 1 })
   @IsInt()

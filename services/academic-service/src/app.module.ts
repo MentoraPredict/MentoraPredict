@@ -15,6 +15,7 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
 import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
+import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
 import { SubjectOrmEntity } from "./infrastructure/persistence/subject.orm-entity";
 import { EvaluationOrmEntity } from "./infrastructure/persistence/evaluation.orm-entity";
 import { EnrollmentOrmEntity } from "./infrastructure/persistence/enrollment.orm-entity";
@@ -30,6 +31,7 @@ import {
   TeacherObservationSchema,
 } from "./infrastructure/persistence/teacher-observation.schema";
 
+import { SubjectCatalogRepository } from "./infrastructure/persistence/subject-catalog.repository";
 import { SubjectRepository } from "./infrastructure/persistence/subject.repository";
 import { FacultyRepository } from "./infrastructure/persistence/faculty.repository";
 import { CareerRepository } from "./infrastructure/persistence/career.repository";
@@ -93,6 +95,8 @@ import { ChangeCareerStatusUseCase } from "./application/use-cases/change-career
 import { DeleteCareerUseCase } from "./application/use-cases/delete-career.use-case";
 
 // Subject use-cases
+import { CreateSubjectCatalogUseCase } from "./application/use-cases/create-subject-catalog.use-case";
+import { ListSubjectCatalogUseCase } from "./application/use-cases/list-subject-catalog.use-case";
 import { CreateSubjectUseCase } from "./application/use-cases/create-subject.use-case";
 import { GetSubjectUseCase } from "./application/use-cases/get-subject.use-case";
 import { ListSubjectsUseCase } from "./application/use-cases/list-subjects.use-case";
@@ -154,6 +158,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           FacultyOrmEntity,
           CareerOrmEntity,
           AcademicPeriodOrmEntity,
+          SubjectCatalogOrmEntity,
           SubjectOrmEntity,
           EvaluationOrmEntity,
           EnrollmentOrmEntity,
@@ -176,6 +181,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       FacultyOrmEntity,
       CareerOrmEntity,
       AcademicPeriodOrmEntity,
+      SubjectCatalogOrmEntity,
       SubjectOrmEntity,
       EvaluationOrmEntity,
       EnrollmentOrmEntity,
@@ -246,6 +252,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     JwtAuthGuard,
     { provide: "IFacultyRepository", useClass: FacultyRepository },
     { provide: "ICareerRepository", useClass: CareerRepository },
+    { provide: "ISubjectCatalogRepository", useClass: SubjectCatalogRepository },
     { provide: "ISubjectRepository", useClass: SubjectRepository },
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
     { provide: "IEnrollmentRepository", useClass: EnrollmentRepository },
@@ -305,6 +312,9 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateCareerUseCase,
     ChangeCareerStatusUseCase,
     DeleteCareerUseCase,
+    // Subject catalog use-cases
+    CreateSubjectCatalogUseCase,
+    ListSubjectCatalogUseCase,
     // Subject use-cases
     CreateSubjectUseCase,
     GetSubjectUseCase,

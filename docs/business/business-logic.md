@@ -30,7 +30,7 @@ There is no "GUEST"/anonymous role for any authenticated feature — public rout
 
 ### 3.1 Enrollment
 - A student enrolls in a subject for a specific `academic_period` (only one period is `ACTIVE` at a time per the seed convention, though the schema allows several).
-- Enrollment status is one of `ACTIVE`, `WITHDRAWN`, `COMPLETED` per the TypeScript `EnrollmentStatus` enum — **note:** seed data also writes a `SUSPENDED` status, which works only because the `enrollments.status` column is a plain `varchar`, not a real Postgres/TS enum constraint. This is a known inconsistency, not an intentional 4th status — see [../database/database-architecture.md](../database/database-architecture.md).
+- Enrollment status is one of `ACTIVE`, `WITHDRAWN`, `COMPLETED`, `SUSPENDED` — the full 4-value `EnrollmentStatus` enum, centralized in `@mentorapredict/shared-types` since Fase 1 of the data-model restructuring, with a matching Postgres `CHECK` constraint on `enrollments.status` since Fase 4 (previously only a plain, unconstrained `varchar`; see [../database/database-architecture.md](../database/database-architecture.md)).
 - Only ADMIN/TEACHER can create enrollments (single or batch); a TEACHER can only enroll students into subjects they own.
 
 ### 3.2 Grading
@@ -46,7 +46,7 @@ There is no "GUEST"/anonymous role for any authenticated feature — public rout
 ### 3.4 Risk classification (deterministic, analytics-service only)
 - Risk level is one of `LOW / MEDIUM / HIGH / CRITICAL` (**4 values** — this is the real domain value set used by `ClassifyRiskUseCase`, `AlertEntity`, and the seed data's scoring algorithm). Configurable via `RISK_HIGH_THRESHOLD`/`RISK_CRITICAL_THRESHOLD` env vars.
 - Risk is computed **exclusively** by analytics-service, from grade average + compliance + attendance + trend. No other service (including prediction-service) is allowed to compute or override a risk level — they only consume analytics-service's `risk-snapshot`.
-- **Known codebase inconsistency**: `packages/shared-types`' `RiskLevel` enum only declares 3 values (no `CRITICAL`) — the shared package is out of sync with the real domain. Treat analytics-service's own 4-value definition as authoritative.
+- `RiskLevel`'s 4 values (`LOW/MEDIUM/HIGH/CRITICAL`) are centralized in `@mentorapredict/shared-types` since Fase 1 — analytics-service and prediction-service both import it rather than redefining it locally, and `student_subject_metrics.risk_level`/`student_subject_predictions.predicted_risk_level` both have a matching Postgres `CHECK` constraint since Fase 4.
 
 ### 3.5 Alerts
 - An alert (`AlertEntity`) is generated when a student's risk crosses into `MEDIUM`/`HIGH`/`CRITICAL` territory, or synthetically by the frontend for conditions like "average below the 14/20 passing grade" or "multiple high-risk students in a course." Alerts persist with a status (`UNREAD`/`ACTIVE`/resolved) and can be resolved by a TEACHER with a note.
@@ -79,15 +79,16 @@ This is fully synchronous HTTP, service-to-service, authenticated via a signed i
 2. auth-service calls user-service internally to create the matching `user_profiles` row.
 3. Role defaults to `STUDENT` for self-registration; ADMIN-created users (`CreateUserForm`) can be assigned any role directly.
 
-## 5. Known domain/documentation inconsistencies (flagged during this audit, not silently resolved)
+## 5. Known domain/documentation inconsistencies
 
-These are real discrepancies found between different parts of the codebase/docs — documented here rather than papered over, so a reader isn't misled by picking the wrong source:
+Real discrepancies found between different parts of the codebase/docs, documented here rather than papered over. Three of the four below were closed by the Fase 1/4 data-model restructuring (enum centralization in `@mentorapredict/shared-types` + matching Postgres `CHECK` constraints) — kept in this table as a historical record of what was inconsistent and how it was resolved, not as an open gap:
 
-| Topic | Discrepancy |
-|---|---|
-| `EnrollmentStatus` | TS enum: `ACTIVE/WITHDRAWN/COMPLETED` (3). Seed data writes a 4th, `SUSPENDED`, into the same untyped varchar column. |
-| `RiskLevel` | Real analytics-service domain + seed data: 4 values (`LOW/MEDIUM/HIGH/CRITICAL`). `packages/shared-types`: 3 values (no `CRITICAL`). `contracts/openapi-contracts.yaml` schema: also 3 values. |
-| Grade scale | Real: 0–20 (`NUMERIC(4,2)`, confirmed in seed data and entity definitions). Some older docs/contracts describe 0–10. |
-| RF-007 / RF-008 | `academic-service`'s controller comments tag "enroll student" as RF-007 and "create evaluation"/"register grade" as RF-008; `contracts/openapi-contracts.yaml` assigns those same features to RF-010 and RF-012 respectively. Unreconciled labeling mismatch between code comments and the design contract. |
+| Topic | Discrepancy | Status |
+|---|---|---|
+| `EnrollmentStatus` | TS enum: `ACTIVE/WITHDRAWN/COMPLETED` (3). Seed data wrote a 4th, `SUSPENDED`, into an untyped varchar column. | **Resolved** (Fase 1/4) — `EnrollmentStatus` now has all 4 values in `shared-types`, with a Postgres `CHECK` constraint on `enrollments.status`. |
+| `RiskLevel` | Real analytics-service domain + seed data: 4 values (`LOW/MEDIUM/HIGH/CRITICAL`). `packages/shared-types`: 3 values (no `CRITICAL`). `contracts/openapi-contracts.yaml` schema: also 3 values. | **Resolved** (Fase 1/4) — `shared-types` now declares all 4 values; both consuming services import it. `contracts/openapi-contracts.yaml` updated to match. |
+| `AuthProvider` | Found during the same audit, previously undocumented: `auth-service`'s real, implemented set is `LOCAL/MICROSOFT` (2). `user-service` independently declared `LOCAL/GOOGLE/MICROSOFT` (3) — `GOOGLE` was aspirational, never implemented in `auth-service`. | **Resolved** (Fase 1) — new `AuthProvider` enum in `shared-types` with the real 2-value set; both services import it, `GOOGLE` removed from `user-service`. |
+| Grade scale | Real: 0–20 (`NUMERIC(4,2)`, confirmed in seed data and entity definitions). Some older docs/contracts describe 0–10. | Open — unrelated to the enum-centralization work above; not part of this restructuring's scope. |
+| RF-007 / RF-008 | `academic-service`'s controller comments tag "enroll student" as RF-007 and "create evaluation"/"register grade" as RF-008; `contracts/openapi-contracts.yaml` assigns those same features to RF-010 and RF-012 respectively. Unreconciled labeling mismatch between code comments and the design contract. | Open — unrelated to the enum-centralization work above; not part of this restructuring's scope. |
 
-See [../database/database-architecture.md](../database/database-architecture.md) for the underlying data-model detail behind these, and [functional-requirements.md](./functional-requirements.md) for the RF-007/008 discrepancy in context.
+See [../database/database-architecture.md](../database/database-architecture.md) and [../database/entity-relationship-diagram.md](../database/entity-relationship-diagram.md) for the underlying data-model detail behind the resolved rows, and [functional-requirements.md](./functional-requirements.md) for the RF-007/008 discrepancy in context.

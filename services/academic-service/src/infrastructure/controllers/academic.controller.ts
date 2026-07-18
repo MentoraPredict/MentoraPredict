@@ -94,6 +94,11 @@ import { CreateCareerDto } from "../../application/dtos/create-career.dto";
 import { UpdateCareerDto } from "../../application/dtos/update-career.dto";
 import { ChangeCareerStatusDto } from "../../application/dtos/change-career-status.dto";
 
+// Subject catalog use-cases
+import { CreateSubjectCatalogUseCase } from "../../application/use-cases/create-subject-catalog.use-case";
+import { ListSubjectCatalogUseCase } from "../../application/use-cases/list-subject-catalog.use-case";
+import { CreateSubjectCatalogDto } from "../../application/dtos/create-subject-catalog.dto";
+
 // Subject use-cases
 import { CreateSubjectUseCase } from "../../application/use-cases/create-subject.use-case";
 import { GetSubjectUseCase } from "../../application/use-cases/get-subject.use-case";
@@ -180,6 +185,9 @@ export class AcademicController {
     private readonly updateCareerUC: UpdateCareerUseCase,
     private readonly changeCareerStatusUC: ChangeCareerStatusUseCase,
     private readonly deleteCareerUC: DeleteCareerUseCase,
+    // Subject catalog use-cases
+    private readonly createSubjectCatalogUC: CreateSubjectCatalogUseCase,
+    private readonly listSubjectCatalogUC: ListSubjectCatalogUseCase,
     // Subject use-cases
     private readonly createSubjectUC: CreateSubjectUseCase,
     private readonly getSubjectUC: GetSubjectUseCase,
@@ -848,6 +856,26 @@ export class AcademicController {
   @ApiResponse({ status: 404 })
   async deleteCareer(@Param("id") id: string) {
     return this.deleteCareerUC.execute(id);
+  }
+
+  // ─── Subject catalog (Fase A — docs/database/database-update-plan.md §5.1) ─
+
+  @Get("subject-catalog")
+  @ApiOperation({ summary: "List subject catalog entries (materias, independientes del período)" })
+  @ApiResponse({ status: 200 })
+  async listSubjectCatalog(@Query("careerId") careerId?: string) {
+    return this.listSubjectCatalogUC.execute({ careerId });
+  }
+
+  @Post("subject-catalog")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a new subject catalog entry (ADMIN only)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
+  async createSubjectCatalog(@Body() dto: CreateSubjectCatalogDto) {
+    return this.createSubjectCatalogUC.execute(dto);
   }
 
   // ─── Subjects ─────────────────────────────────────────────────────────────

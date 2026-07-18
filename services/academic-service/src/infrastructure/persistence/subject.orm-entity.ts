@@ -6,22 +6,22 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique,
 } from "typeorm";
-import { CareerOrmEntity } from './career.orm-entity';
+import { SubjectCatalogOrmEntity } from './subject-catalog.orm-entity';
 import { AcademicPeriodOrmEntity } from './academic-period.orm-entity';
 import { UserReferenceOrmEntity } from './user-reference.orm-entity';
 
 @Entity("subjects")
+@Unique('UQ_subjects_catalog_period', ['subjectCatalogId', 'academicPeriodId'])
 export class SubjectOrmEntity {
   @PrimaryColumn("uuid") id!: string;
-  @Column({ length: 200 }) name!: string;
-  @Column({ type: 'text', default: '' }) description!: string;
-  @Column({ length: 20, unique: true }) code!: string;
-  @Column() credits!: number;
-  @Column({ name: "career_id", type: "uuid" }) careerId!: string;
-  @ManyToOne(() => CareerOrmEntity, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'career_id', foreignKeyConstraintName: 'FK_subjects_career_id' })
-  career?: CareerOrmEntity;
+
+  @Column({ name: "subject_catalog_id", type: "uuid" }) subjectCatalogId!: string;
+  @ManyToOne(() => SubjectCatalogOrmEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'subject_catalog_id', foreignKeyConstraintName: 'FK_subjects_subject_catalog_id' })
+  subjectCatalog?: SubjectCatalogOrmEntity;
+
   @Column({ name: "academic_period_id", type: "uuid" })
   academicPeriodId!: string;
   @ManyToOne(() => AcademicPeriodOrmEntity, { onDelete: 'RESTRICT' })
