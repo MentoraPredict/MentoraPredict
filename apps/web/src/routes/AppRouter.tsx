@@ -29,6 +29,15 @@ import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 import TeacherCoursesPage from "@/pages/teacher/TeacherCoursesPage";
 
 import StudentCoursesPage from "@/pages/student/StudentCoursesPage";
+import StudentSurveyPage from "@/pages/student/StudentSurveyPage";
+import StudentSurveyWizardPage from "@/pages/student/StudentSurveyWizardPage";
+import StudentCalendarPage from "@/pages/student/StudentCalendarPage";
+import StudentTasksPage from "@/pages/student/StudentTasksPage";
+import StudentMaterialsPage from "@/pages/student/StudentMaterialsPage";
+import StudentEvaluationsPage from "@/pages/student/StudentEvaluationsPage";
+import StudentProgressPage from "@/pages/student/StudentProgressPage";
+import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage";
+import StudentAiChatPage from "@/pages/student/StudentAiChatPage";
 
 import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
 import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerformancePage";
@@ -110,6 +119,42 @@ function AnimatedRoutes() {
             <Route
               path={APP_PATHS.student.profile}
               element={<StudentProfilePage />}
+            />
+            <Route
+              path={APP_PATHS.student.survey}
+              element={<StudentSurveyPage />}
+            />
+            <Route
+              path={APP_PATHS.student.surveyWizard}
+              element={<StudentSurveyWizardPage />}
+            />
+            <Route
+              path={APP_PATHS.student.aiChat}
+              element={<StudentAiChatPage />}
+            />
+            <Route
+              path={APP_PATHS.student.calendar}
+              element={<StudentCalendarPage />}
+            />
+            <Route
+              path={APP_PATHS.student.tasks}
+              element={<StudentTasksPage />}
+            />
+            <Route
+              path={APP_PATHS.student.materials}
+              element={<StudentMaterialsPage />}
+            />
+            <Route
+              path={APP_PATHS.student.evaluations}
+              element={<StudentEvaluationsPage />}
+            />
+            <Route
+              path={APP_PATHS.student.progress}
+              element={<StudentProgressPage />}
+            />
+            <Route
+              path={APP_PATHS.student.notifications}
+              element={<StudentNotificationsPage />}
             />
             <Route
               path={APP_PATHS.student.courseDetail}

@@ -16,6 +16,15 @@ export const APP_PATHS = {
     dashboard: "/student/courses",
     courses: "/student/courses",
     profile: "/student/profile",
+    survey: "/student/survey",
+    surveyWizard: "/student/survey/:surveyId",
+    aiChat: "/student/ai-chat",
+    calendar: "/student/calendar",
+    tasks: "/student/tasks",
+    materials: "/student/materials",
+    evaluations: "/student/evaluations",
+    progress: "/student/progress",
+    notifications: "/student/notifications",
     courseDetail: "/student/courses/:courseId",
     coursePerformance: "/student/courses/:courseId/performance",
     courseUploadData: "/student/courses/:courseId/upload-data",
@@ -79,4 +88,8 @@ export function getTeacherCourseEditPath(courseId: string) {
 
 export function getStudentCourseUploadDataPath(courseId: string) {
   return `/student/courses/${courseId}/upload-data`;
+}
+
+export function getStudentSurveyWizardPath(surveyId: string) {
+  return `/student/survey/${surveyId}`;
 }
