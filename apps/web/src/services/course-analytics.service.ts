@@ -6,8 +6,7 @@ import type {
   CourseRecommendation,
   CourseRiskItem,
 } from "@/types/course";
-
-type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+import type { RiskLevel } from "@/types/risk";
 
 interface Paginated<T> {
   data: T[];

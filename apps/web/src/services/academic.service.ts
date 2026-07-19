@@ -2,6 +2,7 @@ import api from "@/services/api";
 import { endpoints } from "@/services/api/endpoints";
 import type { Course } from "@/types/course";
 import type { CourseEnrolledStudent } from "@/types/course";
+import type { RiskLevel } from "@/types/risk";
 
 interface SubjectApiResponse {
   id: string;
@@ -101,7 +102,7 @@ interface StudentSubjectApiResponse {
   status: string;
   enrolledAt: string;
   currentAverage?: number | null;
-  riskLevel?: "HIGH" | "MEDIUM" | "LOW" | null;
+  riskLevel?: RiskLevel | null;
 }
 
 export interface CourseCareerOption {
@@ -230,6 +231,7 @@ const facultiesCache: RequestCache<FacultyApiResponse[]> = {};
 const careersCache: RequestCache<CareerApiResponse[]> = {};
 
 const studentRiskLabels = {
+  CRITICAL: "Riesgo crítico",
   HIGH: "Riesgo alto",
   MEDIUM: "Riesgo medio",
   LOW: "Riesgo bajo",
