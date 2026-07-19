@@ -5,12 +5,15 @@ import {
   FiAlertTriangle,
   FiAward,
   FiBookOpen,
+  FiCalendar,
+  FiCheckCircle,
   FiChevronLeft,
   FiChevronRight,
+  FiClipboard,
+  FiEye,
   FiRefreshCw,
   FiZap,
 } from "react-icons/fi";
-import type { IconType } from "react-icons";
 import { AxiosError } from "axios";
 
 import Badge from "@/components/atoms/Badge";
@@ -18,14 +21,31 @@ import Button from "@/components/atoms/Button";
 import Container from "@/components/atoms/Container";
 import FeedbackMessage from "@/components/atoms/FeedbackMessage";
 import Heading from "@/components/atoms/Heading";
-import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
+import UserAvatar from "@/components/atoms/UserAvatar";
 
 import AiRecommendationPanel from "@/features/courses/components/AiRecommendationPanel";
 import CourseGrid from "@/features/courses/components/CourseGrid";
 import StudentCoursesEmptyState from "@/features/students/components/StudentCoursesEmptyState";
+import DashboardMetricCard, {
+  dashboardMetricToneStyles,
+  type DashboardMetric,
+  type DashboardMetricTone,
+} from "@/features/dashboard/components/DashboardMetricCard";
+import DropoutRiskCard from "@/features/dashboard/components/DropoutRiskCard";
+import RiskOverviewBanner from "@/features/dashboard/components/RiskOverviewBanner";
+import SurveyStatusCard from "@/features/dashboard/components/SurveyStatusCard";
+import useStudentDashboardKpis from "@/features/dashboard/hooks/useStudentDashboardKpis";
+import { computeAggregatedRisk } from "@/features/dashboard/utils/computeAggregatedRisk";
+import { getAverageTone, getCountTone } from "@/features/dashboard/utils/metricTone";
+import {
+  courseRiskRank,
+  getRiskPresentation,
+  isAtRiskLevel,
+} from "@/features/dashboard/utils/riskLevelPresentation";
 
 import {
+  APP_PATHS,
   getStudentCoursePerformancePath,
   getStudentCourseUploadDataPath,
 } from "@/routes/paths";
@@ -50,28 +70,7 @@ const PREDICTION_CONCURRENCY = 3;
 
 const RECOMMENDATIONS_PAGE_SIZE = 3;
 
-const riskLabels = {
-  HIGH: "Alta prioridad",
-  MEDIUM: "Seguimiento",
-  LOW: "Estable",
-  UNKNOWN: "Sin datos",
-};
-
-const riskStyles = {
-  HIGH: "border-red-200 bg-red-50 text-red-800",
-  MEDIUM: "border-amber-200 bg-amber-50 text-amber-800",
-  LOW: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  UNKNOWN: "border-gray-200 bg-gray-50 text-gray-700",
-};
-
-const metricToneStyles = {
-  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
-  danger: "border-red-200 bg-red-50 text-red-800",
-  neutral: "border-gray-200 bg-gray-50 text-gray-700",
-};
-
-type MetricTone = keyof typeof metricToneStyles;
+type MetricTone = DashboardMetricTone;
 
 interface SubjectPrediction {
   subjectId: string;
@@ -89,15 +88,6 @@ interface DashboardRecommendation extends CourseRecommendation {
   courseName: string;
 }
 
-interface DashboardMetric {
-  label: string;
-  value: string;
-  hint: string;
-  icon: IconType;
-  tone: MetricTone;
-  onClick?: () => void;
-}
-
 interface StudentCoursesManagementProps {
   courses: Course[];
   isLoading: boolean;
@@ -105,56 +95,14 @@ interface StudentCoursesManagementProps {
   reload: () => Promise<Course[]>;
 }
 
-function getAcademicStatus(coursesAtRisk: number, globalAverage: number | null) {
-  if (coursesAtRisk > 0) {
-    return {
-      label: "Seguimiento requerido",
-      description:
-        "Hay materias que necesitan revision temprana para evitar acumulacion de riesgo.",
-      className: "border-amber-200 bg-amber-50 text-amber-800",
-    };
-  }
-
-  if (globalAverage !== null && globalAverage >= 8.5) {
-    return {
-      label: "Rendimiento destacado",
-      description:
-        "Tu desempeno general se mantiene en un rango solido para el periodo actual.",
-      className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    };
-  }
-
-  return {
-    label: "Progreso estable",
-    description:
-      "Continua registrando tus avances para que el sistema detecte cambios a tiempo.",
-    className: "border-blue-200 bg-blue-50 text-blue-800",
-  };
-}
-
-function getAverageTone(average: number | null): MetricTone {
-  if (average === null) return "neutral";
-  if (average >= 16) return "success";
-  if (average >= 14) return "warning";
-  return "danger";
-}
-
-function getAlertTone(alertCount: number): MetricTone {
-  if (alertCount === 0) return "success";
-  if (alertCount <= 2) return "warning";
-  return "danger";
-}
-
 function getRiskDerivedAlerts(courses: Course[]): DashboardAlert[] {
-  return courses
-    .filter((course) => ["HIGH", "MEDIUM"].includes(course.riskLevel))
-    .map((course) => ({
-      id: `risk-${course.id}`,
-      courseId: course.id,
-      courseName: course.name,
-      severity: course.riskLevel === "HIGH" ? "HIGH" : "MEDIUM",
-      message: `${course.name}: ${riskLabels[course.riskLevel]}. Revisa el rendimiento y registra tu avance semanal.`,
-    }));
+  return courses.filter((course) => isAtRiskLevel(course.riskLevel)).map((course) => ({
+    id: `risk-${course.id}`,
+    courseId: course.id,
+    courseName: course.name,
+    severity: course.riskLevel as "HIGH" | "MEDIUM" | "CRITICAL",
+    message: `${course.name}: ${getRiskPresentation(course.riskLevel).label}. Revisa el rendimiento y registra tu avance semanal.`,
+  }));
 }
 
 export default function StudentCoursesManagement({
@@ -295,13 +243,13 @@ export default function StudentCoursesManagement({
           ? averages.reduce((total, average) => total + average, 0) /
             averages.length
           : null,
-      coursesAtRisk: courses.filter((course) =>
-        ["HIGH", "MEDIUM"].includes(course.riskLevel)
-      ).length,
+      coursesAtRisk: courses.filter((course) => isAtRiskLevel(course.riskLevel))
+        .length,
       facultyName: contextCourse?.facultyName ?? "Facultad no registrada",
       careerName: contextCourse?.careerName ?? "Carrera no registrada",
       periodName: contextCourse?.semester ?? "Periodo no registrado",
       nextCourse:
+        courses.find((course) => course.riskLevel === "CRITICAL") ??
         courses.find((course) => course.riskLevel === "HIGH") ??
         courses.find((course) => course.riskLevel === "MEDIUM") ??
         courses[0] ??
@@ -313,6 +261,21 @@ export default function StudentCoursesManagement({
     () => new Map(courses.map((course) => [course.id, course])),
     [courses]
   );
+
+  const sortedCourses = useMemo(
+    () =>
+      [...courses].sort(
+        (a, b) => courseRiskRank(b.riskLevel) - courseRiskRank(a.riskLevel)
+      ),
+    [courses]
+  );
+
+  const aggregatedRisk = useMemo(
+    () => computeAggregatedRisk(overview, coursesById),
+    [overview, coursesById]
+  );
+
+  const dashboardKpis = useStudentDashboardKpis(courses);
 
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
     const backendAlerts = overview.flatMap((subject): DashboardAlert[] => {
@@ -389,23 +352,12 @@ export default function StudentCoursesManagement({
     return latestPoints.slice(0, 4);
   }, [coursesById, overview]);
 
-  const academicStatus = getAcademicStatus(
-    dashboard.coursesAtRisk,
-    dashboard.globalAverage
-  );
   const studentName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
     user?.email ||
     "Estudiante";
 
   const dashboardMetrics: DashboardMetric[] = [
-    {
-      label: "Materias activas",
-      value: dashboard.activeCourses.toString(),
-      hint: "Cursos matriculados en el periodo",
-      icon: FiBookOpen,
-      tone: dashboard.activeCourses > 0 ? "success" : "neutral",
-    },
     {
       label: "Promedio general",
       value:
@@ -421,7 +373,7 @@ export default function StudentCoursesManagement({
       value: dashboardAlerts.length.toString(),
       hint: "Presiona para ver detalle por materia",
       icon: FiAlertTriangle,
-      tone: getAlertTone(dashboardAlerts.length),
+      tone: getCountTone(dashboardAlerts.length),
       onClick: () => {
         setShowAlerts((current) => !current);
       },
@@ -432,6 +384,56 @@ export default function StudentCoursesManagement({
       hint: "Carga academica registrada",
       icon: FiActivity,
       tone: "neutral" as MetricTone,
+    },
+    {
+      label: "Asistencia real",
+      value: dashboardKpis.attendance.data
+        ? `${dashboardKpis.attendance.data.overallRate}%`
+        : "--",
+      hint: dashboardKpis.attendance.data?.unscheduledSubjectsCount
+        ? `${dashboardKpis.attendance.data.unscheduledSubjectsCount} materia(s) sin horario definido aún`
+        : "Combina registro docente y autorreporte",
+      icon: FiCalendar,
+      tone: getAverageTone(
+        dashboardKpis.attendance.data
+          ? (dashboardKpis.attendance.data.overallRate / 5)
+          : null
+      ),
+      isMocked: true,
+      isLoading: dashboardKpis.attendance.isLoading,
+    },
+    {
+      label: "Cumplimiento",
+      value: dashboardKpis.compliance.data
+        ? `${dashboardKpis.compliance.data.overallComplianceIndex}%`
+        : "--",
+      hint: "Entregas y tareas completadas a tiempo",
+      icon: FiCheckCircle,
+      tone: getAverageTone(
+        dashboardKpis.compliance.data
+          ? dashboardKpis.compliance.data.overallComplianceIndex / 5
+          : null
+      ),
+      isMocked: true,
+      isLoading: dashboardKpis.compliance.isLoading,
+    },
+    {
+      label: "Comprensión",
+      value: dashboardKpis.comprehension.data
+        ? `${dashboardKpis.comprehension.data.overallAverage}%`
+        : "--",
+      hint:
+        dashboardKpis.comprehension.data?.trend === "WORSENING"
+          ? "Bajando — revisa los temas más débiles por materia"
+          : "Promedio autorreportado por tema del sílabo",
+      icon: FiEye,
+      tone: getAverageTone(
+        dashboardKpis.comprehension.data
+          ? dashboardKpis.comprehension.data.overallAverage / 5
+          : null
+      ),
+      isMocked: true,
+      isLoading: dashboardKpis.comprehension.isLoading,
     },
   ];
 
@@ -447,169 +449,122 @@ export default function StudentCoursesManagement({
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="grid gap-0 lg:grid-cols-[1.5fr_1fr]">
               <div className="space-y-5 p-6 md:p-8">
-                <Badge className="bg-blue-100 text-blue-700">
-                  Panel academico del estudiante
-                </Badge>
-
-                <div>
-                  <Heading as="h3" className="text-gray-900">
-                    Hola, {studentName}
-                  </Heading>
-
-                  <Text
-                    variant="small"
-                    className="mt-2 max-w-2xl text-gray-600"
-                  >
-                    Revisa tus materias, rendimiento disponible y senales de
-                    riesgo para actuar antes de que el periodo avance.
-                  </Text>
+                <div className="flex items-center gap-4">
+                  <UserAvatar
+                    imageUrl={user?.avatarUrl ?? undefined}
+                    firstName={user?.firstName}
+                    lastName={user?.lastName}
+                    className="h-14 w-14"
+                  />
+                  <div>
+                    <Heading as="h3" className="text-gray-900">
+                      Hola, {studentName}
+                    </Heading>
+                    {user?.email ? (
+                      <Text variant="small" className="mt-1 text-gray-500">
+                        {user.email}
+                      </Text>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
-                  <Badge className="bg-gray-100 text-gray-700">
+                <div className="flex flex-col gap-2">
+                  <Badge className="w-fit bg-gray-100 text-gray-700">
                     {dashboard.facultyName}
                   </Badge>
-                  <Badge className="bg-gray-100 text-gray-700">
+                  <Badge className="w-fit bg-gray-100 text-gray-700">
                     {dashboard.careerName}
                   </Badge>
-                  <Badge className="bg-gray-100 text-gray-700">
+                  <Badge className="w-fit bg-gray-100 text-gray-700">
                     {dashboard.periodName}
                   </Badge>
                 </div>
-
-                {dashboard.nextCourse ? (
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        navigate(
-                          getStudentCoursePerformancePath(
-                            dashboard.nextCourse!.id
-                          )
-                        );
-                      }}
-                      className="px-5 py-2 text-sm"
-                    >
-                      Ver materia prioritaria
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        navigate(
-                          getStudentCourseUploadDataPath(
-                            dashboard.nextCourse!.id
-                          )
-                        );
-                      }}
-                      className="px-5 py-2 text-sm"
-                    >
-                      Registrar avance semanal
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        void handleRefresh();
-                      }}
-                      disabled={isLoading || isLoadingInsights}
-                      className="px-5 py-2 text-sm"
-                    >
-                      <FiRefreshCw size={16} />
-                      {isLoadingInsights ? "Actualizando" : "Recargar analitica"}
-                    </Button>
-                  </div>
-                ) : null}
               </div>
 
               <div className="border-t border-gray-200 bg-gray-50 p-6 md:p-8 lg:border-l lg:border-t-0">
-                <Text
-                  variant="caption"
-                  className="font-bold uppercase text-gray-500"
-                >
-                  Estado academico
-                </Text>
-
-                <div
-                  className={`mt-4 rounded-2xl border px-5 py-4 ${academicStatus.className}`}
-                >
-                  <Text variant="small" className="font-bold">
-                    {academicStatus.label}
-                  </Text>
-
-                  <Text variant="small" className="mt-2">
-                    {academicStatus.description}
-                  </Text>
-                </div>
-
-                {dashboard.nextCourse ? (
-                  <div className="mt-5 rounded-2xl border border-gray-200 bg-white px-5 py-4">
-                    <Text
-                      variant="caption"
-                      className="font-bold uppercase text-gray-500"
-                    >
-                      Materia sugerida
-                    </Text>
-                    <Text
-                      variant="small"
-                      className="mt-1 font-semibold text-gray-900"
-                    >
-                      {dashboard.nextCourse.name}
-                    </Text>
-                    <Text
-                      variant="caption"
-                      className={`mt-2 inline-flex rounded-full border px-3 py-1 font-semibold ${riskStyles[dashboard.nextCourse.riskLevel]}`}
-                    >
-                      {riskLabels[dashboard.nextCourse.riskLevel]}
-                    </Text>
-                  </div>
-                ) : null}
+                <RiskOverviewBanner
+                  summary={aggregatedRisk}
+                  nextCourse={dashboard.nextCourse}
+                  onViewCourse={(courseId) => {
+                    navigate(getStudentCoursePerformancePath(courseId));
+                  }}
+                />
               </div>
             </div>
           </div>
 
+          {dashboard.nextCourse ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <Button
+                type="button"
+                onClick={() => {
+                  navigate(
+                    getStudentCoursePerformancePath(dashboard.nextCourse!.id)
+                  );
+                }}
+                className="px-5 py-2 text-sm"
+              >
+                Ver materia prioritaria
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  navigate(
+                    getStudentCourseUploadDataPath(dashboard.nextCourse!.id)
+                  );
+                }}
+                className="px-5 py-2 text-sm"
+              >
+                Registrar avance semanal
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  void handleRefresh();
+                }}
+                disabled={isLoading || isLoadingInsights}
+                className="px-5 py-2 text-sm"
+              >
+                <FiRefreshCw size={16} />
+                {isLoadingInsights ? "Actualizando" : "Recargar analitica"}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  navigate(APP_PATHS.student.survey);
+                }}
+                className="gap-2 px-5 py-2 text-sm"
+              >
+                <FiClipboard size={16} />
+                Encuesta socioeconómica
+              </Button>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {dashboardMetrics.map((metric) => (
-              <MotionCard
-                key={metric.label}
-                as="article"
-                role={metric.onClick ? "button" : undefined}
-                tabIndex={metric.onClick ? 0 : undefined}
-                onClick={metric.onClick}
-                onKeyDown={(event) => {
-                  if (
-                    metric.onClick &&
-                    (event.key === "Enter" || event.key === " ")
-                  ) {
-                    event.preventDefault();
-                    metric.onClick();
-                  }
-                }}
-                className={`w-full rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md ${metricToneStyles[metric.tone]}`}
-              >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-current">
-                  <metric.icon size={20} />
-                </div>
-
-                <Text
-                  variant="caption"
-                  className="font-bold uppercase text-current opacity-75"
-                >
-                  {metric.label}
-                </Text>
-
-                <Heading as="h4" className="mt-2 text-current">
-                  {metric.value}
-                </Heading>
-
-                <Text variant="small" className="mt-2 text-current opacity-80">
-                  {metric.hint}
-                </Text>
-              </MotionCard>
+              <DashboardMetricCard key={metric.label} {...metric} />
             ))}
           </div>
+
+          <SurveyStatusCard
+            status={dashboardKpis.surveyStatus.data}
+            isLoading={dashboardKpis.surveyStatus.isLoading}
+            onOpenSurvey={() => {
+              navigate(APP_PATHS.student.survey);
+            }}
+          />
+
+          <DropoutRiskCard
+            estimate={dashboardKpis.dropoutRisk.data}
+            isLoading={dashboardKpis.dropoutRisk.isLoading}
+          />
 
           {showAlerts ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -700,12 +655,12 @@ export default function StudentCoursesManagement({
                         : null;
                     const tone =
                       latest === null
-                        ? metricToneStyles.neutral
+                        ? dashboardMetricToneStyles.neutral
                         : latest >= 16
-                          ? metricToneStyles.success
+                          ? dashboardMetricToneStyles.success
                           : latest >= 14
-                            ? metricToneStyles.warning
-                            : metricToneStyles.danger;
+                            ? dashboardMetricToneStyles.warning
+                            : dashboardMetricToneStyles.danger;
 
                     return (
                       <button
@@ -849,9 +804,15 @@ export default function StudentCoursesManagement({
 
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-6">
-              <Heading as="h4" className="text-gray-900">
-                Materias matriculadas
-              </Heading>
+              <div className="flex items-center gap-3">
+                <Heading as="h4" className="text-gray-900">
+                  Materias matriculadas
+                </Heading>
+                <Badge tone="blue" className="gap-1">
+                  <FiBookOpen size={12} />
+                  {dashboard.activeCourses}
+                </Badge>
+              </div>
 
               <Text variant="small" className="mt-2 text-gray-600">
                 Ingresa a una materia para revisar rendimiento, riesgo y
@@ -870,7 +831,7 @@ export default function StudentCoursesManagement({
               </div>
             ) : courses.length > 0 ? (
               <CourseGrid
-                courses={courses}
+                courses={sortedCourses}
                 onCourseClick={(courseId) => {
                   navigate(getStudentCoursePerformancePath(courseId));
                 }}
