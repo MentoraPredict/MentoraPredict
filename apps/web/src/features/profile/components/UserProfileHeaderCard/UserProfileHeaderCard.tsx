@@ -42,6 +42,8 @@ export default function UserProfileHeaderCard({
                 rounded-2xl
                 border
                 border-gray-200
+                border-l-4
+                border-l-blue-700
                 bg-white
                 p-6
                 shadow-sm
