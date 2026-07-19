@@ -136,7 +136,22 @@ export default function CourseCard({
         </div>
       ) : null}
 
-      <CourseImagePlaceholder imageUrl={course.imageUrl} alt={course.name} />
+      <CourseImagePlaceholder
+        imageUrl={course.imageUrl}
+        alt={course.name}
+        overlayBadge={
+          course.isPendingSync ? (
+            <span className="inline-flex items-center justify-center rounded bg-amber-500/90 px-2 py-1 text-[11px] font-bold uppercase text-white backdrop-blur-sm">
+              Pendiente
+            </span>
+          ) : (
+            <CourseRiskBadge
+              riskLevel={course.riskLevel}
+              label={course.riskLabel}
+            />
+          )
+        }
+      />
 
       <div className="mt-5 space-y-4">
         <div className="space-y-3">
@@ -144,23 +159,13 @@ export default function CourseCard({
             {course.name}
           </Heading>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {course.isPendingSync ? (
-              <span className="inline-flex items-center justify-center rounded-full bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-700">
-                Pendiente de sincronizar
-              </span>
-            ) : (
-              <CourseRiskBadge
-                riskLevel={course.riskLevel}
-                label={course.riskLabel}
-              />
-            )}
-            {!metrics ? (
+          {!metrics ? (
+            <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700">
                 Promedio {averageLabel}
               </span>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
 
         {metrics ? (

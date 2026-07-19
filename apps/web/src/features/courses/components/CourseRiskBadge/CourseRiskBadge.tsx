@@ -12,21 +12,25 @@ const riskConfig: Record<
     className: string;
   }
 > = {
+  CRITICAL: {
+    label: "Riesgo crítico de deserción",
+    className: "bg-red-900/90 text-white",
+  },
   HIGH: {
     label: "Muchos alumnos en riesgo",
-    className: "bg-red-700 text-white",
+    className: "bg-red-700/90 text-white",
   },
   MEDIUM: {
     label: "Algunos estudiantes están en riesgo",
-    className: "bg-orange-500 text-white",
+    className: "bg-orange-500/90 text-white",
   },
   LOW: {
     label: "Casi nadie en riesgo",
-    className: "bg-green-700 text-white",
+    className: "bg-green-700/90 text-white",
   },
   UNKNOWN: {
     label: "Sin datos de riesgo",
-    className: "bg-gray-200 text-gray-700",
+    className: "bg-gray-200/90 text-gray-700",
   },
 };
 
@@ -42,11 +46,13 @@ export default function CourseRiskBadge({
                 inline-flex
                 items-center
                 justify-center
-                rounded-full
-                px-4
-                py-2
-                text-xs
-                font-semibold
+                rounded
+                px-2
+                py-1
+                text-[11px]
+                font-bold
+                uppercase
+                backdrop-blur-sm
                 ${config.className}
             `}
     >
