@@ -82,10 +82,10 @@ export class SubjectTeacherRepository implements ISubjectTeacherRepository {
     const dataSql = `
       SELECT
         s.id,
-        s.name,
-        s.code,
-        s.description,
-        s.credits,
+        sc.name,
+        sc.code,
+        sc.description,
+        sc.credits,
         s.max_capacity AS "maxCapacity",
         s.is_active AS "isActive",
         c.id AS "careerId",
@@ -104,11 +104,12 @@ export class SubjectTeacherRepository implements ISubjectTeacherRepository {
          WHERE e.subject_id = s.id AND e.status = 'ACTIVE') AS "enrolledCount"
       FROM subject_teachers st
       INNER JOIN subjects s ON s.id = st.subject_id
-      INNER JOIN careers c ON c.id = s.career_id
+      INNER JOIN subject_catalog sc ON sc.id = s.subject_catalog_id
+      INNER JOIN careers c ON c.id = sc.career_id
       INNER JOIN faculties f ON f.id = c.faculty_id
       INNER JOIN academic_periods p ON p.id = st.period_id
       WHERE ${where}
-      ORDER BY s.name ASC
+      ORDER BY sc.name ASC
       LIMIT $${idx} OFFSET $${idx + 1}
     `;
 

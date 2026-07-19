@@ -43,10 +43,13 @@ export class CareerRepository implements ICareerRepository {
   }
 
   async hasSubjects(careerId: string): Promise<boolean> {
+    // career_id vive en subject_catalog desde la Fase A
+    // (docs/database/database-update-plan.md) — subjects (la oferta) ya no
+    // lo tiene directamente.
     const count = await this.repo.manager
-      .getRepository('subjects')
-      .createQueryBuilder('s')
-      .where('s.career_id = :careerId', { careerId })
+      .getRepository('subject_catalog')
+      .createQueryBuilder('sc')
+      .where('sc.career_id = :careerId', { careerId })
       .getCount();
     return count > 0;
   }
