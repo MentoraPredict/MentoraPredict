@@ -18,6 +18,7 @@ interface Paginated<T> {
 interface SubjectMetric {
   id: string;
   academicWeek: number;
+  academicYear: number;
   averageGrade: number | null;
   complianceIndex: number | null;
   attendanceRate: number | null;
@@ -101,6 +102,11 @@ interface SubjectWeeklyProgress {
   academicYear: number;
   academicWeek: number;
   averageGrade: number;
+}
+
+interface SubjectWeeklyProgressResponse {
+  data: SubjectWeeklyProgress[];
+  trend: SubjectTrendSummary | null;
 }
 
 export type TeacherStudentPrediction = PredictionResponse;
@@ -298,6 +304,8 @@ export async function getStudentSubjectAnalytics(
     [...metrics].reverse().map((metric) => ({
       week: `S${metric.academicWeek}`,
       actual: metric.averageGrade ?? 0,
+      academicWeek: metric.academicWeek,
+      academicYear: metric.academicYear,
     })),
     trend
   );
@@ -321,7 +329,7 @@ export async function getStudentSubjectAnalytics(
     {
       id: "comprehension",
       label: "Comprensión declarada",
-      value: round2((risk.factors.comprehensionAvg ?? 0) * 20),
+      value: round2(risk.factors.comprehensionAvg ?? 0),
     },
   ];
 
@@ -374,7 +382,7 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
   const [summaryResponse, progressResponse, alertsResponse, predictionsResponse] =
     await Promise.all([
       api.get<SubjectRiskSummary>(endpoints.analytics.subjectSummary(subjectId)),
-      api.get<SubjectWeeklyProgress[]>(
+      api.get<SubjectWeeklyProgressResponse>(
         endpoints.analytics.subjectProgress(subjectId)
       ),
       api.get<Paginated<AlertResponse>>(
@@ -441,11 +449,20 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
     });
   }
 
-  return {
-    progress: progressResponse.data.map((point) => ({
+  const teacherTrend = progressResponse.data.trend;
+  const progress: CourseProgressPoint[] = withProjection(
+    progressResponse.data.data.map((point) => ({
       week: `S${point.academicWeek}`,
       actual: round2(point.averageGrade),
+      academicWeek: point.academicWeek,
+      academicYear: point.academicYear,
     })),
+    teacherTrend
+  );
+
+  return {
+    progress,
+    trend: teacherTrend,
     riskDistribution,
     riskCounts: {
       low: summary.LOW,

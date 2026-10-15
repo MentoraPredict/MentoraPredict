@@ -104,7 +104,13 @@ export default function CourseProgressChart({
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
 
-            <XAxis dataKey="week" tickLine={false} axisLine={false} />
+            <XAxis
+              dataKey="week"
+              tickLine={false}
+              axisLine={false}
+              interval={data.length > 10 ? Math.ceil(data.length / 8) - 1 : 0}
+              tick={{ fontSize: 11 }}
+            />
 
             <YAxis domain={[0, 20]} tickLine={false} axisLine={false} />
 

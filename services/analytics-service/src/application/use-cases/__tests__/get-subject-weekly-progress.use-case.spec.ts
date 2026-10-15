@@ -30,12 +30,15 @@ const mockAcademicClient = (): jest.Mocked<IAcademicServiceClient> => ({
 });
 
 describe('GetSubjectWeeklyProgressUseCase', () => {
-  it('returns weekly course averages for the owning teacher', async () => {
+  it('returns weekly course averages for the owning teacher, with no trend under 3 weeks', async () => {
     const metricsRepo = mockMetricsRepo();
     const academicClient = mockAcademicClient();
     const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
 
-    await expect(useCase.execute('subj-1', 'teacher-1', 'TEACHER')).resolves.toEqual(progress);
+    await expect(useCase.execute('subj-1', 'teacher-1', 'TEACHER')).resolves.toEqual({
+      data: progress,
+      trend: null,
+    });
     expect(academicClient.getSubjectOwnership).toHaveBeenCalledWith('teacher-1', 'subj-1');
     expect(metricsRepo.getWeeklyProgressBySubject).toHaveBeenCalledWith('subj-1');
   });
@@ -57,7 +60,29 @@ describe('GetSubjectWeeklyProgressUseCase', () => {
     const academicClient = mockAcademicClient();
     const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
 
-    await expect(useCase.execute('subj-1', 'admin-1', 'ADMIN')).resolves.toEqual(progress);
+    await expect(useCase.execute('subj-1', 'admin-1', 'ADMIN')).resolves.toEqual({
+      data: progress,
+      trend: null,
+    });
     expect(academicClient.getSubjectOwnership).not.toHaveBeenCalled();
+  });
+
+  it('computes an ASCENDING trend once at least 3 weeks are available', async () => {
+    const metricsRepo = mockMetricsRepo();
+    const risingProgress = [
+      { academicYear: 2026, academicWeek: 1, averageGrade: 10 },
+      { academicYear: 2026, academicWeek: 2, averageGrade: 12 },
+      { academicYear: 2026, academicWeek: 3, averageGrade: 14 },
+    ];
+    metricsRepo.getWeeklyProgressBySubject.mockResolvedValue(risingProgress);
+    const academicClient = mockAcademicClient();
+    const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
+
+    const result = await useCase.execute('subj-1', 'teacher-1', 'TEACHER');
+
+    expect(result.data).toEqual(risingProgress);
+    expect(result.trend).not.toBeNull();
+    expect(result.trend?.classification).toBe('ASCENDING');
+    expect(result.trend?.weeksAnalyzed).toBe(3);
   });
 });
