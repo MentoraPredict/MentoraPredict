@@ -1,10 +1,24 @@
 import { ReactNode } from "react";
-import { FiBarChart2, FiEdit3, FiUploadCloud, FiUsers } from "react-icons/fi";
+import {
+  FiBarChart2,
+  FiCheckSquare,
+  FiClipboard,
+  FiEdit3,
+  FiMessageCircle,
+  FiSmile,
+  FiTrendingDown,
+  FiUploadCloud,
+  FiUsers,
+} from "react-icons/fi";
 import { NavLink } from "react-router-dom";
 
 import {
+  getStudentCourseActivitiesPath,
+  getStudentCourseAiChatPath,
+  getStudentCourseEvaluationsPath,
   getStudentCoursePerformancePath,
-  getStudentCourseUploadDataPath,
+  getStudentCourseSurveyPath,
+  getTeacherCourseDropoutRiskPath,
   getTeacherCourseEditPath,
   getTeacherCoursePerformancePath,
   getTeacherCourseStudentsPath,
@@ -42,6 +56,11 @@ function getTeacherActions(courseId: string): ToolbarAction[] {
       icon: <FiUsers size={16} />,
     },
     {
+      to: getTeacherCourseDropoutRiskPath(courseId),
+      label: "Riesgo de deserción",
+      icon: <FiTrendingDown size={16} />,
+    },
+    {
       to: getTeacherCourseEditPath(courseId),
       label: "Editar curso",
       icon: <FiEdit3 size={16} />,
@@ -57,9 +76,24 @@ function getStudentActions(courseId: string): ToolbarAction[] {
       icon: <FiBarChart2 size={16} />,
     },
     {
-      to: getStudentCourseUploadDataPath(courseId),
-      label: "Subir datos",
-      icon: <FiUploadCloud size={16} />,
+      to: getStudentCourseSurveyPath(courseId, "syllabus-comprehension"),
+      label: "Encuesta del sílabo",
+      icon: <FiSmile size={16} />,
+    },
+    {
+      to: getStudentCourseActivitiesPath(courseId),
+      label: "Actividades",
+      icon: <FiCheckSquare size={16} />,
+    },
+    {
+      to: getStudentCourseEvaluationsPath(courseId),
+      label: "Evaluaciones",
+      icon: <FiClipboard size={16} />,
+    },
+    {
+      to: getStudentCourseAiChatPath(courseId),
+      label: "Charlar con IA",
+      icon: <FiMessageCircle size={16} />,
     },
   ];
 }
@@ -72,7 +106,7 @@ export default function CourseActionsToolbar({
     mode === "teacher" ? getTeacherActions(courseId) : getStudentActions(courseId);
 
   return (
-    <div className="mb-6 overflow-x-auto rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+    <div className="mb-6 overflow-x-auto border-b border-gray-200">
       <div className="flex min-w-max gap-2">
         {actions.map((action) => (
           <NavLink
@@ -80,10 +114,10 @@ export default function CourseActionsToolbar({
             to={action.to}
             className={({ isActive }) =>
               [
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition",
+                "inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition",
                 isActive
-                  ? "bg-blue-700 text-white shadow-sm"
-                  : "text-gray-500 hover:bg-blue-50 hover:text-blue-700",
+                  ? "border-blue-700 text-blue-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700",
               ].join(" ")
             }
           >

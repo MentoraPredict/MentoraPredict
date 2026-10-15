@@ -520,6 +520,7 @@ export async function getStudentCourses(): Promise<Course[]> {
     return {
       id: subject.subjectId,
       name: subject.name,
+      code: subject.code,
       teacherName: subject.teacherName ?? "Docente sin asignar",
       semester: subject.periodName,
       description: subject.description ?? "Sin descripcion registrada.",

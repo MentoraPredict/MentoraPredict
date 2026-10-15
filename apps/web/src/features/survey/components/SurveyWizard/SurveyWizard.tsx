@@ -15,7 +15,7 @@ import useSurveyQuestions from "@/features/survey/hooks/useSurveyQuestions";
 import { getSurveyDefinition } from "@/features/survey/mocks/surveyCatalog.mock";
 import type { SurveyStep } from "@/features/survey/types";
 import { recordMockCompletion } from "@/features/survey/utils/surveyCompletionStore";
-import { APP_PATHS } from "@/routes/paths";
+import { APP_PATHS, getStudentCoursePerformancePath } from "@/routes/paths";
 import { getActiveAcademicPeriod } from "@/services/student-performance.service";
 import { submitSurveyResponse } from "@/services/survey.service";
 
@@ -31,8 +31,13 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 export default function SurveyWizard() {
   const navigate = useNavigate();
-  const { surveyId } = useParams();
+  const { surveyId, courseId } = useParams();
   const survey = surveyId ? getSurveyDefinition(surveyId) : undefined;
+  // Cuando se llega por la barra de una materia (/student/courses/:courseId/survey/:surveyId),
+  // "volver" debe regresar al Rendimiento de esa materia, no al catálogo global.
+  const backTarget = courseId
+    ? getStudentCoursePerformancePath(courseId)
+    : APP_PATHS.student.survey;
 
   const realQuestions = useSurveyQuestions(survey && !survey.isMocked ? survey.code : "");
 
@@ -70,16 +75,16 @@ export default function SurveyWizard() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => navigate(APP_PATHS.student.survey)}
+          onClick={() => navigate(backTarget)}
           className="mt-4 px-4 py-2 text-sm"
         >
-          Volver a encuestas
+          Volver
         </Button>
       </div>
     );
   }
 
-  const handleBackToSurveys = () => navigate(APP_PATHS.student.survey);
+  const handleBackToSurveys = () => navigate(backTarget);
 
   if (completion) {
     return (
@@ -194,9 +199,16 @@ export default function SurveyWizard() {
       </div>
 
       <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <Text variant="caption" className="font-bold uppercase text-gray-500">
-          {step.title}
-        </Text>
+        <div>
+          <Text variant="caption" className="font-bold uppercase text-gray-500">
+            {step.title}
+          </Text>
+          {step.description ? (
+            <Text variant="small" className="mt-1 text-gray-600">
+              {step.description}
+            </Text>
+          ) : null}
+        </div>
 
         {step.fields.map((field) => (
           <div key={field.id} className="space-y-3">

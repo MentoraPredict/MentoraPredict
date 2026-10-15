@@ -24,6 +24,10 @@ interface CompletionEntry {
   completedAt: string;
 }
 
+const CATALOG_SURVEYS = SURVEY_CATALOG.filter(
+  (survey) => survey.showInCatalog !== false
+);
+
 export default function SurveyCatalogList() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SurveyTab>("AVAILABLE");
@@ -48,7 +52,7 @@ export default function SurveyCatalogList() {
   const completions = useMemo<CompletionEntry[]>(() => {
     const entries: CompletionEntry[] = [];
 
-    for (const survey of SURVEY_CATALOG) {
+    for (const survey of CATALOG_SURVEYS) {
       if (survey.isMocked) {
         const record = getMockCompletion(survey.id);
         if (record) {
@@ -74,8 +78,8 @@ export default function SurveyCatalogList() {
 
   const visibleSurveys =
     activeTab === "COMPLETED"
-      ? SURVEY_CATALOG.filter((survey) => completedSurveyIds.has(survey.id))
-      : SURVEY_CATALOG;
+      ? CATALOG_SURVEYS.filter((survey) => completedSurveyIds.has(survey.id))
+      : CATALOG_SURVEYS;
 
   return (
     <div className="space-y-6">

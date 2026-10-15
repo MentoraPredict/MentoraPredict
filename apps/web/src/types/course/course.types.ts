@@ -6,6 +6,7 @@ export type CourseRiskLevel = RiskLevelOrUnknown;
 export interface Course {
   id: string;
   name: string;
+  code?: string;
   teacherId?: string;
   teacherName: string;
   semester: string;

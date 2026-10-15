@@ -1,3 +1,6 @@
+import Text from "@/components/atoms/Text";
+import RatingScale from "@/components/molecules/RatingScale";
+
 import type { SurveyStepField as SurveyStepFieldModel } from "@/features/survey/types";
 
 export type StepAnswerValue = string | number | boolean | string[] | Record<string, string>;
@@ -155,6 +158,62 @@ export default function SurveyStepField({ field, value, onChange }: SurveyStepFi
         </div>
       );
     }
+
+    case "SLIDER": {
+      const min = field.min ?? 0;
+      const max = field.max ?? 100;
+      const step = field.step ?? 1;
+      const unit = field.unit ?? "";
+      const currentValue =
+        typeof value === "number" ? value : field.defaultValue ?? min;
+
+      return (
+        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <Text variant="body" className="font-bold text-blue-700">
+              {currentValue} {unit}
+            </Text>
+          </div>
+
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={currentValue}
+            onChange={(event) => onChange(Number(event.target.value))}
+            className="mp-slider w-full"
+          />
+
+          <div className="mt-1 flex items-center justify-between">
+            <Text variant="caption" className="text-gray-400">
+              {min} {unit}
+            </Text>
+            <Text variant="caption" className="text-gray-400">
+              {max} {unit}
+            </Text>
+          </div>
+        </div>
+      );
+    }
+
+    case "RATING":
+      return (
+        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <RatingScale
+            value={typeof value === "number" ? value : 3}
+            onChange={(rating) => onChange(rating)}
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <Text variant="caption" className="text-gray-400">
+              Muy bajo
+            </Text>
+            <Text variant="caption" className="text-gray-400">
+              Muy alto
+            </Text>
+          </div>
+        </div>
+      );
 
     case "TEXT":
     default:
