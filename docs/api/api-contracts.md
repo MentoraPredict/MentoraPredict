@@ -114,7 +114,7 @@ All routes are reached through Kong at `https://<host>/api/v1/...` (or `/api/soc
 ### Observations, uploads, internal, health
 | Method & path | Access | Purpose |
 |---|---|---|
-| `POST /observations` | `[TEACHER]` | RF-022 — create observation (Mongo) |
+| `POST /observations` | `[TEACHER]` | RF-022 — create observation |
 | `GET /observations/student/:id` | any authenticated | List a student's observations |
 | `GET /uploads/subjects/:filename`, `GET /uploads/topics/:filename` | public | Serve uploaded files |
 | `GET /internal/students/:studentId/grades?periodId=` | internal | Cross-service grade lookup |
@@ -126,7 +126,7 @@ All routes are reached through Kong at `https://<host>/api/v1/...` (or `/api/soc
 | `GET /internal/teachers/:teacherId/students?periodId=` | internal | Roster for a teacher |
 | `GET /internal/subjects/:subjectId/topics` | internal | Consumed by prediction-service for AI context |
 | `GET /internal/users/:userId/deactivation-eligibility?role=` | internal | UC-11 dependency check |
-| `GET /health` | public | Postgres + Redis + MongoDB check |
+| `GET /health` | public | Postgres + Redis check |
 
 ## analytics-service (port 3004, prefix `/api/v1/analytics` and `/api/v1/notifications`)
 
@@ -153,7 +153,7 @@ All routes are reached through Kong at `https://<host>/api/v1/...` (or `/api/soc
 | `GET /internal/risk-snapshot/:studentId/:periodId` | internal | Consumed by prediction-service |
 | `POST /internal/recalculate` | internal | Weekly recalculation trigger |
 | `GET /internal/students/:studentId/subjects/:subjectId/metrics/latest` | internal | Consumed by academic-service & prediction-service |
-| `GET /health` | public | Postgres + Redis + MongoDB check |
+| `GET /health` | public | Postgres + Redis check |
 
 ### Notifications (same service, different prefix)
 | Method & path | Access | Purpose |
@@ -178,7 +178,7 @@ All routes are reached through Kong at `https://<host>/api/v1/...` (or `/api/soc
 | `POST /students/me/periods/:periodId/generate` | `[STUDENT]` | On-demand global generation, 1/hour cooldown |
 | `POST /students/me/subjects/:subjectId/generate` | `[STUDENT]` | On-demand subject generation, 1/hour/subject cooldown |
 | `POST /internal/recalculate` | internal | Triggered by analytics-service after check-in/grade change |
-| `GET /health` | public | **MongoDB only** — known inconsistency, service also uses Postgres but its health check doesn't report it |
+| `GET /health` | public | Postgres check |
 
 ## Common response shapes
 

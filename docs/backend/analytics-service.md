@@ -9,8 +9,6 @@ Owns academic risk analytics — computing per-student, per-subject metrics (ave
 | NestJS | 10.3.0 | Application framework |
 | TypeORM | 0.3.20 | ORM for PostgreSQL |
 | pg | — | PostgreSQL driver |
-| @nestjs/mongoose | 10.0.4 | MongoDB integration |
-| mongoose | — | MongoDB ODM |
 | ioredis | — | Redis client — real, wired caching (see External integrations) |
 | @nestjs/websockets, @nestjs/platform-socket.io, socket.io | 4.8.1 | Real-time notification delivery |
 | class-validator, class-transformer | — | DTO validation |
@@ -75,8 +73,7 @@ Full endpoint reference with roles lives in [../api/api-contracts.md](../api/api
 
 ## External integrations
 
-- **PostgreSQL** — metrics, alerts, notifications, device tokens.
-- **MongoDB** — `dataset-version.schema.ts`, data versioning for ML-adjacent artifacts.
+- **PostgreSQL** — metrics, alerts, notifications, device tokens, and `dataset_versions` (`DatasetVersionOrmEntity`, a best-effort audit trail of calculation inputs/results stored as `jsonb`).
 - **Redis** — real, wired caching. Key pattern `metrics:<studentId>:<periodId>`, TTL 300s, single consumer `CalculateAverageUseCase`. See [../database/database-architecture.md](../database/database-architecture.md) for the exact key layout.
 - **WebAssembly** — `linear-regression.wasm.ts`, trend slope calculation.
 - **Socket.io** — real-time notification push at `/api/socket.io`, JWT-authenticated on connect, room `user:{userId}`, event `notification:new`. Delivery channel only — Postgres remains the source of truth.
@@ -86,7 +83,7 @@ Full endpoint reference with roles lives in [../api/api-contracts.md](../api/api
 
 ## Environment variables
 
-`ACADEMIC_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `MONGO_*`, `NODE_ENV`, `POSTGRES_*`, `PREDICTION_SERVICE_URL`, `REDIS_*`, `RISK_CRITICAL_THRESHOLD`, `RISK_HIGH_THRESHOLD` (risk classification tuning), `SWAGGER_SERVER_URL`, `USER_SERVICE_URL`.
+`ACADEMIC_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `NODE_ENV`, `POSTGRES_*`, `PREDICTION_SERVICE_URL`, `REDIS_*`, `RISK_CRITICAL_THRESHOLD`, `RISK_HIGH_THRESHOLD` (risk classification tuning), `SWAGGER_SERVER_URL`, `USER_SERVICE_URL`.
 
 ## Known issues / audit findings
 

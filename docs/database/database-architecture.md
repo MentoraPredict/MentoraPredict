@@ -1,6 +1,6 @@
 # Database Architecture
 
-> Verified directly against each service's `app.module.ts` TypeORM/Mongoose registrations and the seed SQL files — **not** against `data-models/data-models.yaml` or `docs/adr/0001-database-strategy.md`, both of which are stale design-phase artifacts (see §5). If those two documents and this one disagree, trust this one; it was cross-checked against running code.
+> Verified directly against each service's `app.module.ts` TypeORM registrations and the seed SQL files — **not** against `data-models/data-models.yaml` or `docs/adr/0001-database-strategy.md`, both of which are stale design-phase artifacts (see §5). If those two documents and this one disagree, trust this one; it was cross-checked against running code.
 >
 > For the visual entity-relationship diagram, the proposed physical-FK/`onDelete` layer, and the cross-service reference table, see [entity-relationship-diagram.md](./entity-relationship-diagram.md).
 
@@ -8,30 +8,31 @@
 
 | Database | Purpose | Shared or per-service? |
 |---|---|---|
-| **PostgreSQL** (single instance, DB `mentorapredict`) | Relational, canonical academic/identity data | One physical database, one `public` schema, shared by **all 5 services** — logical separation only (see §6) |
-| **MongoDB Atlas** (single cluster, DB `mentorapredict_nosql`) | Append-mostly / schema-loose data: observations, AI audit logs, dataset versioning | Shared cluster/database, 3 of 5 services connect to it |
+| **PostgreSQL** (single instance, DB `mentorapredict`) | Relational, canonical academic/identity data, plus append-mostly / schema-loose data (teacher observations, AI audit logs, dataset versions) stored in `jsonb` columns | One physical database, one `public` schema, shared by **all 5 services** — logical separation only (see §6) |
 | **Redis** | Ephemeral state: refresh tokens, login throttling, one narrow metrics cache | Shared instance, 2 of 5 services have real wired usage |
 
-All Mongo connections use `lazyConnection: true` + `bufferTimeoutMS: 3000` — an unreachable Atlas cluster degrades the specific Mongo-dependent feature instead of crashing the service at boot (see [../architecture/high-level-architecture.md](../architecture/high-level-architecture.md) §5).
+> **MongoDB was removed.** The three collections it used to hold (`teacher_observations`, `dataset_versions`, `prediction_logs`) are now regular PostgreSQL tables owned by `academic-service`, `analytics-service` and `prediction-service` respectively. The audit-style tables (`dataset_versions`, `prediction_logs`) are written best-effort: a failed write is logged as a warning and never fails the calculation that produced it.
 
-## 2. Entity-to-table/collection mapping (verified per service)
+## 2. Entity-to-table mapping (verified per service)
 
 ### auth-service
-| Postgres (TypeORM) | MongoDB |
-|---|---|
-| `users` (`UserOrmEntity`), `login_events` (`LoginEventOrmEntity`) | — |
+| Postgres (TypeORM) |
+|---|
+| `users` (`UserOrmEntity`), `login_events` (`LoginEventOrmEntity`) |
 
 `login_events` (added in the database-update-plan Fase E) records every successful login (local or Microsoft OAuth) with `ip_address`/`user_agent`, fire-and-forget from `LoginUserUseCase`/`OAuthLoginUseCase` so a recording failure never blocks a login. `device_type` exists but is left `NULL` — reserved for a future device-detection feature, not populated yet.
 
 ### user-service
-| Postgres (TypeORM) | MongoDB |
-|---|---|
-| `user_profiles` (`UserProfileOrmEntity`) | — |
+| Postgres (TypeORM) |
+|---|
+| `user_profiles` (`UserProfileOrmEntity`) |
 
-### academic-service (largest — 21 Postgres entities, 20 own tables + 1 local reference table)
-| Postgres (TypeORM) | MongoDB |
-|---|---|
-| `faculties`, `careers`, `academic_periods`, `subject_catalog`, `subjects`, `evaluations`, `enrollments`, `grades`, `grade_history`, `subject_teachers`, `grade_imports`, `topics`, `class_schedules`, `class_sessions`, `session_attendances`, `weekly_check_ins`, `weekly_check_in_topic_responses`, `survey_questions`, `survey_responses`, `survey_answers` | `teacher_observations` |
+### academic-service (largest — 22 Postgres entities, 21 own tables + 1 local reference table)
+| Postgres (TypeORM) |
+|---|
+| `faculties`, `careers`, `academic_periods`, `subject_catalog`, `subjects`, `evaluations`, `enrollments`, `grades`, `grade_history`, `subject_teachers`, `grade_imports`, `topics`, `class_schedules`, `class_sessions`, `session_attendances`, `weekly_check_ins`, `weekly_check_in_topic_responses`, `survey_questions`, `survey_responses`, `survey_answers`, `teacher_observations` |
+
+`teacher_observations` (`TeacherObservationOrmEntity`) holds the free-text observations a teacher records about a student: `student_id`/`teacher_id` → `academic_user_references`, `subject_id` → `subjects`, `type` constrained by a CHECK to `ACADEMIC | BEHAVIORAL | ATTENDANCE | PERFORMANCE`, indexed by `(student_id, created_at)`.
 
 8 tables added by the database-update-plan Fases A-D (see [entity-relationship-diagram.md](./entity-relationship-diagram.md) §4.3 for full column/FK/CHECK detail):
 - **Fase A** — `subject_catalog` split off from `subjects`: the catalog row is the subject as a timeless concept (name/code/credits/career), `subjects` became the period-scoped *offering* of a catalog row (`UNIQUE(subject_catalog_id, academic_period_id)`). Fixes a real structural bug: before this, `subjects.code` was globally `UNIQUE` and `academic_period_id` was `NOT NULL`, so a subject could only ever exist in one period, breaking the cross-period trend analysis analytics-service/prediction-service already compute.
@@ -40,14 +41,18 @@ All Mongo connections use `lazyConnection: true` + `bufferTimeoutMS: 3000` — a
 - **Fase D** — `survey_questions` (generic question catalog, reused for the socioeconomic survey via `survey_code = 'SOCIOECONOMIC'`) + `survey_responses`/`survey_answers` (deliberately no `UNIQUE` on `(student_id, period_id)` — a student can resubmit the same survey more than once, even within the same period, so MentoraPredict's picture of their situation can evolve over time).
 
 ### analytics-service
-| Postgres (TypeORM) | MongoDB |
-|---|---|
-| `student_metrics` (legacy, student-level), `alerts`, `student_subject_metrics` (current, subject-level), `notifications`, `device_tokens` | `dataset-version` |
+| Postgres (TypeORM) |
+|---|
+| `student_metrics` (legacy, student-level), `alerts`, `student_subject_metrics` (current, subject-level), `notifications`, `device_tokens`, `dataset_versions` |
+
+`dataset_versions` (`DatasetVersionOrmEntity`) is the calculation audit trail: `student_id` → `analytics_user_references`, `type`, `inputs` and `result` as `jsonb`, `timestamp`, indexed by `(student_id, type, timestamp)`.
 
 ### prediction-service
-| Postgres (TypeORM) | MongoDB |
-|---|---|
-| `student_subject_predictions` (comment in code: "Fase 8 — first Postgres connection in prediction-service") | `prediction-log` |
+| Postgres (TypeORM) |
+|---|
+| `student_subject_predictions` (comment in code: "Fase 8 — first Postgres connection in prediction-service"), `prediction_logs` |
+
+`prediction_logs` (`PredictionLogOrmEntity`) is the full audit record of every AI generation: `student_id`/`subject_id`/`period_id` → the local `prediction_*_references` tables (`subject_id` is nullable for period-wide predictions), `risk` and `recommendations` as `jsonb`, `summary`, `model_version`, `created_at`, indexed by `(student_id, subject_id, created_at)`.
 
 **Audit note**: two Python interface stub files (`i_predict_use_case.py`, `i_prediction_log_repository.py`) exist under `prediction-service/src/application/ports/` but are dead/orphaned — the service's own `BOUNDARY.md` explicitly states "Stack: NestJS (TypeScript) puro. Sin Python ni runtime ML local." These files predate the current pure-TypeScript implementation and were never removed. Do not read them as evidence of a Python component — there isn't one.
 
@@ -84,7 +89,7 @@ Schema is created by versioned TypeORM migrations, run as an explicit CD step be
 | `11_subject_period_references.sql` | Populates `analytics_subject_references`/`analytics_period_references`/`prediction_subject_references`/`prediction_period_references` from `subjects`/`academic_periods`, same rationale as `01_user_references.sql` |
 | `12_student_analytics.sql` | Seeds 4 tables in one pass: `weekly_check_ins` (4 weeks per active enrollment), `weekly_check_in_topic_responses` (Fase C — up to 3 per check-in, real FK to the first 3 syllabus topics by `order`), `student_subject_metrics` (computed averages + risk level), `student_subject_predictions` (status `COMPUTED` + a recommendation string) |
 
-**MongoDB has zero seed data** (`database/seeds/mongo/` is an empty placeholder) — `teacher_observations`, `dataset-version`, `prediction-log` all start empty in every environment.
+`teacher_observations`, `dataset_versions` and `prediction_logs` have no seed data — they start empty in every environment and fill from real application traffic. Because they carry foreign keys to the reference tables, `01_user_references.sql` and `11_subject_period_references.sql` must have run first (they do, by numeric order).
 
 ### Seed credentials (local/QA only — safe to document, not real secrets)
 
@@ -96,14 +101,16 @@ Schema is created by versioned TypeORM migrations, run as an explicit CD step be
 
 | Artifact | Status |
 |---|---|
-| `data-models/data-models.yaml` | Detailed, column-level, but **stale/aspirational**: documents Postgres tables that don't exist (`password_reset_tokens`, `academic_risk`, `academic_metrics_snapshots`, a Postgres `observations` table), is missing real tables (`grade_history`, `subject_teachers`, `weekly_check_ins`, `topics`, `notifications`, `device_tokens`, `student_subject_predictions`, `student_subject_metrics`), documents 3 Mongo collections that don't exist (`recommendation_plans`, `ingestion_jobs`, `audit_logs`) while missing the 3 that do (`teacher_observations`, `dataset-version`, `prediction-log`), and its Redis section doesn't match real key/TTL values. Useful as a column-type/naming-convention reference, **not** as a source of truth for what tables/collections actually exist. |
-| `docs/adr/0001-database-strategy.md` (Status: Proposed, never Accepted) | Correctly captures the high-level Postgres/Mongo/Redis split, but says Mongo is used "for prediction-service" only — misses that academic-service and analytics-service also connect to Mongo. Its recommendation of schema-per-service (§6 below) was never implemented. Left as-is (ADRs are historical records), this doc supersedes it for current-state questions. |
+| `data-models/data-models.yaml` | Detailed, column-level, but **stale/aspirational**: documents Postgres tables that don't exist (`password_reset_tokens`, `academic_risk`, `academic_metrics_snapshots`, a Postgres `observations` table), is missing real tables (`grade_history`, `subject_teachers`, `weekly_check_ins`, `topics`, `notifications`, `device_tokens`, `student_subject_predictions`, `student_subject_metrics`), does not list the audit tables that actually exist (`teacher_observations`, `dataset_versions`, `prediction_logs`; its former MongoDB section was removed together with MongoDB), and its Redis section doesn't match real key/TTL values. Useful as a column-type/naming-convention reference, **not** as a source of truth for what tables/collections actually exist. |
+| `docs/adr/0001-database-strategy.md` (Status: Proposed, never Accepted) | Captured a Postgres/Mongo/Redis split that no longer exists — MongoDB was removed and its data moved to Postgres (see §1). Its recommendation of schema-per-service (§6 below) was never implemented. Kept as a historical record with an update note at the top (ADRs are not rewritten); this doc supersedes it for current-state questions. |
 
 ## 6. Schema-per-service: resolved via a different mechanism than originally proposed
 
 Every service still connects to the same Postgres database (`mentorapredict`) and the same default `public` schema — there is no `schema:` option set in any `app.module.ts`'s TypeORM config, and `docs/adr/0001-database-strategy.md`'s original recommendation of per-service Postgres schemas was never carried out. Instead, the bounded-context boundary is enforced by a narrower, deliberate rule adopted during the Fase 4 restructuring (see [entity-relationship-diagram.md](./entity-relationship-diagram.md) §1): **a physical foreign key is only ever added between two tables owned by the same service.** Cross-service references (e.g. `enrollments.student_id` → `auth-service.users.id`) stay as plain `uuid` columns with no physical FK, backed instead by a local reference table that each consuming service keeps in sync via upsert on its own real HTTP traffic (§3 of the same document). This gives each service real, Postgres-enforced referential integrity for its own data without letting a physical constraint couple two services' schemas together — the risk that motivated the original schema-per-service recommendation — while stopping short of full Postgres-level tenant isolation between services.
 
 ## 7. Migrations — implemented (Fase 3-4, extended by Fases A-E)
+
+While the project is still in development, each service's migration history was squashed into a single `Baseline` migration generated from its current entities (verified equivalent to the previous incremental chain by diffing `pg_dump --schema-only` output, then applied together with all 13 seed files from an empty database with zero errors). Future schema changes are added as new migrations on top of that baseline.
 
 All 5 services have a `src/data-source.ts` (CLI-facing `DataSource` config) and a `src/migrations/` folder with `migration:generate`/`migration:run`/`migration:revert` npm scripts, each tracked in its own `migrations_<service>` table (a shared default `migrations` table would have conflated all 5 services' histories, since they share one physical database). `synchronize` is hardcoded to `false` unconditionally in every `app.module.ts` — no longer conditional on `NODE_ENV`, closing the risk described below. CD (`cd-qa.yml`/`cd-main.yml`) runs `migration:run` for every service as an explicit `[MIGRATIONS]` step, positioned after pulling images and before starting services, ahead of `seed-loader`. `academic-service` and `auth-service` each gained further migrations from `docs/database/database-update-plan.md` Fases A-E (catálogo de materias, asistencia por sesión, encuesta de comprensión normalizada, encuesta socioeconómica, registro de acceso) — see [entity-relationship-diagram.md](./entity-relationship-diagram.md) §4.1/§4.3 for the resulting schema. Verified end-to-end against a scratch database (migrations for all 5 services from zero, then all 13 seed files in order, zero errors) — the seed gap described in §4 that used to make this fail on a fresh environment is closed.
 

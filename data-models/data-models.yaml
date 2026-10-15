@@ -1,6 +1,6 @@
 # ============================================================
 # MentoraPredict — Data Models Design
-# PostgreSQL · MongoDB · Redis
+# PostgreSQL · Redis
 # ============================================================
 
 # ─────────────────────────────────────────────────────────────
@@ -299,133 +299,7 @@ postgresql:
 # ─────────────────────────────────────────────────────────────
 
 # ─────────────────────────────────────────────────────────────
-# SECTION 2: MongoDB — Collections Design
-# ─────────────────────────────────────────────────────────────
-#
-# Purpose: flexible/append-only data — IA logs, GPT plans, audit
-# Database: mentorapredict_nosql
-# ─────────────────────────────────────────────────────────────
-
-mongodb:
-  # ── Collection: recommendation_plans ──────────────────────
-  recommendation_plans:
-    owner: prediction-service
-    description: "RF-020: Full GPT-generated improvement plans (variable JSON schema)."
-    index:
-      - student_id
-      - created_at
-      - subject_ids
-    example_document:
-      _id: "ObjectId('665a1f...')"
-      student_id: "uuid-anon-001" # Anonymized UUID
-      period_id: "uuid-period-2026A"
-      risk_level: "MEDIUM"
-      context_snapshot:
-        average: 6.1
-        trend: "DECLINING"
-        compliance_index: 71.0
-        weak_subjects: ["Programación Web", "Cálculo II"]
-      plan:
-        raw_gpt_response: "Para mejorar tu rendimiento en Programación Web..."
-        actions:
-          - "Revisar módulos de JavaScript asíncrono (semana 1-2)"
-          - "Asistir a tutorías los miércoles 14:00"
-          - "Completar ejercicios prácticos de Node.js"
-        resources:
-          - { type: "video", url: "https://...", title: "Async JS" }
-      model_metadata:
-        provider: "openai"
-        model: "gpt-4o"
-        tokens_used: 847
-        prompt_version: "v1.2"
-      generated_at: "ISODate('2026-05-31T10:00:00Z')"
-      created_at: "ISODate('2026-05-31T10:00:01Z')"
-
-  # ── Collection: prediction_logs ───────────────────────────
-  prediction_logs:
-    owner: prediction-service
-    description: "RNF-040: Full traceability of every prediction and generated recommendation plan. Audit trail."
-    index:
-      - anonymous_student_id
-      - inference_date
-      - model_name
-    example_document:
-      _id: "ObjectId('665b2a...')"
-      anonymous_student_id: "uuid-anon-001" # RNF-042: no PII
-      period_id: "uuid-period-2026A"
-      input_features:
-        average: 5.8
-        trend: "DECLINING"
-        compliance_index: 65.0
-        missed_evals: 2
-        attendance_rate: 0.78
-      output:
-        risk_score: 72.4
-        risk_level: "HIGH"
-        probabilities:
-          LOW: 0.08
-          MEDIUM: 0.20
-          HIGH: 0.72
-      model_metadata:
-        model_name: "gpt-recommendation-v1"
-        model_version: "1.0.0"
-        confidence_score: 0.87
-        training_date: "2026-04-01"
-      inference_date: "ISODate('2026-05-31T10:05:00Z')"
-      correlation_id: "uuid-corr-xyz"
-
-  # ── Collection: ingestion_jobs ────────────────────────────
-  ingestion_jobs:
-    owner: academic-service
-    description: "RF-013: Track bulk data ingestion jobs (Excel/CSV/JSON uploads)."
-    index:
-      - period_id
-      - status
-      - created_at
-    example_document:
-      _id: "ObjectId('665c3b...')"
-      period_id: "uuid-period-2026A"
-      uploaded_by: "uuid-admin-001"
-      file_name: "notas_2026A.xlsx"
-      file_format: "excel"
-      status: "COMPLETED" # PENDING | PROCESSING | COMPLETED | FAILED
-      summary:
-        total_rows: 1240
-        rows_processed: 1238
-        rows_failed: 2
-        errors:
-          - { row: 45, message: "Invalid grade value: 11.5" }
-          - { row: 203, message: "Unknown student code: SI7-999" }
-      started_at: "ISODate('2026-05-31T09:00:00Z')"
-      completed_at: "ISODate('2026-05-31T09:00:45Z')"
-      created_at: "ISODate('2026-05-31T09:00:00Z')"
-
-  # ── Collection: audit_logs ────────────────────────────────
-  audit_logs:
-    owner: shared (written by all services)
-    description: "Append-only audit trail for critical actions across all services."
-    index:
-      - user_id
-      - action
-      - timestamp
-      - service
-    example_document:
-      _id: "ObjectId('665d4c...')"
-      service: "academic-service"
-      action: "GRADE_RECORDED"
-      actor_id: "uuid-teacher-001"
-      target_id: "uuid-grade-xyz"
-      target_type: "Grade"
-      metadata:
-        student_id: "uuid-student-001"
-        evaluation_id: "uuid-eval-001"
-        value: 8.5
-      ip_address: "10.0.0.5"
-      correlation_id: "uuid-corr-abc"
-      timestamp: "ISODate('2026-05-31T10:10:00Z')"
-
-# ─────────────────────────────────────────────────────────────
-# SECTION 3: Redis — Cache Design
+# SECTION 2: Redis — Cache Design
 # ─────────────────────────────────────────────────────────────
 #
 # Naming convention:  <service>:<entity>:<id>[:<variant>]

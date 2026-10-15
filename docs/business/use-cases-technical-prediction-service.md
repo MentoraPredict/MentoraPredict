@@ -38,7 +38,7 @@ UC-PRED-08). The student has at least one active enrollment for the current peri
 4. OpenAI returns a natural-language summary and a list of `RecommendationItem`s.
 5. The system persists a `PredictionResult` (studentId, periodId, RiskSnapshot, summary,
    RecommendationItem[], modelVersion, generatedAt) and writes a full audit record to
-   MongoDB (`prediction_logs`).
+   PostgreSQL (`prediction_logs`).
 6. The system returns the natural-language summary and recommendations to the caller.
 
 **Alternate Flows / Exceptions:**
@@ -48,7 +48,7 @@ UC-PRED-08). The student has at least one active enrollment for the current peri
   to `prediction_logs` for audit purposes where feasible.
 
 **Postconditions:** A new `PredictionResult` exists in PostgreSQL and a corresponding audit
-entry exists in MongoDB `prediction_logs`.
+entry exists in PostgreSQL `prediction_logs`.
 
 --------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ student+subject pair. The student is actively enrolled in the target subject.
 2. prediction-service calls academic-service for subject-specific context (syllabus
    topics, recent grades/check-ins).
 3. The combined data is sent to OpenAI for a subject-scoped natural-language recommendation.
-4. The result is persisted (Postgres, and audit-logged to MongoDB `prediction_logs`).
+4. The result is persisted (Postgres, and audit-logged to the `prediction_logs` table).
 5. The system returns the subject-scoped recommendation.
 
 **Alternate Flows / Exceptions:**

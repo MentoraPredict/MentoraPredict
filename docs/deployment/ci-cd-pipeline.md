@@ -46,7 +46,7 @@ Trigger: `push` → branch `[QA]`. Concurrency group `qa-deploy` (cancel-in-prog
 
 **deploy-to-qa** — `environment: "QA enviroment"`. Via `appleboy/ssh-action`, SSHes into `EC2_HOST` as user `ubuntu` and:
 1. Clones/resets `/opt/mentorapredict` to `origin/QA`.
-2. Writes `.env` from GitHub Secrets — Postgres, Redis, JWT, CORS, Mongo, Kong, OpenAI, Swagger, Microsoft OAuth, Frontend URL, Expo public vars, Supabase, Grafana root URL (JWT keys are re-base64-encoded).
+2. Writes `.env` from GitHub Secrets — Postgres, Redis, JWT, CORS, Kong, OpenAI, Swagger, Microsoft OAuth, Frontend URL, Expo public vars, Supabase, Grafana root URL (JWT keys are re-base64-encoded).
 3. Resolves `IMAGE_TAG=qa-<short-sha>`, falling back to `qa-latest` if that specific tag isn't pullable.
 4. Starts `infra.yml`'s postgres + redis, waits for `pg_isready`.
 5. Runs Docker cleanup: container prune, image prune (`--filter until=24h`), builder prune (180s timeout).

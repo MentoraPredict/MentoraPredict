@@ -9,7 +9,6 @@ graph LR
   end
   subgraph Databases
     PG[(PostgreSQL<br/>mentorapredict)]
-    MONGO[(MongoDB Atlas<br/>mentorapredict_nosql)]
     REDIS[(Redis)]
   end
   EXT[OpenAI API]
@@ -25,10 +24,6 @@ graph LR
   ACADEMIC --> PG
   ANALYTICS --> PG
   PRED --> PG
-
-  ACADEMIC --> MONGO
-  ANALYTICS --> MONGO
-  PRED --> MONGO
 
   AUTH --> REDIS
   ANALYTICS --> REDIS

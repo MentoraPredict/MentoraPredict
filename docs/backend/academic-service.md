@@ -9,8 +9,6 @@ Owns the entire academic domain: faculties, careers, academic periods, subjects,
 | NestJS | **11.1.24** | Application framework — a newer major version than the other 4 services (10.3.0) |
 | @nestjs/typeorm | 11.0.1 | ORM integration for PostgreSQL |
 | pg | 8.21.0 | PostgreSQL driver |
-| @nestjs/mongoose | 11.0.0 | MongoDB integration |
-| mongoose | 8.3.0 | MongoDB ODM — used for `teacher-observation.schema.ts` |
 | ioredis | 5.3.2 | Redis client (present, see Known issues — functionally dormant) |
 | @supabase/supabase-js | — | Supabase Storage for subject images / topic files |
 | multer | — | File upload handling |
@@ -51,7 +49,7 @@ Standard hexagonal structure per [../architecture/low-level-architecture.md](../
 | `GradeImportEntity` | bulk import job: file, row counts, status, errors[]. |
 | `SubjectEntity` | name, code, credits, careerId, academicPeriodId, maxCapacity, teacherId, imageUrl. |
 | `SubjectTeacherEntity` | subject-teacher-period assignment, composite key. |
-| `TeacherObservationEntity` | type, content — persisted in MongoDB. |
+| `TeacherObservationEntity` | type, content — persisted in the Postgres table `teacher_observations`. |
 | `TopicEntity` | title, order, fileUrl. |
 | `WeeklyCheckInEntity` | attendance, taskCompletion, studyHours, emotionalState, generalComprehension, topicResponses[]. |
 
@@ -79,8 +77,7 @@ Full endpoint reference with roles lives in [../api/api-contracts.md](../api/api
 
 ## External integrations
 
-- **PostgreSQL** — 12 entities: subjects, enrollments, evaluations, grades, faculties, periods, careers, topics, grade imports/history, subject-teacher assignments.
-- **MongoDB** — `teacher-observation.schema.ts` only.
+- **PostgreSQL** — subjects, enrollments, evaluations, grades, faculties, periods, careers, topics, grade imports/history, subject-teacher assignments, and `teacher_observations`. See [../database/database-architecture.md](../database/database-architecture.md) §2 for the complete table list.
 - **Redis (ioredis)** — present but dormant; see Known issues.
 - **Supabase Storage** — subject images and topic files, alongside local disk storage.
 - **AnalyticsHttpClient**, **NotificationHttpClient** — call analytics-service.
@@ -88,7 +85,7 @@ Full endpoint reference with roles lives in [../api/api-contracts.md](../api/api
 
 ## Environment variables
 
-`ANALYTICS_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `MONGO_DB`/`HOST`/`PASSWORD`/`PORT`/`URL`/`USER`, `NODE_ENV`, `POSTGRES_*`, `REDIS_*`, `SUPABASE_*`, `SWAGGER_SERVER_URL`, `UPLOADS_DIR`, `USER_SERVICE_URL`.
+`ANALYTICS_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `NODE_ENV`, `POSTGRES_*`, `REDIS_*`, `SUPABASE_*`, `SWAGGER_SERVER_URL`, `UPLOADS_DIR`, `USER_SERVICE_URL`.
 
 ## Known issues / audit findings
 

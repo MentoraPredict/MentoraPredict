@@ -34,7 +34,7 @@ Nothing today combines these into a dropout signal, but nearly every relevant in
 | Compliance index and attendance (weekly, aggregable to period level) | academic-service (`weekly_check_ins`) | Declining engagement within a period |
 | Self-reported emotional state (`GREAT / GOOD / NEUTRAL / BAD / CRITICAL`) | academic-service (`weekly_check_ins`) | A direct wellbeing signal — in real dropout literature, socio-emotional factors weigh as much as academic ones |
 | Frequency of HIGH/CRITICAL alerts | analytics-service | Sustained high-severity alerts correlate with eventual withdrawal |
-| Teacher observations, especially type `BEHAVIORAL`/`ATTENDANCE` | academic-service (MongoDB) | Qualitative early-warning signal, arguably more relevant to dropout than `ACADEMIC`/`PERFORMANCE` observation types |
+| Teacher observations, especially type `BEHAVIORAL`/`ATTENDANCE` | academic-service (`teacher_observations`) | Qualitative early-warning signal, arguably more relevant to dropout than `ACADEMIC`/`PERFORMANCE` observation types |
 
 ## 5. What already exists and is the closest building block
 
@@ -44,7 +44,7 @@ Nothing today combines these into a dropout signal, but nearly every relevant in
 - Pulls the student's `globalAverage` per period from `academic_metrics_snapshots`, defaulting missing periods to `0`.
 - Runs the same WASM linear-regression module used for weekly trend, over the per-period averages.
 - Classifies `ASCENDING / STABLE / DESCENDING` by slope threshold.
-- Persists an audit record to MongoDB (`DatasetVersionRepository`, `type: 'trend'`).
+- Persists an audit record to the `dataset_versions` table (`DatasetVersionRepository`, `type: 'trend'`).
 
 This is real, production, cross-*academic-period* (semester-level) code — the strongest existing foundation to build on. Its real limitations for this purpose: it's caller-driven (no auto-discovery of a student's period history), it only aggregates `globalAverage` (not enrollment counts, compliance, alerts, or emotional state), and it classifies *performance trend*, not dropout risk — it produces no alert, no persisted student-level risk record, no notification.
 

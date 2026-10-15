@@ -55,7 +55,7 @@ There is no "GUEST"/anonymous role for any authenticated feature — public rout
 
 ### 3.6 AI prediction (prediction-service)
 - prediction-service **never** computes risk itself — it fetches the deterministic risk snapshot from analytics-service (`GET /internal/risk-snapshot/:studentId/:periodId`) and the student's academic context (grades, topics) from academic-service, then asks OpenAI to produce a natural-language `summary` + a list of `recommendations`. The risk *level* shown to the user always originates from analytics-service; OpenAI only writes the explanation text.
-- Two granularities exist: a **global** per-period prediction (all subjects combined) and a **per-subject** prediction. Both are cached/persisted (`student_subject_predictions` in Postgres for the per-subject rule-based version, `prediction_logs` in MongoDB as a full audit trail of every AI generation).
+- Two granularities exist: a **global** per-period prediction (all subjects combined) and a **per-subject** prediction. Both are cached/persisted (`student_subject_predictions` in Postgres for the per-subject rule-based version, `prediction_logs` in Postgres as a full audit trail of every AI generation).
 - On-demand student-triggered generation is rate-limited to **1 request per hour** (per student, and separately per student+subject) to bound OpenAI API cost.
 
 ### 3.7 Notifications
