@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  FiAlertTriangle,
-  FiBookOpen,
-  FiCalendar,
-  FiTrendingDown,
-  FiTrendingUp,
-  FiUsers,
-} from "react-icons/fi";
+import { FiCalendar, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 
 import Container from "@/components/atoms/Container";
 import Modal from "@/components/molecules/Modal";
@@ -17,23 +10,16 @@ import TeacherCoursesEmptyState from "@/features/teachers/components/TeacherCour
 import TeacherCoursesHeader from "@/features/teachers/components/TeacherCoursesHeader/TeacherCoursesHeader";
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
 import useOnlineStatus from "@/hooks/useOnlineStatus";
-import { getCourseEnrolledStudents } from "@/services/academic.service";
 import { getSubjectMetricsSummary } from "@/services/course-analytics.service";
-import type { CourseEnrolledStudent } from "@/types/course";
-import { mapWithConcurrency } from "@/utils/mapWithConcurrency";
 
 import DashboardMetricCard, {
   type DashboardMetric,
 } from "@/features/dashboard/components/DashboardMetricCard";
-import DropoutRiskCard from "@/features/dashboard/components/DropoutRiskCard";
-import ScheduleGapBanner from "@/features/dashboard/components/ScheduleGapBanner";
 import useTeacherDashboardKpis from "@/features/dashboard/hooks/useTeacherDashboardKpis";
-import useTeacherStudentDropoutRisks from "@/features/dashboard/hooks/useTeacherStudentDropoutRisks";
 import { computeTeacherRealMetrics } from "@/features/dashboard/utils/computeTeacherRealMetrics";
 import { getAverageTone, getCountTone } from "@/features/dashboard/utils/metricTone";
 import { courseRiskRank } from "@/features/dashboard/utils/riskLevelPresentation";
 
-import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
 import { useNavigate } from "react-router-dom";
@@ -43,11 +29,6 @@ interface TeacherCoursesManagementProps {
   teacherName: string;
   courseState: ReturnType<typeof useTeacherCourses>;
 }
-
-// Cada curso ya dispara 2 llamadas internas al pedir su lista de
-// matriculados (ACTIVE/WITHDRAWN) — acotar cuántos cursos se resuelven a
-// la vez evita mandar una ráfaga de N*2 requests simultáneos.
-const ENROLLED_STUDENTS_CONCURRENCY = 1;
 
 const courseTrendLabel: Record<"ASCENDING" | "STABLE" | "DESCENDING", string> = {
   ASCENDING: "Ascendente",
@@ -154,55 +135,6 @@ export default function TeacherCoursesManagement({
     };
   }, [courses]);
 
-  const [enrolledStudents, setEnrolledStudents] = useState<CourseEnrolledStudent[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadEnrolledStudents() {
-      const syncedCourses = courses.filter((course) => !course.isPendingSync);
-      // Cada curso ya dispara 2 llamadas internas (ACTIVE/WITHDRAWN) —
-      // limitar cuántos cursos se resuelven a la vez evita mandar una
-      // ráfaga de N*2 requests simultáneos al backend (mismo patrón que
-      // PREDICTION_CONCURRENCY en StudentCoursesManagement).
-      const perCourse = await mapWithConcurrency(
-        syncedCourses,
-        ENROLLED_STUDENTS_CONCURRENCY,
-        (course) =>
-          getCourseEnrolledStudents(course.id).catch(
-            () => [] as CourseEnrolledStudent[]
-          )
-      );
-
-      // Un estudiante puede estar matriculado en más de una materia del
-      // mismo docente — se deduplica por user.id (no por el id de
-      // matrícula, que es distinto por materia) y se descartan los
-      // retirados (isEnrolled === false) para el panel de riesgo.
-      const byStudentId = new Map<string, CourseEnrolledStudent>();
-      for (const student of perCourse.flat()) {
-        if (student.isEnrolled) {
-          byStudentId.set(student.user.id, student);
-        }
-      }
-
-      if (isMounted) {
-        setEnrolledStudents([...byStudentId.values()]);
-      }
-    }
-
-    if (courses.length > 0) {
-      void loadEnrolledStudents();
-    } else {
-      setEnrolledStudents([]);
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [courses]);
-
-  const studentDropoutRisks = useTeacherStudentDropoutRisks(enrolledStudents);
-
   const realMetrics = useMemo(
     () => computeTeacherRealMetrics(courses, courseAnalytics),
     [courses, courseAnalytics]
@@ -220,20 +152,6 @@ export default function TeacherCoursesManagement({
 
   const dashboardMetrics: DashboardMetric[] = [
     {
-      label: "Cursos activos",
-      value: realMetrics.totalCourses.toString(),
-      hint: "Materias a tu cargo este periodo",
-      icon: FiBookOpen,
-      tone: realMetrics.totalCourses > 0 ? "success" : "neutral",
-    },
-    {
-      label: "Estudiantes totales",
-      value: realMetrics.totalStudents.toString(),
-      hint: "Matriculados en tus materias",
-      icon: FiUsers,
-      tone: "neutral",
-    },
-    {
       label: "Promedio general",
       value:
         realMetrics.averageAcrossCourses === null
@@ -242,13 +160,6 @@ export default function TeacherCoursesManagement({
       hint: "Escala 0-20, promedio entre tus materias",
       icon: FiTrendingUp,
       tone: getAverageTone(realMetrics.averageAcrossCourses),
-    },
-    {
-      label: "Estudiantes en riesgo",
-      value: realMetrics.studentsAtRisk.toString(),
-      hint: "Riesgo medio, alto o crítico en alguna materia",
-      icon: FiAlertTriangle,
-      tone: getCountTone(realMetrics.studentsAtRisk),
     },
     {
       label: "Asistencia promedio",
@@ -329,17 +240,11 @@ export default function TeacherCoursesManagement({
 
             {!isLoading && hasCourses ? (
               <div className="mb-6 space-y-6">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   {dashboardMetrics.map((metric) => (
                     <DashboardMetricCard key={metric.label} {...metric} />
                   ))}
                 </div>
-
-                {teacherKpis.mocked.data ? (
-                  <ScheduleGapBanner
-                    coursesWithoutSchedule={teacherKpis.mocked.data.coursesWithoutSchedule}
-                  />
-                ) : null}
               </div>
             ) : null}
 
@@ -404,39 +309,6 @@ export default function TeacherCoursesManagement({
               />
             )}
           </div>
-
-          {!isLoading && enrolledStudents.length > 0 ? (
-            <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="mb-6">
-                <Heading as="h4" className="text-gray-900">
-                  Riesgo de deserción por estudiante
-                </Heading>
-                <Text variant="small" className="mt-2 text-gray-600">
-                  Estimación preliminar por cada estudiante matriculado en tus
-                  materias — ver docs/frontend/dashboard-kpi-proposal.md.
-                </Text>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {enrolledStudents.map((student) => {
-                  const displayName =
-                    [student.user.firstName, student.user.lastName]
-                      .filter(Boolean)
-                      .join(" ") || student.user.email;
-
-                  return (
-                    <DropoutRiskCard
-                      key={student.user.id}
-                      estimate={studentDropoutRisks.data[student.user.id] ?? null}
-                      isLoading={studentDropoutRisks.isLoading}
-                      title={displayName}
-                      subtitle={student.user.email}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
         </Container>
       </section>
 

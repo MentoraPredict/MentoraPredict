@@ -46,20 +46,30 @@ import TeacherCourseUploadDataPage from "@/pages/teacher/TeacherCourseUploadData
 
 import TeacherCourseStudentsPage from "@/pages/teacher/TeacherCourseStudentsPage";
 
+import TeacherCourseDropoutRiskPage from "@/pages/teacher/TeacherCourseDropoutRiskPage";
+
 import TeacherCourseEditPage from "@/pages/teacher/TeacherCourseEditPage";
 
 import TeacherProfilePage from "@/pages/teacher/TeacherProfilePage";
 import StudentProfilePage from "@/pages/student/StudentProfilePage";
 
 import StudentCoursePageLayout from "@/features/students/components/StudentCoursePageLayout";
+import StudentCourseActivitiesPage from "@/pages/student/StudentCourseActivitiesPage";
+import StudentCourseAiChatPage from "@/pages/student/StudentCourseAiChatPage";
+import StudentCourseEvaluationsPage from "@/pages/student/StudentCourseEvaluationsPage";
 import StudentCoursePerformancePage from "@/pages/student/StudentCoursePerformancePage";
+import StudentCourseSurveyPage from "@/pages/student/StudentCourseSurveyPage";
 import StudentCourseUploadDataPage from "@/pages/student/StudentCourseUploadDataPage";
 
 const COURSE_TAB_SEGMENTS = new Set([
   "performance",
   "upload-data",
+  "activities",
+  "evaluations",
+  "ai-chat",
   "students",
   "edit",
+  "dropout-risk",
 ]);
 
 function getAnimationKey(pathname: string) {
@@ -162,6 +172,10 @@ function AnimatedRoutes() {
             >
               <Route path="performance" element={<StudentCoursePerformancePage />} />
               <Route path="upload-data" element={<StudentCourseUploadDataPage />} />
+              <Route path="activities" element={<StudentCourseActivitiesPage />} />
+              <Route path="evaluations" element={<StudentCourseEvaluationsPage />} />
+              <Route path="ai-chat" element={<StudentCourseAiChatPage />} />
+              <Route path="survey/:surveyId" element={<StudentCourseSurveyPage />} />
             </Route>
           </Route>
 
@@ -181,6 +195,7 @@ function AnimatedRoutes() {
               <Route path="performance" element={<TeacherCoursePerformancePage />} />
               <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
               <Route path="students" element={<TeacherCourseStudentsPage />} />
+              <Route path="dropout-risk" element={<TeacherCourseDropoutRiskPage />} />
               <Route path="edit" element={<TeacherCourseEditPage />} />
             </Route>
           </Route>
