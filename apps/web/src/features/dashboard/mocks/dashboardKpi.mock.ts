@@ -182,18 +182,6 @@ export function getMockSurveyStatus(): Promise<SurveyStatus> {
   });
 }
 
-function factorScoreFromRiskCounts(courses: Course[]): number {
-  if (courses.length === 0) return 0;
-  const weighted = courses.reduce((sum, course) => {
-    if (course.riskLevel === "CRITICAL") return sum + 100;
-    if (course.riskLevel === "HIGH") return sum + 75;
-    if (course.riskLevel === "MEDIUM") return sum + 45;
-    if (course.riskLevel === "LOW") return sum + 10;
-    return sum + 30; // UNKNOWN
-  }, 0);
-  return Math.round(weighted / courses.length);
-}
-
 function levelFromScore(score: number): RiskLevel {
   if (score >= 75) return "CRITICAL";
   if (score >= 50) return "HIGH";
@@ -205,16 +193,10 @@ function levelFromScore(score: number): RiskLevel {
  * Composite mock siguiendo el enfoque propuesto en
  * docs/business/dropout-prediction-proposal.md §7 — score ponderado
  * determinista, no un modelo entrenado. `isMocked: true` siempre hasta que
- * exista CalculateDropoutRiskUseCase real en analytics-service. Compartida
- * entre la vista del propio estudiante (score agregado entre sus materias)
- * y la vista del docente (score por estudiante individual) — ver
- * buildDropoutEstimate más abajo.
+ * exista CalculateDropoutRiskUseCase real en analytics-service. Usada solo
+ * en el dashboard del docente (score por estudiante individual) — ver
+ * getMockStudentDropoutRisk más abajo.
  */
-export function getMockDropoutRiskEstimate(
-  courses: Course[]
-): Promise<DropoutRiskEstimate> {
-  return withMockLatency(buildDropoutEstimate(factorScoreFromRiskCounts(courses)));
-}
 
 /** Determinista: sin Math.random(). Un hash simple del id como última
  * alternativa cuando no hay promedio (ej. estudiante sin notas aún). */
@@ -238,10 +220,10 @@ function factorScoreFromStudent(student: {
 }
 
 /**
- * Igual que getMockDropoutRiskEstimate pero para UN estudiante puntual,
- * usado en el dashboard del docente (una card por estudiante matriculado
- * en sus materias) — docs/frontend/dashboard-kpi-proposal.md, pedido del
- * usuario de mostrar esta card "para cada estudiante" del lado docente.
+ * Score de riesgo de deserción para UN estudiante puntual, usado en el
+ * dashboard del docente (una card por estudiante matriculado en sus
+ * materias) — docs/frontend/dashboard-kpi-proposal.md, pedido del usuario
+ * de mostrar esta card "para cada estudiante" del lado docente.
  */
 export function getMockStudentDropoutRisk(student: {
   id: string;

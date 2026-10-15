@@ -4,8 +4,6 @@ import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
-import MockDataBadge from "../MockDataBadge";
-
 export type DashboardMetricTone = "success" | "warning" | "danger" | "neutral";
 
 export const dashboardMetricToneStyles: Record<DashboardMetricTone, string> = {
@@ -54,7 +52,6 @@ export default function DashboardMetricCard({
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-current">
           <Icon size={20} />
         </div>
-        {isMocked ? <MockDataBadge /> : null}
       </div>
 
       <Text variant="caption" className="font-bold uppercase text-current opacity-75">

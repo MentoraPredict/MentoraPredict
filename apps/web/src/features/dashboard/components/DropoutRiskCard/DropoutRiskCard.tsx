@@ -6,7 +6,6 @@ import Text from "@/components/atoms/Text";
 import CourseRiskBars from "@/features/courses/components/CourseRiskBars";
 import type { CourseRiskItem } from "@/types/course";
 
-import MockDataBadge from "../MockDataBadge";
 import {
   insufficientDataPresentation,
   riskLevelPresentation,
@@ -55,7 +54,6 @@ export default function DropoutRiskCard({
             </Text>
           </div>
         </div>
-        {estimate?.isMocked ? <MockDataBadge /> : null}
       </div>
 
       {isLoading || !estimate ? (

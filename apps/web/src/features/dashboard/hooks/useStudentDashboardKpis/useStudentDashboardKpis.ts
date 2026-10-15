@@ -6,7 +6,6 @@ import {
   getMockAttendanceSummary,
   getMockComplianceSummary,
   getMockComprehensionSummary,
-  getMockDropoutRiskEstimate,
   getMockEngagementSummary,
   getMockSurveyStatus,
 } from "../../mocks/dashboardKpi.mock";
@@ -43,12 +42,6 @@ export default function useStudentDashboardKpis(courses: Course[]) {
     enabled,
   });
 
-  const dropoutRisk = useQuery({
-    queryKey: ["dashboard", "student", "dropout-risk", subjectsKey],
-    queryFn: () => getMockDropoutRiskEstimate(courses),
-    enabled,
-  });
-
   const engagement = useQuery({
     queryKey: ["dashboard", "student", "engagement"],
     queryFn: getMockEngagementSummary,
@@ -66,7 +59,6 @@ export default function useStudentDashboardKpis(courses: Course[]) {
       data: comprehension.data ?? null,
       isLoading: comprehension.isLoading,
     },
-    dropoutRisk: { data: dropoutRisk.data ?? null, isLoading: dropoutRisk.isLoading },
     engagement: { data: engagement.data ?? null, isLoading: engagement.isLoading },
     surveyStatus: {
       data: surveyStatus.data ?? null,
