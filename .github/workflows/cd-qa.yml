@@ -503,7 +503,6 @@ jobs:
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
-            MONGO_URL=${{ secrets.MONGO_URL }}
             KONG_PROXY_PORT=${{ secrets.KONG_PROXY_PORT }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}

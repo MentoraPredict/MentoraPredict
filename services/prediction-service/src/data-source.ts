@@ -2,6 +2,7 @@
 import "dotenv/config";
 import { DataSource } from "typeorm";
 import { StudentSubjectPredictionOrmEntity } from "./infrastructure/persistence/student-subject-prediction.orm-entity";
+import { PredictionLogOrmEntity } from "./infrastructure/persistence/prediction-log.orm-entity";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 import { SubjectReferenceOrmEntity } from "./infrastructure/persistence/subject-reference.orm-entity";
 import { PeriodReferenceOrmEntity } from "./infrastructure/persistence/period-reference.orm-entity";
@@ -15,6 +16,7 @@ export default new DataSource({
   database: process.env.POSTGRES_DB || "mentorapredict",
   entities: [
     StudentSubjectPredictionOrmEntity,
+    PredictionLogOrmEntity,
     UserReferenceOrmEntity,
     SubjectReferenceOrmEntity,
     PeriodReferenceOrmEntity,

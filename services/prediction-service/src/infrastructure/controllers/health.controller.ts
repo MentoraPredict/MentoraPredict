@@ -1,30 +1,27 @@
-import { Controller, Get, HttpCode, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 type HealthStatus = 'UP' | 'DOWN';
 
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
-  private readonly logger = new Logger(HealthController.name);
-
-  constructor(@InjectConnection() private readonly mongo: Connection) {
-    // MongoDB connects in the background (lazyConnection: true in
-    // app.module.ts). Without a listener, an unhandled "error" event on this
-    // EventEmitter crashes the whole process — this just logs it instead.
-    this.mongo.on('error', (error: Error) => {
-      this.logger.warn(`MongoDB connection error: ${error.message}`);
-    });
-  }
+  constructor(@InjectDataSource() private readonly db: DataSource) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Health check — MongoDB' })
-  health() {
-    const mongodb = this.mongo.readyState === 1;
-    const status: HealthStatus = mongodb ? 'UP' : 'DOWN';
-    return { status, mongodb };
+  @ApiOperation({ summary: 'Health check — PostgreSQL' })
+  async health() {
+    let postgres = false;
+
+    try {
+      await this.db.query('SELECT 1');
+      postgres = true;
+    } catch {}
+
+    const status: HealthStatus = postgres ? 'UP' : 'DOWN';
+    return { status, postgres };
   }
 }

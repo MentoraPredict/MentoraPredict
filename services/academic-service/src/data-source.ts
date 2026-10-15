@@ -21,6 +21,7 @@ import { SurveyAnswerOrmEntity } from "./infrastructure/persistence/survey-answe
 import { ClassScheduleOrmEntity } from "./infrastructure/persistence/class-schedule.orm-entity";
 import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-session.orm-entity";
 import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
+import { TeacherObservationOrmEntity } from "./infrastructure/persistence/teacher-observation.orm-entity";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 
 export default new DataSource({
@@ -51,6 +52,7 @@ export default new DataSource({
     ClassScheduleOrmEntity,
     ClassSessionOrmEntity,
     SessionAttendanceOrmEntity,
+    TeacherObservationOrmEntity,
     UserReferenceOrmEntity,
   ],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],

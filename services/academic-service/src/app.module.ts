@@ -1,7 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
 import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
@@ -33,10 +32,7 @@ import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-sessio
 import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
-import {
-  TeacherObservationDoc,
-  TeacherObservationSchema,
-} from "./infrastructure/persistence/teacher-observation.schema";
+import { TeacherObservationOrmEntity } from "./infrastructure/persistence/teacher-observation.orm-entity";
 
 import { SubjectCatalogRepository } from "./infrastructure/persistence/subject-catalog.repository";
 import { SubjectRepository } from "./infrastructure/persistence/subject.repository";
@@ -194,9 +190,10 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           ClassSessionOrmEntity,
           SessionAttendanceOrmEntity,
           TopicOrmEntity,
+          TeacherObservationOrmEntity,
           UserReferenceOrmEntity,
         ],
-        // Schema changes go through TypeORM migrations (see src/data-source.ts) —
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
         synchronize: false,
         logging: cfg.get("NODE_ENV") === "development",
@@ -224,26 +221,8 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       ClassSessionOrmEntity,
       SessionAttendanceOrmEntity,
       TopicOrmEntity,
+      TeacherObservationOrmEntity,
       UserReferenceOrmEntity,
-    ]),
-
-    MongooseModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ({
-        uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
-        serverSelectionTimeoutMS: 5000,
-        // Connects in the background instead of blocking Nest's bootstrap:
-        // without this, an unreachable MongoDB crashes the whole service
-        // (NestFactory.create() awaits the connection and rethrows once
-        // retries are exhausted).
-        lazyConnection: true,
-        // Default is 10s per buffered query — too slow for a request path;
-        // fail faster so callers hit the try/catch sooner.
-        bufferTimeoutMS: 3000,
-      }),
-    }),
-    MongooseModule.forFeature([
-      { name: TeacherObservationDoc.name, schema: TeacherObservationSchema },
     ]),
 
     JwtModule.registerAsync({
@@ -409,13 +388,4 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(correlationContextMiddleware).forRoutes("*");
   }
-}
-
-function buildMongoUri(cfg: ConfigService): string {
-  const user = cfg.get("MONGO_USER", "mp_mongo_user");
-  const pass = cfg.get("MONGO_PASSWORD", "");
-  const host = cfg.get("MONGO_HOST", "localhost");
-  const port = cfg.get("MONGO_PORT", 27017);
-  const db = cfg.get("MONGO_DB", "mentorapredict_nosql");
-  return `mongodb://${user}:${pass}@${host}:${port}/${db}?authSource=admin`;
 }

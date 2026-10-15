@@ -1,7 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
 import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
@@ -10,7 +9,7 @@ import { InternalPredictionController } from "./infrastructure/controllers/inter
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
-import { PredictionLogDoc, PredictionLogSchema } from "./infrastructure/persistence/prediction-log.schema";
+import { PredictionLogOrmEntity } from "./infrastructure/persistence/prediction-log.orm-entity";
 import { PredictionLogRepository } from "./infrastructure/persistence/prediction-log.repository";
 import { StudentSubjectPredictionOrmEntity } from "./infrastructure/persistence/student-subject-prediction.orm-entity";
 import { StudentSubjectPredictionRepository } from "./infrastructure/persistence/student-subject-prediction.repository";
@@ -52,10 +51,9 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
     createLoggerModule("prediction-service"),
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // Fase 8 — first Postgres connection in prediction-service, for
-    // student_subject_predictions (same shared "mentorapredict" database as
-    // academic-service/analytics-service). Everything else in this service
-    // stays on Mongo (prediction_logs).
+    // Shared "mentorapredict" Postgres database (same as
+    // academic-service/analytics-service): student_subject_predictions and
+    // prediction_logs.
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
@@ -67,40 +65,22 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
         entities: [
           StudentSubjectPredictionOrmEntity,
+          PredictionLogOrmEntity,
           UserReferenceOrmEntity,
           SubjectReferenceOrmEntity,
           PeriodReferenceOrmEntity,
         ],
-        // Schema changes go through TypeORM migrations (see src/data-source.ts) —
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
         synchronize: false,
       }),
     }),
     TypeOrmModule.forFeature([
       StudentSubjectPredictionOrmEntity,
+      PredictionLogOrmEntity,
       UserReferenceOrmEntity,
       SubjectReferenceOrmEntity,
       PeriodReferenceOrmEntity,
-    ]),
-
-    MongooseModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ({
-        uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
-        serverSelectionTimeoutMS: 5000,
-        // Connects in the background instead of blocking Nest's bootstrap:
-        // without this, an unreachable MongoDB crashes the whole service
-        // (NestFactory.create() awaits the connection and rethrows once
-        // retries are exhausted). Queries just buffer/timeout individually
-        // while disconnected — handled by the try/catch in PredictionLogRepository.
-        lazyConnection: true,
-        // Default is 10s per buffered query — too slow for a request path;
-        // fail faster so callers hit the try/catch sooner.
-        bufferTimeoutMS: 3000,
-      }),
-    }),
-    MongooseModule.forFeature([
-      { name: PredictionLogDoc.name, schema: PredictionLogSchema },
     ]),
 
     JwtModule.registerAsync({
@@ -145,13 +125,4 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(correlationContextMiddleware).forRoutes("*");
   }
-}
-
-function buildMongoUri(cfg: ConfigService): string {
-  const user = cfg.get("MONGO_USER", "mp_mongo_user");
-  const pass = cfg.get("MONGO_PASSWORD", "");
-  const host = cfg.get("MONGO_HOST", "localhost");
-  const port = cfg.get("MONGO_PORT", 27017);
-  const db = cfg.get("MONGO_DB", "mentorapredict_nosql");
-  return `mongodb://${user}:${pass}@${host}:${port}/${db}?authSource=admin`;
 }
