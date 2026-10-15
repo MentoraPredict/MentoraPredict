@@ -15,7 +15,7 @@ INSERT INTO academic_periods (id, name, code, description, start_date, end_date,
 -- =====================================================
 -- 2026
 -- =====================================================
-('aaaaaaaa-2026-4111-8111-111111111111', '2026-A', '2026A', 'Periodo académico primer semestre 2026', '2026-03-01', '2026-08-31', 'ACTIVE', 'SEMESTER', NOW(), NOW()),
+('aaaaaaaa-2026-4111-8111-111111111111', '2026-A', '2026A', 'Periodo académico primer semestre 2026', '2026-03-01', '2026-06-21', 'ACTIVE', 'SEMESTER', NOW(), NOW()),
 
 ('bbbbbbbb-2026-4111-8111-111111111111', '2026-B', '2026B', 'Periodo académico segundo semestre 2026', '2026-09-01', '2027-02-28', 'PLANNED', 'SEMESTER', NOW(), NOW()),
 

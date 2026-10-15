@@ -8,7 +8,61 @@
 -- `topics` (seeded first, 10_topics.sql — Fase C), and the metrics/
 -- predictions blocks need analytics_*/prediction_*_references populated
 -- (11_subject_period_references.sql) before they can insert.
+--
+-- Check-in dates anchor to the ACTIVE period's start_date (not current_date
+-- like before) so the generated weeks always land inside the period's real
+-- span — the period itself is seeded to 16 weeks (04_academicPeriods.sql),
+-- and this seed now generates exactly 16 weeks of check-ins/metrics to
+-- match, giving CalculateTrendUseCase/GetStudentSubjectMetricsUseCase's
+-- linear regression a full, dense trend line to work with instead of 4
+-- scattered points. average_grade also gets a deliberate per-week upward
+-- slope (see metric_rows below) so the trend/projection shown in
+-- "Evolución de mi promedio" is clearly ASCENDING instead of noise-flat.
 -- =====================================================
+
+-- Corridas anteriores anclaban check_in_date a current_date, asi que cada
+-- dia distinto en que se corria el seed generaba semanas nuevas que ON
+-- CONFLICT no pisaba (distinto academic_week/year) — quedaban acumulando.
+-- Se limpia explicitamente lo generado por este seed (marcado por su
+-- `notes` fijo) antes de insertar el set nuevo, en orden de dependencia
+-- (predictions/metrics referencian el mismo student/subject/week/year que
+-- weekly_check_ins, sin FK entre servicios).
+DO $$
+BEGIN
+  IF to_regclass('public.student_subject_predictions') IS NOT NULL
+     AND to_regclass('public.weekly_check_ins') IS NOT NULL THEN
+    DELETE FROM student_subject_predictions sp
+    USING weekly_check_ins wc
+    WHERE wc.notes = 'Registro semanal generado por seed para validar analitica por materia.'
+      AND sp.student_id = wc.student_id
+      AND sp.subject_id = wc.subject_id
+      AND sp.academic_week = wc.academic_week
+      AND sp.academic_year = wc.academic_year;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF to_regclass('public.student_subject_metrics') IS NOT NULL
+     AND to_regclass('public.weekly_check_ins') IS NOT NULL THEN
+    DELETE FROM student_subject_metrics sm
+    USING weekly_check_ins wc
+    WHERE wc.notes = 'Registro semanal generado por seed para validar analitica por materia.'
+      AND sm.student_id = wc.student_id
+      AND sm.subject_id = wc.subject_id
+      AND sm.academic_week = wc.academic_week
+      AND sm.academic_year = wc.academic_year;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF to_regclass('public.weekly_check_ins') IS NOT NULL THEN
+    -- weekly_check_in_topic_responses cae en cascada (FK ON DELETE CASCADE).
+    DELETE FROM weekly_check_ins
+    WHERE notes = 'Registro semanal generado por seed para validar analitica por materia.';
+  END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -17,13 +71,15 @@ BEGIN
       SELECT
         en.student_id,
         en.subject_id,
-        en.period_id
+        en.period_id,
+        ap.start_date AS period_start_date
       FROM enrollments en
+      INNER JOIN academic_periods ap ON ap.id = en.period_id
       WHERE en.status = 'ACTIVE'
     ),
 
     weeks AS (
-      SELECT generate_series(0, 3) AS week_offset
+      SELECT generate_series(0, 15) AS week_offset
     ),
 
     seed_data AS (
@@ -33,7 +89,7 @@ BEGIN
         ae.period_id,
         w.week_offset,
         md5(ae.student_id::text || ':' || ae.subject_id::text || ':check-in:' || w.week_offset::text) AS seed_hash,
-        (current_date - (w.week_offset * interval '7 days'))::date AS check_in_date
+        (ae.period_start_date + (w.week_offset * interval '7 days'))::date AS check_in_date
       FROM active_enrollments ae
       CROSS JOIN weeks w
     ),
@@ -188,6 +244,12 @@ BEGIN
         wc.task_completion,
         wc.study_hours,
         wc.general_comprehension,
+        -- 0-based, cronológico (semana más vieja = 0) — usado para darle a
+        -- average_grade una pendiente ascendente deliberada más abajo.
+        ROW_NUMBER() OVER (
+          PARTITION BY wc.student_id, wc.subject_id
+          ORDER BY wc.academic_year, wc.academic_week
+        ) - 1 AS week_index,
         md5(wc.student_id::text || ':' || wc.subject_id::text || ':metric:' || wc.academic_week::text) AS seed_hash
       FROM weekly_check_ins wc
     ),
@@ -215,6 +277,11 @@ BEGIN
                 ga.average_grade,
                 (10 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9))::numeric
               )
+              -- Pendiente ascendente deliberada: -4.5 en la primera semana
+              -- hasta +4.5 en la última (16 semanas, índice 0..15), para
+              -- que la regresión lineal de "Evolución de mi promedio"
+              -- muestre una tendencia ASCENDING clara en vez de ruido plano.
+              + ((lc.week_index - 7.5) * 0.6)
               + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 5)
             )
           ),
