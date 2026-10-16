@@ -5,10 +5,11 @@ export class SubjectCatalogEntity {
     public description: string,
     public code: string,
     public credits: number,
-    public readonly careerId: string,
+    public readonly careerId: string | null,
     public isActive: boolean,
     public readonly createdAt: Date,
     public updatedAt: Date,
+    public area: string | null = null,
   ) {}
 
   deactivate(): void {

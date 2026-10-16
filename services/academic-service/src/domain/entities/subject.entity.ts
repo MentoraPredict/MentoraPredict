@@ -11,7 +11,7 @@ export class SubjectEntity {
     public description: string,
     public code: string,
     public credits: number,
-    public readonly careerId: string,
+    public readonly careerId: string | null,
     public readonly academicPeriodId: string,
     public maxCapacity: number,
     public teacherId: string | null,
@@ -20,6 +20,8 @@ export class SubjectEntity {
     public updatedAt: Date,
     public imageUrl: string | null = null,
     public readonly subjectCatalogId: string = '',
+    public sectionId: string | null = null,
+    public weeklyHours: number | null = null,
   ) {}
 
   assignTeacher(teacherId: string): void {
