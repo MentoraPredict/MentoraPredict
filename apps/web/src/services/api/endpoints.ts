@@ -27,6 +27,16 @@ export const endpoints = {
         gradingScale: "/v1/academic/institution/grading-scale",
         attendanceRule: "/v1/academic/institution/attendance-rule",
         promotionRules: "/v1/academic/institution/promotion-rules",
+        gradeLevels: "/v1/academic/grade-levels",
+        gradeLevelCurriculum: (code: string) =>
+            `/v1/academic/grade-levels/${code}/curriculum`,
+        sections: "/v1/academic/sections",
+        section: (id: string) => `/v1/academic/sections/${id}`,
+        sectionGenerateCourses: (id: string) =>
+            `/v1/academic/sections/${id}/generate-courses`,
+        subjectCatalog: "/v1/academic/subject-catalog",
+        subjectCatalogItem: (id: string) =>
+            `/v1/academic/subject-catalog/${id}`,
         schoolYears: "/v1/academic/school-years",
         schoolYear: (id: string) => `/v1/academic/school-years/${id}`,
         schoolYearStatus: (id: string) =>
