@@ -9,8 +9,10 @@ import {
   UpdateSchoolYearDto,
 } from '../dtos/create-school-year.dto';
 import { SchoolYearStatus } from '../../domain/entities/school-year.entity';
+import { AcademicPeriodEntity } from '../../domain/entities/academic-period.entity';
 import {
   PeriodRange,
+  derivePeriodStatus,
   toIsoDate,
   validatePeriodRanges,
   validateSchoolYearDates,
@@ -18,6 +20,7 @@ import {
 import {
   SchoolYearView,
   buildSchoolYearView,
+  todayInEcuador,
 } from '../dtos/school-year.view';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { ISchoolYearRepository } from '../ports/output/i-school-year.repository';
@@ -112,7 +115,55 @@ export class ChangeSchoolYearStatusUseCase {
     year.updatedAt = new Date();
     await this.yearRepo.update(year);
 
-    return buildSchoolYearView(year, await this.periodRepo.findBySchoolYear(id));
+    const periods = await this.periodRepo.findBySchoolYear(id);
+    await this.syncPeriods(status, periods);
+
+    return buildSchoolYearView(year, periods);
+  }
+
+  /**
+   * El estado de los periodos sigue al del año: activo ⇒ el periodo vigente por
+   * fecha queda ACTIVE, los anteriores FINISHED y los siguientes PLANNED.
+   */
+  private async syncPeriods(
+    status: SchoolYearStatus,
+    periods: AcademicPeriodEntity[],
+  ): Promise<void> {
+    const today = todayInEcuador();
+    const targets = periods.map((p) => ({
+      period: p,
+      target:
+        status === 'FINISHED'
+          ? ('FINISHED' as const)
+          : status === 'PLANNED'
+            ? ('PLANNED' as const)
+            : derivePeriodStatus(
+                { startDate: toIsoDate(p.startDate), endDate: toIsoDate(p.endDate) },
+                today,
+              ),
+    }));
+
+    // Solo puede haber un periodo ACTIVE en toda la institución: se cierra
+    // cualquiera ajeno al año antes de activar el vigente.
+    if (targets.some((t) => t.target === 'ACTIVE')) {
+      const active = await this.periodRepo.findActive();
+      if (active && !periods.some((p) => p.id === active.id)) {
+        active.finish();
+        await this.periodRepo.update(active);
+      }
+    }
+
+    // Primero los que dejan de estar activos, luego el que pasa a activo.
+    const ordered = [...targets].sort(
+      (a, b) => Number(a.target === 'ACTIVE') - Number(b.target === 'ACTIVE'),
+    );
+    for (const { period, target } of ordered) {
+      if (period.status === target) continue;
+      if (target === 'ACTIVE') period.activate();
+      else if (target === 'FINISHED') period.finish();
+      else period.plan();
+      await this.periodRepo.update(period);
+    }
   }
 }
 

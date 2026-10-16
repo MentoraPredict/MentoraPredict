@@ -2,6 +2,7 @@ import {
   addDays,
   buildCalendarWarnings,
   countWeekdays,
+  derivePeriodStatus,
   findCurrentRange,
   generatePeriodRanges,
   validatePeriodRanges,
@@ -109,6 +110,17 @@ describe('school-calendar', () => {
       expect(findCurrentRange(ranges, '2025-09-15')?.number).toBe(1);
       expect(findCurrentRange(ranges, '2026-06-26')?.number).toBe(3);
       expect(findCurrentRange(ranges, '2026-08-01')).toBeNull();
+    });
+  });
+
+  describe('derivePeriodStatus', () => {
+    const range = { startDate: '2025-09-01', endDate: '2025-12-15' };
+
+    it('marca el periodo según la fecha', () => {
+      expect(derivePeriodStatus(range, '2025-08-31')).toBe('PLANNED');
+      expect(derivePeriodStatus(range, '2025-09-01')).toBe('ACTIVE');
+      expect(derivePeriodStatus(range, '2025-12-15')).toBe('ACTIVE');
+      expect(derivePeriodStatus(range, '2025-12-16')).toBe('FINISHED');
     });
   });
 });

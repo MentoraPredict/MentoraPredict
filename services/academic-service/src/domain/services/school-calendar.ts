@@ -200,3 +200,15 @@ export function findCurrentRange<T extends { startDate: string; endDate: string 
 ): T | null {
   return ranges.find((r) => r.startDate <= today && today <= r.endDate) ?? null;
 }
+
+export type DerivedPeriodStatus = 'PLANNED' | 'ACTIVE' | 'FINISHED';
+
+/** Estado que le corresponde a un periodo de un año activo según la fecha. */
+export function derivePeriodStatus(
+  range: { startDate: string; endDate: string },
+  today: string,
+): DerivedPeriodStatus {
+  if (today < range.startDate) return 'PLANNED';
+  if (today > range.endDate) return 'FINISHED';
+  return 'ACTIVE';
+}
