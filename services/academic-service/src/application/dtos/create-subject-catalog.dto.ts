@@ -14,11 +14,15 @@ export class CreateSubjectCatalogDto {
   @IsString() @IsOptional()
   description?: string;
 
-  @ApiProperty({ example: 4, minimum: 1, maximum: 10 })
-  @IsInt() @Min(1) @Max(10)
-  credits!: number;
+  @ApiPropertyOptional({ example: 4, minimum: 0, maximum: 10, description: 'Solo educación superior; 0 por defecto' })
+  @IsInt() @Min(0) @Max(10) @IsOptional()
+  credits?: number;
 
-  @ApiProperty({ example: 'uuid-of-career' })
-  @IsUUID() @IsNotEmpty()
-  careerId!: string;
+  @ApiPropertyOptional({ example: 'uuid-of-career', description: 'Solo educación superior' })
+  @IsUUID() @IsOptional()
+  careerId?: string;
+
+  @ApiPropertyOptional({ example: 'Matemática', maxLength: 50 })
+  @IsString() @MaxLength(50) @IsOptional()
+  area?: string;
 }

@@ -15,9 +15,11 @@ export class CreateSubjectCatalogUseCase {
   ) {}
 
   async execute(dto: CreateSubjectCatalogDto): Promise<SubjectCatalogEntity> {
-    const career = await this.careerRepo.findById(dto.careerId);
-    if (!career) {
-      throw new NotFoundException(`Career with id '${dto.careerId}' not found`);
+    if (dto.careerId) {
+      const career = await this.careerRepo.findById(dto.careerId);
+      if (!career) {
+        throw new NotFoundException(`Career with id '${dto.careerId}' not found`);
+      }
     }
 
     const normalizedCode = dto.code.trim().toUpperCase();
@@ -33,11 +35,12 @@ export class CreateSubjectCatalogUseCase {
         dto.name,
         dto.description ?? '',
         normalizedCode,
-        dto.credits,
-        dto.careerId,
+        dto.credits ?? 0,
+        dto.careerId ?? null,
         true,
         now,
         now,
+        dto.area?.trim() || null,
       ),
     );
   }
