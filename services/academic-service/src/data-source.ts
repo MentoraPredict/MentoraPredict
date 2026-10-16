@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
 import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
+import { SchoolYearOrmEntity } from "./infrastructure/persistence/school-year.orm-entity";
 import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
 import { SubjectOrmEntity } from "./infrastructure/persistence/subject.orm-entity";
 import { EvaluationOrmEntity } from "./infrastructure/persistence/evaluation.orm-entity";
@@ -35,6 +36,7 @@ export default new DataSource({
     FacultyOrmEntity,
     CareerOrmEntity,
     AcademicPeriodOrmEntity,
+    SchoolYearOrmEntity,
     SubjectCatalogOrmEntity,
     SubjectOrmEntity,
     EvaluationOrmEntity,

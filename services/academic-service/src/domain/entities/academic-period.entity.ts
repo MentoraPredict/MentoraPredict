@@ -1,5 +1,5 @@
 export type PeriodStatus = 'PLANNED' | 'ACTIVE' | 'FINISHED' | 'CANCELLED';
-export type PeriodType = 'SEMESTER' | 'QUARTER';
+export type PeriodType = 'SEMESTER' | 'QUARTER' | 'TRIMESTER' | 'QUIMESTER';
 
 export class AcademicPeriodEntity {
   constructor(
@@ -13,6 +13,9 @@ export class AcademicPeriodEntity {
     public type: PeriodType,
     public readonly createdAt: Date,
     public updatedAt: Date,
+    public schoolYearId: string | null = null,
+    public number: number | null = null,
+    public gradesDueDate: string | null = null,
   ) {}
 
   get isActive(): boolean {

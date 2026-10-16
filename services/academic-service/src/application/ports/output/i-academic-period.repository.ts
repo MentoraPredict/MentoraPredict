@@ -6,6 +6,7 @@ export interface IAcademicPeriodRepository {
   findById(id: string): Promise<AcademicPeriodEntity | null>;
   findActive(): Promise<AcademicPeriodEntity | null>;
   findAll(): Promise<AcademicPeriodEntity[]>;
+  findBySchoolYear(schoolYearId: string): Promise<AcademicPeriodEntity[]>;
   findByCode(code: string): Promise<AcademicPeriodEntity | null>;
   findByName(name: string): Promise<AcademicPeriodEntity | null>;
   countActive(): Promise<number>;
