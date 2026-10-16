@@ -21,6 +21,12 @@ export const endpoints = {
         faculties: "/v1/academic/faculties",
         periods: "/v1/academic/periods",
         period: (id: string) => `/v1/academic/periods/${id}`,
+        institutionConfig: "/v1/academic/institution/config",
+        institution: "/v1/academic/institution",
+        institutionLevels: "/v1/academic/institution/levels",
+        gradingScale: "/v1/academic/institution/grading-scale",
+        attendanceRule: "/v1/academic/institution/attendance-rule",
+        promotionRules: "/v1/academic/institution/promotion-rules",
         schoolYears: "/v1/academic/school-years",
         schoolYear: (id: string) => `/v1/academic/school-years/${id}`,
         schoolYearStatus: (id: string) =>
