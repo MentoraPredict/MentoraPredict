@@ -37,6 +37,12 @@ import {
   SectionOrmEntity,
   CurriculumSubjectOrmEntity,
 } from "./infrastructure/persistence/academic-structure.orm-entities";
+import {
+  StudentProfileOrmEntity,
+  GuardianStudentOrmEntity,
+  ConsentOrmEntity,
+  StudentEnrollmentOrmEntity,
+} from "./infrastructure/persistence/people.orm-entities";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 
 export default new DataSource({
@@ -51,6 +57,10 @@ export default new DataSource({
     CareerOrmEntity,
     AcademicPeriodOrmEntity,
     SchoolYearOrmEntity,
+    StudentProfileOrmEntity,
+    GuardianStudentOrmEntity,
+    ConsentOrmEntity,
+    StudentEnrollmentOrmEntity,
     GradeLevelOrmEntity,
     SectionOrmEntity,
     CurriculumSubjectOrmEntity,
