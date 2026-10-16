@@ -32,6 +32,11 @@ import {
   AttendanceRuleOrmEntity,
   PromotionRuleOrmEntity,
 } from "./infrastructure/persistence/institution-config.orm-entities";
+import {
+  GradeLevelOrmEntity,
+  SectionOrmEntity,
+  CurriculumSubjectOrmEntity,
+} from "./infrastructure/persistence/academic-structure.orm-entities";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 
 export default new DataSource({
@@ -46,6 +51,9 @@ export default new DataSource({
     CareerOrmEntity,
     AcademicPeriodOrmEntity,
     SchoolYearOrmEntity,
+    GradeLevelOrmEntity,
+    SectionOrmEntity,
+    CurriculumSubjectOrmEntity,
     InstitutionOrmEntity,
     EducationLevelOrmEntity,
     InstitutionLevelOrmEntity,

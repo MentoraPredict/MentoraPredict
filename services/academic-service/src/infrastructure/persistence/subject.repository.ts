@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import { SubjectEntity } from "../../domain/entities/subject.entity";
 import { ISubjectRepository } from "../../application/ports/output/i-subject.repository";
 import { SubjectOrmEntity } from "./subject.orm-entity";
@@ -44,7 +44,7 @@ export class SubjectRepository implements ISubjectRepository {
 
   async findByCatalogAndPeriod(subjectCatalogId: string, periodId: string): Promise<SubjectEntity | null> {
     const o = await this.repo.findOne({
-      where: { subjectCatalogId, academicPeriodId: periodId },
+      where: { subjectCatalogId, academicPeriodId: periodId, sectionId: IsNull() },
       relations: WITH_CATALOG,
     });
     return o ? this.toDomain(o) : null;
@@ -85,7 +85,7 @@ export class SubjectRepository implements ISubjectRepository {
       o.subjectCatalog?.description ?? fallback?.description ?? '',
       o.subjectCatalog?.code ?? fallback?.code ?? '',
       o.subjectCatalog?.credits ?? fallback?.credits ?? 0,
-      o.subjectCatalog?.careerId ?? fallback?.careerId ?? '',
+      o.subjectCatalog?.careerId ?? fallback?.careerId ?? null,
       o.academicPeriodId,
       o.maxCapacity,
       o.teacherId,
@@ -94,6 +94,8 @@ export class SubjectRepository implements ISubjectRepository {
       o.updatedAt,
       o.imageUrl,
       o.subjectCatalogId,
+      o.sectionId,
+      o.weeklyHours,
     );
 
   private toOrm(d: SubjectEntity): SubjectOrmEntity {
@@ -107,6 +109,8 @@ export class SubjectRepository implements ISubjectRepository {
     o.createdAt = d.createdAt;
     o.updatedAt = d.updatedAt;
     o.imageUrl = d.imageUrl;
+    o.sectionId = d.sectionId;
+    o.weeklyHours = d.weeklyHours;
     return o;
   }
 }

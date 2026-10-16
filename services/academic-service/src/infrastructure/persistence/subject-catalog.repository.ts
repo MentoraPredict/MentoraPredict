@@ -53,6 +53,7 @@ export class SubjectCatalogRepository implements ISubjectCatalogRepository {
       o.isActive,
       o.createdAt,
       o.updatedAt,
+      o.area,
     );
 
   private toOrm(d: SubjectCatalogEntity): SubjectCatalogOrmEntity {
@@ -66,6 +67,7 @@ export class SubjectCatalogRepository implements ISubjectCatalogRepository {
     o.isActive = d.isActive;
     o.createdAt = d.createdAt;
     o.updatedAt = d.updatedAt;
+    o.area = d.area;
     return o;
   }
 }
