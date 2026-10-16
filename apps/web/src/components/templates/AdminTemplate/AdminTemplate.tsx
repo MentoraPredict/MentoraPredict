@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { FiMenu, FiX, FiBookOpen, FiUsers } from "react-icons/fi";
+import { FiMenu, FiX, FiBookOpen, FiUsers, FiCalendar } from "react-icons/fi";
 
 import DashboardNavbar from "@/components/organisms/DashboardNavbar";
 import DashboardSidebar from "@/components/organisms/DashboardSidebar";
@@ -20,6 +20,11 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
           label: "Usuarios",
           to: APP_PATHS.admin.users,
           icon: <FiUsers size={16} />,
+        },
+        {
+          label: "Años lectivos",
+          to: APP_PATHS.admin.schoolYears,
+          icon: <FiCalendar size={16} />,
         },
         {
           label: "Cursos",

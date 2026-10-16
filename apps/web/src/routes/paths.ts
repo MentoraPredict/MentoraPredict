@@ -49,6 +49,7 @@ export const APP_PATHS = {
     dashboard: "/admin/dashboard",
     users: "/admin/users",
     courses: "/admin/courses",
+    schoolYears: "/admin/school-years",
     profile: "/admin/profile",
     courseStudents: "/admin/courses/:courseId/students",
   },

@@ -23,6 +23,7 @@ import { APP_PATHS } from "./paths";
 import { useAuthStore } from "@/store/auth.store";
 
 import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
+import AdminSchoolYearsPage from "@/pages/admin/AdminSchoolYearsPage";
 import AdminCourseStudentsPage from "@/pages/admin/AdminCourseStudentsPage";
 import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 
@@ -213,6 +214,10 @@ function AnimatedRoutes() {
             <Route
               path={APP_PATHS.admin.courseStudents}
               element={<AdminCourseStudentsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.schoolYears}
+              element={<AdminSchoolYearsPage />}
             />
             <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
           </Route>

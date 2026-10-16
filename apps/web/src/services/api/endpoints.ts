@@ -20,6 +20,11 @@ export const endpoints = {
         subject: (id: string) => `/v1/academic/subjects/${id}`,
         faculties: "/v1/academic/faculties",
         periods: "/v1/academic/periods",
+        period: (id: string) => `/v1/academic/periods/${id}`,
+        schoolYears: "/v1/academic/school-years",
+        schoolYear: (id: string) => `/v1/academic/school-years/${id}`,
+        schoolYearStatus: (id: string) =>
+            `/v1/academic/school-years/${id}/status`,
         activePeriod: "/v1/academic/periods/active",
         careers: "/v1/academic/careers",
         enrollments: "/v1/academic/enrollments",
