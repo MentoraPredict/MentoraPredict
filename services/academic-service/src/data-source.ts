@@ -23,6 +23,15 @@ import { ClassScheduleOrmEntity } from "./infrastructure/persistence/class-sched
 import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-session.orm-entity";
 import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
 import { TeacherObservationOrmEntity } from "./infrastructure/persistence/teacher-observation.orm-entity";
+import {
+  InstitutionOrmEntity,
+  EducationLevelOrmEntity,
+  InstitutionLevelOrmEntity,
+  GradingScaleOrmEntity,
+  GradingScaleBandOrmEntity,
+  AttendanceRuleOrmEntity,
+  PromotionRuleOrmEntity,
+} from "./infrastructure/persistence/institution-config.orm-entities";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 
 export default new DataSource({
@@ -37,6 +46,13 @@ export default new DataSource({
     CareerOrmEntity,
     AcademicPeriodOrmEntity,
     SchoolYearOrmEntity,
+    InstitutionOrmEntity,
+    EducationLevelOrmEntity,
+    InstitutionLevelOrmEntity,
+    GradingScaleOrmEntity,
+    GradingScaleBandOrmEntity,
+    AttendanceRuleOrmEntity,
+    PromotionRuleOrmEntity,
     SubjectCatalogOrmEntity,
     SubjectOrmEntity,
     EvaluationOrmEntity,
