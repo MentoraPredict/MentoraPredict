@@ -9,7 +9,7 @@ import { SearchAuthUsersUseCase } from '../../application/use-cases/search-auth-
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 class SyncRoleDto {
-  @IsIn(['ADMIN', 'TEACHER', 'STUDENT'])
+  @IsIn(['ADMIN', 'TEACHER', 'STUDENT', 'GUARDIAN', 'SECRETARY'])
   role!: string;
 }
 class SyncStatusDto {
