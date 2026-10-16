@@ -28,4 +28,13 @@ export class UpdateAcademicPeriodDto {
   @IsDateString()
   @IsOptional()
   endDate?: string;
+
+  @ApiPropertyOptional({
+    example: '2025-12-05',
+    description: 'Fecha límite para registrar notas del periodo',
+    nullable: true,
+  })
+  @IsDateString()
+  @IsOptional()
+  gradesDueDate?: string | null;
 }

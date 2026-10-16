@@ -79,6 +79,22 @@ import { GetActivePeriodUseCase } from "../../application/use-cases/get-active-p
 import { UpdateAcademicPeriodUseCase } from "../../application/use-cases/update-academic-period.use-case";
 import { ChangeAcademicPeriodStatusUseCase } from "../../application/use-cases/change-academic-period-status.use-case";
 import { DeleteAcademicPeriodUseCase } from "../../application/use-cases/delete-academic-period.use-case";
+import { CreateSchoolYearUseCase } from "../../application/use-cases/create-school-year.use-case";
+import {
+  ListSchoolYearsUseCase,
+  GetSchoolYearUseCase,
+  GetCurrentSchoolYearUseCase,
+} from "../../application/use-cases/list-school-years.use-case";
+import {
+  UpdateSchoolYearUseCase,
+  ChangeSchoolYearStatusUseCase,
+  DeleteSchoolYearUseCase,
+} from "../../application/use-cases/manage-school-year.use-case";
+import {
+  CreateSchoolYearDto,
+  UpdateSchoolYearDto,
+  ChangeSchoolYearStatusDto,
+} from "../../application/dtos/create-school-year.dto";
 import { CreateAcademicPeriodDto } from "../../application/dtos/create-academic-period.dto";
 import { UpdateAcademicPeriodDto } from "../../application/dtos/update-academic-period.dto";
 import { ChangeAcademicPeriodStatusDto } from "../../application/dtos/change-academic-period-status.dto";
@@ -189,6 +205,14 @@ export class AcademicController {
     private readonly updateAcademicPeriodUC: UpdateAcademicPeriodUseCase,
     private readonly changeAcademicPeriodStatusUC: ChangeAcademicPeriodStatusUseCase,
     private readonly deleteAcademicPeriodUC: DeleteAcademicPeriodUseCase,
+    // School year use-cases
+    private readonly createSchoolYearUC: CreateSchoolYearUseCase,
+    private readonly listSchoolYearsUC: ListSchoolYearsUseCase,
+    private readonly getSchoolYearUC: GetSchoolYearUseCase,
+    private readonly getCurrentSchoolYearUC: GetCurrentSchoolYearUseCase,
+    private readonly updateSchoolYearUC: UpdateSchoolYearUseCase,
+    private readonly changeSchoolYearStatusUC: ChangeSchoolYearStatusUseCase,
+    private readonly deleteSchoolYearUC: DeleteSchoolYearUseCase,
     // Career use-cases
     private readonly createCareerUC: CreateCareerUseCase,
     private readonly getCareerUC: GetCareerUseCase,
@@ -795,6 +819,83 @@ export class AcademicController {
   @ApiResponse({ status: 404 })
   async deleteFaculty(@Param("id") id: string) {
     return this.deleteFacultyUC.execute(id);
+  }
+
+  // ─── School years (año lectivo + periodos de calificación) ───────────────────
+
+  @Get("school-years")
+  @ApiOperation({ summary: "List school years with their grading periods" })
+  @ApiResponse({ status: 200 })
+  async listSchoolYears() {
+    return this.listSchoolYearsUC.execute();
+  }
+
+  @Get("school-years/current")
+  @ApiOperation({
+    summary: "Active school year; current period is derived from today's date",
+  })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
+  async getCurrentSchoolYear() {
+    return this.getCurrentSchoolYearUC.execute();
+  }
+
+  @Get("school-years/:id")
+  @ApiOperation({ summary: "Get a school year with its grading periods" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
+  async getSchoolYear(@Param("id") id: string) {
+    return this.getSchoolYearUC.execute(id);
+  }
+
+  @Post("school-years")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary:
+      "Create a school year and generate its grading periods (ADMIN only)",
+  })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 409 })
+  async createSchoolYear(@Body() dto: CreateSchoolYearDto) {
+    return this.createSchoolYearUC.execute(dto);
+  }
+
+  @Put("school-years/:id")
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Update school year dates and settings (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
+  async updateSchoolYear(
+    @Param("id") id: string,
+    @Body() dto: UpdateSchoolYearDto,
+  ) {
+    return this.updateSchoolYearUC.execute(id, dto);
+  }
+
+  @Patch("school-years/:id/status")
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Change school year status (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 409 })
+  async changeSchoolYearStatus(
+    @Param("id") id: string,
+    @Body() dto: ChangeSchoolYearStatusDto,
+  ) {
+    return this.changeSchoolYearStatusUC.execute(id, dto.status);
+  }
+
+  @Delete("school-years/:id")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete a planned school year (ADMIN only)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
+  async deleteSchoolYear(@Param("id") id: string) {
+    return this.deleteSchoolYearUC.execute(id);
   }
 
   // ─── Academic Periods ────────────────────────────────────────────────────────

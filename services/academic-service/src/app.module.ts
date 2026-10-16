@@ -14,6 +14,7 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
 import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
+import { SchoolYearOrmEntity } from "./infrastructure/persistence/school-year.orm-entity";
 import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
 import { SubjectOrmEntity } from "./infrastructure/persistence/subject.orm-entity";
 import { EvaluationOrmEntity } from "./infrastructure/persistence/evaluation.orm-entity";
@@ -42,6 +43,7 @@ import { EvaluationRepository } from "./infrastructure/persistence/evaluation.re
 import { EnrollmentRepository } from "./infrastructure/persistence/enrollment.repository";
 import { GradeRepository } from "./infrastructure/persistence/grade.repository";
 import { AcademicPeriodRepository } from "./infrastructure/persistence/academic-period.repository";
+import { SchoolYearRepository } from "./infrastructure/persistence/school-year.repository";
 import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-teacher.repository";
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
 import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
@@ -93,6 +95,9 @@ import { GetActivePeriodUseCase } from "./application/use-cases/get-active-perio
 import { UpdateAcademicPeriodUseCase } from "./application/use-cases/update-academic-period.use-case";
 import { ChangeAcademicPeriodStatusUseCase } from "./application/use-cases/change-academic-period-status.use-case";
 import { DeleteAcademicPeriodUseCase } from "./application/use-cases/delete-academic-period.use-case";
+import { CreateSchoolYearUseCase } from "./application/use-cases/create-school-year.use-case";
+import { ListSchoolYearsUseCase, GetSchoolYearUseCase, GetCurrentSchoolYearUseCase } from "./application/use-cases/list-school-years.use-case";
+import { UpdateSchoolYearUseCase, ChangeSchoolYearStatusUseCase, DeleteSchoolYearUseCase } from "./application/use-cases/manage-school-year.use-case";
 
 // Career use-cases
 import { CreateCareerUseCase } from "./application/use-cases/create-career.use-case";
@@ -173,6 +178,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           FacultyOrmEntity,
           CareerOrmEntity,
           AcademicPeriodOrmEntity,
+          SchoolYearOrmEntity,
           SubjectCatalogOrmEntity,
           SubjectOrmEntity,
           EvaluationOrmEntity,
@@ -204,6 +210,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       FacultyOrmEntity,
       CareerOrmEntity,
       AcademicPeriodOrmEntity,
+      SchoolYearOrmEntity,
       SubjectCatalogOrmEntity,
       SubjectOrmEntity,
       EvaluationOrmEntity,
@@ -274,6 +281,10 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       useClass: AcademicPeriodRepository,
     },
     {
+      provide: "ISchoolYearRepository",
+      useClass: SchoolYearRepository,
+    },
+    {
       provide: "ISubjectTeacherRepository",
       useClass: SubjectTeacherRepository,
     },
@@ -322,6 +333,13 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateAcademicPeriodUseCase,
     ChangeAcademicPeriodStatusUseCase,
     DeleteAcademicPeriodUseCase,
+    CreateSchoolYearUseCase,
+    ListSchoolYearsUseCase,
+    GetSchoolYearUseCase,
+    GetCurrentSchoolYearUseCase,
+    UpdateSchoolYearUseCase,
+    ChangeSchoolYearStatusUseCase,
+    DeleteSchoolYearUseCase,
     // Career use-cases
     CreateCareerUseCase,
     GetCareerUseCase,
