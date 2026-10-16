@@ -14,6 +14,15 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
 import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
+import {
+  InstitutionOrmEntity,
+  EducationLevelOrmEntity,
+  InstitutionLevelOrmEntity,
+  GradingScaleOrmEntity,
+  GradingScaleBandOrmEntity,
+  AttendanceRuleOrmEntity,
+  PromotionRuleOrmEntity,
+} from "./infrastructure/persistence/institution-config.orm-entities";
 import { SchoolYearOrmEntity } from "./infrastructure/persistence/school-year.orm-entity";
 import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
 import { SubjectOrmEntity } from "./infrastructure/persistence/subject.orm-entity";
@@ -43,7 +52,17 @@ import { EvaluationRepository } from "./infrastructure/persistence/evaluation.re
 import { EnrollmentRepository } from "./infrastructure/persistence/enrollment.repository";
 import { GradeRepository } from "./infrastructure/persistence/grade.repository";
 import { AcademicPeriodRepository } from "./infrastructure/persistence/academic-period.repository";
+import { InstitutionConfigController } from "./infrastructure/controllers/institution-config.controller";
+import {
+  GetInstitutionConfigUseCase,
+  UpdateInstitutionUseCase,
+  UpdateInstitutionLevelsUseCase,
+  UpdateGradingScaleUseCase,
+  UpdateAttendanceRuleUseCase,
+  UpdatePromotionRulesUseCase,
+} from "./application/use-cases/institution-config.use-cases";
 import { SchoolYearRepository } from "./infrastructure/persistence/school-year.repository";
+import { InstitutionConfigRepository } from "./infrastructure/persistence/institution-config.repository";
 import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-teacher.repository";
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
 import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
@@ -179,6 +198,13 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           CareerOrmEntity,
           AcademicPeriodOrmEntity,
           SchoolYearOrmEntity,
+          InstitutionOrmEntity,
+          EducationLevelOrmEntity,
+          InstitutionLevelOrmEntity,
+          GradingScaleOrmEntity,
+          GradingScaleBandOrmEntity,
+          AttendanceRuleOrmEntity,
+          PromotionRuleOrmEntity,
           SubjectCatalogOrmEntity,
           SubjectOrmEntity,
           EvaluationOrmEntity,
@@ -256,6 +282,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
   ],
   controllers: [
     AcademicController,
+    InstitutionConfigController,
     InternalAcademicController,
     ObservationsController,
     UploadsController,
@@ -283,6 +310,10 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     {
       provide: "ISchoolYearRepository",
       useClass: SchoolYearRepository,
+    },
+    {
+      provide: "IInstitutionConfigRepository",
+      useClass: InstitutionConfigRepository,
     },
     {
       provide: "ISubjectTeacherRepository",
@@ -340,6 +371,12 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateSchoolYearUseCase,
     ChangeSchoolYearStatusUseCase,
     DeleteSchoolYearUseCase,
+    GetInstitutionConfigUseCase,
+    UpdateInstitutionUseCase,
+    UpdateInstitutionLevelsUseCase,
+    UpdateGradingScaleUseCase,
+    UpdateAttendanceRuleUseCase,
+    UpdatePromotionRulesUseCase,
     // Career use-cases
     CreateCareerUseCase,
     GetCareerUseCase,
