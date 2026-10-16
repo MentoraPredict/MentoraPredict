@@ -25,6 +25,8 @@ import { useAuthStore } from "@/store/auth.store";
 import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
 import AdminSchoolYearsPage from "@/pages/admin/AdminSchoolYearsPage";
 import AdminInstitutionConfigPage from "@/pages/admin/AdminInstitutionConfigPage";
+import AdminStructurePage from "@/pages/admin/AdminStructurePage";
+import AdminSubjectsPage from "@/pages/admin/AdminSubjectsPage";
 import AdminCourseStudentsPage from "@/pages/admin/AdminCourseStudentsPage";
 import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 
@@ -223,6 +225,14 @@ function AnimatedRoutes() {
             <Route
               path={APP_PATHS.admin.institution}
               element={<AdminInstitutionConfigPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.structure}
+              element={<AdminStructurePage />}
+            />
+            <Route
+              path={APP_PATHS.admin.subjects}
+              element={<AdminSubjectsPage />}
             />
             <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
           </Route>

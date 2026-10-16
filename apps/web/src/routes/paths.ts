@@ -51,6 +51,8 @@ export const APP_PATHS = {
     courses: "/admin/courses",
     schoolYears: "/admin/school-years",
     institution: "/admin/institution",
+    structure: "/admin/structure",
+    subjects: "/admin/subjects",
     profile: "/admin/profile",
     courseStudents: "/admin/courses/:courseId/students",
   },

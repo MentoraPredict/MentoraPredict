@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { FiMenu, FiX, FiBookOpen, FiUsers, FiCalendar, FiSettings } from "react-icons/fi";
+import { FiMenu, FiX, FiBookOpen, FiUsers, FiCalendar, FiSettings, FiGrid, FiLayers } from "react-icons/fi";
 
 import DashboardNavbar from "@/components/organisms/DashboardNavbar";
 import DashboardSidebar from "@/components/organisms/DashboardSidebar";
@@ -30,6 +30,16 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
           label: "Años lectivos",
           to: APP_PATHS.admin.schoolYears,
           icon: <FiCalendar size={16} />,
+        },
+        {
+          label: "Grados y paralelos",
+          to: APP_PATHS.admin.structure,
+          icon: <FiGrid size={16} />,
+        },
+        {
+          label: "Asignaturas",
+          to: APP_PATHS.admin.subjects,
+          icon: <FiLayers size={16} />,
         },
         {
           label: "Cursos",
