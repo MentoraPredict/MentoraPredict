@@ -27,6 +27,10 @@ import AdminSchoolYearsPage from "@/pages/admin/AdminSchoolYearsPage";
 import AdminInstitutionConfigPage from "@/pages/admin/AdminInstitutionConfigPage";
 import AdminStructurePage from "@/pages/admin/AdminStructurePage";
 import AdminSubjectsPage from "@/pages/admin/AdminSubjectsPage";
+import AdminEnrollmentsPage from "@/pages/admin/AdminEnrollmentsPage";
+import AdminStudentsPage from "@/pages/admin/AdminStudentsPage";
+import GuardianStudentsPage from "@/pages/guardian/GuardianStudentsPage";
+import GuardianProfilePage from "@/pages/guardian/GuardianProfilePage";
 import AdminCourseStudentsPage from "@/pages/admin/AdminCourseStudentsPage";
 import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 
@@ -204,6 +208,29 @@ function AnimatedRoutes() {
             </Route>
           </Route>
 
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN", "SECRETARY"]} />}>
+            <Route
+              path={APP_PATHS.admin.enrollments}
+              element={<AdminEnrollmentsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.students}
+              element={<AdminStudentsPage />}
+            />
+            <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["GUARDIAN"]} />}>
+            <Route
+              path={APP_PATHS.guardian.students}
+              element={<GuardianStudentsPage />}
+            />
+            <Route
+              path={APP_PATHS.guardian.profile}
+              element={<GuardianProfilePage />}
+            />
+          </Route>
+
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route
               path={APP_PATHS.admin.dashboard}
@@ -234,7 +261,6 @@ function AnimatedRoutes() {
               path={APP_PATHS.admin.subjects}
               element={<AdminSubjectsPage />}
             />
-            <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
           </Route>
 
           <Route

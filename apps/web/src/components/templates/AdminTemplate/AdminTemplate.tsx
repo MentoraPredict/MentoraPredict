@@ -1,10 +1,23 @@
 import { ReactNode, useState } from "react";
-import { FiMenu, FiX, FiBookOpen, FiUsers, FiCalendar, FiSettings, FiGrid, FiLayers } from "react-icons/fi";
+import {
+  FiMenu,
+  FiX,
+  FiBookOpen,
+  FiUsers,
+  FiCalendar,
+  FiSettings,
+  FiGrid,
+  FiLayers,
+  FiClipboard,
+  FiUser,
+} from "react-icons/fi";
 
 import DashboardNavbar from "@/components/organisms/DashboardNavbar";
 import DashboardSidebar from "@/components/organisms/DashboardSidebar";
 import Footer from "@/components/organisms/Footer";
 import { APP_PATHS } from "@/routes/paths";
+import { useAuthStore } from "@/store/auth.store";
+import type { UserRole } from "@/types/user/role.types";
 
 interface AdminTemplateProps {
   children: ReactNode;
@@ -12,41 +25,70 @@ interface AdminTemplateProps {
 
 export default function AdminTemplate({ children }: AdminTemplateProps) {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const role = useAuthStore((state) => state.user?.role);
+
+  // Secretaría comparte este panel, pero solo ve lo que le corresponde.
+  const allItems: {
+    label: string;
+    to: string;
+    icon: ReactNode;
+    roles: UserRole[];
+  }[] = [
+    {
+      label: "Matrículas",
+      to: APP_PATHS.admin.enrollments,
+      icon: <FiClipboard size={16} />,
+      roles: ["ADMIN", "SECRETARY"],
+    },
+    {
+      label: "Estudiantes",
+      to: APP_PATHS.admin.students,
+      icon: <FiUser size={16} />,
+      roles: ["ADMIN", "SECRETARY"],
+    },
+    {
+      label: "Usuarios",
+      to: APP_PATHS.admin.users,
+      icon: <FiUsers size={16} />,
+      roles: ["ADMIN"],
+    },
+    {
+      label: "Configuración",
+      to: APP_PATHS.admin.institution,
+      icon: <FiSettings size={16} />,
+      roles: ["ADMIN"],
+    },
+    {
+      label: "Años lectivos",
+      to: APP_PATHS.admin.schoolYears,
+      icon: <FiCalendar size={16} />,
+      roles: ["ADMIN"],
+    },
+    {
+      label: "Grados y paralelos",
+      to: APP_PATHS.admin.structure,
+      icon: <FiGrid size={16} />,
+      roles: ["ADMIN"],
+    },
+    {
+      label: "Asignaturas",
+      to: APP_PATHS.admin.subjects,
+      icon: <FiLayers size={16} />,
+      roles: ["ADMIN"],
+    },
+    {
+      label: "Cursos",
+      to: APP_PATHS.admin.courses,
+      icon: <FiBookOpen size={16} />,
+      roles: ["ADMIN"],
+    },
+  ];
 
   const sections = [
     {
-      items: [
-        {
-          label: "Usuarios",
-          to: APP_PATHS.admin.users,
-          icon: <FiUsers size={16} />,
-        },
-        {
-          label: "Configuración",
-          to: APP_PATHS.admin.institution,
-          icon: <FiSettings size={16} />,
-        },
-        {
-          label: "Años lectivos",
-          to: APP_PATHS.admin.schoolYears,
-          icon: <FiCalendar size={16} />,
-        },
-        {
-          label: "Grados y paralelos",
-          to: APP_PATHS.admin.structure,
-          icon: <FiGrid size={16} />,
-        },
-        {
-          label: "Asignaturas",
-          to: APP_PATHS.admin.subjects,
-          icon: <FiLayers size={16} />,
-        },
-        {
-          label: "Cursos",
-          to: APP_PATHS.admin.courses,
-          icon: <FiBookOpen size={16} />,
-        },
-      ],
+      items: allItems
+        .filter((item) => !role || item.roles.includes(role))
+        .map(({ label, to, icon }) => ({ label, to, icon })),
     },
   ];
 
