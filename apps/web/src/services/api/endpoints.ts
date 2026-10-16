@@ -37,6 +37,20 @@ export const endpoints = {
         subjectCatalog: "/v1/academic/subject-catalog",
         subjectCatalogItem: (id: string) =>
             `/v1/academic/subject-catalog/${id}`,
+        studentProfile: (id: string) => `/v1/academic/students/${id}/profile`,
+        studentGuardians: (id: string) =>
+            `/v1/academic/students/${id}/guardians`,
+        studentGuardian: (id: string, guardianId: string) =>
+            `/v1/academic/students/${id}/guardians/${guardianId}`,
+        studentConsents: (id: string) =>
+            `/v1/academic/students/${id}/consents`,
+        studentConsent: (id: string, purpose: string) =>
+            `/v1/academic/students/${id}/consents/${purpose}`,
+        myStudents: "/v1/academic/guardians/me/students",
+        sectionEnrollments: (sectionId: string) =>
+            `/v1/academic/sections/${sectionId}/enrollments`,
+        endStudentEnrollment: (id: string) =>
+            `/v1/academic/student-enrollments/${id}/end`,
         schoolYears: "/v1/academic/school-years",
         schoolYear: (id: string) => `/v1/academic/school-years/${id}`,
         schoolYearStatus: (id: string) =>
