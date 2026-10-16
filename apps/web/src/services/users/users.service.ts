@@ -6,7 +6,7 @@ import { getStudentAcademicContext } from "@/services/academic.service";
 import { register } from "@/services/auth.service";
 import type { AuthSessionUser } from "@/types/auth/auth.types";
 import type { AppUser } from "@/types/user/user.types";
-import type { UserRole } from "@/types/user/role.types";
+import { USER_ROLES, type UserRole } from "@/types/user/role.types";
 
 type UserStatus = "ACTIVE" | "INACTIVE";
 
@@ -69,7 +69,7 @@ let studentsCache: { value: AppUser[]; expiresAt: number } | undefined;
 let studentsRequest: Promise<AppUser[]> | undefined;
 
 function isUserRole(role?: string): role is UserRole {
-  return role === "STUDENT" || role === "TEACHER" || role === "ADMIN";
+  return USER_ROLES.some((value) => value === role);
 }
 
 function toAppUser(user: UserApiResponse): AppUser {

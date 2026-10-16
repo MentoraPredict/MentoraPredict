@@ -44,6 +44,10 @@ export const APP_PATHS = {
     courseEdit: "/teacher/courses/:courseId/edit",
     courseDropoutRisk: "/teacher/courses/:courseId/dropout-risk",
   },
+  guardian: {
+    students: "/guardian/students",
+    profile: "/guardian/profile",
+  },
   admin: {
     root: "/admin",
     dashboard: "/admin/dashboard",
@@ -53,6 +57,8 @@ export const APP_PATHS = {
     institution: "/admin/institution",
     structure: "/admin/structure",
     subjects: "/admin/subjects",
+    enrollments: "/admin/enrollments",
+    students: "/admin/students",
     profile: "/admin/profile",
     courseStudents: "/admin/courses/:courseId/students",
   },
@@ -66,6 +72,10 @@ export function getDashboardPath(role: UserRole) {
       return APP_PATHS.teacher.dashboard;
     case "ADMIN":
       return APP_PATHS.admin.users;
+    case "SECRETARY":
+      return APP_PATHS.admin.enrollments;
+    case "GUARDIAN":
+      return APP_PATHS.guardian.students;
     default:
       return APP_PATHS.public.landing;
   }

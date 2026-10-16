@@ -36,6 +36,26 @@ const HELP_BY_ROLE: Record<
       "Revisar notificaciones y actualizar la información de tu perfil.",
     ],
   },
+  GUARDIAN: {
+    title: "Ayuda para representantes",
+    description:
+      "Como representante puedes consultar la matrícula de tus representados y gestionar tus consentimientos.",
+    capabilities: [
+      "Ver el grado y paralelo en que están matriculados tus representados.",
+      "Otorgar o retirar los consentimientos de tratamiento de datos, uso de imagen y análisis con IA.",
+      "Actualizar la información de tu perfil.",
+    ],
+  },
+  SECRETARY: {
+    title: "Ayuda para secretaría",
+    description:
+      "Como secretaría gestionas la matrícula de los estudiantes y la información de sus representantes.",
+    capabilities: [
+      "Matricular estudiantes en un paralelo y registrar retiros o traslados.",
+      "Completar la ficha del estudiante y vincular a sus representantes.",
+      "Consultar los consentimientos otorgados por los representantes.",
+    ],
+  },
   STUDENT: {
     title: "Ayuda para estudiantes",
     description:

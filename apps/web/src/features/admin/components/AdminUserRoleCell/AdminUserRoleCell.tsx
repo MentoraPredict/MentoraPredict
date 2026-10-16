@@ -11,12 +11,16 @@ const roleLabels: Record<UserRole, string> = {
   STUDENT: "Estudiante",
   TEACHER: "Docente",
   ADMIN: "Admin",
+  GUARDIAN: "Representante",
+  SECRETARY: "Secretaría",
 };
 
-const roleTones: Record<UserRole, "blue" | "green" | "violet"> = {
+const roleTones: Record<UserRole, "blue" | "green" | "violet" | "amber"> = {
   ADMIN: "blue",
   TEACHER: "green",
   STUDENT: "violet",
+  GUARDIAN: "amber",
+  SECRETARY: "blue",
 };
 
 export default function AdminUserRoleCell({

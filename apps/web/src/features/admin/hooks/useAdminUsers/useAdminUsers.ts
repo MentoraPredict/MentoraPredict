@@ -107,10 +107,18 @@ export default function useAdminUsers() {
     const admins = useRoleScopedUsers("ADMIN", search);
     const teachers = useRoleScopedUsers("TEACHER", search);
     const students = useRoleScopedUsers("STUDENT", search);
+    const guardians = useRoleScopedUsers("GUARDIAN", search);
+    const secretaries = useRoleScopedUsers("SECRETARY", search);
 
     const reloadAll = useCallback(async () => {
-        await Promise.all([admins.reload(), teachers.reload(), students.reload()]);
-    }, [admins, teachers, students]);
+        await Promise.all([
+            admins.reload(),
+            teachers.reload(),
+            students.reload(),
+            guardians.reload(),
+            secretaries.reload(),
+        ]);
+    }, [admins, teachers, students, guardians, secretaries]);
 
     const filteredStudents = useMemo(() => {
         const normalizedFaculty = facultyFilter.trim().toLowerCase();
@@ -377,6 +385,26 @@ export default function useAdminUsers() {
             totalUsers: teachers.totalUsers,
             totalPages: teachers.totalPages,
             setCurrentPage: teachers.setCurrentPage,
+        },
+        guardians: {
+            users: guardians.users,
+            isLoading: guardians.isLoading,
+            error: guardians.error,
+            currentPage: guardians.currentPage,
+            pageSize: guardians.pageSize,
+            totalUsers: guardians.totalUsers,
+            totalPages: guardians.totalPages,
+            setCurrentPage: guardians.setCurrentPage,
+        },
+        secretaries: {
+            users: secretaries.users,
+            isLoading: secretaries.isLoading,
+            error: secretaries.error,
+            currentPage: secretaries.currentPage,
+            pageSize: secretaries.pageSize,
+            totalUsers: secretaries.totalUsers,
+            totalPages: secretaries.totalPages,
+            setCurrentPage: secretaries.setCurrentPage,
         },
         students: {
             users: filteredStudents,

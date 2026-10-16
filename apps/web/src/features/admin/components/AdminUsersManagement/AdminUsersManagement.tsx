@@ -164,6 +164,8 @@ export default function AdminUsersManagement() {
     clearMutationError,
     admins,
     teachers,
+    guardians,
+    secretaries,
     students,
     toggleStatus,
     toggleTeacherRole,
@@ -232,8 +234,7 @@ export default function AdminUsersManagement() {
               Buscar usuarios
             </Text>
             <Text variant="small" className="mt-1 text-gray-600">
-              La búsqueda aplica a las tres tablas de abajo (administradores,
-              docentes y estudiantes).
+              La búsqueda aplica a todas las tablas de abajo.
             </Text>
           </div>
 
@@ -309,6 +310,46 @@ export default function AdminUsersManagement() {
           onClearFilters={students.clearFilters}
           onToggleStatus={toggleStatus}
           onToggleTeacherRole={toggleTeacherRole}
+          deletingUserId={deletingUserId}
+          onDeleteUser={removeUser}
+          onSaveUserProfile={saveUserProfile}
+          onUploadAvatar={uploadAvatar}
+          onDeleteAvatar={deleteAvatar}
+        />
+
+        <UserRoleSection
+          title="Representantes"
+          description="Madres, padres y tutores legales que siguen a sus representados."
+          users={guardians.users}
+          isLoading={guardians.isLoading}
+          error={guardians.error}
+          currentPage={guardians.currentPage}
+          pageSize={guardians.pageSize}
+          totalUsers={guardians.totalUsers}
+          totalPages={guardians.totalPages}
+          onPageChange={guardians.setCurrentPage}
+          showRoleColumn
+          onToggleStatus={toggleStatus}
+          deletingUserId={deletingUserId}
+          onDeleteUser={removeUser}
+          onSaveUserProfile={saveUserProfile}
+          onUploadAvatar={uploadAvatar}
+          onDeleteAvatar={deleteAvatar}
+        />
+
+        <UserRoleSection
+          title="Secretaría"
+          description="Personal que gestiona matrículas y fichas de estudiantes."
+          users={secretaries.users}
+          isLoading={secretaries.isLoading}
+          error={secretaries.error}
+          currentPage={secretaries.currentPage}
+          pageSize={secretaries.pageSize}
+          totalUsers={secretaries.totalUsers}
+          totalPages={secretaries.totalPages}
+          onPageChange={secretaries.setCurrentPage}
+          showRoleColumn
+          onToggleStatus={toggleStatus}
           deletingUserId={deletingUserId}
           onDeleteUser={removeUser}
           onSaveUserProfile={saveUserProfile}

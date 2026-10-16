@@ -33,7 +33,7 @@ interface ProfileCourse {
 }
 
 interface UserProfileManagementProps {
-  role: Extract<UserRole, "TEACHER" | "STUDENT" | "ADMIN">;
+  role: UserRole;
   courses: ProfileCourse[];
   isCoursesLoading?: boolean;
   coursesError?: string | null;
@@ -52,6 +52,9 @@ export default function UserProfileManagement({
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [imageResetToken, setImageResetToken] = useState(0);
+
+  // Solo estudiantes y docentes tienen cursos que mostrar en su perfil.
+  const hasCourses = role === "STUDENT" || role === "TEACHER";
 
   const courseTitle = useMemo(() => {
     return role === "TEACHER" ? "Cursos creados" : "Cursos matriculados";
@@ -88,7 +91,11 @@ export default function UserProfileManagement({
       ? APP_PATHS.student.dashboard
       : role === "TEACHER"
         ? APP_PATHS.teacher.dashboard
-        : APP_PATHS.admin.users;
+        : role === "GUARDIAN"
+          ? APP_PATHS.guardian.students
+          : role === "SECRETARY"
+            ? APP_PATHS.admin.enrollments
+            : APP_PATHS.admin.users;
 
   const handleChangeImage = (file: File) => {
     setSelectedImage(file);
@@ -179,10 +186,10 @@ export default function UserProfileManagement({
             resetToken={imageResetToken}
           />
 
-          <div className={`grid gap-6 ${role === "ADMIN" ? "" : "lg:grid-cols-2"}`}>
+          <div className={`grid gap-6 ${hasCourses ? "lg:grid-cols-2" : ""}`}>
             <UserProfileDetailsCard email={user.email} role={user.role} />
 
-            {role === "ADMIN" ? null : (
+            {!hasCourses ? null : (
               <UserProfileCoursesCard
                 title={courseTitle}
                 courses={courses}

@@ -47,9 +47,11 @@ export default function DashboardNavbar({
       ? APP_PATHS.teacher.profile
       : user?.role === "STUDENT"
         ? APP_PATHS.student.profile
-        : user?.role === "ADMIN"
+        : user?.role === "ADMIN" || user?.role === "SECRETARY"
           ? APP_PATHS.admin.profile
-          : undefined;
+          : user?.role === "GUARDIAN"
+            ? APP_PATHS.guardian.profile
+            : undefined;
 
   return (
     <>

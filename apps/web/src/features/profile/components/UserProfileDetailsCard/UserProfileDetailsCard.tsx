@@ -15,6 +15,8 @@ const roleLabels: Record<UserRole, string> = {
   STUDENT: "Estudiante",
   TEACHER: "Docente",
   ADMIN: "Administrador",
+  GUARDIAN: "Representante",
+  SECRETARY: "Secretaría",
 };
 
 export default function UserProfileDetailsCard({
