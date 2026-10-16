@@ -11,7 +11,20 @@ import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.rep
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
 import { IUserProfilePort } from '../ports/output/i-user-profile.port';
 import { INotificationClientPort } from '../ports/output/i-notification-client.port';
-import { EnrollmentEntity } from '../../domain/entities/enrollment.entity';
+import { EnrollmentEntity, EnrollmentStatus } from '../../domain/entities/enrollment.entity';
+
+/**
+ * WITHDRAWN can be reactivated back to ACTIVE (existing, tested behavior —
+ * see "reactivating a withdrawn enrollment" spec). SUSPENDED is a temporary
+ * hold that can return to ACTIVE or be finalized as WITHDRAWN. COMPLETED is
+ * the only terminal state (a finished/graded subject is not reopened).
+ */
+const VALID_TRANSITIONS: Record<EnrollmentStatus, EnrollmentStatus[]> = {
+  ACTIVE: ['WITHDRAWN', 'SUSPENDED', 'COMPLETED'],
+  WITHDRAWN: ['ACTIVE'],
+  SUSPENDED: ['ACTIVE', 'WITHDRAWN'],
+  COMPLETED: [],
+};
 
 @Injectable()
 export class UpdateEnrollmentStatusUseCase {
@@ -32,7 +45,7 @@ export class UpdateEnrollmentStatusUseCase {
 
   async execute(
     enrollmentId: string,
-    newStatus: 'ACTIVE' | 'WITHDRAWN',
+    newStatus: EnrollmentStatus,
     requesterId: string,
     requesterRole: string,
   ): Promise<EnrollmentEntity> {
@@ -61,6 +74,15 @@ export class UpdateEnrollmentStatusUseCase {
     }
 
     const previousStatus = enrollment.status;
+    if (
+      previousStatus !== newStatus &&
+      !VALID_TRANSITIONS[previousStatus].includes(newStatus)
+    ) {
+      throw new ConflictException(
+        `No se puede cambiar el estado de la matrícula de ${previousStatus} a ${newStatus}`,
+      );
+    }
+
     enrollment.status = newStatus;
     const updated = await this.enrollmentRepo.update(enrollment);
 

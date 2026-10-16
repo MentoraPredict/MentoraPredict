@@ -1,4 +1,6 @@
-export type EnrollmentStatus = "ACTIVE" | "WITHDRAWN";
+import { EnrollmentStatus as SharedEnrollmentStatus } from '@mentorapredict/shared-types';
+
+export type EnrollmentStatus = `${SharedEnrollmentStatus}`;
 
 export class EnrollmentEntity {
   constructor(

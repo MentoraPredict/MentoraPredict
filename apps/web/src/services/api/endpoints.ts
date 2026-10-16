@@ -48,6 +48,9 @@ export const endpoints = {
             `/v1/academic/topics/${topicId}`,
         topicFile: (topicId: string) =>
             `/v1/academic/topics/${topicId}/file`,
+        surveyQuestions: (surveyCode: string) =>
+            `/v1/academic/surveys/${surveyCode}/questions`,
+        studentSurveyResponses: "/v1/academic/students/me/survey-responses",
     },
     analytics: {
         studentDashboard: (studentId: string) =>

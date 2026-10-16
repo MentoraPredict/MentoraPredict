@@ -26,7 +26,7 @@ src/
 │       └── output/          # Secondary ports — interfaces that adapters implement
 └── infrastructure/          # Adapters — framework, DB, HTTP, cache, external APIs
     ├── controllers/         # REST controllers (primary adapters)
-    ├── persistence/         # TypeORM/Mongo repositories (secondary adapters)
+    ├── persistence/         # TypeORM repositories (secondary adapters)
     ├── cache/               # Redis adapter (if applicable)
     ├── external/            # Third-party API clients (OpenAI, etc.)
     └── config/              # Environment config & NestJS module setup

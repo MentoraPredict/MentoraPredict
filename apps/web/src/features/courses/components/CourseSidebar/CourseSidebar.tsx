@@ -17,6 +17,11 @@ function getBasePath(mode: CourseSidebarMode) {
   return mode === "teacher" ? "/teacher" : "/student";
 }
 
+/**
+ * "Mis materias" es un grupo colapsable (igual que en StudentMainSidebar):
+ * se despliega solo cuando la ruta actual es una de sus materias, así el
+ * panel no se llena de enlaces cuando el docente tiene muchas asignadas.
+ */
 export default function CourseSidebar({
   mode,
   courses,
@@ -32,15 +37,20 @@ export default function CourseSidebar({
           icon: <FiGrid size={18} />,
           label: isTeacher ? "Panel docente" : "Panel academico",
         },
+        ...(courses.length > 0
+          ? [
+              {
+                label: "Mis materias",
+                icon: <FiBookOpen size={18} />,
+                children: courses.map((course) => ({
+                  to: `${basePath}/courses/${course.id}/performance`,
+                  icon: <FiBookOpen size={14} />,
+                  label: course.name,
+                })),
+              },
+            ]
+          : []),
       ],
-    },
-    {
-      label: isTeacher ? "Mis cursos" : "Mis materias",
-      items: courses.map((course) => ({
-        to: `${basePath}/courses/${course.id}/performance`,
-        icon: <FiBookOpen size={14} />,
-        label: course.name,
-      })),
     },
   ];
 

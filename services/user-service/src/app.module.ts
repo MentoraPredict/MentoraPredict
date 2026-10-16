@@ -44,7 +44,9 @@ import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-i
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
         entities: [UserProfileOrmEntity],
-        synchronize: cfg.get("NODE_ENV") !== "production",
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) —
+        // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
+        synchronize: false,
         logging: cfg.get("NODE_ENV") === "development",
       }),
     }),

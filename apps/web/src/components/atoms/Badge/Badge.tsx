@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-type BadgeTone = "blue" | "green" | "violet" | "red" | "neutral";
+type BadgeTone = "blue" | "green" | "violet" | "red" | "amber" | "neutral";
 
 interface BadgeProps {
   children: ReactNode;
@@ -13,6 +13,7 @@ const toneClasses: Record<BadgeTone, string> = {
   green: "bg-emerald-100 text-emerald-700 ring-emerald-200/70",
   violet: "bg-violet-100 text-violet-700 ring-violet-200/70",
   red: "bg-red-100 text-red-700 ring-red-200/70",
+  amber: "bg-amber-100 text-amber-700 ring-amber-200/70",
   neutral: "bg-gray-100 text-gray-700 ring-gray-200/70",
 };
 

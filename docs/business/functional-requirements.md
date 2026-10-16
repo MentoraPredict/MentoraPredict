@@ -38,3 +38,5 @@
 ## Not implemented / not found in code
 
 RF-026 and above do not appear anywhere in the codebase. If the institution's original requirements document specifies more functional requirements beyond RF-025 (e.g., reporting exports, multi-institution support, parent/guardian access), they have not been implemented as of this audit.
+
+Notably absent: institution-level dropout/desertion prediction. It's referenced in marketing copy (`PITCH-GUION.md`, `PRESENTACION.md`, a static landing-page stat) but was never specified as an RF, has no entity/use case/endpoint, and cannot be validated against current single-period seed data. See [dropout-prediction-proposal.md](./dropout-prediction-proposal.md) for a design proposal — not a current requirement.

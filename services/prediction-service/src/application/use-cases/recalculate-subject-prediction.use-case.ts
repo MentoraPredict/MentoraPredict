@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { ANALYTICS_CLIENT } from './generate-prediction.use-case';
+import { ANALYTICS_CLIENT, ACADEMIC_CONTEXT_CLIENT } from './generate-prediction.use-case';
 import { IAnalyticsClient, LatestSubjectMetric } from '../ports/output/i-analytics.client';
+import { IAcademicContextClient } from '../ports/output/i-academic-context.client';
+import { IUserServiceClient } from '../ports/output/i-user-service.client';
 import {
   PredictedRiskLevel,
   StudentSubjectPredictionEntity,
@@ -10,6 +12,7 @@ import { IStudentSubjectPredictionRepository } from '../../domain/ports/i-studen
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
 
 export const STUDENT_SUBJECT_PREDICTION_REPO = 'IStudentSubjectPredictionRepository';
+export const USER_SERVICE_CLIENT = 'IUserServiceClient';
 
 // Weakest-factor comparison threshold for a "sustained decline" callout.
 const TREND_DECLINE_THRESHOLD = -0.3;
@@ -20,6 +23,8 @@ export class RecalculateSubjectPredictionUseCase {
 
   constructor(
     @Inject(ANALYTICS_CLIENT) private readonly analyticsClient: IAnalyticsClient,
+    @Inject(ACADEMIC_CONTEXT_CLIENT) private readonly academicClient: IAcademicContextClient,
+    @Inject(USER_SERVICE_CLIENT) private readonly userClient: IUserServiceClient,
     @Inject(STUDENT_SUBJECT_PREDICTION_REPO)
     private readonly predictionRepo: IStudentSubjectPredictionRepository,
   ) {}
@@ -27,16 +32,38 @@ export class RecalculateSubjectPredictionUseCase {
   async execute(studentId: string, subjectId: string, periodId: string): Promise<StudentSubjectPredictionEntity> {
     // Prediction-service asks analytics-service for what it needs — it never
     // receives already-computed risk/trend data pushed in the trigger body.
-    const metric = await this.analyticsClient.getLatestSubjectMetric(studentId, subjectId);
+    // The profile/subject/period fetches double as the reference-table sync
+    // (see docs/database/entity-relationship-diagram.md §3) — this is the
+    // only write path into student_subject_predictions, so it's the natural
+    // (and only) place in prediction-service to keep those caches fresh.
+    const [metric, profile, subject, period] = await Promise.all([
+      this.analyticsClient.getLatestSubjectMetric(studentId, subjectId),
+      this.userClient.getProfile(studentId),
+      this.academicClient.getSubjectDetails(subjectId),
+      this.academicClient.getPeriodDetails(periodId),
+    ]);
 
     const now = new Date();
     const { academicWeek, academicYear } = getAcademicWeek(now);
+
+    // A failed fetch (null) is treated as "unknown" and never blocks a
+    // recalculation on its own — only an explicit inactive/cancelled value
+    // does. Same best-effort philosophy as the reference-table sync itself.
+    const noLongerEligible =
+      profile?.status === 'INACTIVE' || subject?.isActive === false || period?.status === 'CANCELLED';
+    if (noLongerEligible) {
+      this.logger.warn(
+        `Skipping prediction computation for student ${studentId} / subject ${subjectId}: ` +
+          'student/subject inactive or period cancelled',
+      );
+    }
 
     // Same criterion as Fase 7's trendSlope null-ability: fewer than 2 weeks
     // of graded history means there isn't enough signal for a real
     // prediction, and a null riskLevel this week (no check-in / no grade)
     // must never be silently narrated as "COMPUTED".
-    const insufficientData = !metric || metric.riskLevel === null || metric.trendSlope === null;
+    const insufficientData =
+      noLongerEligible || !metric || metric.riskLevel === null || metric.trendSlope === null;
 
     const entity = new StudentSubjectPredictionEntity(
       randomUUID(),

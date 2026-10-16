@@ -23,6 +23,12 @@ export interface SubjectDetails {
   id: string;
   name: string;
   teacherId: string | null;
+  isActive: boolean;
+}
+
+export interface PeriodDetails {
+  id: string;
+  status: string;
 }
 
 export interface IAcademicServiceClient {
@@ -41,6 +47,7 @@ export interface IAcademicServiceClient {
     correlationId?: string,
   ): Promise<SubjectOwnership>;
   getSubjectDetails(subjectId: string, correlationId?: string): Promise<SubjectDetails | null>;
+  getPeriodDetails(periodId: string, correlationId?: string): Promise<PeriodDetails | null>;
   getStudentsByTeacher(
     teacherId: string,
     periodId: string,

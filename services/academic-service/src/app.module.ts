@@ -1,7 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
 import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
@@ -15,6 +14,7 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
 import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
+import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
 import { SubjectOrmEntity } from "./infrastructure/persistence/subject.orm-entity";
 import { EvaluationOrmEntity } from "./infrastructure/persistence/evaluation.orm-entity";
 import { EnrollmentOrmEntity } from "./infrastructure/persistence/enrollment.orm-entity";
@@ -23,12 +23,18 @@ import { GradeHistoryOrmEntity } from "./infrastructure/persistence/grade-histor
 import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-teacher.orm-entity";
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
+import { WeeklyCheckInTopicResponseOrmEntity } from "./infrastructure/persistence/weekly-check-in-topic-response.orm-entity";
+import { SurveyQuestionOrmEntity } from "./infrastructure/persistence/survey-question.orm-entity";
+import { SurveyResponseOrmEntity } from "./infrastructure/persistence/survey-response.orm-entity";
+import { SurveyAnswerOrmEntity } from "./infrastructure/persistence/survey-answer.orm-entity";
+import { ClassScheduleOrmEntity } from "./infrastructure/persistence/class-schedule.orm-entity";
+import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-session.orm-entity";
+import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
-import {
-  TeacherObservationDoc,
-  TeacherObservationSchema,
-} from "./infrastructure/persistence/teacher-observation.schema";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
+import { TeacherObservationOrmEntity } from "./infrastructure/persistence/teacher-observation.orm-entity";
 
+import { SubjectCatalogRepository } from "./infrastructure/persistence/subject-catalog.repository";
 import { SubjectRepository } from "./infrastructure/persistence/subject.repository";
 import { FacultyRepository } from "./infrastructure/persistence/faculty.repository";
 import { CareerRepository } from "./infrastructure/persistence/career.repository";
@@ -40,6 +46,11 @@ import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-t
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
 import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
 import { WeeklyCheckInRepository } from "./infrastructure/persistence/weekly-check-in.repository";
+import { SurveyQuestionRepository } from "./infrastructure/persistence/survey-question.repository";
+import { SurveyResponseRepository } from "./infrastructure/persistence/survey-response.repository";
+import { ClassScheduleRepository } from "./infrastructure/persistence/class-schedule.repository";
+import { ClassSessionRepository } from "./infrastructure/persistence/class-session.repository";
+import { SessionAttendanceRepository } from "./infrastructure/persistence/session-attendance.repository";
 import { TopicRepository } from "./infrastructure/persistence/topic.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
@@ -92,6 +103,8 @@ import { ChangeCareerStatusUseCase } from "./application/use-cases/change-career
 import { DeleteCareerUseCase } from "./application/use-cases/delete-career.use-case";
 
 // Subject use-cases
+import { CreateSubjectCatalogUseCase } from "./application/use-cases/create-subject-catalog.use-case";
+import { ListSubjectCatalogUseCase } from "./application/use-cases/list-subject-catalog.use-case";
 import { CreateSubjectUseCase } from "./application/use-cases/create-subject.use-case";
 import { GetSubjectUseCase } from "./application/use-cases/get-subject.use-case";
 import { ListSubjectsUseCase } from "./application/use-cases/list-subjects.use-case";
@@ -122,6 +135,13 @@ import { UpsertCheckInUseCase } from "./application/use-cases/upsert-check-in.us
 import { UpdateCheckInUseCase } from "./application/use-cases/update-check-in.use-case";
 import { ListCheckInsUseCase } from "./application/use-cases/list-check-ins.use-case";
 import { GetCheckInsSummaryUseCase } from "./application/use-cases/get-check-ins-summary.use-case";
+import { ListClassSessionsUseCase } from "./application/use-cases/list-class-sessions.use-case";
+import { RegisterSessionAttendanceUseCase } from "./application/use-cases/register-session-attendance.use-case";
+import { DefineSubjectScheduleUseCase } from "./application/use-cases/define-subject-schedule.use-case";
+import { CreateSurveyQuestionUseCase } from "./application/use-cases/create-survey-question.use-case";
+import { ListSurveyQuestionsUseCase } from "./application/use-cases/list-survey-questions.use-case";
+import { SubmitSurveyResponseUseCase } from "./application/use-cases/submit-survey-response.use-case";
+import { GetSurveyResponseHistoryUseCase } from "./application/use-cases/get-survey-response-history.use-case";
 import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
 import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subject-ownership.use-case";
 // File storage (Phase 10)
@@ -153,6 +173,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           FacultyOrmEntity,
           CareerOrmEntity,
           AcademicPeriodOrmEntity,
+          SubjectCatalogOrmEntity,
           SubjectOrmEntity,
           EvaluationOrmEntity,
           EnrollmentOrmEntity,
@@ -161,9 +182,20 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           SubjectTeacherOrmEntity,
           GradeImportOrmEntity,
           WeeklyCheckInOrmEntity,
+          WeeklyCheckInTopicResponseOrmEntity,
+          SurveyQuestionOrmEntity,
+          SurveyResponseOrmEntity,
+          SurveyAnswerOrmEntity,
+          ClassScheduleOrmEntity,
+          ClassSessionOrmEntity,
+          SessionAttendanceOrmEntity,
           TopicOrmEntity,
+          TeacherObservationOrmEntity,
+          UserReferenceOrmEntity,
         ],
-        synchronize: cfg.get("NODE_ENV") !== "production",
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
+        // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
+        synchronize: false,
         logging: cfg.get("NODE_ENV") === "development",
       }),
     }),
@@ -172,6 +204,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       FacultyOrmEntity,
       CareerOrmEntity,
       AcademicPeriodOrmEntity,
+      SubjectCatalogOrmEntity,
       SubjectOrmEntity,
       EvaluationOrmEntity,
       EnrollmentOrmEntity,
@@ -180,26 +213,16 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       SubjectTeacherOrmEntity,
       GradeImportOrmEntity,
       WeeklyCheckInOrmEntity,
+      WeeklyCheckInTopicResponseOrmEntity,
+      SurveyQuestionOrmEntity,
+      SurveyResponseOrmEntity,
+      SurveyAnswerOrmEntity,
+      ClassScheduleOrmEntity,
+      ClassSessionOrmEntity,
+      SessionAttendanceOrmEntity,
       TopicOrmEntity,
-    ]),
-
-    MongooseModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ({
-        uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
-        serverSelectionTimeoutMS: 5000,
-        // Connects in the background instead of blocking Nest's bootstrap:
-        // without this, an unreachable MongoDB crashes the whole service
-        // (NestFactory.create() awaits the connection and rethrows once
-        // retries are exhausted).
-        lazyConnection: true,
-        // Default is 10s per buffered query — too slow for a request path;
-        // fail faster so callers hit the try/catch sooner.
-        bufferTimeoutMS: 3000,
-      }),
-    }),
-    MongooseModule.forFeature([
-      { name: TeacherObservationDoc.name, schema: TeacherObservationSchema },
+      TeacherObservationOrmEntity,
+      UserReferenceOrmEntity,
     ]),
 
     JwtModule.registerAsync({
@@ -241,6 +264,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     JwtAuthGuard,
     { provide: "IFacultyRepository", useClass: FacultyRepository },
     { provide: "ICareerRepository", useClass: CareerRepository },
+    { provide: "ISubjectCatalogRepository", useClass: SubjectCatalogRepository },
     { provide: "ISubjectRepository", useClass: SubjectRepository },
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
     { provide: "IEnrollmentRepository", useClass: EnrollmentRepository },
@@ -256,6 +280,11 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
     { provide: "IGradeImportRepository", useClass: GradeImportRepository },
     { provide: "IWeeklyCheckInRepository", useClass: WeeklyCheckInRepository },
+    { provide: "ISurveyQuestionRepository", useClass: SurveyQuestionRepository },
+    { provide: "ISurveyResponseRepository", useClass: SurveyResponseRepository },
+    { provide: "IClassScheduleRepository", useClass: ClassScheduleRepository },
+    { provide: "IClassSessionRepository", useClass: ClassSessionRepository },
+    { provide: "ISessionAttendanceRepository", useClass: SessionAttendanceRepository },
     { provide: "ITopicRepository", useClass: TopicRepository },
     {
       provide: "ITeacherObservationRepository",
@@ -300,6 +329,9 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateCareerUseCase,
     ChangeCareerStatusUseCase,
     DeleteCareerUseCase,
+    // Subject catalog use-cases
+    CreateSubjectCatalogUseCase,
+    ListSubjectCatalogUseCase,
     // Subject use-cases
     CreateSubjectUseCase,
     GetSubjectUseCase,
@@ -331,6 +363,13 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateCheckInUseCase,
     ListCheckInsUseCase,
     GetCheckInsSummaryUseCase,
+    ListClassSessionsUseCase,
+    RegisterSessionAttendanceUseCase,
+    DefineSubjectScheduleUseCase,
+    CreateSurveyQuestionUseCase,
+    ListSurveyQuestionsUseCase,
+    SubmitSurveyResponseUseCase,
+    GetSurveyResponseHistoryUseCase,
     GetLatestCheckInUseCase,
     CheckSubjectOwnershipUseCase,
     // File storage (Phase 10)
@@ -349,13 +388,4 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(correlationContextMiddleware).forRoutes("*");
   }
-}
-
-function buildMongoUri(cfg: ConfigService): string {
-  const user = cfg.get("MONGO_USER", "mp_mongo_user");
-  const pass = cfg.get("MONGO_PASSWORD", "");
-  const host = cfg.get("MONGO_HOST", "localhost");
-  const port = cfg.get("MONGO_PORT", 27017);
-  const db = cfg.get("MONGO_DB", "mentorapredict_nosql");
-  return `mongodb://${user}:${pass}@${host}:${port}/${db}?authSource=admin`;
 }

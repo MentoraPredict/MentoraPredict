@@ -27,6 +27,16 @@ export interface SubjectGradesContext {
   failedEvaluations: number;
 }
 
+export interface SubjectDetails {
+  id: string;
+  isActive: boolean;
+}
+
+export interface PeriodDetails {
+  id: string;
+  status: string;
+}
+
 export interface IAcademicContextClient {
   getStudentContext(studentId: string, periodId: string): Promise<AcademicContext>;
   getEnrollmentsByStudent(studentId: string): Promise<EnrollmentView[]>;
@@ -37,4 +47,10 @@ export interface IAcademicContextClient {
     periodId: string,
   ): Promise<SubjectGradesContext>;
   getSubjectTopics(subjectId: string): Promise<string[]>;
+  // Best-effort — used for reference-table sync (see
+  // docs/database/entity-relationship-diagram.md §3) and to skip generating
+  // predictions for a subject/period no longer eligible. Return null on any
+  // failure so an academic-service hiccup never blocks a recalculation.
+  getSubjectDetails(subjectId: string): Promise<SubjectDetails | null>;
+  getPeriodDetails(periodId: string): Promise<PeriodDetails | null>;
 }

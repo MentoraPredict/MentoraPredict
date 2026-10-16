@@ -94,6 +94,11 @@ import { CreateCareerDto } from "../../application/dtos/create-career.dto";
 import { UpdateCareerDto } from "../../application/dtos/update-career.dto";
 import { ChangeCareerStatusDto } from "../../application/dtos/change-career-status.dto";
 
+// Subject catalog use-cases
+import { CreateSubjectCatalogUseCase } from "../../application/use-cases/create-subject-catalog.use-case";
+import { ListSubjectCatalogUseCase } from "../../application/use-cases/list-subject-catalog.use-case";
+import { CreateSubjectCatalogDto } from "../../application/dtos/create-subject-catalog.dto";
+
 // Subject use-cases
 import { CreateSubjectUseCase } from "../../application/use-cases/create-subject.use-case";
 import { GetSubjectUseCase } from "../../application/use-cases/get-subject.use-case";
@@ -138,7 +143,18 @@ import { UpsertCheckInUseCase } from "../../application/use-cases/upsert-check-i
 import { UpdateCheckInUseCase } from "../../application/use-cases/update-check-in.use-case";
 import { ListCheckInsUseCase } from "../../application/use-cases/list-check-ins.use-case";
 import { GetCheckInsSummaryUseCase } from "../../application/use-cases/get-check-ins-summary.use-case";
+import { ListClassSessionsUseCase } from "../../application/use-cases/list-class-sessions.use-case";
+import { RegisterSessionAttendanceUseCase } from "../../application/use-cases/register-session-attendance.use-case";
+import { DefineSubjectScheduleUseCase } from "../../application/use-cases/define-subject-schedule.use-case";
+import { CreateSurveyQuestionUseCase } from "../../application/use-cases/create-survey-question.use-case";
+import { ListSurveyQuestionsUseCase } from "../../application/use-cases/list-survey-questions.use-case";
+import { SubmitSurveyResponseUseCase } from "../../application/use-cases/submit-survey-response.use-case";
+import { GetSurveyResponseHistoryUseCase } from "../../application/use-cases/get-survey-response-history.use-case";
 import { CreateCheckInDto } from "../../application/dtos/create-check-in.dto";
+import { RegisterSessionAttendanceDto } from "../../application/dtos/register-session-attendance.dto";
+import { DefineSubjectScheduleDto } from "../../application/dtos/define-subject-schedule.dto";
+import { CreateSurveyQuestionDto } from "../../application/dtos/create-survey-question.dto";
+import { SubmitSurveyResponseDto } from "../../application/dtos/submit-survey-response.dto";
 import { UpdateCheckInDto } from "../../application/dtos/update-check-in.dto";
 
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
@@ -180,6 +196,9 @@ export class AcademicController {
     private readonly updateCareerUC: UpdateCareerUseCase,
     private readonly changeCareerStatusUC: ChangeCareerStatusUseCase,
     private readonly deleteCareerUC: DeleteCareerUseCase,
+    // Subject catalog use-cases
+    private readonly createSubjectCatalogUC: CreateSubjectCatalogUseCase,
+    private readonly listSubjectCatalogUC: ListSubjectCatalogUseCase,
     // Subject use-cases
     private readonly createSubjectUC: CreateSubjectUseCase,
     private readonly getSubjectUC: GetSubjectUseCase,
@@ -207,6 +226,13 @@ export class AcademicController {
     private readonly updateCheckInUC: UpdateCheckInUseCase,
     private readonly listCheckInsUC: ListCheckInsUseCase,
     private readonly getCheckInsSummaryUC: GetCheckInsSummaryUseCase,
+    private readonly listClassSessionsUC: ListClassSessionsUseCase,
+    private readonly registerSessionAttendanceUC: RegisterSessionAttendanceUseCase,
+    private readonly defineSubjectScheduleUC: DefineSubjectScheduleUseCase,
+    private readonly createSurveyQuestionUC: CreateSurveyQuestionUseCase,
+    private readonly listSurveyQuestionsUC: ListSurveyQuestionsUseCase,
+    private readonly submitSurveyResponseUC: SubmitSurveyResponseUseCase,
+    private readonly getSurveyResponseHistoryUC: GetSurveyResponseHistoryUseCase,
     // File storage (Phase 10)
     private readonly uploadSubjectImageUC: UploadSubjectImageUseCase,
     private readonly deleteSubjectImageUC: DeleteSubjectImageUseCase,
@@ -392,6 +418,58 @@ export class AcademicController {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
     return this.getCheckInsSummaryUC.execute(subjectId, teacherId);
+  }
+
+  // ─── Class schedule / sessions / attendance (Fase B — docs/database/database-update-plan.md §5.2) ─
+
+  @Post("subjects/:subjectId/schedule")
+  @Roles("TEACHER", "ADMIN")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Define a subject's weekly schedule (day+time slots) and generate its class sessions for the active period" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409, description: "Schedule already defined for this subject" })
+  async defineSubjectSchedule(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: DefineSubjectScheduleDto,
+    @Req() req: JwtRequest,
+  ) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    await this.defineSubjectScheduleUC.execute(subjectId, dto.slots, callerId, callerRole);
+  }
+
+  @Get("subjects/:subjectId/sessions")
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "List a subject's class sessions (one per scheduled day, per week, of the active period)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  async listClassSessions(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    return this.listClassSessionsUC.execute(subjectId, callerId, callerRole);
+  }
+
+  @Post("subjects/:subjectId/sessions/:sessionId/attendance")
+  @Roles("TEACHER", "ADMIN")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Teacher registers/corrects attendance for a session (prevails over student self-report)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  async registerSessionAttendance(
+    @Param("subjectId") subjectId: string,
+    @Param("sessionId") sessionId: string,
+    @Body() dto: RegisterSessionAttendanceDto,
+    @Req() req: JwtRequest,
+  ) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    await this.registerSessionAttendanceUC.execute(subjectId, sessionId, dto.records, callerId, callerRole);
   }
 
   @Get("enrollments")
@@ -850,6 +928,26 @@ export class AcademicController {
     return this.deleteCareerUC.execute(id);
   }
 
+  // ─── Subject catalog (Fase A — docs/database/database-update-plan.md §5.1) ─
+
+  @Get("subject-catalog")
+  @ApiOperation({ summary: "List subject catalog entries (materias, independientes del período)" })
+  @ApiResponse({ status: 200 })
+  async listSubjectCatalog(@Query("careerId") careerId?: string) {
+    return this.listSubjectCatalogUC.execute({ careerId });
+  }
+
+  @Post("subject-catalog")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a new subject catalog entry (ADMIN only)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
+  async createSubjectCatalog(@Body() dto: CreateSubjectCatalogDto) {
+    return this.createSubjectCatalogUC.execute(dto);
+  }
+
   // ─── Subjects ─────────────────────────────────────────────────────────────
 
   @Get("subjects")
@@ -1069,5 +1167,50 @@ export class AcademicController {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
     return this.deleteTopicFileUC.execute(topicId, teacherId);
+  }
+
+  // ─── Surveys (Fase D — docs/database/database-update-plan.md §5.4) ────────
+
+  @Get("surveys/:surveyCode/questions")
+  @ApiOperation({ summary: "List a survey's active question catalog (any authenticated user)" })
+  @ApiResponse({ status: 200 })
+  async listSurveyQuestions(@Param("surveyCode") surveyCode: string) {
+    return this.listSurveyQuestionsUC.execute(surveyCode);
+  }
+
+  @Post("surveys/questions")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Add a question to the survey catalog (ADMIN only)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 409 })
+  async createSurveyQuestion(@Body() dto: CreateSurveyQuestionDto) {
+    return this.createSurveyQuestionUC.execute(dto);
+  }
+
+  @Post("students/me/survey-responses")
+  @Roles("STUDENT")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary:
+      "Submit a survey response (STUDENT) — repeatable, every submission is a new row, never overwrites a previous one",
+  })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
+  async submitSurveyResponse(@Body() dto: SubmitSurveyResponseDto, @Req() req: JwtRequest) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.submitSurveyResponseUC.execute(studentId, dto);
+  }
+
+  @Get("students/me/survey-responses")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "Get the authenticated student's own survey response history" })
+  @ApiResponse({ status: 200 })
+  async getMySurveyResponses(@Req() req: JwtRequest) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.getSurveyResponseHistoryUC.execute(studentId);
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FiCalendar, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 
 import Container from "@/components/atoms/Container";
 import Modal from "@/components/molecules/Modal";
@@ -11,6 +12,14 @@ import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
 import useOnlineStatus from "@/hooks/useOnlineStatus";
 import { getSubjectMetricsSummary } from "@/services/course-analytics.service";
 
+import DashboardMetricCard, {
+  type DashboardMetric,
+} from "@/features/dashboard/components/DashboardMetricCard";
+import useTeacherDashboardKpis from "@/features/dashboard/hooks/useTeacherDashboardKpis";
+import { computeTeacherRealMetrics } from "@/features/dashboard/utils/computeTeacherRealMetrics";
+import { getAverageTone, getCountTone } from "@/features/dashboard/utils/metricTone";
+import { courseRiskRank } from "@/features/dashboard/utils/riskLevelPresentation";
+
 import Text from "@/components/atoms/Text";
 
 import { useNavigate } from "react-router-dom";
@@ -20,6 +29,12 @@ interface TeacherCoursesManagementProps {
   teacherName: string;
   courseState: ReturnType<typeof useTeacherCourses>;
 }
+
+const courseTrendLabel: Record<"ASCENDING" | "STABLE" | "DESCENDING", string> = {
+  ASCENDING: "Ascendente",
+  STABLE: "Estable",
+  DESCENDING: "Descendente",
+};
 
 export default function TeacherCoursesManagement({
   teacherName,
@@ -56,6 +71,7 @@ export default function TeacherCoursesManagement({
           low: number;
           medium: number;
           high: number;
+          critical: number;
         };
       }
     >
@@ -86,7 +102,8 @@ export default function TeacherCoursesManagement({
                 riskCounts: {
                   low: summary.LOW,
                   medium: summary.MEDIUM,
-                  high: summary.HIGH + summary.CRITICAL,
+                  high: summary.HIGH,
+                  critical: summary.CRITICAL,
                 },
               },
             ] as const;
@@ -95,7 +112,7 @@ export default function TeacherCoursesManagement({
               course.id,
               {
                 average: course.currentAverage ?? 0,
-                riskCounts: { low: 0, medium: 0, high: 0 },
+                riskCounts: { low: 0, medium: 0, high: 0, critical: 0 },
               },
             ] as const;
           }
@@ -117,6 +134,77 @@ export default function TeacherCoursesManagement({
       isMounted = false;
     };
   }, [courses]);
+
+  const realMetrics = useMemo(
+    () => computeTeacherRealMetrics(courses, courseAnalytics),
+    [courses, courseAnalytics]
+  );
+
+  const teacherKpis = useTeacherDashboardKpis(courses);
+
+  const sortedCourses = useMemo(
+    () =>
+      [...courses].sort(
+        (a, b) => courseRiskRank(b.riskLevel) - courseRiskRank(a.riskLevel)
+      ),
+    [courses]
+  );
+
+  const dashboardMetrics: DashboardMetric[] = [
+    {
+      label: "Promedio general",
+      value:
+        realMetrics.averageAcrossCourses === null
+          ? "--"
+          : realMetrics.averageAcrossCourses.toFixed(2),
+      hint: "Escala 0-20, promedio entre tus materias",
+      icon: FiTrendingUp,
+      tone: getAverageTone(realMetrics.averageAcrossCourses),
+    },
+    {
+      label: "Asistencia promedio",
+      value: teacherKpis.mocked.data
+        ? `${teacherKpis.mocked.data.averageAttendanceAcrossCourses}%`
+        : "--",
+      hint: "Combina registro docente y autorreporte",
+      icon: FiCalendar,
+      tone: getAverageTone(
+        teacherKpis.mocked.data
+          ? teacherKpis.mocked.data.averageAttendanceAcrossCourses / 5
+          : null
+      ),
+      isMocked: true,
+      isLoading: teacherKpis.mocked.isLoading,
+    },
+    {
+      label: "Riesgo de deserción estimado",
+      value: teacherKpis.mocked.data
+        ? teacherKpis.mocked.data.studentsAtDropoutRisk.toString()
+        : "--",
+      hint: "Estudiantes con estimación preliminar de riesgo",
+      icon: FiTrendingDown,
+      tone: getCountTone(teacherKpis.mocked.data?.studentsAtDropoutRisk ?? 0),
+      isMocked: true,
+      isLoading: teacherKpis.mocked.isLoading,
+    },
+    {
+      label: "Tendencia de tus cursos",
+      value: courseTrendLabel[teacherKpis.mocked.data?.courseTrend ?? "STABLE"],
+      hint: "Comparado con la clasificación de riesgo actual",
+      icon:
+        teacherKpis.mocked.data?.courseTrend === "DESCENDING"
+          ? FiTrendingDown
+          : FiTrendingUp,
+      tone:
+        teacherKpis.mocked.data?.courseTrend === "DESCENDING"
+          ? "danger"
+          : teacherKpis.mocked.data?.courseTrend === "ASCENDING"
+            ? "success"
+            : "neutral",
+      isMocked: true,
+      isLoading: teacherKpis.mocked.isLoading,
+    },
+  ];
 
   const handleDeleteCourse = async (courseId: string) => {
     await deleteCourse(courseId);
@@ -150,6 +238,16 @@ export default function TeacherCoursesManagement({
               }}
             />
 
+            {!isLoading && hasCourses ? (
+              <div className="mb-6 space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {dashboardMetrics.map((metric) => (
+                    <DashboardMetricCard key={metric.label} {...metric} />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {!isOnline ? (
               <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4">
                 <Text variant="small" className="font-medium text-amber-700">
@@ -181,7 +279,7 @@ export default function TeacherCoursesManagement({
               </div>
             ) : hasCourses ? (
               <CourseGrid
-                courses={courses}
+                courses={sortedCourses}
                 isDeleteMode={isDeleteMode}
                 deletingCourseId={deletingCourseId}
                 showTeacherDetails={false}

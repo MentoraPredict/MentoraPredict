@@ -1,5 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { correlationContext } from '@mentorapredict/shared-logger';
 import {
@@ -8,8 +10,12 @@ import {
   EnrollmentView,
   SubjectOwnership,
   SubjectGradesContext,
+  SubjectDetails,
+  PeriodDetails,
 } from '../../application/ports/output/i-academic-context.client';
 import { InternalJwtService } from '../auth/internal-jwt.service';
+import { SubjectReferenceOrmEntity } from '../persistence/subject-reference.orm-entity';
+import { PeriodReferenceOrmEntity } from '../persistence/period-reference.orm-entity';
 
 const TIMEOUT_MS = 5000;
 // Same passing-grade threshold used by analytics-service (get-risk-snapshot,
@@ -35,6 +41,10 @@ export class AcademicHttpClient implements IAcademicContextClient {
   constructor(
     config: ConfigService,
     private readonly internalJwt: InternalJwtService,
+    @InjectRepository(SubjectReferenceOrmEntity)
+    private readonly subjectRefRepo: Repository<SubjectReferenceOrmEntity>,
+    @InjectRepository(PeriodReferenceOrmEntity)
+    private readonly periodRefRepo: Repository<PeriodReferenceOrmEntity>,
   ) {
     this.baseUrl = config.get<string>('ACADEMIC_SERVICE_URL', 'http://academic-service:3003');
   }
@@ -113,6 +123,60 @@ export class AcademicHttpClient implements IAcademicContextClient {
     const url = `${this.baseUrl}/api/v1/academic/internal/subjects/${subjectId}/topics`;
     const topics = await this.get<TopicView[]>(url, `getSubjectTopics failed for ${subjectId}`);
     return topics.map((t) => t.title);
+  }
+
+  async getSubjectDetails(subjectId: string): Promise<SubjectDetails | null> {
+    try {
+      const subject = await this.get<SubjectDetails>(
+        `${this.baseUrl}/api/v1/academic/internal/subjects/${subjectId}`,
+        `getSubjectDetails failed for ${subjectId}`,
+      );
+      await this.syncSubjectReference(subject);
+      return subject;
+    } catch (err) {
+      this.logger.warn(`getSubjectDetails failed for ${subjectId}: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
+  }
+
+  async getPeriodDetails(periodId: string): Promise<PeriodDetails | null> {
+    try {
+      const period = await this.get<PeriodDetails>(
+        `${this.baseUrl}/api/v1/academic/internal/periods/${periodId}`,
+        `getPeriodDetails failed for ${periodId}`,
+      );
+      await this.syncPeriodReference(period);
+      return period;
+    } catch (err) {
+      this.logger.warn(`getPeriodDetails failed for ${periodId}: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
+  }
+
+  /**
+   * Best-effort local cache upserts (see docs/database/entity-relationship-diagram.md §3)
+   * — a failure here must never break the actual fetches above.
+   */
+  private async syncSubjectReference(subject: SubjectDetails): Promise<void> {
+    try {
+      await this.subjectRefRepo.upsert(
+        { id: subject.id, isActive: subject.isActive, syncedAt: new Date() },
+        ['id'],
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to sync prediction_subject_references for ${subject.id}`, err);
+    }
+  }
+
+  private async syncPeriodReference(period: PeriodDetails): Promise<void> {
+    try {
+      await this.periodRefRepo.upsert(
+        { id: period.id, status: period.status, syncedAt: new Date() },
+        ['id'],
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to sync prediction_period_references for ${period.id}`, err);
+    }
   }
 
   private async get<T>(url: string, errorContext: string): Promise<T> {

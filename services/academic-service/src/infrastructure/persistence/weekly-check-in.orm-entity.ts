@@ -2,10 +2,16 @@ import {
   Entity,
   PrimaryColumn,
   Column,
+  ManyToOne,
+  JoinColumn,
+  Check,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
 } from "typeorm";
+import { SubjectOrmEntity } from './subject.orm-entity';
+import { AcademicPeriodOrmEntity } from './academic-period.orm-entity';
+import { UserReferenceOrmEntity } from './user-reference.orm-entity';
 
 @Entity("weekly_check_ins")
 @Index(
@@ -13,14 +19,24 @@ import {
   ["studentId", "subjectId", "academicWeek", "academicYear"],
   { unique: true },
 )
+@Check('CHK_weekly_check_ins_emotional_state', `"emotional_state" IN ('GREAT','GOOD','NEUTRAL','BAD','CRITICAL')`)
 export class WeeklyCheckInOrmEntity {
   @PrimaryColumn("uuid") id!: string;
 
   @Column({ name: "student_id", type: "uuid" }) studentId!: string;
+  @ManyToOne(() => UserReferenceOrmEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'student_id', foreignKeyConstraintName: 'FK_weekly_check_ins_student_id' })
+  student?: UserReferenceOrmEntity;
 
   @Column({ name: "subject_id", type: "uuid" }) subjectId!: string;
+  @ManyToOne(() => SubjectOrmEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'subject_id', foreignKeyConstraintName: 'FK_weekly_check_ins_subject_id' })
+  subject?: SubjectOrmEntity;
 
   @Column({ name: "period_id", type: "uuid" }) periodId!: string;
+  @ManyToOne(() => AcademicPeriodOrmEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'period_id', foreignKeyConstraintName: 'FK_weekly_check_ins_period_id' })
+  period?: AcademicPeriodOrmEntity;
 
   @Column({ name: "academic_week", type: "int" }) academicWeek!: number;
 
@@ -40,9 +56,6 @@ export class WeeklyCheckInOrmEntity {
 
   @Column({ name: "general_comprehension", type: "int" })
   generalComprehension!: number;
-
-  @Column({ name: "topic_responses", type: "jsonb", default: "[]" })
-  topicResponses!: Record<string, unknown>[];
 
   @Column({ type: "text", nullable: true }) notes!: string | null;
 

@@ -16,9 +16,22 @@ export const APP_PATHS = {
     dashboard: "/student/courses",
     courses: "/student/courses",
     profile: "/student/profile",
+    survey: "/student/survey",
+    surveyWizard: "/student/survey/:surveyId",
+    aiChat: "/student/ai-chat",
+    calendar: "/student/calendar",
+    tasks: "/student/tasks",
+    materials: "/student/materials",
+    evaluations: "/student/evaluations",
+    progress: "/student/progress",
+    notifications: "/student/notifications",
     courseDetail: "/student/courses/:courseId",
     coursePerformance: "/student/courses/:courseId/performance",
     courseUploadData: "/student/courses/:courseId/upload-data",
+    courseActivities: "/student/courses/:courseId/activities",
+    courseEvaluations: "/student/courses/:courseId/evaluations",
+    courseAiChat: "/student/courses/:courseId/ai-chat",
+    courseSurvey: "/student/courses/:courseId/survey/:surveyId",
   },
   teacher: {
     dashboard: "/teacher/courses",
@@ -29,6 +42,7 @@ export const APP_PATHS = {
     courseUploadData: "/teacher/courses/:courseId/upload-data",
     courseStudents: "/teacher/courses/:courseId/students",
     courseEdit: "/teacher/courses/:courseId/edit",
+    courseDropoutRisk: "/teacher/courses/:courseId/dropout-risk",
   },
   admin: {
     root: "/admin",
@@ -69,6 +83,10 @@ export function getTeacherCourseStudentsPath(courseId: string) {
   return `/teacher/courses/${courseId}/students`;
 }
 
+export function getTeacherCourseDropoutRiskPath(courseId: string) {
+  return `/teacher/courses/${courseId}/dropout-risk`;
+}
+
 export function getAdminCourseStudentsPath(courseId: string) {
   return `/admin/courses/${courseId}/students`;
 }
@@ -79,4 +97,24 @@ export function getTeacherCourseEditPath(courseId: string) {
 
 export function getStudentCourseUploadDataPath(courseId: string) {
   return `/student/courses/${courseId}/upload-data`;
+}
+
+export function getStudentSurveyWizardPath(surveyId: string) {
+  return `/student/survey/${surveyId}`;
+}
+
+export function getStudentCourseActivitiesPath(courseId: string) {
+  return `/student/courses/${courseId}/activities`;
+}
+
+export function getStudentCourseEvaluationsPath(courseId: string) {
+  return `/student/courses/${courseId}/evaluations`;
+}
+
+export function getStudentCourseAiChatPath(courseId: string) {
+  return `/student/courses/${courseId}/ai-chat`;
+}
+
+export function getStudentCourseSurveyPath(courseId: string, surveyId: string) {
+  return `/student/courses/${courseId}/survey/${surveyId}`;
 }

@@ -1,8 +1,12 @@
-export type CourseRiskLevel = "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+import type { RiskLevelOrUnknown } from "@/types/risk";
+
+/** @deprecated import `RiskLevelOrUnknown` from `@/types/risk` directly — kept for existing call sites. */
+export type CourseRiskLevel = RiskLevelOrUnknown;
 
 export interface Course {
   id: string;
   name: string;
+  code?: string;
   teacherId?: string;
   teacherName: string;
   semester: string;

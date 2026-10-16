@@ -23,6 +23,7 @@ const mockAcademicClient = (): jest.Mocked<IAcademicServiceClient> => ({
   getSubjectOwnership: jest.fn().mockResolvedValue({ isOwner: true }),
   getSubjectDetails: jest.fn(),
   getStudentsByTeacher: jest.fn(),
+  getPeriodDetails: jest.fn(),
 });
 
 describe('GetSubjectMetricsSummaryUseCase', () => {

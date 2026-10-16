@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
@@ -8,6 +9,8 @@ import CourseProgressChart from "@/features/courses/components/CourseProgressCha
 import CourseRecommendationsPanel from "@/features/courses/components/CourseRecommendationsPanel";
 import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
 import useTeacherCourseAnalytics from "@/features/teachers/hooks/useTeacherCourseAnalytics";
+import { getActiveAcademicPeriod } from "@/services/student-performance.service";
+import { buildPeriodProgress } from "@/utils/buildPeriodProgress";
 
 interface TeacherCoursePerformanceProps {
   courseId: string;
@@ -40,6 +43,10 @@ export default function TeacherCoursePerformance({
   courseId,
 }: TeacherCoursePerformanceProps) {
   const { data, isLoading, error } = useTeacherCourseAnalytics(courseId);
+  const { data: activePeriod } = useQuery({
+    queryKey: ["academic-period", "active"],
+    queryFn: getActiveAcademicPeriod,
+  });
   const [selectedRiskGroup, setSelectedRiskGroup] =
     useState<RiskGroup>("high");
 
@@ -96,6 +103,11 @@ export default function TeacherCoursePerformance({
   }
 
   const selectedStudents = studentsByRisk[selectedRiskGroup];
+  const periodProgress = buildPeriodProgress(
+    data.progress,
+    activePeriod?.startDate ?? null,
+    activePeriod?.endDate ?? null,
+  );
 
   return (
     <div className="space-y-6">
@@ -216,9 +228,10 @@ export default function TeacherCoursePerformance({
 
       <div className="w-full">
         <CourseProgressChart
-          data={data.progress}
+          data={periodProgress}
           title="Progreso del curso"
           subtitle="Promedio general de todos los estudiantes por semana"
+          classification={data.trend?.classification}
         />
       </div>
     </div>

@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { correlationContext } from '@mentorapredict/shared-logger';
 import { IUserProfilePort, UserProfileData } from '../../application/ports/output/i-user-profile.port';
 import { InternalJwtService } from '../auth/internal-jwt.service';
+import { UserReferenceOrmEntity } from '../persistence/user-reference.orm-entity';
 
 const TIMEOUT_MS = 5000;
 
@@ -15,6 +18,8 @@ export class UserProfileAdapter implements IUserProfilePort {
   constructor(
     private readonly config: ConfigService,
     private readonly internalJwt: InternalJwtService,
+    @InjectRepository(UserReferenceOrmEntity)
+    private readonly userRefRepo: Repository<UserReferenceOrmEntity>,
   ) {
     this.baseUrl = config.get<string>('USER_SERVICE_URL', 'http://user-service:3002');
   }
@@ -33,10 +38,32 @@ export class UserProfileAdapter implements IUserProfilePort {
       });
       clearTimeout(timer);
       if (!res.ok) return null;
-      return res.json() as Promise<UserProfileData>;
+      const profile = (await res.json()) as UserProfileData;
+      await this.syncUserReference(profile);
+      return profile;
     } catch (err) {
       this.logger.warn(`Failed to fetch profile for ${userId}`, err);
       return null;
+    }
+  }
+
+  /**
+   * Best-effort local cache upsert (see docs/database/entity-relationship-diagram.md §3)
+   * — a failure here must never break the actual profile fetch above.
+   */
+  private async syncUserReference(profile: UserProfileData): Promise<void> {
+    try {
+      await this.userRefRepo.upsert(
+        {
+          id: profile.id,
+          role: profile.role,
+          isActive: profile.status === 'ACTIVE',
+          syncedAt: new Date(),
+        },
+        ['id'],
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to sync academic_user_references for ${profile.id}`, err);
     }
   }
 }

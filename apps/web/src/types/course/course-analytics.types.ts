@@ -2,6 +2,8 @@ export interface CourseProgressPoint {
   week: string;
   actual?: number;
   projection?: number;
+  academicWeek?: number;
+  academicYear?: number;
 }
 
 export interface CourseAlert {

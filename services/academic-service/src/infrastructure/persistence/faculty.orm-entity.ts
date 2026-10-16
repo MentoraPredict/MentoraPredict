@@ -1,6 +1,7 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Check, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('faculties')
+@Check('CHK_faculties_status', `"status" IN ('ACTIVE','INACTIVE')`)
 export class FacultyOrmEntity {
   @PrimaryColumn('uuid') id!: string;
   @Column({ length: 200, unique: true }) name!: string;

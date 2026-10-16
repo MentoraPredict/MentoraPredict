@@ -4,7 +4,7 @@ export interface IRegisterUseCase {
   execute(dto: RegisterDto): Promise<{ id: string; email: string; role: string; createdAt: Date }>;
 }
 export interface ILoginUseCase {
-  execute(dto: LoginDto, ip: string): Promise<{ accessToken: string; refreshToken: string; expiresIn: number; tokenType: string }>;
+  execute(dto: LoginDto, ip: string, userAgent?: string): Promise<{ accessToken: string; refreshToken: string; expiresIn: number; tokenType: string }>;
 }
 export interface ILogoutUseCase {
   execute(userId: string, refreshToken: string): Promise<void>;

@@ -6,6 +6,7 @@ import { GetSubjectEvaluationWeightsUseCase } from '../../application/use-cases/
 import { GetLatestCheckInUseCase } from '../../application/use-cases/get-latest-check-in.use-case';
 import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-subject-ownership.use-case';
 import { GetSubjectUseCase } from '../../application/use-cases/get-subject.use-case';
+import { GetAcademicPeriodUseCase } from '../../application/use-cases/get-academic-period.use-case';
 import { GetTeacherStudentsUseCase } from '../../application/use-cases/get-teacher-students.use-case';
 import { GetSubjectTopicsInternalUseCase } from '../../application/use-cases/get-subject-topics-internal.use-case';
 import { CheckUserDeactivationEligibilityUseCase } from '../../application/use-cases/check-user-deactivation-eligibility.use-case';
@@ -22,6 +23,7 @@ export class InternalAcademicController {
     private readonly getLatestCheckInUC: GetLatestCheckInUseCase,
     private readonly checkOwnershipUC: CheckSubjectOwnershipUseCase,
     private readonly getSubjectUC: GetSubjectUseCase,
+    private readonly getAcademicPeriodUC: GetAcademicPeriodUseCase,
     private readonly getTeacherStudentsUC: GetTeacherStudentsUseCase,
     private readonly getSubjectTopicsUC: GetSubjectTopicsInternalUseCase,
     private readonly checkUserDeactivationUC: CheckUserDeactivationEligibilityUseCase,
@@ -65,6 +67,12 @@ export class InternalAcademicController {
   @ApiOperation({ summary: 'Internal: subject details (name, assigned teacherId) for cross-service lookups' })
   subjectDetails(@Param('subjectId') subjectId: string) {
     return this.getSubjectUC.execute(subjectId);
+  }
+
+  @Get('periods/:periodId')
+  @ApiOperation({ summary: 'Internal: academic period details (status, dates) for cross-service reference tables' })
+  periodDetails(@Param('periodId') periodId: string) {
+    return this.getAcademicPeriodUC.execute(periodId);
   }
 
   @Get('teachers/:teacherId/students')

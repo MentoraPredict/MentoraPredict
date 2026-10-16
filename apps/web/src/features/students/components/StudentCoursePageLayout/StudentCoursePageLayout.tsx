@@ -4,7 +4,7 @@ import { Outlet, useParams } from "react-router-dom";
 import Text from "@/components/atoms/Text";
 import CourseActionsToolbar from "@/features/courses/components/CourseActionsToolbar";
 import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalyticsLayout";
-import CourseSidebar from "@/features/courses/components/CourseSidebar";
+import StudentMainSidebar from "@/features/students/components/StudentMainSidebar";
 import useStudentCourses from "@/hooks/queries/useStudentCourses";
 
 import type { Course } from "@/types/course";
@@ -23,7 +23,6 @@ export default function StudentCoursePageLayout() {
     [courseId, courses],
   );
 
-  const activeCourseId = activeCourse?.id ?? courseId ?? "";
   const title = activeCourse
     ? `${activeCourse.name} - Estudiante`
     : "Curso - Estudiante";
@@ -31,13 +30,7 @@ export default function StudentCoursePageLayout() {
   return (
     <CourseAnalyticsLayout
       title={title}
-      sidebar={
-        <CourseSidebar
-          mode="student"
-          courses={courses}
-          activeCourseId={activeCourseId}
-        />
-      }
+      sidebar={<StudentMainSidebar courses={courses} />}
     >
       {isLoading ? (
         <div className="rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center">
