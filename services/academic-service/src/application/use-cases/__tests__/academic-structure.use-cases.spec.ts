@@ -56,13 +56,23 @@ describe('GenerateSectionCoursesUseCase', () => {
     };
     const subjectRepo: any = { save: jest.fn((s) => Promise.resolve(s)) };
     const subjectTeacherRepo: any = { save: jest.fn() };
+    const studentEnrollments: any = {
+      listBySection: jest.fn().mockResolvedValue([{ studentId: 'stu-1' }]),
+    };
+    const enrollmentRepo: any = {
+      findByStudentAndSubject: jest.fn().mockResolvedValue(null),
+      save: jest.fn((e) => Promise.resolve(e)),
+      update: jest.fn(),
+    };
 
     return {
       useCase: new GenerateSectionCoursesUseCase(
         structureRepo, yearRepo, periodRepo, catalogRepo, subjectRepo, subjectTeacherRepo,
+        studentEnrollments, enrollmentRepo,
       ),
       subjectRepo,
       subjectTeacherRepo,
+      enrollmentRepo,
     };
   };
 
@@ -79,6 +89,15 @@ describe('GenerateSectionCoursesUseCase', () => {
     expect(saved.teacherId).toBeNull();
     expect(saved.academicPeriodId).toBe('p2');
     expect(subjectTeacherRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('matricula a los estudiantes del paralelo en los cursos nuevos', async () => {
+    const { useCase, enrollmentRepo } = build([]);
+
+    await useCase.execute('sec-1');
+
+    expect(enrollmentRepo.save).toHaveBeenCalledTimes(2);
+    expect(enrollmentRepo.save.mock.calls[0][0]).toMatchObject({ studentId: 'stu-1', status: 'ACTIVE' });
   });
 
   it('no duplica las asignaturas ya ofertadas', async () => {

@@ -28,6 +28,12 @@ import {
   SectionOrmEntity,
   CurriculumSubjectOrmEntity,
 } from "./infrastructure/persistence/academic-structure.orm-entities";
+import {
+  StudentProfileOrmEntity,
+  GuardianStudentOrmEntity,
+  ConsentOrmEntity,
+  StudentEnrollmentOrmEntity,
+} from "./infrastructure/persistence/people.orm-entities";
 import { SchoolYearOrmEntity } from "./infrastructure/persistence/school-year.orm-entity";
 import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
 import { SubjectOrmEntity } from "./infrastructure/persistence/subject.orm-entity";
@@ -57,6 +63,22 @@ import { EvaluationRepository } from "./infrastructure/persistence/evaluation.re
 import { EnrollmentRepository } from "./infrastructure/persistence/enrollment.repository";
 import { GradeRepository } from "./infrastructure/persistence/grade.repository";
 import { AcademicPeriodRepository } from "./infrastructure/persistence/academic-period.repository";
+import { PeopleEnrollmentController } from "./infrastructure/controllers/people-enrollment.controller";
+import {
+  GetStudentProfileUseCase,
+  UpsertStudentProfileUseCase,
+  ListStudentGuardiansUseCase,
+  ListMyStudentsUseCase,
+  LinkGuardianUseCase,
+  UnlinkGuardianUseCase,
+  ListStudentConsentsUseCase,
+  GrantConsentUseCase,
+  RevokeConsentUseCase,
+  EnrollStudentsInSectionUseCase,
+  EndStudentEnrollmentUseCase,
+  ListSectionEnrollmentsUseCase,
+  ListStudentEnrollmentsUseCase,
+} from "./application/use-cases/people-enrollment.use-cases";
 import { AcademicStructureController } from "./infrastructure/controllers/academic-structure.controller";
 import {
   ListGradeLevelsUseCase,
@@ -81,6 +103,8 @@ import {
   UpdatePromotionRulesUseCase,
 } from "./application/use-cases/institution-config.use-cases";
 import { SchoolYearRepository } from "./infrastructure/persistence/school-year.repository";
+import { PeopleRepository } from "./infrastructure/persistence/people.repository";
+import { StudentEnrollmentRepository } from "./infrastructure/persistence/student-enrollment.repository";
 import { AcademicStructureRepository } from "./infrastructure/persistence/academic-structure.repository";
 import { InstitutionConfigRepository } from "./infrastructure/persistence/institution-config.repository";
 import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-teacher.repository";
@@ -218,6 +242,10 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           CareerOrmEntity,
           AcademicPeriodOrmEntity,
           SchoolYearOrmEntity,
+          StudentProfileOrmEntity,
+          GuardianStudentOrmEntity,
+          ConsentOrmEntity,
+          StudentEnrollmentOrmEntity,
           GradeLevelOrmEntity,
           SectionOrmEntity,
           CurriculumSubjectOrmEntity,
@@ -307,6 +335,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     AcademicController,
     InstitutionConfigController,
     AcademicStructureController,
+    PeopleEnrollmentController,
     InternalAcademicController,
     ObservationsController,
     UploadsController,
@@ -344,6 +373,14 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       useClass: AcademicStructureRepository,
     },
     {
+      provide: "IPeopleRepository",
+      useClass: PeopleRepository,
+    },
+    {
+      provide: "IStudentEnrollmentRepository",
+      useClass: StudentEnrollmentRepository,
+    },
+    {
       provide: "ISubjectTeacherRepository",
       useClass: SubjectTeacherRepository,
     },
@@ -361,6 +398,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       useClass: TeacherObservationRepository,
     },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
+    { provide: "IUserRolePort", useClass: UserRoleHttpAdapter },
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
     { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },
     { provide: "INotificationClientPort", useClass: NotificationHttpClient },
@@ -416,6 +454,19 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     CreateSectionCourseUseCase,
     AssignCourseTeacherUseCase,
     UpdateSubjectCatalogUseCase,
+    GetStudentProfileUseCase,
+    UpsertStudentProfileUseCase,
+    ListStudentGuardiansUseCase,
+    ListMyStudentsUseCase,
+    LinkGuardianUseCase,
+    UnlinkGuardianUseCase,
+    ListStudentConsentsUseCase,
+    GrantConsentUseCase,
+    RevokeConsentUseCase,
+    EnrollStudentsInSectionUseCase,
+    EndStudentEnrollmentUseCase,
+    ListSectionEnrollmentsUseCase,
+    ListStudentEnrollmentsUseCase,
     // Career use-cases
     CreateCareerUseCase,
     GetCareerUseCase,

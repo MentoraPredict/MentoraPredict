@@ -31,6 +31,9 @@ import {
   UpdateSubjectCatalogDto,
 } from '../dtos/academic-structure.dto';
 import { todayInEcuador } from '../dtos/school-year.view';
+import { enrollStudentInCourses } from './people-enrollment.use-cases';
+import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
+import { IStudentEnrollmentRepository } from '../ports/output/i-student-enrollment.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { IAcademicStructureRepository } from '../ports/output/i-academic-structure.repository';
 import { IInstitutionConfigRepository } from '../ports/output/i-institution-config.repository';
@@ -334,6 +337,10 @@ export class GenerateSectionCoursesUseCase {
     private readonly subjectRepo: ISubjectRepository,
     @Inject('ISubjectTeacherRepository')
     private readonly subjectTeacherRepo: ISubjectTeacherRepository,
+    @Inject('IStudentEnrollmentRepository')
+    private readonly studentEnrollments: IStudentEnrollmentRepository,
+    @Inject('IEnrollmentRepository')
+    private readonly enrollmentRepo: IEnrollmentRepository,
   ) {}
 
   async execute(sectionId: string): Promise<GenerateCoursesResult> {
@@ -365,6 +372,15 @@ export class GenerateSectionCoursesUseCase {
         subjectTeacherRepo: this.subjectTeacherRepo,
       });
       courses.push({ id: saved.id, name: saved.name, weeklyHours: saved.weeklyHours });
+    }
+
+    // Los estudiantes ya matriculados en el paralelo entran a los cursos nuevos.
+    if (courses.length > 0) {
+      const created = courses.map((c) => ({ id: c.id, academicPeriodId: anchorPeriodId }));
+      const active = await this.studentEnrollments.listBySection(sectionId, 'ACTIVE');
+      for (const enrollment of active) {
+        await enrollStudentInCourses(enrollment.studentId, created, this.enrollmentRepo);
+      }
     }
 
     return { created: courses.length, alreadyOffered: plan.alreadyOffered, courses };
