@@ -41,6 +41,17 @@ export default function StudentSyllabusSurveyPanel({
         </Text>
       </div>
 
+      <div className="px-6 pt-4">
+        <Pagination
+          currentPage={currentPage}
+          pageSize={TOPICS_PER_PAGE}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          itemLabel="temas"
+          onPageChange={setCurrentPage}
+        />
+      </div>
+
       <div className="divide-y divide-gray-200">
         {paginatedTopics.map((topic) => (
           <div
@@ -64,16 +75,6 @@ export default function StudentSyllabusSurveyPanel({
         ))}
       </div>
 
-      <div className="px-6 pb-6">
-        <Pagination
-          currentPage={currentPage}
-          pageSize={TOPICS_PER_PAGE}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          itemLabel="temas"
-          onPageChange={setCurrentPage}
-        />
-      </div>
     </section>
   );
 }

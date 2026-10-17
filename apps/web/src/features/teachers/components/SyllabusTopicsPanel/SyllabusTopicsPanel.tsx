@@ -228,7 +228,16 @@ export default function SyllabusTopicsPanel({
         </Text>
       ) : topics.length > 0 ? (
         <>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              pageSize={TOPICS_PER_PAGE}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              itemLabel="temas"
+              onPageChange={setCurrentPage}
+            />
+          </div>          <div className="mt-4 flex flex-wrap gap-2">
             {paginatedTopics.map((topic) => (
               <div
                 key={topic.id}
@@ -291,16 +300,6 @@ export default function SyllabusTopicsPanel({
                 )}
               </div>
             ))}
-          </div>
-          <div className="mt-4">
-            <Pagination
-              currentPage={currentPage}
-              pageSize={TOPICS_PER_PAGE}
-              totalItems={totalItems}
-              totalPages={totalPages}
-              itemLabel="temas"
-              onPageChange={setCurrentPage}
-            />
           </div>
         </>
       ) : (
