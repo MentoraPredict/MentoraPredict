@@ -7,6 +7,7 @@ import { RecordGradeUseCase } from "../record-grade.use-case";
 import { IGradeRepository } from "../../ports/output/i-grade.repository";
 import { IEvaluationRepository } from "../../ports/output/i-evaluation.repository";
 import { IEnrollmentRepository } from "../../ports/output/i-enrollment.repository";
+import { ISubjectRepository } from "../../ports/output/i-subject.repository";
 import { EvaluationEntity } from "../../../domain/entities/evaluation.entity";
 import { EnrollmentEntity } from "../../../domain/entities/enrollment.entity";
 
@@ -74,7 +75,11 @@ describe("RecordGradeUseCase", () => {
     gradeRepo = mockGradeRepo();
     evalRepo = mockEvalRepo();
     enrollRepo = mockEnrollRepo();
-    useCase = new RecordGradeUseCase(gradeRepo, evalRepo, enrollRepo);
+    // Asignatura sin paralelo: el flujo anterior sigue permitido.
+    const subjectRepo = {
+      findById: jest.fn().mockResolvedValue({ id: "subj-1", sectionId: null }),
+    } as unknown as ISubjectRepository;
+    useCase = new RecordGradeUseCase(gradeRepo, evalRepo, enrollRepo, subjectRepo);
   });
 
   it("saves a valid grade for an enrolled student", async () => {
@@ -91,6 +96,19 @@ describe("RecordGradeUseCase", () => {
     expect(result.value).toBe(8.5);
     expect(result.studentId).toBe("stud-1");
     expect(gradeRepo.save).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects grades of a section course: they go through the gradebook", async () => {
+    evalRepo.findById.mockResolvedValue(makeEval());
+    const sectionRepo = {
+      findById: jest.fn().mockResolvedValue({ id: "subj-1", sectionId: "sec-1" }),
+    } as unknown as ISubjectRepository;
+    const guarded = new RecordGradeUseCase(gradeRepo, evalRepo, enrollRepo, sectionRepo);
+
+    await expect(
+      guarded.execute({ studentId: "stud-1", evaluationId: "eval-1", value: 7 }, "teacher-1"),
+    ).rejects.toThrow(ConflictException);
+    expect(gradeRepo.save).not.toHaveBeenCalled();
   });
 
   it("throws NotFoundException if evaluation does not exist", async () => {

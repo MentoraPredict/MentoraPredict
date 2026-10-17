@@ -10,7 +10,9 @@ import { GradeEntity } from "../../domain/entities/grade.entity";
 import { IGradeRepository } from "../ports/output/i-grade.repository";
 import { IEvaluationRepository } from "../ports/output/i-evaluation.repository";
 import { IEnrollmentRepository } from "../ports/output/i-enrollment.repository";
+import { ISubjectRepository } from "../ports/output/i-subject.repository";
 import { RecordGradeDto } from "../dtos/record-grade.dto";
+import { assertLegacyCourse } from "./school-course.guard";
 
 @Injectable()
 export class RecordGradeUseCase {
@@ -20,11 +22,16 @@ export class RecordGradeUseCase {
     private readonly evalRepo: IEvaluationRepository,
     @Inject("IEnrollmentRepository")
     private readonly enrollRepo: IEnrollmentRepository,
+    @Inject("ISubjectRepository")
+    private readonly subjectRepo: ISubjectRepository,
   ) {}
 
   async execute(dto: RecordGradeDto, teacherId: string): Promise<GradeEntity> {
     const evaluation = await this.evalRepo.findById(dto.evaluationId);
     if (!evaluation) throw new NotFoundException("Evaluation not found");
+
+    const subject = await this.subjectRepo.findById(evaluation.subjectId);
+    if (subject) assertLegacyCourse(subject);
 
     const enrollment = await this.enrollRepo.findByStudentAndSubject(
       dto.studentId,

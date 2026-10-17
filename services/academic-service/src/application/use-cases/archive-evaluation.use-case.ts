@@ -9,6 +9,7 @@ import { IEvaluationRepository } from '../ports/output/i-evaluation.repository';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
+import { assertLegacyCourse } from './school-course.guard';
 
 @Injectable()
 export class ArchiveEvaluationUseCase {
@@ -25,6 +26,7 @@ export class ArchiveEvaluationUseCase {
 
     const subject = await this.subjectRepo.findById(evaluation.subjectId);
     if (!subject) throw new NotFoundException('Materia no encontrada');
+    assertLegacyCourse(subject);
 
     const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
       evaluation.subjectId,
