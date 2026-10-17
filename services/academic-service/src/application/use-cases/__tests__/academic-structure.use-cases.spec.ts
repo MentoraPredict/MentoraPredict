@@ -20,8 +20,6 @@ const catalog = (id: string, name: string) => ({
   name,
   description: '',
   code: id.toUpperCase(),
-  credits: 0,
-  careerId: null,
   isActive: true,
   area: null,
 });

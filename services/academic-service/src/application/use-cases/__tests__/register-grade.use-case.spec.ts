@@ -66,7 +66,7 @@ const mockAnalyticsClient = (): jest.Mocked<IAnalyticsClientPort> => ({
 });
 
 const makeSubject = () =>
-  new SubjectEntity('subj-1', 'Math', '', 'MAT101', 3, 'career-1', 'period-1', 30, 'teacher-1', true, new Date(), new Date());
+  new SubjectEntity('subj-1', 'Math', '', 'MAT101', 'period-1', 30, 'teacher-1', true, new Date(), new Date());
 
 const makePeriod = () =>
   new AcademicPeriodEntity('period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'ACTIVE', 'SEMESTER', new Date(), new Date());

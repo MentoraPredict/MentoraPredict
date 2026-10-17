@@ -126,19 +126,14 @@ export class EnrollmentRepository implements IEnrollmentRepository {
         sc.code AS "subjectCode",
         sc.description AS "subjectDescription",
         s.image_url AS "subjectImageUrl",
-        sc.credits,
         s.max_capacity AS "maxCapacity",
         s.teacher_id AS "teacherId",
-        COALESCE(c.id::text, '') AS "careerId",
-        COALESCE(c.name, '') AS "careerName",
         p.id AS "periodId",
         p.name AS "periodName",
         p.status AS "periodStatus"
       FROM enrollments e
       INNER JOIN subjects s ON s.id = e.subject_id
       INNER JOIN subject_catalog sc ON sc.id = s.subject_catalog_id
-      -- LEFT: las asignaturas escolares no tienen carrera
-      LEFT JOIN careers c ON c.id = sc.career_id
       INNER JOIN academic_periods p ON p.id = e.period_id
       WHERE ${where}
       ORDER BY e.enrolled_at DESC

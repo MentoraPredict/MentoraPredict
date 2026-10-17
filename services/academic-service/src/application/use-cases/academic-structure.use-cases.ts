@@ -268,8 +268,6 @@ async function buildOffering(args: {
       args.catalog.name,
       args.catalog.description,
       args.catalog.code,
-      args.catalog.credits,
-      args.catalog.careerId,
       args.anchorPeriodId,
       args.section.capacity,
       args.teacherId,

@@ -8,7 +8,7 @@ RF-006–013
 
 ## Description
 
-Academic hierarchy: faculties, careers, periods, subjects, enrollments, evaluations, grades, bulk ingestion.
+Academic domain: school years and grading periods, grade levels, sections and curriculum, subjects, people and enrollment, grading and promotion, attendance and justifications, bulk ingestion.
 
 ## Hexagonal Architecture
 

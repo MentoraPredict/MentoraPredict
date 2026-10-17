@@ -5,15 +5,8 @@ export interface TeacherSubjectRawRow {
   name: string;
   code: string;
   description: string;
-  credits: number;
   maxCapacity: number;
   isActive: boolean;
-  careerId: string;
-  careerName: string;
-  careerCode: string;
-  facultyId: string;
-  facultyName: string;
-  facultyCode: string;
   periodId: string;
   periodName: string;
   periodCode: string;

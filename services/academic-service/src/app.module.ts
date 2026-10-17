@@ -11,8 +11,6 @@ import { UploadsController } from "./infrastructure/controllers/uploads.controll
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
-import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
-import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
 import {
   InstitutionOrmEntity,
@@ -100,8 +98,6 @@ import { TeacherObservationOrmEntity } from "./infrastructure/persistence/teache
 
 import { SubjectCatalogRepository } from "./infrastructure/persistence/subject-catalog.repository";
 import { SubjectRepository } from "./infrastructure/persistence/subject.repository";
-import { FacultyRepository } from "./infrastructure/persistence/faculty.repository";
-import { CareerRepository } from "./infrastructure/persistence/career.repository";
 import { EvaluationRepository } from "./infrastructure/persistence/evaluation.repository";
 import { EnrollmentRepository } from "./infrastructure/persistence/enrollment.repository";
 import { GradeRepository } from "./infrastructure/persistence/grade.repository";
@@ -185,13 +181,6 @@ import { GetStudentEnrollmentsUseCase } from "./application/use-cases/get-studen
 import { CreateObservationUseCase } from "./application/use-cases/create-observation.use-case";
 import { GetObservationsByStudentUseCase } from "./application/use-cases/get-observations-by-student.use-case";
 
-// Faculty use-cases
-import { CreateFacultyUseCase } from "./application/use-cases/create-faculty.use-case";
-import { GetFacultyUseCase } from "./application/use-cases/get-faculty.use-case";
-import { ListFacultiesUseCase } from "./application/use-cases/list-faculties.use-case";
-import { UpdateFacultyUseCase } from "./application/use-cases/update-faculty.use-case";
-import { ChangeFacultyStatusUseCase } from "./application/use-cases/change-faculty-status.use-case";
-import { DeleteFacultyUseCase } from "./application/use-cases/delete-faculty.use-case";
 
 // Academic Period use-cases
 import { CreateAcademicPeriodUseCase } from "./application/use-cases/create-academic-period.use-case";
@@ -205,13 +194,6 @@ import { CreateSchoolYearUseCase } from "./application/use-cases/create-school-y
 import { ListSchoolYearsUseCase, GetSchoolYearUseCase, GetCurrentSchoolYearUseCase } from "./application/use-cases/list-school-years.use-case";
 import { UpdateSchoolYearUseCase, ChangeSchoolYearStatusUseCase, DeleteSchoolYearUseCase } from "./application/use-cases/manage-school-year.use-case";
 
-// Career use-cases
-import { CreateCareerUseCase } from "./application/use-cases/create-career.use-case";
-import { GetCareerUseCase } from "./application/use-cases/get-career.use-case";
-import { ListCareersUseCase } from "./application/use-cases/list-careers.use-case";
-import { UpdateCareerUseCase } from "./application/use-cases/update-career.use-case";
-import { ChangeCareerStatusUseCase } from "./application/use-cases/change-career-status.use-case";
-import { DeleteCareerUseCase } from "./application/use-cases/delete-career.use-case";
 
 // Subject use-cases
 import { CreateSubjectCatalogUseCase } from "./application/use-cases/create-subject-catalog.use-case";
@@ -281,8 +263,6 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
         entities: [
-          FacultyOrmEntity,
-          CareerOrmEntity,
           AcademicPeriodOrmEntity,
           SchoolYearOrmEntity,
           StudentProfileOrmEntity,
@@ -333,8 +313,6 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     }),
 
     TypeOrmModule.forFeature([
-      FacultyOrmEntity,
-      CareerOrmEntity,
       AcademicPeriodOrmEntity,
       SchoolYearOrmEntity,
       SubjectCatalogOrmEntity,
@@ -400,8 +378,6 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     TeacherRoleGuard,
     RolesGuard,
     JwtAuthGuard,
-    { provide: "IFacultyRepository", useClass: FacultyRepository },
-    { provide: "ICareerRepository", useClass: CareerRepository },
     { provide: "ISubjectCatalogRepository", useClass: SubjectCatalogRepository },
     { provide: "ISubjectRepository", useClass: SubjectRepository },
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
@@ -471,13 +447,6 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     GetSubjectEnrollmentsUseCase,
     CreateObservationUseCase,
     GetObservationsByStudentUseCase,
-    // Faculty use-cases
-    CreateFacultyUseCase,
-    GetFacultyUseCase,
-    ListFacultiesUseCase,
-    UpdateFacultyUseCase,
-    ChangeFacultyStatusUseCase,
-    DeleteFacultyUseCase,
     // Academic Period use-cases
     CreateAcademicPeriodUseCase,
     GetAcademicPeriodUseCase,
@@ -547,13 +516,6 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     RegisterSupplementaryUseCase,
     GetSectionPromotionUseCase,
     ConfirmPromotionUseCase,
-    // Career use-cases
-    CreateCareerUseCase,
-    GetCareerUseCase,
-    ListCareersUseCase,
-    UpdateCareerUseCase,
-    ChangeCareerStatusUseCase,
-    DeleteCareerUseCase,
     // Subject catalog use-cases
     CreateSubjectCatalogUseCase,
     ListSubjectCatalogUseCase,

@@ -12,8 +12,6 @@ const makeSubject = (active = true) =>
     "Prog Web",
     "",
     "PW-701",
-    4,
-    "career-1",
     "period-1",
     30,
     null,

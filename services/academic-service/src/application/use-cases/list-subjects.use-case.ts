@@ -3,7 +3,6 @@ import { SubjectEntity } from '../../domain/entities/subject.entity';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 
 export interface ListSubjectsFilters {
-  careerId?: string;
   periodId?: string;
 }
 

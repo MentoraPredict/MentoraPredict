@@ -27,13 +27,10 @@ export class SubjectRepository implements ISubjectRepository {
     return list.map((o) => this.toDomain(o));
   }
 
-  async findAll(filters?: { careerId?: string; periodId?: string }): Promise<SubjectEntity[]> {
+  async findAll(filters?: { periodId?: string }): Promise<SubjectEntity[]> {
     const qb = this.repo
       .createQueryBuilder("s")
       .leftJoinAndSelect("s.subjectCatalog", "sc");
-    if (filters?.careerId) {
-      qb.andWhere("sc.careerId = :careerId", { careerId: filters.careerId });
-    }
     if (filters?.periodId) {
       qb.andWhere("s.academicPeriodId = :periodId", { periodId: filters.periodId });
     }
@@ -84,8 +81,6 @@ export class SubjectRepository implements ISubjectRepository {
       o.subjectCatalog?.name ?? fallback?.name ?? '',
       o.subjectCatalog?.description ?? fallback?.description ?? '',
       o.subjectCatalog?.code ?? fallback?.code ?? '',
-      o.subjectCatalog?.credits ?? fallback?.credits ?? 0,
-      o.subjectCatalog?.careerId ?? fallback?.careerId ?? null,
       o.academicPeriodId,
       o.maxCapacity,
       o.teacherId,

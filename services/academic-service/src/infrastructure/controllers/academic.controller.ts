@@ -60,16 +60,6 @@ import { EnrollStudentDto } from "../../application/dtos/enroll-student.dto";
 import { CreateEvaluationDto } from "../../application/dtos/create-evaluation.dto";
 import { AssignTeacherDto } from "../../application/dtos/assign-teacher.dto";
 
-// Faculty use-cases
-import { CreateFacultyUseCase } from "../../application/use-cases/create-faculty.use-case";
-import { GetFacultyUseCase } from "../../application/use-cases/get-faculty.use-case";
-import { ListFacultiesUseCase } from "../../application/use-cases/list-faculties.use-case";
-import { UpdateFacultyUseCase } from "../../application/use-cases/update-faculty.use-case";
-import { ChangeFacultyStatusUseCase } from "../../application/use-cases/change-faculty-status.use-case";
-import { DeleteFacultyUseCase } from "../../application/use-cases/delete-faculty.use-case";
-import { CreateFacultyDto } from "../../application/dtos/create-faculty.dto";
-import { UpdateFacultyDto } from "../../application/dtos/update-faculty.dto";
-import { ChangeFacultyStatusDto } from "../../application/dtos/change-faculty-status.dto";
 
 // Academic Period use-cases
 import { CreateAcademicPeriodUseCase } from "../../application/use-cases/create-academic-period.use-case";
@@ -99,16 +89,6 @@ import { CreateAcademicPeriodDto } from "../../application/dtos/create-academic-
 import { UpdateAcademicPeriodDto } from "../../application/dtos/update-academic-period.dto";
 import { ChangeAcademicPeriodStatusDto } from "../../application/dtos/change-academic-period-status.dto";
 
-// Career use-cases
-import { CreateCareerUseCase } from "../../application/use-cases/create-career.use-case";
-import { GetCareerUseCase } from "../../application/use-cases/get-career.use-case";
-import { ListCareersUseCase } from "../../application/use-cases/list-careers.use-case";
-import { UpdateCareerUseCase } from "../../application/use-cases/update-career.use-case";
-import { ChangeCareerStatusUseCase } from "../../application/use-cases/change-career-status.use-case";
-import { DeleteCareerUseCase } from "../../application/use-cases/delete-career.use-case";
-import { CreateCareerDto } from "../../application/dtos/create-career.dto";
-import { UpdateCareerDto } from "../../application/dtos/update-career.dto";
-import { ChangeCareerStatusDto } from "../../application/dtos/change-career-status.dto";
 
 // Subject catalog use-cases
 import { CreateSubjectCatalogUseCase } from "../../application/use-cases/create-subject-catalog.use-case";
@@ -190,13 +170,6 @@ export class AcademicController {
     private readonly createEvaluationUC: CreateEvaluationUseCase,
     private readonly assignTeacherUC: AssignTeacherUseCase,
     private readonly importGradesUC: ImportGradesUseCase,
-    // Faculty use-cases
-    private readonly createFacultyUC: CreateFacultyUseCase,
-    private readonly getFacultyUC: GetFacultyUseCase,
-    private readonly listFacultiesUC: ListFacultiesUseCase,
-    private readonly updateFacultyUC: UpdateFacultyUseCase,
-    private readonly changeFacultyStatusUC: ChangeFacultyStatusUseCase,
-    private readonly deleteFacultyUC: DeleteFacultyUseCase,
     // Academic Period use-cases
     private readonly createAcademicPeriodUC: CreateAcademicPeriodUseCase,
     private readonly getAcademicPeriodUC: GetAcademicPeriodUseCase,
@@ -213,13 +186,6 @@ export class AcademicController {
     private readonly updateSchoolYearUC: UpdateSchoolYearUseCase,
     private readonly changeSchoolYearStatusUC: ChangeSchoolYearStatusUseCase,
     private readonly deleteSchoolYearUC: DeleteSchoolYearUseCase,
-    // Career use-cases
-    private readonly createCareerUC: CreateCareerUseCase,
-    private readonly getCareerUC: GetCareerUseCase,
-    private readonly listCareersUC: ListCareersUseCase,
-    private readonly updateCareerUC: UpdateCareerUseCase,
-    private readonly changeCareerStatusUC: ChangeCareerStatusUseCase,
-    private readonly deleteCareerUC: DeleteCareerUseCase,
     // Subject catalog use-cases
     private readonly createSubjectCatalogUC: CreateSubjectCatalogUseCase,
     private readonly listSubjectCatalogUC: ListSubjectCatalogUseCase,
@@ -762,65 +728,6 @@ export class AcademicController {
     return this.importGradesUC.execute(file.buffer, registeredBy);
   }
 
-  // ─── Faculties ───────────────────────────────────────────────────────────────
-
-  @Get("faculties")
-  @ApiOperation({ summary: "List all faculties" })
-  @ApiResponse({ status: 200 })
-  async listFaculties() {
-    return this.listFacultiesUC.execute();
-  }
-
-  @Get("faculties/:id")
-  @ApiOperation({ summary: "Get faculty by ID" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async getFaculty(@Param("id") id: string) {
-    return this.getFacultyUC.execute(id);
-  }
-
-  @Post("faculties")
-  @Roles("ADMIN")
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new faculty (ADMIN only)" })
-  @ApiResponse({ status: 201 })
-  @ApiResponse({ status: 409 })
-  async createFaculty(@Body() dto: CreateFacultyDto) {
-    return this.createFacultyUC.execute(dto);
-  }
-
-  @Put("faculties/:id")
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "Update faculty data (ADMIN only)" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async updateFaculty(@Param("id") id: string, @Body() dto: UpdateFacultyDto) {
-    return this.updateFacultyUC.execute(id, dto);
-  }
-
-  @Patch("faculties/:id/status")
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "Change faculty status (ADMIN only)" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async changeFacultyStatus(
-    @Param("id") id: string,
-    @Body() dto: ChangeFacultyStatusDto,
-  ) {
-    return this.changeFacultyStatusUC.execute(id, dto.status);
-  }
-
-  @Delete("faculties/:id")
-  @Roles("ADMIN")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a faculty (ADMIN only)" })
-  @ApiResponse({ status: 204 })
-  @ApiResponse({ status: 400 })
-  @ApiResponse({ status: 404 })
-  async deleteFaculty(@Param("id") id: string) {
-    return this.deleteFacultyUC.execute(id);
-  }
-
   // ─── School years (año lectivo + periodos de calificación) ───────────────────
 
   @Get("school-years")
@@ -969,73 +876,13 @@ export class AcademicController {
     return this.deleteAcademicPeriodUC.execute(id);
   }
 
-  // ─── Careers ─────────────────────────────────────────────────────────────────
-
-  @Get("careers")
-  @ApiOperation({ summary: "List all careers" })
-  @ApiResponse({ status: 200 })
-  async listCareers(@Query("facultyId") facultyId?: string) {
-    return this.listCareersUC.execute(facultyId);
-  }
-
-  @Get("careers/:id")
-  @ApiOperation({ summary: "Get career by ID" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async getCareer(@Param("id") id: string) {
-    return this.getCareerUC.execute(id);
-  }
-
-  @Post("careers")
-  @Roles("ADMIN")
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new career (ADMIN only)" })
-  @ApiResponse({ status: 201 })
-  @ApiResponse({ status: 404 })
-  @ApiResponse({ status: 409 })
-  async createCareer(@Body() dto: CreateCareerDto) {
-    return this.createCareerUC.execute(dto);
-  }
-
-  @Put("careers/:id")
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "Update career data (ADMIN only)" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async updateCareer(@Param("id") id: string, @Body() dto: UpdateCareerDto) {
-    return this.updateCareerUC.execute(id, dto);
-  }
-
-  @Patch("careers/:id/status")
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "Change career status (ADMIN only)" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async changeCareerStatus(
-    @Param("id") id: string,
-    @Body() dto: ChangeCareerStatusDto,
-  ) {
-    return this.changeCareerStatusUC.execute(id, dto.status);
-  }
-
-  @Delete("careers/:id")
-  @Roles("ADMIN")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a career (ADMIN only)" })
-  @ApiResponse({ status: 204 })
-  @ApiResponse({ status: 400 })
-  @ApiResponse({ status: 404 })
-  async deleteCareer(@Param("id") id: string) {
-    return this.deleteCareerUC.execute(id);
-  }
-
   // ─── Subject catalog (Fase A — docs/database/database-update-plan.md §5.1) ─
 
   @Get("subject-catalog")
   @ApiOperation({ summary: "List subject catalog entries (materias, independientes del período)" })
   @ApiResponse({ status: 200 })
-  async listSubjectCatalog(@Query("careerId") careerId?: string) {
-    return this.listSubjectCatalogUC.execute({ careerId });
+  async listSubjectCatalog() {
+    return this.listSubjectCatalogUC.execute();
   }
 
   @Post("subject-catalog")
@@ -1054,11 +901,8 @@ export class AcademicController {
   @Get("subjects")
   @ApiOperation({ summary: "List subjects" })
   @ApiResponse({ status: 200 })
-  async listSubjects(
-    @Query("careerId") careerId?: string,
-    @Query("periodId") periodId?: string,
-  ) {
-    return this.listSubjectsUC.execute({ careerId, periodId });
+  async listSubjects(@Query("periodId") periodId?: string) {
+    return this.listSubjectsUC.execute({ periodId });
   }
 
   @Get("subjects/:id")

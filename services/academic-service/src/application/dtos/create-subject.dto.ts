@@ -19,13 +19,13 @@ import { ClassScheduleSlotDto } from './define-subject-schedule.dto';
 // Dos formas válidas de crear una oferta (ver
 // docs/database/database-update-plan.md §5.1 y create-subject.use-case.ts):
 // 1. Reofertar una materia ya existente en el catálogo -> solo `subjectCatalogId`.
-// 2. Ofertar una materia nueva -> `name`/`code`/`credits`/`careerId`, que
+// 2. Ofertar una materia nueva -> `name`/`code`, que
 //    crean la fila de catálogo de una vez (mismo comportamiento que antes
 //    de separar catálogo/oferta, para no romper a los llamadores actuales).
 export class CreateSubjectDto {
   @ApiPropertyOptional({
     example: 'uuid-of-subject-catalog',
-    description: 'Reofertar una materia ya existente en el catálogo. Si se envía, el resto de los campos de catálogo (name/code/credits/careerId) se ignoran.',
+    description: 'Reofertar una materia ya existente en el catálogo. Si se envía, el resto de los campos de catálogo (name/code) se ignoran.',
   })
   @IsUUID()
   @IsOptional()
@@ -49,19 +49,6 @@ export class CreateSubjectDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @ApiPropertyOptional({ example: 4, minimum: 1, maximum: 10 })
-  @ValidateIf((o: CreateSubjectDto) => !o.subjectCatalogId)
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  credits?: number;
-
-  @ApiPropertyOptional({ example: 'uuid-of-career' })
-  @ValidateIf((o: CreateSubjectDto) => !o.subjectCatalogId)
-  @IsUUID()
-  @IsNotEmpty()
-  careerId?: string;
 
   @ApiPropertyOptional({ example: 30, minimum: 1 })
   @IsInt()

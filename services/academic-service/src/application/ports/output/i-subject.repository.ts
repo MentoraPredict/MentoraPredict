@@ -5,7 +5,7 @@ export const SUBJECT_REPOSITORY_TOKEN = 'ISubjectRepository';
 export interface ISubjectRepository {
   findById(id: string): Promise<SubjectEntity | null>;
   findByAcademicPeriodId(periodId: string): Promise<SubjectEntity[]>;
-  findAll(filters?: { careerId?: string; periodId?: string }): Promise<SubjectEntity[]>;
+  findAll(filters?: { periodId?: string }): Promise<SubjectEntity[]>;
   // Único por (subjectCatalogId, periodId) — reemplaza el viejo
   // findByNameAndPeriod ahora que el nombre vive en subject_catalog.
   findByCatalogAndPeriod(subjectCatalogId: string, periodId: string): Promise<SubjectEntity | null>;

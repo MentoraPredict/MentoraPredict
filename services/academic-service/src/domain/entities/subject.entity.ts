@@ -1,7 +1,7 @@
 export class SubjectEntity {
   constructor(
     public readonly id: string,
-    // name/description/code/credits/careerId viven en subject_catalog desde
+    // name/description/code viven en subject_catalog desde
     // la Fase A del plan de actualización de la base de datos — quedan acá
     // como campos denormalizados de solo lectura, poblados por el
     // repositorio vía JOIN. Escribirlos requiere pasar por
@@ -10,8 +10,6 @@ export class SubjectEntity {
     public name: string,
     public description: string,
     public code: string,
-    public credits: number,
-    public readonly careerId: string | null,
     public readonly academicPeriodId: string,
     public maxCapacity: number,
     public teacherId: string | null,

@@ -2,7 +2,7 @@
   "name": "@mentorapredict/academic-service",
   "version": "1.0.0",
   "private": true,
-  "description": "Academic data: faculties, subjects, enrollments, evaluations, grades — placeholder, no logic implemented",
+  "description": "Academic data: school years, grade levels, sections, subjects, enrollments, grading, promotion and attendance",
   "scripts": {
     "build": "pnpm exec nest build",
     "dev": "nest start --watch",

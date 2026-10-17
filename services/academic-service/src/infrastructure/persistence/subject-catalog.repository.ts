@@ -22,13 +22,8 @@ export class SubjectCatalogRepository implements ISubjectCatalogRepository {
     return o ? this.toDomain(o) : null;
   }
 
-  async findAll(filters?: { careerId?: string }): Promise<SubjectCatalogEntity[]> {
-    const qb = this.repo.createQueryBuilder('sc');
-    if (filters?.careerId) {
-      qb.andWhere('sc.careerId = :careerId', { careerId: filters.careerId });
-    }
-    qb.orderBy('sc.name', 'ASC');
-    const list = await qb.getMany();
+  async findAll(): Promise<SubjectCatalogEntity[]> {
+    const list = await this.repo.find({ order: { name: 'ASC' } });
     return list.map((o) => this.toDomain(o));
   }
 
@@ -48,8 +43,6 @@ export class SubjectCatalogRepository implements ISubjectCatalogRepository {
       o.name,
       o.description,
       o.code,
-      o.credits,
-      o.careerId,
       o.isActive,
       o.createdAt,
       o.updatedAt,
@@ -62,8 +55,6 @@ export class SubjectCatalogRepository implements ISubjectCatalogRepository {
     o.name = d.name;
     o.description = d.description;
     o.code = d.code;
-    o.credits = d.credits;
-    o.careerId = d.careerId;
     o.isActive = d.isActive;
     o.createdAt = d.createdAt;
     o.updatedAt = d.updatedAt;

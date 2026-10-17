@@ -54,7 +54,7 @@ const mockCheckOwnershipUC = (): jest.Mocked<Pick<CheckSubjectOwnershipUseCase, 
 
 const makeSubject = () =>
   new SubjectEntity(
-    'subj-1', 'Prog Web', '', 'PW-701', 4, 'career-1', 'period-1', 30, 'teacher-1', true,
+    'subj-1', 'Prog Web', '', 'PW-701', 'period-1', 30, 'teacher-1', true,
     new Date(), new Date(), null, 'catalog-1',
   );
 

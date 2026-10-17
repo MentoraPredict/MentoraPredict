@@ -4,8 +4,6 @@ export class SubjectCatalogEntity {
     public name: string,
     public description: string,
     public code: string,
-    public credits: number,
-    public readonly careerId: string | null,
     public isActive: boolean,
     public readonly createdAt: Date,
     public updatedAt: Date,

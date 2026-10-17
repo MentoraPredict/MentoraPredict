@@ -11,7 +11,6 @@ import { SubjectCatalogEntity } from '../../domain/entities/subject-catalog.enti
 import { SubjectTeacherEntity } from '../../domain/entities/subject-teacher.entity';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { ISubjectCatalogRepository } from '../ports/output/i-subject-catalog.repository';
-import { ICareerRepository } from '../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../ports/output/i-subject-teacher.repository';
 import { INotificationClientPort } from '../ports/output/i-notification-client.port';
@@ -25,8 +24,6 @@ export interface CreateSubjectDto {
   name?: string;
   code?: string;
   description?: string;
-  credits?: number;
-  careerId?: string;
   maxCapacity?: number;
   teacherId?: string;
   // Opcional: si se manda, define el horario (y genera sus class_sessions)
@@ -42,8 +39,6 @@ export class CreateSubjectUseCase {
     private readonly subjectRepo: ISubjectRepository,
     @Inject('ISubjectCatalogRepository')
     private readonly catalogRepo: ISubjectCatalogRepository,
-    @Inject('ICareerRepository')
-    private readonly careerRepo: ICareerRepository,
     @Inject('IAcademicPeriodRepository')
     private readonly periodRepo: IAcademicPeriodRepository,
     @Inject('ISubjectTeacherRepository')
@@ -89,8 +84,6 @@ export class CreateSubjectUseCase {
       catalog.name,
       catalog.description,
       catalog.code,
-      catalog.credits,
-      catalog.careerId,
       activePeriod.id,
       dto.maxCapacity ?? 30,
       teacherId,
@@ -140,15 +133,10 @@ export class CreateSubjectUseCase {
       return catalog;
     }
 
-    if (!dto.name || !dto.code || dto.credits === undefined || !dto.careerId) {
+    if (!dto.name || !dto.code) {
       throw new BadRequestException(
-        'Debes enviar subjectCatalogId (para reofertar una materia existente) o name/code/credits/careerId (para crear una materia nueva).',
+        'Debes enviar subjectCatalogId (para reofertar una materia existente) o name/code (para crear una materia nueva).',
       );
-    }
-
-    const career = await this.careerRepo.findById(dto.careerId);
-    if (!career) {
-      throw new NotFoundException(`Career with id '${dto.careerId}' not found`);
     }
 
     const normalizedCode = dto.code.trim().toUpperCase();
@@ -166,8 +154,6 @@ export class CreateSubjectUseCase {
         dto.name,
         dto.description ?? '',
         normalizedCode,
-        dto.credits,
-        dto.careerId,
         true,
         now,
         now,

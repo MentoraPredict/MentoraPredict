@@ -1,8 +1,6 @@
 /// <reference types="node" />
 import "dotenv/config";
 import { DataSource } from "typeorm";
-import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
-import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
 import { SchoolYearOrmEntity } from "./infrastructure/persistence/school-year.orm-entity";
 import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
@@ -61,8 +59,6 @@ export default new DataSource({
   password: process.env.POSTGRES_PASSWORD || "",
   database: process.env.POSTGRES_DB || "mentorapredict",
   entities: [
-    FacultyOrmEntity,
-    CareerOrmEntity,
     AcademicPeriodOrmEntity,
     SchoolYearOrmEntity,
     StudentProfileOrmEntity,

@@ -2,7 +2,6 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { CreateSubjectUseCase } from '../create-subject.use-case';
 import { ISubjectRepository } from '../../ports/output/i-subject.repository';
 import { ISubjectCatalogRepository } from '../../ports/output/i-subject-catalog.repository';
-import { ICareerRepository } from '../../ports/output/i-career.repository';
 import { IAcademicPeriodRepository } from '../../ports/output/i-academic-period.repository';
 import { ISubjectTeacherRepository } from '../../ports/output/i-subject-teacher.repository';
 import { INotificationClientPort } from '../../ports/output/i-notification-client.port';
@@ -11,7 +10,6 @@ import { ITeacherRolePort } from '../../ports/output/i-teacher-role.port';
 import { DefineSubjectScheduleUseCase } from '../define-subject-schedule.use-case';
 import { SubjectEntity } from '../../../domain/entities/subject.entity';
 import { SubjectCatalogEntity } from '../../../domain/entities/subject-catalog.entity';
-import { CareerEntity } from '../../../domain/entities/career.entity';
 import { AcademicPeriodEntity } from '../../../domain/entities/academic-period.entity';
 
 const mockSubjectRepo = (): jest.Mocked<ISubjectRepository> => ({
@@ -31,17 +29,6 @@ const mockSubjectCatalogRepo = (): jest.Mocked<ISubjectCatalogRepository> => ({
   findAll: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),
-});
-
-const mockCareerRepo = (): jest.Mocked<ICareerRepository> => ({
-  findById: jest.fn(),
-  findAll: jest.fn(),
-  findByFaculty: jest.fn(),
-  findByCode: jest.fn(),
-  save: jest.fn(),
-  update: jest.fn(),
-  hasSubjects: jest.fn(),
-  delete: jest.fn(),
 });
 
 const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
@@ -81,9 +68,6 @@ const mockTeacherRolePort = (): jest.Mocked<ITeacherRolePort> => ({
   isTeacher: jest.fn().mockResolvedValue(true),
 });
 
-const makeCareer = () =>
-  new CareerEntity('career-1', 'Ing. Sistemas', 'IS', '', 'ACTIVE', 'faculty-1', 10, new Date(), new Date());
-
 const makePeriod = (status: 'PLANNED' | 'ACTIVE' | 'FINISHED' | 'CANCELLED' = 'ACTIVE') =>
   new AcademicPeriodEntity(
     'period-1', '2025-I', '2025-1', '',
@@ -92,11 +76,11 @@ const makePeriod = (status: 'PLANNED' | 'ACTIVE' | 'FINISHED' | 'CANCELLED' = 'A
   );
 
 const makeCatalog = () =>
-  new SubjectCatalogEntity('catalog-1', 'Prog Web', '', 'PW-701', 4, 'career-1', true, new Date(), new Date());
+  new SubjectCatalogEntity('catalog-1', 'Prog Web', '', 'PW-701', true, new Date(), new Date());
 
 const makeExistingSubject = () =>
   new SubjectEntity(
-    'subj-x', 'Prog Web', '', 'PW-701', 4, 'career-1', 'period-1', 30, null, true,
+    'subj-x', 'Prog Web', '', 'PW-701', 'period-1', 30, null, true,
     new Date(), new Date(), null, 'catalog-1',
   );
 
@@ -104,15 +88,12 @@ const makeExistingSubject = () =>
 const validDto = {
   name: 'Prog Web',
   code: 'PW-701',
-  credits: 4,
-  careerId: 'career-1',
 };
 
 describe('CreateSubjectUseCase', () => {
   let useCase: CreateSubjectUseCase;
   let subjectRepo: jest.Mocked<ISubjectRepository>;
   let subjectCatalogRepo: jest.Mocked<ISubjectCatalogRepository>;
-  let careerRepo: jest.Mocked<ICareerRepository>;
   let periodRepo: jest.Mocked<IAcademicPeriodRepository>;
   let subjectTeacherRepo: jest.Mocked<ISubjectTeacherRepository>;
   let defineScheduleUC: jest.Mocked<Pick<DefineSubjectScheduleUseCase, 'execute'>>;
@@ -123,7 +104,6 @@ describe('CreateSubjectUseCase', () => {
   beforeEach(() => {
     subjectRepo = mockSubjectRepo();
     subjectCatalogRepo = mockSubjectCatalogRepo();
-    careerRepo = mockCareerRepo();
     periodRepo = mockPeriodRepo();
     subjectTeacherRepo = mockSubjectTeacherRepo();
     defineScheduleUC = mockDefineScheduleUC();
@@ -133,7 +113,6 @@ describe('CreateSubjectUseCase', () => {
     useCase = new CreateSubjectUseCase(
       subjectRepo,
       subjectCatalogRepo,
-      careerRepo,
       periodRepo,
       subjectTeacherRepo,
       defineScheduleUC as unknown as DefineSubjectScheduleUseCase,
@@ -143,8 +122,7 @@ describe('CreateSubjectUseCase', () => {
     );
   });
 
-  it('creates subject correctly when career and period are valid (new catalog entry)', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
+  it('creates subject correctly when the period is valid (new catalog entry)', async () => {
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectCatalogRepo.findByCode.mockResolvedValue(null);
     subjectCatalogRepo.save.mockImplementation(async (c) => c);
@@ -164,7 +142,6 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('defines the schedule when one is provided at creation time', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectCatalogRepo.findByCode.mockResolvedValue(null);
     subjectCatalogRepo.save.mockImplementation(async (c) => c);
@@ -179,7 +156,6 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('does not define a schedule when none is provided', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectCatalogRepo.findByCode.mockResolvedValue(null);
     subjectCatalogRepo.save.mockImplementation(async (c) => c);
@@ -230,14 +206,6 @@ describe('CreateSubjectUseCase', () => {
     expect(subjectRepo.save).not.toHaveBeenCalled();
   });
 
-  it('throws NotFoundException when career does not exist', async () => {
-    periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
-    careerRepo.findById.mockResolvedValue(null);
-
-    await expect(useCase.execute(validDto, 'teacher-1', 'TEACHER')).rejects.toThrow(NotFoundException);
-    expect(subjectRepo.save).not.toHaveBeenCalled();
-  });
-
   it('throws ConflictException when there is no active period', async () => {
     periodRepo.findActive.mockResolvedValue(null);
 
@@ -257,7 +225,6 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('throws ConflictException when the code already exists in the catalog', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectCatalogRepo.findByCode.mockResolvedValue(makeCatalog());
 
@@ -266,7 +233,6 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('normalizes the code (trim + uppercase) before checking and saving', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectCatalogRepo.findByCode.mockResolvedValue(null);
     subjectCatalogRepo.save.mockImplementation(async (c) => c);
@@ -283,7 +249,6 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('ADMIN caller without teacherId throws BadRequestException', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
 
     await expect(
@@ -303,7 +268,6 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('ADMIN caller with a valid teacherId creates the subject assigned to that teacher', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectCatalogRepo.findByCode.mockResolvedValue(null);
     subjectCatalogRepo.save.mockImplementation(async (c) => c);
@@ -326,7 +290,6 @@ describe('CreateSubjectUseCase', () => {
   });
 
   it('TEACHER caller ignores any teacherId in the body and uses their own id', async () => {
-    careerRepo.findById.mockResolvedValue(makeCareer());
     periodRepo.findActive.mockResolvedValue(makePeriod('ACTIVE'));
     subjectCatalogRepo.findByCode.mockResolvedValue(null);
     subjectCatalogRepo.save.mockImplementation(async (c) => c);

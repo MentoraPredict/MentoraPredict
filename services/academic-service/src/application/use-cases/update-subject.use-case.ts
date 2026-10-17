@@ -7,7 +7,6 @@ import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.rep
 export interface UpdateSubjectDto {
   name?: string;
   description?: string;
-  credits?: number;
   maxCapacity?: number;
   teacherId?: string | null;
 }
@@ -34,25 +33,23 @@ export class UpdateSubjectUseCase {
       throw new ConflictException('No se puede modificar una materia de un periodo inactivo');
     }
 
-    // name/description/credits pertenecen al catálogo (subject_catalog) —
+    // name/description pertenecen al catálogo (subject_catalog) —
     // se editan ahí, no en la oferta. Como el catálogo puede estar
     // compartido por otra oferta de un período distinto, el cambio se
     // refleja en todas ellas, que es exactamente el punto de tener un
     // catálogo único (ver docs/database/database-update-plan.md §5.1).
-    if (dto.name !== undefined || dto.description !== undefined || dto.credits !== undefined) {
+    if (dto.name !== undefined || dto.description !== undefined) {
       const catalog = await this.catalogRepo.findById(subject.subjectCatalogId);
       if (!catalog) {
         throw new NotFoundException(`Subject catalog entry '${subject.subjectCatalogId}' not found`);
       }
       if (dto.name !== undefined) catalog.name = dto.name;
       if (dto.description !== undefined) catalog.description = dto.description;
-      if (dto.credits !== undefined) catalog.credits = dto.credits;
       catalog.updatedAt = new Date();
       await this.catalogRepo.update(catalog);
 
       if (dto.name !== undefined) subject.name = dto.name;
       if (dto.description !== undefined) subject.description = dto.description;
-      if (dto.credits !== undefined) subject.credits = dto.credits;
     }
 
     if (dto.maxCapacity !== undefined) subject.maxCapacity = dto.maxCapacity;

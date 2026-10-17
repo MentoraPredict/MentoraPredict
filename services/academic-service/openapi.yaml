@@ -20,8 +20,6 @@ components:
           type: string
         name:
           type: string
-        careerId:
-          type: string
     EnrollmentRequest:
       type: object
       required: [studentId, subjectId, periodId]

@@ -2,7 +2,7 @@
 
 Responsabilidad única (SRP):
 
-- Exponer y gestionar datos académicos canónicos: facultades, carreras, asignaturas, periodos académicos, inscripciones y evaluaciones.
+- Exponer y gestionar datos académicos canónicos: años lectivos y periodos de calificación, grados y paralelos, asignaturas, matrículas, evaluaciones, calificaciones, promoción y asistencia.
 
 Inputs:
 
@@ -16,7 +16,7 @@ Outputs:
 
 Datos que gestiona (ownership):
 
-- `faculties`, `careers`, `subjects`, `academic_periods`, `enrollments`, `evaluations`, `grades`, `observations`.
+- `school_years`, `academic_periods`, `grade_levels`, `sections`, `subject_catalog`, `subjects`, `student_enrollments`, `enrollments`, `evaluations`, `grades`, `period_results`, `promotion_decisions`, `class_sessions`, `session_attendances`, `absence_justifications`, `observations`.
 
 Dependencias:
 
@@ -25,8 +25,8 @@ Dependencias:
 
 API surface (resumen):
 
-- `GET /api/v1/academic/faculties`
-- `GET /api/v1/academic/careers`
+- `GET /api/v1/academic/school-years`
+- `GET /api/v1/academic/sections`
 - `GET /api/v1/academic/subjects`
 - `GET /api/v1/academic/academic-periods`
 - `POST /api/v1/academic/enrollments`

@@ -85,15 +85,8 @@ export class SubjectTeacherRepository implements ISubjectTeacherRepository {
         sc.name,
         sc.code,
         sc.description,
-        sc.credits,
         s.max_capacity AS "maxCapacity",
         s.is_active AS "isActive",
-        COALESCE(c.id::text, '') AS "careerId",
-        COALESCE(c.name, '') AS "careerName",
-        COALESCE(c.code, '') AS "careerCode",
-        COALESCE(f.id::text, '') AS "facultyId",
-        COALESCE(f.name, '') AS "facultyName",
-        COALESCE(f.code, '') AS "facultyCode",
         p.id AS "periodId",
         p.name AS "periodName",
         p.code AS "periodCode",
@@ -105,9 +98,6 @@ export class SubjectTeacherRepository implements ISubjectTeacherRepository {
       FROM subject_teachers st
       INNER JOIN subjects s ON s.id = st.subject_id
       INNER JOIN subject_catalog sc ON sc.id = s.subject_catalog_id
-      -- LEFT: las asignaturas escolares no tienen carrera ni facultad
-      LEFT JOIN careers c ON c.id = sc.career_id
-      LEFT JOIN faculties f ON f.id = c.faculty_id
       INNER JOIN academic_periods p ON p.id = st.period_id
       WHERE ${where}
       ORDER BY sc.name ASC
