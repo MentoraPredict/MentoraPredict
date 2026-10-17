@@ -10,5 +10,8 @@ export interface AppUser {
     createdAt?: string;
     updatedAt?: string;
     avatarUrl?: string | null;
+    cedula?: string | null;
+    bio?: string | null;
+    deletedAt?: string | null;
     semester?: string;
 }

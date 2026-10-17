@@ -7,7 +7,7 @@ import type { AuthSessionUser } from "@/types/auth/auth.types";
 import type { AppUser } from "@/types/user/user.types";
 import { USER_ROLES, type UserRole } from "@/types/user/role.types";
 
-type UserStatus = "ACTIVE" | "INACTIVE";
+export type UserStatus = "ACTIVE" | "INACTIVE";
 
 interface UserApiResponse {
   id: string;
@@ -27,15 +27,22 @@ interface UserApiResponse {
   created_at?: string;
   updatedAt?: string;
   updated_at?: string;
+  cedula?: string | null;
+  bio?: string | null;
+  deletedAt?: string | null;
 }
 
-interface UpdateUserPayload {
+export interface UpdateUserPayload {
   email?: string;
   firstName?: string;
   lastName?: string;
   role?: UserRole;
   status?: UserStatus;
+  cedula?: string | null;
+  bio?: string | null;
 }
+
+export type UsersGroupBy = "role" | "status";
 
 export interface UsersQuery {
     page?: number;
@@ -43,6 +50,12 @@ export interface UsersQuery {
     search?: string;
     role?: UserRole | "";
     status?: UserStatus;
+    groupBy?: UsersGroupBy;
+}
+
+export interface UsersGroupCount {
+    key: string;
+    count: number;
 }
 
 export interface PaginatedUsersResult {
@@ -51,6 +64,8 @@ export interface PaginatedUsersResult {
     limit: number;
     total: number;
     totalPages: number;
+    /** Solo viene con `groupBy`: cantidad de usuarios por grupo. */
+    groups?: UsersGroupCount[];
 }
 
 interface PaginatedUsersApiResponse {
@@ -59,6 +74,7 @@ interface PaginatedUsersApiResponse {
     limit: number;
     total: number;
     totalPages: number;
+    groups?: UsersGroupCount[];
 }
 
 const fallbackUserRole: UserRole = "STUDENT";
@@ -84,6 +100,9 @@ function toAppUser(user: UserApiResponse): AppUser {
     createdAt: user.createdAt ?? user.created_at,
     updatedAt: user.updatedAt ?? user.updated_at,
     avatarUrl: user.avatarUrl ?? user.avatar_url ?? user.photo,
+    cedula: user.cedula ?? null,
+    bio: user.bio ?? null,
+    deletedAt: user.deletedAt ?? null,
   };
 }
 
@@ -114,6 +133,7 @@ export async function getUsers(
                 search: query?.search?.trim() || undefined,
                 role: query?.role || undefined,
                 status: query?.status,
+                groupBy: query?.groupBy,
             },
         }
     );
@@ -133,6 +153,7 @@ export async function getUsers(
         limit: response.data.limit,
         total: response.data.total,
         totalPages: response.data.totalPages,
+        groups: response.data.groups,
     };
 }
 
@@ -204,6 +225,11 @@ export async function getStudents(): Promise<AppUser[]> {
     });
 
   return studentsRequest;
+}
+
+export async function getUserById(userId: string): Promise<AppUser> {
+  const response = await api.get<UserApiResponse>(endpoints.users.detail(userId));
+  return toAppUser(response.data);
 }
 
 export async function updateUser(

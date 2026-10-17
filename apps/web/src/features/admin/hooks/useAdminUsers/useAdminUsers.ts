@@ -1,412 +1,243 @@
-import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { getApiErrorMessage } from "@/utils/apiError";
 import {
-    createUserWithRole,
-    deleteUser,
-    deleteUserAvatar,
-    getUsers,
-    PartialUserCreationError,
-    updateUser,
-    updateUserRole,
-    updateUserStatus,
-    uploadUserAvatar,
-    type CreateUserWithRolePayload,
+  createUserWithRole,
+  getUsers,
+  PartialUserCreationError,
+  updateUserStatus,
+  uploadUserAvatar,
+  type CreateUserWithRolePayload,
+  type UserStatus,
+  type UsersGroupBy,
+  type UsersGroupCount,
 } from "@/services/users/users.service";
 import type { AppUser } from "@/types/user/user.types";
 import type { UserRole } from "@/types/user/role.types";
 
 const USERS_PAGE_SIZE = 10;
-
-function getRequestErrorMessage(
-    fallbackMessage: string,
-    error: unknown
-) {
-    if (!axios.isAxiosError(error)) {
-        return fallbackMessage;
-    }
-
-    const status = error.response?.status;
-    const backendMessage = error.response?.data?.message;
-
-    if (typeof backendMessage === "string" && backendMessage.trim()) {
-        return backendMessage;
-    }
-
-    if (!status) {
-        return `${fallbackMessage} No hubo respuesta de Kong o del backend.`;
-    }
-
-    return `${fallbackMessage} Codigo HTTP: ${status}.`;
-}
-
-function useRoleScopedUsers(role: UserRole, search: string) {
-    const [users, setUsers] = useState<AppUser[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalUsers, setTotalUsers] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-
-    const load = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const result = await getUsers({
-                page: currentPage,
-                limit: USERS_PAGE_SIZE,
-                search,
-                role,
-            });
-            setUsers(result.data);
-            setTotalUsers(result.total);
-            setTotalPages(result.totalPages);
-        } catch (requestError) {
-            setError(
-                getRequestErrorMessage(
-                    "No se pudieron cargar los usuarios. Intenta nuevamente.",
-                    requestError
-                )
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, role, search]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [search]);
-
-    return {
-        users,
-        isLoading,
-        error,
-        currentPage,
-        pageSize: USERS_PAGE_SIZE,
-        totalUsers,
-        totalPages,
-        setCurrentPage,
-        reload: load,
-    };
-}
+const SEARCH_DEBOUNCE_MS = 300;
+// Un grupo abierto trae sus usuarios de una vez (tope del servicio).
+const GROUP_USERS_LIMIT = 100;
 
 export default function useAdminUsers() {
-    const [search, setSearch] = useState("");
-    const [isCreatingUser, setIsCreatingUser] = useState(false);
-    const [createUserError, setCreateUserError] = useState<string | null>(null);
-    const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-    const [mutationError, setMutationError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
+  const [statusFilter, setStatusFilter] = useState<UserStatus | "">("");
+  const [groupBy, setGroupBy] = useState<UsersGroupBy | "">("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-    const admins = useRoleScopedUsers("ADMIN", search);
-    const teachers = useRoleScopedUsers("TEACHER", search);
-    const students = useRoleScopedUsers("STUDENT", search);
-    const guardians = useRoleScopedUsers("GUARDIAN", search);
-    const secretaries = useRoleScopedUsers("SECRETARY", search);
-    const deces = useRoleScopedUsers("DECE", search);
-    const inspectors = useRoleScopedUsers("INSPECTOR", search);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [groups, setGroups] = useState<UsersGroupCount[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [groupUsers, setGroupUsers] = useState<Record<string, AppUser[]>>({});
+  const expandedRef = useRef<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const reloadAll = useCallback(async () => {
-        await Promise.all([
-            admins.reload(),
-            teachers.reload(),
-            students.reload(),
-            guardians.reload(),
-            secretaries.reload(),
-            deces.reload(),
-            inspectors.reload(),
-        ]);
-    }, [admins, teachers, students, guardians, secretaries, deces, inspectors]);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [createUserError, setCreateUserError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
-    const clearSearch = useCallback(() => {
-        setSearch("");
-    }, []);
-
-    const clearMutationError = useCallback(() => {
-        setMutationError(null);
-    }, []);
-
-    const toggleStatus = useCallback(
-        async (userId: string) => {
-            const user = [...admins.users, ...teachers.users, ...students.users].find(
-                (currentUser) => currentUser.id === userId
-            );
-
-            if (!user) {
-                return;
-            }
-
-            setMutationError(null);
-
-            try {
-                await updateUserStatus(userId, !user.isActive);
-                await reloadAll();
-            } catch (requestError) {
-                setMutationError(
-                    getRequestErrorMessage(
-                        "No se pudo actualizar el estado del usuario.",
-                        requestError
-                    )
-                );
-            }
-        },
-        [admins.users, teachers.users, students.users, reloadAll]
+  // La búsqueda consulta al servicio de autenticación: se espera a que la
+  // persona termine de escribir antes de pedir resultados.
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setDebouncedSearch(search),
+      SEARCH_DEBOUNCE_MS,
     );
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    const toggleTeacherRole = useCallback(
-        async (userId: string) => {
-            const user = [...teachers.users, ...students.users].find(
-                (currentUser) => currentUser.id === userId
-            );
+  // Cualquier cambio de criterio vuelve a la primera página y cierra los grupos.
+  useEffect(() => {
+    setCurrentPage(1);
+    expandedRef.current = [];
+    setExpandedGroups([]);
+    setGroupUsers({});
+  }, [debouncedSearch, roleFilter, statusFilter, groupBy]);
 
-            if (!user) {
-                return;
-            }
+  // Usuarios de un grupo: el filtro del campo agrupado pasa a ser el del grupo.
+  const fetchGroupUsers = useCallback(
+    async (key: string) => {
+      const result = await getUsers({
+        page: 1,
+        limit: GROUP_USERS_LIMIT,
+        search: debouncedSearch,
+        role: groupBy === "role" ? (key as UserRole) : roleFilter,
+        status: groupBy === "status" ? (key as UserStatus) : statusFilter || undefined,
+      });
+      setGroupUsers((current) => ({ ...current, [key]: result.data }));
+    },
+    [debouncedSearch, groupBy, roleFilter, statusFilter],
+  );
 
-            setMutationError(null);
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
-            try {
-                await updateUserRole(
-                    userId,
-                    user.role === "STUDENT" ? "TEACHER" : "STUDENT"
-                );
-                await reloadAll();
-            } catch (requestError) {
-                setMutationError(
-                    getRequestErrorMessage(
-                        "No se pudo actualizar el rol del usuario.",
-                        requestError
-                    )
-                );
-            }
-        },
-        [teachers.users, students.users, reloadAll]
-    );
+    try {
+      // Agrupado: solo se piden los conteos; los usuarios de cada grupo se
+      // cargan al abrirlo (como en Odoo).
+      const result = await getUsers({
+        page: groupBy ? 1 : currentPage,
+        limit: groupBy ? 1 : USERS_PAGE_SIZE,
+        search: debouncedSearch,
+        role: roleFilter,
+        status: statusFilter || undefined,
+        groupBy: groupBy || undefined,
+      });
+      setUsers(groupBy ? [] : result.data);
+      setGroups(result.groups ?? []);
+      setTotalUsers(result.total);
+      setTotalPages(result.totalPages);
 
-    const saveUserProfile = useCallback(
-        async (
-            userId: string,
-            payload: {
-                email?: string;
-                firstName?: string;
-                lastName?: string;
-            }
-        ) => {
-            setMutationError(null);
+      if (groupBy) {
+        await Promise.all(expandedRef.current.map(fetchGroupUsers));
+      }
+    } catch (requestError) {
+      setError(
+        getApiErrorMessage(
+          requestError,
+          "No se pudieron cargar los usuarios. Intenta nuevamente.",
+        ),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    currentPage,
+    debouncedSearch,
+    roleFilter,
+    statusFilter,
+    groupBy,
+    fetchGroupUsers,
+  ]);
 
-            try {
-                const updatedUser = await updateUser(userId, payload);
-                await reloadAll();
-                return updatedUser;
-            } catch (requestError) {
-                setMutationError(
-                    getRequestErrorMessage(
-                        "No se pudo actualizar la informacion del usuario.",
-                        requestError
-                    )
-                );
-                throw requestError;
-            }
-        },
-        [reloadAll]
-    );
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-    const uploadAvatar = useCallback(
-        async (userId: string, file: File) => {
-            setMutationError(null);
+  const toggleGroup = useCallback(
+    async (key: string) => {
+      if (expandedRef.current.includes(key)) {
+        expandedRef.current = expandedRef.current.filter((k) => k !== key);
+        setExpandedGroups(expandedRef.current);
+        return;
+      }
 
-            try {
-                const updatedUser = await uploadUserAvatar(userId, file);
-                await reloadAll();
-                return updatedUser;
-            } catch (requestError) {
-                setMutationError(
-                    getRequestErrorMessage(
-                        "No se pudo actualizar la foto de perfil.",
-                        requestError
-                    )
-                );
-                throw requestError;
-            }
-        },
-        [reloadAll]
-    );
+      expandedRef.current = [...expandedRef.current, key];
+      setExpandedGroups(expandedRef.current);
 
-    const deleteAvatar = useCallback(
-        async (userId: string) => {
-            setMutationError(null);
+      try {
+        await fetchGroupUsers(key);
+      } catch (requestError) {
+        setError(
+          getApiErrorMessage(
+            requestError,
+            "No se pudieron cargar los usuarios del grupo.",
+          ),
+        );
+      }
+    },
+    [fetchGroupUsers],
+  );
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setRoleFilter("");
+    setStatusFilter("");
+    setGroupBy("");
+  }, []);
 
-            try {
-                const updatedUser = await deleteUserAvatar(userId);
-                await reloadAll();
-                return updatedUser;
-            } catch (requestError) {
-                setMutationError(
-                    getRequestErrorMessage(
-                        "No se pudo eliminar la foto de perfil.",
-                        requestError
-                    )
-                );
-                throw requestError;
-            }
-        },
-        [reloadAll]
-    );
+  const clearMutationError = useCallback(() => setMutationError(null), []);
+  const clearCreateUserError = useCallback(() => setCreateUserError(null), []);
 
-    const createUser = useCallback(
-        async (payload: CreateUserWithRolePayload, avatarFile?: File) => {
-            setCreateUserError(null);
-            setIsCreatingUser(true);
+  const toggleStatus = useCallback(
+    async (userId: string) => {
+      const user = [...users, ...Object.values(groupUsers).flat()].find(
+        (current) => current.id === userId,
+      );
+      if (!user) return;
 
-            try {
-                const created = await createUserWithRole(payload);
-                if (avatarFile) {
-                    await uploadUserAvatar(created.id, avatarFile).catch(() => null);
-                }
-                await reloadAll();
-                return true;
-            } catch (requestError) {
-                if (requestError instanceof PartialUserCreationError) {
-                    // The user was still created (as STUDENT) — refresh the
-                    // tables so it shows up, but keep the modal open with the
-                    // message so the admin knows the role needs a manual fix.
-                    await reloadAll();
-                    setCreateUserError(requestError.message);
-                    return false;
-                }
+      setMutationError(null);
+      try {
+        await updateUserStatus(userId, !user.isActive);
+        await load();
+      } catch (requestError) {
+        setMutationError(
+          getApiErrorMessage(
+            requestError,
+            "No se pudo actualizar el estado del usuario.",
+          ),
+        );
+      }
+    },
+    [users, groupUsers, load],
+  );
 
-                setCreateUserError(
-                    getRequestErrorMessage(
-                        "No se pudo crear el usuario.",
-                        requestError
-                    )
-                );
-                return false;
-            } finally {
-                setIsCreatingUser(false);
-            }
-        },
-        [reloadAll]
-    );
+  const createUser = useCallback(
+    async (payload: CreateUserWithRolePayload, avatarFile?: File) => {
+      setCreateUserError(null);
+      setIsCreatingUser(true);
 
-    const clearCreateUserError = useCallback(() => {
-        setCreateUserError(null);
-    }, []);
+      try {
+        const created = await createUserWithRole(payload);
+        if (avatarFile) {
+          await uploadUserAvatar(created.id, avatarFile).catch(() => null);
+        }
+        await load();
+        return true;
+      } catch (requestError) {
+        if (requestError instanceof PartialUserCreationError) {
+          // El usuario sí se creó (como estudiante): se refresca la tabla y se
+          // deja el aviso para que el rol se corrija desde su vista de edición.
+          await load();
+          setCreateUserError(requestError.message);
+          return false;
+        }
 
-    const removeUser = useCallback(
-        async (userId: string) => {
-            setMutationError(null);
-            setDeletingUserId(userId);
+        setCreateUserError(
+          getApiErrorMessage(requestError, "No se pudo crear el usuario."),
+        );
+        return false;
+      } finally {
+        setIsCreatingUser(false);
+      }
+    },
+    [load],
+  );
 
-            try {
-                await deleteUser(userId);
-                await reloadAll();
-                return true;
-            } catch (requestError) {
-                setMutationError(
-                    getRequestErrorMessage(
-                        "No se pudo eliminar el usuario.",
-                        requestError
-                    )
-                );
-                return false;
-            } finally {
-                setDeletingUserId(null);
-            }
-        },
-        [reloadAll]
-    );
-
-    return {
-        search,
-        setSearch,
-        clearSearch,
-        mutationError,
-        clearMutationError,
-        admins: {
-            users: admins.users,
-            isLoading: admins.isLoading,
-            error: admins.error,
-            currentPage: admins.currentPage,
-            pageSize: admins.pageSize,
-            totalUsers: admins.totalUsers,
-            totalPages: admins.totalPages,
-            setCurrentPage: admins.setCurrentPage,
-        },
-        teachers: {
-            users: teachers.users,
-            isLoading: teachers.isLoading,
-            error: teachers.error,
-            currentPage: teachers.currentPage,
-            pageSize: teachers.pageSize,
-            totalUsers: teachers.totalUsers,
-            totalPages: teachers.totalPages,
-            setCurrentPage: teachers.setCurrentPage,
-        },
-        guardians: {
-            users: guardians.users,
-            isLoading: guardians.isLoading,
-            error: guardians.error,
-            currentPage: guardians.currentPage,
-            pageSize: guardians.pageSize,
-            totalUsers: guardians.totalUsers,
-            totalPages: guardians.totalPages,
-            setCurrentPage: guardians.setCurrentPage,
-        },
-        secretaries: {
-            users: secretaries.users,
-            isLoading: secretaries.isLoading,
-            error: secretaries.error,
-            currentPage: secretaries.currentPage,
-            pageSize: secretaries.pageSize,
-            totalUsers: secretaries.totalUsers,
-            totalPages: secretaries.totalPages,
-            setCurrentPage: secretaries.setCurrentPage,
-        },
-        deces: {
-            users: deces.users,
-            isLoading: deces.isLoading,
-            error: deces.error,
-            currentPage: deces.currentPage,
-            pageSize: deces.pageSize,
-            totalUsers: deces.totalUsers,
-            totalPages: deces.totalPages,
-            setCurrentPage: deces.setCurrentPage,
-        },
-        inspectors: {
-            users: inspectors.users,
-            isLoading: inspectors.isLoading,
-            error: inspectors.error,
-            currentPage: inspectors.currentPage,
-            pageSize: inspectors.pageSize,
-            totalUsers: inspectors.totalUsers,
-            totalPages: inspectors.totalPages,
-            setCurrentPage: inspectors.setCurrentPage,
-        },
-        students: {
-            users: students.users,
-            isLoading: students.isLoading,
-            error: students.error,
-            currentPage: students.currentPage,
-            pageSize: students.pageSize,
-            totalUsers: students.totalUsers,
-            totalPages: students.totalPages,
-            setCurrentPage: students.setCurrentPage,
-        },
-        toggleStatus,
-        toggleTeacherRole,
-        saveUserProfile,
-        uploadAvatar,
-        deleteAvatar,
-        createUser,
-        isCreatingUser,
-        createUserError,
-        clearCreateUserError,
-        deletingUserId,
-        removeUser,
-    };
+  return {
+    search,
+    setSearch,
+    roleFilter,
+    setRoleFilter,
+    statusFilter,
+    setStatusFilter,
+    groupBy,
+    setGroupBy,
+    clearFilters,
+    users,
+    isLoading,
+    error,
+    currentPage,
+    pageSize: USERS_PAGE_SIZE,
+    totalUsers,
+    totalPages,
+    groups,
+    expandedGroups,
+    groupUsers,
+    toggleGroup,
+    setCurrentPage,
+    mutationError,
+    clearMutationError,
+    toggleStatus,
+    createUser,
+    isCreatingUser,
+    createUserError,
+    clearCreateUserError,
+  };
 }
