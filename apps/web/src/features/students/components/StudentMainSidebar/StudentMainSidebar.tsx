@@ -65,5 +65,5 @@ export default function StudentMainSidebar({
     },
   ];
 
-  return <DashboardSidebar title="Academic Strategy" sections={sections} />;
+  return <DashboardSidebar title="Panel del estudiante" sections={sections} />;
 }

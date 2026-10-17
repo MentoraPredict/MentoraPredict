@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 
 import DashboardNavbar from "@/components/organisms/DashboardNavbar";
-import Footer from "@/components/organisms/Footer";
 
 interface TeacherTemplateProps {
   children: ReactNode;
@@ -13,8 +12,6 @@ export default function TeacherTemplate({ children }: TeacherTemplateProps) {
       <DashboardNavbar />
 
       <main>{children}</main>
-
-      <Footer />
     </div>
   );
 }

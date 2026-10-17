@@ -2,7 +2,6 @@ import { ReactNode, useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi";
 
 import DashboardNavbar from "@/components/organisms/DashboardNavbar";
-import Footer from "@/components/organisms/Footer";
 
 interface CourseAnalyticsLayoutProps {
   title: string;
@@ -25,6 +24,7 @@ export default function CourseAnalyticsLayout({
         <div className="flex min-h-screen flex-1 flex-col">
           <DashboardNavbar
             showLogo
+            logoOnlyOnMobile
             showWelcomeMessage={false}
             title={title}
             leadingAction={
@@ -59,8 +59,6 @@ export default function CourseAnalyticsLayout({
           <main className="flex-1 p-6">
             {children}
           </main>
-
-          <Footer />
         </div>
       </div>
     </div>

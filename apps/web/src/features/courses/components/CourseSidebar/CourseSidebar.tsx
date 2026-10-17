@@ -54,5 +54,5 @@ export default function CourseSidebar({
     },
   ];
 
-  return <DashboardSidebar title="Academic Strategy" sections={sections} />;
+  return <DashboardSidebar title={isTeacher ? "Panel docente" : "Panel del estudiante"} sections={sections} />;
 }
