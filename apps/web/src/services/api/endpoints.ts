@@ -34,6 +34,9 @@ export const endpoints = {
         section: (id: string) => `/v1/academic/sections/${id}`,
         sectionGenerateCourses: (id: string) =>
             `/v1/academic/sections/${id}/generate-courses`,
+        sectionCourses: (id: string) => `/v1/academic/sections/${id}/courses`,
+        subjectTeacher: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/teacher`,
         subjectCatalog: "/v1/academic/subject-catalog",
         subjectCatalogItem: (id: string) =>
             `/v1/academic/subject-catalog/${id}`,
@@ -51,6 +54,27 @@ export const endpoints = {
             `/v1/academic/sections/${sectionId}/enrollments`,
         endStudentEnrollment: (id: string) =>
             `/v1/academic/student-enrollments/${id}/end`,
+        gradingComponents: "/v1/academic/grading/components",
+        subjectGradebook: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/gradebook`,
+        gradebookGrades: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/gradebook/grades`,
+        subjectActivities: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/activities`,
+        activity: (id: string) => `/v1/academic/activities/${id}`,
+        activityStatus: (id: string) => `/v1/academic/activities/${id}/status`,
+        subjectSupplementary: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/supplementary`,
+        periodClosure: (periodId: string) =>
+            `/v1/academic/periods/${periodId}/closure`,
+        closePeriod: (periodId: string) =>
+            `/v1/academic/periods/${periodId}/close`,
+        reopenPeriod: (periodId: string) =>
+            `/v1/academic/periods/${periodId}/reopen`,
+        studentResults: (studentId: string) =>
+            `/v1/academic/students/${studentId}/results`,
+        sectionPromotion: (sectionId: string) =>
+            `/v1/academic/sections/${sectionId}/promotion`,
         schoolYears: "/v1/academic/school-years",
         schoolYear: (id: string) => `/v1/academic/school-years/${id}`,
         schoolYearStatus: (id: string) =>

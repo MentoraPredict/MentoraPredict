@@ -13,6 +13,7 @@ export interface GradingPeriod {
   endDate: string;
   gradesDueDate: string | null;
   isCurrent: boolean;
+  isClosed: boolean;
 }
 
 export interface SchoolYear {

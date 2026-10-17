@@ -76,6 +76,30 @@ export async function generateSectionCourses(
   return response.data;
 }
 
+export interface SectionCourse {
+  id: string;
+  name: string;
+  code: string;
+  teacherId: string | null;
+}
+
+export async function getSectionCourses(
+  sectionId: string
+): Promise<SectionCourse[]> {
+  const response = await api.get<SectionCourse[]>(
+    endpoints.academic.sectionCourses(sectionId)
+  );
+
+  return response.data;
+}
+
+export async function assignCourseTeacher(
+  subjectId: string,
+  teacherId: string | null
+): Promise<void> {
+  await api.patch(endpoints.academic.subjectTeacher(subjectId), { teacherId });
+}
+
 export async function getSubjectCatalog(): Promise<CatalogSubject[]> {
   const response = await api.get<
     CatalogSubject[] | MaybeWrappedArray<CatalogSubject>
