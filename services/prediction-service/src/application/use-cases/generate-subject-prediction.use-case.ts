@@ -119,12 +119,12 @@ export class GenerateSubjectPredictionUseCase {
           title: isHighRisk
             ? 'Reforzar hábitos de estudio urgentemente'
             : 'Mantener hábitos de estudio actuales',
-          reason: `Promedio actual en ${gradesContext.subjectName}: ${risk.globalAverage}/20.`,
+          reason: `Promedio actual en ${gradesContext.subjectName}: ${risk.globalAverage}/10.`,
           priority: isHighRisk ? 'HIGH' : 'LOW',
         },
       ];
       ai = {
-        summary: `El estudiante presenta un nivel de riesgo ${risk.riskLevel} en ${gradesContext.subjectName} con un promedio de ${risk.globalAverage}/20.`,
+        summary: `El estudiante presenta un nivel de riesgo ${risk.riskLevel} en ${gradesContext.subjectName} con un promedio de ${risk.globalAverage}/10.`,
         recommendations,
       };
     }

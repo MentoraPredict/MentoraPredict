@@ -18,6 +18,11 @@ export interface CreateNotificationDto {
   type: NotificationType;
   title: string;
   message: string;
+  // Context shown with the notification (all optional).
+  relatedAlertId?: string | null;
+  subjectId?: string | null;
+  studentId?: string | null;
+  periodId?: string | null;
 }
 
 @Injectable()
@@ -34,6 +39,8 @@ export class CreateNotificationUseCase {
     const created: NotificationEntity[] = [];
 
     for (const recipient of recipients) {
+      // Registra al destinatario en el espejo local (clave foránea) si aún no se conoce.
+      await this.userServiceClient.getProfile(recipient.id);
       const notification = new NotificationEntity(
         randomUUID(),
         recipient.id,
@@ -44,6 +51,10 @@ export class CreateNotificationUseCase {
         'UNREAD',
         now,
         null,
+        dto.relatedAlertId ?? null,
+        dto.subjectId ?? null,
+        dto.studentId ?? null,
+        dto.periodId ?? null,
       );
       await this.notificationRepo.save(notification);
       await this.deliveryService.deliver(notification);

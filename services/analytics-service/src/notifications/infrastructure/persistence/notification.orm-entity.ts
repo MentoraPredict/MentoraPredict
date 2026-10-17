@@ -10,8 +10,8 @@ import { AlertOrmEntity } from '../../../infrastructure/persistence/alert.orm-en
 // Open enum (new notification-worthy events get added over time) — the CHECK
 // still requires a matching migration whenever a new type is introduced,
 // same discipline already applied to every other status column in this plan.
-@Check('CHK_notifications_type', `"type" IN ('RISK_ESCALATION','ENROLLMENT_CREATED','ENROLLMENT_WITHDRAWN','COURSE_CREATED','ROLE_CHANGED')`)
-@Check('CHK_notifications_recipient_role', `"recipient_role" IN ('STUDENT','TEACHER','ADMIN')`)
+@Check('CHK_notifications_type', `"type" IN ('RISK_ESCALATION','ENROLLMENT_CREATED','ENROLLMENT_WITHDRAWN','COURSE_CREATED','ROLE_CHANGED','ATTENDANCE_WARNING','ATTENDANCE_EXCEEDED','JUSTIFICATION_REQUESTED','JUSTIFICATION_RESOLVED','EARLY_ALERT')`)
+@Check('CHK_notifications_recipient_role', `"recipient_role" IN ('STUDENT','TEACHER','ADMIN','GUARDIAN','SECRETARY','DECE','INSPECTOR')`)
 @Check('CHK_notifications_status', `"status" IN ('UNREAD','READ')`)
 export class NotificationOrmEntity {
   @PrimaryColumn('uuid') id!: string;

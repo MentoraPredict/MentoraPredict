@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
-import { CheckInSummary, EvaluationWeight, IAcademicServiceClient, PeriodDetails, SubjectDetails, SubjectOwnership } from '../../domain/ports/i-academic-service.client';
+import { AttendanceRateSummary, CheckInSummary, EvaluationWeight, IAcademicServiceClient, PeriodDetails, SubjectDetails, SubjectOwnership } from '../../domain/ports/i-academic-service.client';
 import { Grade } from '../../domain/entities/grade.vo';
 import { Enrollment } from '../../domain/entities/enrollment.vo';
 import { InternalJwtService } from '../auth/internal-jwt.service';
@@ -58,6 +58,17 @@ export class AcademicHttpClient implements IAcademicServiceClient {
   ): Promise<CheckInSummary | null> {
     return this.request<CheckInSummary | null>(
       `/api/v1/academic/internal/students/${studentId}/check-ins/latest?subjectId=${subjectId}&periodId=${periodId}`,
+      correlationId,
+    );
+  }
+
+  getAttendanceRate(
+    studentId: string,
+    subjectId: string,
+    correlationId?: string,
+  ): Promise<AttendanceRateSummary | null> {
+    return this.request<AttendanceRateSummary | null>(
+      `/api/v1/academic/internal/students/${studentId}/attendance-rate?subjectId=${subjectId}`,
       correlationId,
     );
   }

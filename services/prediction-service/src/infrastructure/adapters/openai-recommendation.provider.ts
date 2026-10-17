@@ -127,7 +127,7 @@ export class OpenAiRecommendationProvider implements IAiRecommendationProvider {
         {
           type: 'STUDY_HABIT',
           title: isHighRisk ? 'Reforzar hábitos de estudio urgentemente' : 'Mantener hábitos de estudio actuales',
-          reason: `Promedio global actual: ${input.risk.globalAverage}/20.`,
+          reason: `Promedio global actual: ${input.risk.globalAverage}/10.`,
           priority: isHighRisk ? 'HIGH' : 'LOW',
         },
         {

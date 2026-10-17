@@ -15,6 +15,12 @@ export interface CheckInSummary {
   topicComprehensionAvg: number | null;
 }
 
+/** Asistencia registrada por el docente: % de clases a las que asistió. */
+export interface AttendanceRateSummary {
+  attendance: number;
+  held: number;
+}
+
 export interface SubjectOwnership {
   isOwner: boolean;
 }
@@ -41,6 +47,12 @@ export interface IAcademicServiceClient {
     periodId: string,
     correlationId?: string,
   ): Promise<CheckInSummary | null>;
+  /** null si el docente aún no registró asistencia de ese estudiante en la asignatura. */
+  getAttendanceRate(
+    studentId: string,
+    subjectId: string,
+    correlationId?: string,
+  ): Promise<AttendanceRateSummary | null>;
   getSubjectOwnership(
     teacherId: string,
     subjectId: string,

@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { IStudentMetricsRepository } from "../../domain/ports/i-student-metrics.repository";
 import { IAlertRepository } from "../../domain/ports/i-alert.repository";
 import { StudentMetricsEntity } from "../../domain/entities/student-metrics.entity";
+import { MEDIUM_RISK_AVERAGE, PASSING_GRADE, SEVERELY_FAILING_GRADE } from "../../domain/grade-scale";
 
 export interface RiskDistribution {
   LOW: number;
@@ -19,12 +20,11 @@ export interface AdminDashboard {
   generatedAt: Date;
 }
 
-// Clasifica riesgo con los mismos umbrales que ClassifyRiskUseCase (default: high=40, critical=25),
-// expresados en escala 0-20 (equivalentes a 7/6/5 sobre 10).
+// Clasifica el riesgo por promedio con los umbrales de la escala 0–10.
 function classifyByAverage(avg: number): keyof RiskDistribution {
-  if (avg >= 14) return "LOW";
-  if (avg >= 12) return "MEDIUM";
-  if (avg >= 10) return "HIGH";
+  if (avg >= PASSING_GRADE) return "LOW";
+  if (avg >= MEDIUM_RISK_AVERAGE) return "MEDIUM";
+  if (avg >= SEVERELY_FAILING_GRADE) return "HIGH";
   return "CRITICAL";
 }
 

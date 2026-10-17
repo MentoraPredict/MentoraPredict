@@ -1,17 +1,15 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { RiskLevel as SharedRiskLevel } from "@mentorapredict/shared-types";
 import { RiskInputDto } from "../dtos/risk-input.dto";
+import { MAX_GRADE, PASSING_GRADE, SEVERELY_FAILING_GRADE } from "../../domain/grade-scale";
 
 export type RiskLevel = `${SharedRiskLevel}`;
 
 const RISK_RANK: Record<RiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 
-// Nota mínima de aprobación (escala 0-20) — mismo valor que PASSING_GRADE en
-// get-risk-snapshot.use-case.ts y recalculate-student-metrics.use-case.ts.
-const PASSING_GRADE = 14;
-// Por debajo de este promedio, el estudiante está reprobando con holgura,
-// no solo "por debajo del mínimo" — se trata como un piso más severo.
-const SEVERELY_FAILING_GRADE = 10;
+// Umbrales de nota sobre la escala 0–10 (ver domain/grade-scale.ts). Por debajo
+// de SEVERELY_FAILING_GRADE el estudiante reprueba con holgura, no solo "por
+// debajo del mínimo" — se trata como un piso más severo.
 
 @Injectable()
 export class ClassifyRiskUseCase {
@@ -52,7 +50,7 @@ export class ClassifyRiskUseCase {
   }
 
   private computeScore(input: RiskInputDto): number {
-    const avgComponent = (input.globalAverage / 20) * 100;
+    const avgComponent = (input.globalAverage / MAX_GRADE) * 100;
     const failedComponent = Math.max(0, 100 - input.failedEvaluations * 15);
     const trendComponent = Math.min(
       100,

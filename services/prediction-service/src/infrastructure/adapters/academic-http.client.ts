@@ -19,8 +19,8 @@ import { PeriodReferenceOrmEntity } from '../persistence/period-reference.orm-en
 
 const TIMEOUT_MS = 5000;
 // Same passing-grade threshold used by analytics-service (get-risk-snapshot,
-// recalculate-student-metrics) — 0-20 scale.
-const PASSING_GRADE = 14;
+// recalculate-student-metrics) — 0-10 scale (domain/grade-scale.ts in analytics-service).
+const PASSING_GRADE = 7;
 
 interface StudentGradeView {
   subjectId: string;
