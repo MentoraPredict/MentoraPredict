@@ -1,5 +1,7 @@
 # Propuesta — KPIs y rediseño de los dashboards STUDENT/TEACHER
 
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
+
 > **Estado: propuesta de diseño, nada implementado todavía.** Este documento define qué KPIs agregar, con qué datos (reales o mockeados) y qué flujo de usuario, para que `apps/web` cumpla el objetivo real del proyecto — confirmado por [`business-logic.md`](../business/business-logic.md) y [`dropout-prediction-proposal.md`](../business/dropout-prediction-proposal.md) — de **determinar riesgo académico por estudiante y, a futuro, riesgo de deserción institucional**. Sigue el mismo formato que [`database-update-plan.md`](../database/database-update-plan.md): diagnóstico → propuesta → datos necesarios → fases. Producido a partir de una auditoría dedicada del estado real de `apps/web` (ver §8, Fuentes).
 
 ## 1. Por qué este rediseño, y no solo "agregar tarjetitas"

@@ -1,5 +1,7 @@
 # Plan de actualización de la base de datos — modelo académico, asistencia, encuestas y acceso
 
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
+
 > **Estado: diseño aprobado (ver §9), pendiente de plan de ejecución por fases. Nada de lo descrito acá está implementado todavía.** Este documento es la continuación del análisis comparativo contra `SIGLA-Backend` (`D:\UCE\Semestre VII\Arquitectura de Software\Proyectos\SIGLA-Backend\docs\backend\database-model.md`) sobre facultades/carreras/períodos, asistencia y encuestas, más un quinto punto (registro de acceso a la plataforma) agregado sobre la marcha. Sigue el mismo formato que el documento de SIGLA (objetivos, convención de traducción, diagrama, modelo por dominio, restricciones). Las 4 preguntas abiertas de la versión anterior ya fueron resueltas (§9) — lo que sigue es convertir esto en fases ejecutables (mismo formato que el plan Fase 0-6 ya cerrado), implementarlo con checkpoint por fase, y **solo al final** actualizar `entity-relationship-diagram.md`, `database-architecture.md` y `business-logic.md` para reflejar el estado real.
 
 ## 1. Objetivo del documento y por qué estos cuatro cambios, y no otros

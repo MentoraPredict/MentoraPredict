@@ -51,7 +51,7 @@ The system solves three core problems:
 |---|---|
 | **auth-service** |  Credentials, JWT (RS256), OAuth (Microsoft) |
 | **user-service** |  User profiles, avatars |
-| **academic-service** |  Faculties, careers, periods, subjects, enrollments, grades, check-ins |
+| **academic-service** | School years and periods, grade levels and sections, subjects, people and enrollments, grades and promotion, attendance and justifications, check-ins |
 | **analytics-service** |  Risk classification, alerts, dashboards, WebSocket notifications |
 | **prediction-service** |  AI-generated summaries and recommendations via OpenAI |
 

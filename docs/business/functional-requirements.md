@@ -1,5 +1,7 @@
 # Functional Requirements (RF-)
 
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
+
 > **No canonical requirements specification exists anywhere in this repository.** This catalog was reconstructed by grepping the entire codebase for `RF-0\d\d` references (controller `@ApiOperation` comments, `contracts/openapi-contracts.yaml` section headers, `data-models/data-models.yaml` field notes, per-service `README.md` "coverage" lines) and cross-referencing each code with the endpoint it's actually attached to. Codes not listed here (RF-026+) do not appear anywhere in the code.
 
 | Code | Requirement | Owning service | Implemented by |

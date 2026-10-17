@@ -82,15 +82,11 @@ All routes are reached through Kong at `https://<host>/api/v1/...` (or `/api/soc
 | `GET /grade-imports/:importId` | `[TEACHER, ADMIN]` | Import job status/errors |
 | `POST /import/grades` | `[TEACHER, ADMIN]` | Alternate bulk import route |
 
-### Catalog: faculties / periods / careers
+### Catalog: periods
 | Method & path | Access | Purpose |
 |---|---|---|
-| `GET /faculties`, `GET /faculties/:id` | any authenticated | RF-006 |
-| `POST /faculties`, `PUT /faculties/:id`, `PATCH /faculties/:id/status`, `DELETE /faculties/:id` | `[ADMIN]` | RF-006 CRUD |
 | `GET /periods`, `GET /periods/active`, `GET /periods/:id` | any authenticated | RF-008 |
 | `POST /periods`, `PUT /periods/:id`, `PATCH /periods/:id/status`, `DELETE /periods/:id` | `[ADMIN]` | RF-008 CRUD |
-| `GET /careers`, `GET /careers/:id` | any authenticated | RF-007 |
-| `POST /careers`, `PUT /careers/:id`, `PATCH /careers/:id/status`, `DELETE /careers/:id` | `[ADMIN]` | RF-007 CRUD |
 
 ### Subjects & teachers
 | Method & path | Access | Purpose |

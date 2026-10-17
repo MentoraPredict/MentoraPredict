@@ -1,5 +1,7 @@
 # Use Case Specification — academic-service (Part 1 of 2)
 
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
+
 Formal, IEEE-style use case document for the application-layer use cases implemented in
 `academic-service`. This is the largest and most fully-implemented service in the
 monorepo: it owns the entire academic domain — faculties, careers, academic periods,

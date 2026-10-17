@@ -27,10 +27,12 @@
 |---|
 | `user_profiles` (`UserProfileOrmEntity`) |
 
-### academic-service (largest — 22 Postgres entities, 21 own tables + 1 local reference table)
+### academic-service (largest — Postgres entities for the school domain plus the legacy check-in and survey tables)
 | Postgres (TypeORM) |
 |---|
-| `faculties`, `careers`, `academic_periods`, `subject_catalog`, `subjects`, `evaluations`, `enrollments`, `grades`, `grade_history`, `subject_teachers`, `grade_imports`, `topics`, `class_schedules`, `class_sessions`, `session_attendances`, `weekly_check_ins`, `weekly_check_in_topic_responses`, `survey_questions`, `survey_responses`, `survey_answers`, `teacher_observations` |
+| `school_years`, `academic_periods`, `institutions` (+ levels, grading scales and bands, attendance and promotion rules, `grading_components`), `grade_levels`, `sections`, `curriculum_subjects`, `subject_catalog`, `subjects`, `evaluations`, `enrollments`, `grades`, `grade_history`, `subject_teachers`, `grade_imports`, `topics`, `class_schedules`, `class_sessions`, `session_attendances`, `weekly_check_ins`, `weekly_check_in_topic_responses`, `survey_questions`, `survey_responses`, `survey_answers`, `teacher_observations`, `student_profiles`, `guardian_students`, `consents`, `student_enrollments`, `period_closures`, `period_results`, `supplementary_grades`, `promotion_decisions`, `absence_justifications` |
+
+> Faculties, careers and credits were removed in the school conversion (migration `1792100000006-RemoveUniversityModel`). The Fase A paragraph below describes the catalog as it was designed; today it carries no career or credits.
 
 `teacher_observations` (`TeacherObservationOrmEntity`) holds the free-text observations a teacher records about a student: `student_id`/`teacher_id` → `academic_user_references`, `subject_id` → `subjects`, `type` constrained by a CHECK to `ACADEMIC | BEHAVIORAL | ATTENDANCE | PERFORMANCE`, indexed by `(student_id, created_at)`.
 
@@ -67,35 +69,32 @@
 
 `data-models/data-models.yaml`'s Redis section documents a different key shape (`metrics:student:<studentId>:<periodId>`) and a different TTL (3600s) than what's actually running — treat the table above as authoritative, not the design doc.
 
-## 4. Seed data (`database/seeds/postgres/`, 13 files, run in numeric order)
+## 4. Seed data (`database/seeds/postgres/`, 10 files, run in numeric order)
 
 Schema is created by versioned TypeORM migrations, run as an explicit CD step before seeding (see §7). Seeding is handled separately by `infra/scripts/run-seeds.sh` (idempotent, sha256-checksummed per file, tracked in a `seed_history` table) inside the `database/Dockerfile.seed` container, run as the `seed-loader` service in every `docker-compose.*.yml`.
 
-> **Fresh-database seeding gap — found and fixed**: while documenting Fases A-E, `04_subjects.sql` and `09_student_analytics.sql` (old numbering) turned out to still target the pre-Fase-A/C column shapes, and a run against a genuinely empty database also surfaced a **second, older, unrelated gap**: no seed file had ever populated `academic_user_references`/`analytics_*_references`/`prediction_*_references` (the local reference tables introduced in Fase 4), so `04_subjects.sql`'s `teacher_id` FK already failed against an empty database even *before* Fases A-E — this was never actually exercised until now. Both were fixed and verified end-to-end: migrated a scratch database from zero with all 5 services, ran all 13 seed files in order, confirmed zero errors and correct row counts/joins, then dropped the scratch database. Two new seed files were added (`01_user_references.sql`, `11_subject_period_references.sql`) and the rest renumbered to keep dependency order — see the table below for the current file list.
+The seeds describe a school (school year 2026-2027, three terms, four sections) and are meant for a **freshly created database**: the unique index of active periods and school years would reject them next to rows from the previous university seeds. All dates, hours and curricula are sample data, not the official calendar. See [../erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md) §5 to recreate the environment.
 
 | File | Seeds |
 |---|---|
 | `00_users.sql` | 3 ADMIN + 15 TEACHER + 50 STUDENT accounts (`users` + `user_profiles`) |
-| `01_user_references.sql` | Populates `academic_user_references`/`analytics_user_references`/`prediction_user_references` from `users` (id, role, is_active) — stands in for the real upsert-on-HTTP-call sync (§3 of [entity-relationship-diagram.md](./entity-relationship-diagram.md)) that only happens once real app traffic occurs |
-| `02_faculties.sql` | 10 faculties (real UCE-style names/codes) |
-| `03_careers.sql` | ~18 careers under those faculties |
-| `04_academicPeriods.sql` | 8 academic periods, 2025-A → 2028-B (2026-A is the only `ACTIVE` one) |
-| `05_subjects.sql` | 19 subject offerings forming a full 10-semester Ingeniería en Sistemas de Información curriculum — inserts into `subject_catalog` first, then `subjects` (`subject_catalog_id` = same id, mirroring the real Fase A backfill migration) |
-| `06_enrollments.sql` | Deterministic enrollment of every student into 3–5 subjects for 2026-A (~70% ACTIVE / 20% WITHDRAWN / 10% `SUSPENDED` — `SUSPENDED` is a fully supported `EnrollmentStatus` value since the Fase 1 `shared-types` centralization, see [../business/business-logic.md](../business/business-logic.md) §5) |
-| `07_evaluations.sql` | 3–5 evaluations per subject with weights |
-| `08_grades.sql` | Grades (0–20 scale) for every active enrollment × evaluation, plus ~30% of grades get a `grade_history` correction entry |
-| `09_subject_teachers.sql` | Syncs the `subject_teachers` join table to `subjects.teacherId` |
-| `10_topics.sql` | 5–6 real syllabus topics per subject (replaces an older generic "Unidad N" placeholder set); joins through `subject_catalog` for `code` since Fase A |
-| `11_subject_period_references.sql` | Populates `analytics_subject_references`/`analytics_period_references`/`prediction_subject_references`/`prediction_period_references` from `subjects`/`academic_periods`, same rationale as `01_user_references.sql` |
-| `12_student_analytics.sql` | Seeds 4 tables in one pass: `weekly_check_ins` (4 weeks per active enrollment), `weekly_check_in_topic_responses` (Fase C — up to 3 per check-in, real FK to the first 3 syllabus topics by `order`), `student_subject_metrics` (computed averages + risk level), `student_subject_predictions` (status `COMPUTED` + a recommendation string) |
+| `01_staff_and_guardians.sql` | 1 SECRETARY, 1 DECE, 1 INSPECTOR and 25 GUARDIAN accounts |
+| `02_user_references.sql` | Populates `academic_user_references`/`analytics_user_references`/`prediction_user_references` from `users` (id, role, is_active) — stands in for the real upsert-on-HTTP-call sync (§3 of [entity-relationship-diagram.md](./entity-relationship-diagram.md)) that only happens once real app traffic occurs |
+| `03_school_year.sql` | School year 2026-2027 (Sierra-Amazonía, `ACTIVE`) with three `TRIMESTER` periods; the first one is the active period |
+| `04_structure.sql` | 10 subjects in `subject_catalog`, curriculum for 8.º/9.º EGB and 1.º BGU, 4 sections with tutor, 28 courses (`subjects` with `section_id`) with a rotating teacher, `subject_teachers` and 3 syllabus topics per subject |
+| `05_people_enrollment.sql` | Student profiles, guardian links (each guardian has two students), consents, `student_enrollments` for students 001–048 (049 and 050 stay unenrolled) and the derived `enrollments` |
+| `06_evaluations_grades.sql` | 3 formative + 1 summative activity per course in the first term and 0–10 grades with low, medium and high performers; ~4 % of grades are left unrecorded |
+| `07_attendance.sql` | `class_schedules`, `class_sessions` for the whole school year, teacher-recorded `session_attendances` up to today (some students with frequent absences) and `absence_justifications` in every status |
+| `08_subject_period_references.sql` | Populates `analytics_subject_references`/`analytics_period_references`/`prediction_subject_references`/`prediction_period_references` from `subjects`/`academic_periods`, same rationale as `02_user_references.sql` |
+| `09_student_analytics.sql` | Seeds 4 tables in one pass: `weekly_check_ins` (one per week since the start of the active period), `weekly_check_in_topic_responses` (up to 3 per check-in), `student_subject_metrics` (0–10 averages + risk level), `student_subject_predictions` (status `COMPUTED` + a recommendation string) |
 
-`teacher_observations`, `dataset_versions` and `prediction_logs` have no seed data — they start empty in every environment and fill from real application traffic. Because they carry foreign keys to the reference tables, `01_user_references.sql` and `11_subject_period_references.sql` must have run first (they do, by numeric order).
+`teacher_observations`, `dataset_versions` and `prediction_logs` have no seed data — they start empty in every environment and fill from real application traffic. Because they carry foreign keys to the reference tables, `02_user_references.sql` and `08_subject_period_references.sql` must have run first (they do, by numeric order).
 
 ### Seed credentials (local/QA only — safe to document, not real secrets)
 
-- Emails: `admin01@mentorapredict.edu.ec`…`admin03@…`, `teacher01@…`…`teacher15@…`, `student001@…`…`student050@…`
+- Emails: `admin01..03`, `teacher01..15`, `student001..050`, `guardian01..25`, `secretary01`, `dece01` and `inspector01`, all `@mentorapredict.edu.ec`
 - Password (all seeded accounts): **`MP123456789`**
-- UUIDs are deterministic (`aaaaaaaa-0000-4000-8000-0000000000XX` for admins, `bbbbbbbb-...` teachers, `cccccccc-...` students) — reproducible across environments.
+- UUIDs are deterministic (`aaaaaaaa-0000-4000-8000-0000000000XX` for admins, `bbbbbbbb-...` teachers, `cccccccc-...` students, `dddddddd-...` guardians) — reproducible across environments.
 
 ## 5. Status of pre-existing design artifacts
 
