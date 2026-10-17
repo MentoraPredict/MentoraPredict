@@ -4,6 +4,8 @@ export const USER_ROLES = [
     "ADMIN",
     "GUARDIAN",
     "SECRETARY",
+    "DECE",
+    "INSPECTOR",
 ] as const;
 
 export type UserRole =

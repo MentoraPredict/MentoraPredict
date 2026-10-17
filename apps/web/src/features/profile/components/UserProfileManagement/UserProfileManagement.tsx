@@ -95,7 +95,9 @@ export default function UserProfileManagement({
           ? APP_PATHS.guardian.students
           : role === "SECRETARY"
             ? APP_PATHS.admin.enrollments
-            : APP_PATHS.admin.users;
+            : role === "INSPECTOR" || role === "DECE"
+              ? APP_PATHS.admin.attendance
+              : APP_PATHS.admin.users;
 
   const handleChangeImage = (file: File) => {
     setSelectedImage(file);

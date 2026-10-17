@@ -109,6 +109,8 @@ export default function useAdminUsers() {
     const students = useRoleScopedUsers("STUDENT", search);
     const guardians = useRoleScopedUsers("GUARDIAN", search);
     const secretaries = useRoleScopedUsers("SECRETARY", search);
+    const deces = useRoleScopedUsers("DECE", search);
+    const inspectors = useRoleScopedUsers("INSPECTOR", search);
 
     const reloadAll = useCallback(async () => {
         await Promise.all([
@@ -117,8 +119,10 @@ export default function useAdminUsers() {
             students.reload(),
             guardians.reload(),
             secretaries.reload(),
+            deces.reload(),
+            inspectors.reload(),
         ]);
-    }, [admins, teachers, students, guardians, secretaries]);
+    }, [admins, teachers, students, guardians, secretaries, deces, inspectors]);
 
     const filteredStudents = useMemo(() => {
         const normalizedFaculty = facultyFilter.trim().toLowerCase();
@@ -405,6 +409,26 @@ export default function useAdminUsers() {
             totalUsers: secretaries.totalUsers,
             totalPages: secretaries.totalPages,
             setCurrentPage: secretaries.setCurrentPage,
+        },
+        deces: {
+            users: deces.users,
+            isLoading: deces.isLoading,
+            error: deces.error,
+            currentPage: deces.currentPage,
+            pageSize: deces.pageSize,
+            totalUsers: deces.totalUsers,
+            totalPages: deces.totalPages,
+            setCurrentPage: deces.setCurrentPage,
+        },
+        inspectors: {
+            users: inspectors.users,
+            isLoading: inspectors.isLoading,
+            error: inspectors.error,
+            currentPage: inspectors.currentPage,
+            pageSize: inspectors.pageSize,
+            totalUsers: inspectors.totalUsers,
+            totalPages: inspectors.totalPages,
+            setCurrentPage: inspectors.setCurrentPage,
         },
         students: {
             users: filteredStudents,

@@ -56,6 +56,26 @@ const HELP_BY_ROLE: Record<
       "Consultar los consentimientos otorgados por los representantes.",
     ],
   },
+  DECE: {
+    title: "Ayuda para el DECE",
+    description:
+      "Como DECE das seguimiento a los estudiantes que necesitan acompañamiento. Las alertas son una ayuda para tu criterio, no un diagnóstico.",
+    capabilities: [
+      "Recibir avisos cuando el riesgo de un estudiante sube a alto o crítico.",
+      "Revisar la asistencia de cada paralelo y los casos que superan el límite.",
+      "Consultar las justificaciones de faltas.",
+    ],
+  },
+  INSPECTOR: {
+    title: "Ayuda para inspección",
+    description:
+      "Como inspección controlas la asistencia y resuelves las justificaciones de faltas.",
+    capabilities: [
+      "Revisar la asistencia de cada paralelo y los estudiantes cerca del límite.",
+      "Aprobar o rechazar las justificaciones enviadas por los representantes.",
+      "Recibir avisos cuando un estudiante supera el límite de faltas.",
+    ],
+  },
   STUDENT: {
     title: "Ayuda para estudiantes",
     description:

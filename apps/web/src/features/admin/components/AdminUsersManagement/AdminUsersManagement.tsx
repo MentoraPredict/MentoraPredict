@@ -166,6 +166,8 @@ export default function AdminUsersManagement() {
     teachers,
     guardians,
     secretaries,
+    deces,
+    inspectors,
     students,
     toggleStatus,
     toggleTeacherRole,
@@ -348,6 +350,46 @@ export default function AdminUsersManagement() {
           totalUsers={secretaries.totalUsers}
           totalPages={secretaries.totalPages}
           onPageChange={secretaries.setCurrentPage}
+          showRoleColumn
+          onToggleStatus={toggleStatus}
+          deletingUserId={deletingUserId}
+          onDeleteUser={removeUser}
+          onSaveUserProfile={saveUserProfile}
+          onUploadAvatar={uploadAvatar}
+          onDeleteAvatar={deleteAvatar}
+        />
+
+        <UserRoleSection
+          title="DECE"
+          description="Consejería estudiantil: recibe las alertas tempranas y acompaña a los estudiantes."
+          users={deces.users}
+          isLoading={deces.isLoading}
+          error={deces.error}
+          currentPage={deces.currentPage}
+          pageSize={deces.pageSize}
+          totalUsers={deces.totalUsers}
+          totalPages={deces.totalPages}
+          onPageChange={deces.setCurrentPage}
+          showRoleColumn
+          onToggleStatus={toggleStatus}
+          deletingUserId={deletingUserId}
+          onDeleteUser={removeUser}
+          onSaveUserProfile={saveUserProfile}
+          onUploadAvatar={uploadAvatar}
+          onDeleteAvatar={deleteAvatar}
+        />
+
+        <UserRoleSection
+          title="Inspección"
+          description="Controla la asistencia y resuelve las justificaciones de faltas."
+          users={inspectors.users}
+          isLoading={inspectors.isLoading}
+          error={inspectors.error}
+          currentPage={inspectors.currentPage}
+          pageSize={inspectors.pageSize}
+          totalUsers={inspectors.totalUsers}
+          totalPages={inspectors.totalPages}
+          onPageChange={inspectors.setCurrentPage}
           showRoleColumn
           onToggleStatus={toggleStatus}
           deletingUserId={deletingUserId}
