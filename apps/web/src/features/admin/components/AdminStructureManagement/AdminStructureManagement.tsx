@@ -12,6 +12,7 @@ import Modal from "@/components/molecules/Modal";
 import AdminSectionForm, {
   type SectionFormValues,
 } from "@/features/admin/components/AdminSectionForm";
+import SectionCoursesTeachers from "@/features/admin/components/SectionCoursesTeachers";
 import useAdminStructure from "@/features/admin/hooks/useAdminStructure";
 import { SHIFT_LABELS } from "@/types/academic/institution-config.types";
 import type {
@@ -56,6 +57,10 @@ export default function AdminStructureManagement() {
     generateCourses,
   } = useAdminStructure();
   const [formTarget, setFormTarget] = useState<FormTarget | null>(null);
+  const [teachersTarget, setTeachersTarget] = useState<{
+    sectionId: string;
+    label: string;
+  } | null>(null);
 
   const offeredGrades = gradeLevels.filter((grade) => grade.isLevelActive);
   const levels = Array.from(
@@ -235,6 +240,21 @@ export default function AdminStructureManagement() {
                               >
                                 Generar cursos
                               </Button>
+                              {section.courseCount > 0 ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="px-3 py-1.5 text-sm"
+                                  onClick={() =>
+                                    setTeachersTarget({
+                                      sectionId: section.id,
+                                      label: `${grade.name} «${section.name}»`,
+                                    })
+                                  }
+                                >
+                                  Docentes
+                                </Button>
+                              ) : null}
                               <Button
                                 type="button"
                                 variant="outline"
@@ -264,6 +284,21 @@ export default function AdminStructureManagement() {
             </section>
           ))
         : null}
+
+      <Modal
+        isOpen={Boolean(teachersTarget)}
+        onClose={() => setTeachersTarget(null)}
+        ariaLabel="Docentes del paralelo"
+      >
+        {teachersTarget ? (
+          <SectionCoursesTeachers
+            sectionId={teachersTarget.sectionId}
+            sectionLabel={teachersTarget.label}
+            teachers={teachers}
+            onClose={() => setTeachersTarget(null)}
+          />
+        ) : null}
+      </Modal>
 
       <Modal isOpen={Boolean(formTarget)} onClose={closeForm} ariaLabel="Paralelo">
         {formTarget ? (
