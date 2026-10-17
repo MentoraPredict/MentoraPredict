@@ -51,6 +51,7 @@ import {
   SupplementaryGradeOrmEntity,
   PromotionDecisionOrmEntity,
 } from "./infrastructure/persistence/grading.orm-entities";
+import { AbsenceJustificationOrmEntity } from "./infrastructure/persistence/absence-justification.orm-entity";
 
 export default new DataSource({
   type: "postgres",
@@ -102,6 +103,7 @@ export default new DataSource({
     PeriodResultOrmEntity,
     SupplementaryGradeOrmEntity,
     PromotionDecisionOrmEntity,
+    AbsenceJustificationOrmEntity,
   ],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   migrationsTableName: "migrations_academic",
