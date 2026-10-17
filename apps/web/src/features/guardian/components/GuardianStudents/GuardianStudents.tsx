@@ -7,7 +7,10 @@ import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
 import useMyStudents from "@/features/guardian/hooks/useMyStudents";
-import { getGuardianStudentResultsPath } from "@/routes/paths";
+import {
+  getGuardianStudentAttendancePath,
+  getGuardianStudentResultsPath,
+} from "@/routes/paths";
 import { SHIFT_LABELS, type Shift } from "@/types/academic/institution-config.types";
 import {
   CONSENT_LABELS,
@@ -92,11 +95,18 @@ export default function GuardianStudents() {
                   )}
 
                   {student.activeEnrollment ? (
-                    <Link to={getGuardianStudentResultsPath(student.studentId)}>
-                      <Button type="button" variant="outline" className="px-4 py-2 text-sm">
-                        Ver calificaciones
-                      </Button>
-                    </Link>
+                    <>
+                      <Link to={getGuardianStudentResultsPath(student.studentId)}>
+                        <Button type="button" variant="outline" className="px-4 py-2 text-sm">
+                          Ver calificaciones
+                        </Button>
+                      </Link>
+                      <Link to={getGuardianStudentAttendancePath(student.studentId)}>
+                        <Button type="button" variant="outline" className="px-4 py-2 text-sm">
+                          Ver asistencia
+                        </Button>
+                      </Link>
+                    </>
                   ) : null}
                 </div>
               </header>

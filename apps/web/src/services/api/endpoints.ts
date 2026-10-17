@@ -54,6 +54,23 @@ export const endpoints = {
             `/v1/academic/sections/${sectionId}/enrollments`,
         endStudentEnrollment: (id: string) =>
             `/v1/academic/student-enrollments/${id}/end`,
+        subjectSchedule: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/schedule`,
+        subjectSessions: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/sessions`,
+        sessionAttendance: (subjectId: string, sessionId: string) =>
+            `/v1/academic/subjects/${subjectId}/sessions/${sessionId}/attendance`,
+        courseAttendance: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/attendance`,
+        sectionAttendance: (sectionId: string) =>
+            `/v1/academic/sections/${sectionId}/attendance`,
+        studentAttendance: (studentId: string) =>
+            `/v1/academic/students/${studentId}/attendance`,
+        studentJustifications: (studentId: string) =>
+            `/v1/academic/students/${studentId}/absence-justifications`,
+        justifications: "/v1/academic/absence-justifications",
+        justification: (id: string) =>
+            `/v1/academic/absence-justifications/${id}`,
         gradingComponents: "/v1/academic/grading/components",
         subjectGradebook: (subjectId: string) =>
             `/v1/academic/subjects/${subjectId}/gradebook`,

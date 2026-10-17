@@ -9,6 +9,7 @@ import {
   FiSmile,
   FiTrendingDown,
   FiUploadCloud,
+  FiUserCheck,
   FiUsers,
 } from "react-icons/fi";
 import { NavLink } from "react-router-dom";
@@ -19,6 +20,7 @@ import {
   getStudentCourseEvaluationsPath,
   getStudentCoursePerformancePath,
   getStudentCourseSurveyPath,
+  getTeacherCourseAttendancePath,
   getTeacherCourseDropoutRiskPath,
   getTeacherCourseEditPath,
   getTeacherCourseGradebookPath,
@@ -51,6 +53,11 @@ function getTeacherActions(courseId: string): ToolbarAction[] {
       to: getTeacherCourseGradebookPath(courseId),
       label: "Calificaciones",
       icon: <FiBookOpen size={16} />,
+    },
+    {
+      to: getTeacherCourseAttendancePath(courseId),
+      label: "Asistencia",
+      icon: <FiUserCheck size={16} />,
     },
     {
       to: getTeacherCourseUploadDataPath(courseId),

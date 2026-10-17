@@ -1,4 +1,4 @@
-import { FiBookOpen, FiClipboard, FiGrid, FiLogOut, FiTrendingUp } from "react-icons/fi";
+import { FiBookOpen, FiClipboard, FiGrid, FiLogOut, FiTrendingUp, FiUserCheck } from "react-icons/fi";
 
 import DashboardSidebar, {
   type DashboardSidebarSection,
@@ -37,6 +37,11 @@ export default function StudentMainSidebar({
           to: APP_PATHS.student.progress,
           icon: <FiTrendingUp size={18} />,
           label: "Mis calificaciones",
+        },
+        {
+          to: APP_PATHS.student.attendance,
+          icon: <FiUserCheck size={18} />,
+          label: "Mi asistencia",
         },
         {
           to: APP_PATHS.student.survey,
