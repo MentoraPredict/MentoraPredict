@@ -1,13 +1,14 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
 import Label from "@/components/atoms/Label";
-import Select from "@/components/atoms/Select";
 import Text from "@/components/atoms/Text";
 import Textarea from "@/components/atoms/Textarea";
+import CollapsibleGroup from "@/components/molecules/CollapsibleGroup";
+import ListToolbar from "@/components/molecules/ListToolbar";
 import Modal from "@/components/molecules/Modal";
 
 import { getJustifications, resolveJustification } from "@/services/attendance.service";
@@ -25,6 +26,12 @@ const TONE: Record<JustificationStatus, "amber" | "green" | "red"> = {
   REJECTED: "red",
 };
 
+type JustificationGroupBy = "" | "course" | "student";
+
+function normalize(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export default function AdminJustifications() {
   const role = useAuthStore((state) => state.user?.role);
   // Solo inspección y administración resuelven; el DECE consulta.
@@ -37,6 +44,9 @@ export default function AdminJustifications() {
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<JustificationItem | null>(null);
   const [note, setNote] = useState("");
+  const [search, setSearch] = useState("");
+  const [courseFilter, setCourseFilter] = useState("");
+  const [groupBy, setGroupBy] = useState<JustificationGroupBy>("");
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -55,6 +65,43 @@ export default function AdminJustifications() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const courseOptions = useMemo(
+    () =>
+      [...new Set(items.map((item) => item.courseName))]
+        .sort((a, b) => a.localeCompare(b, "es"))
+        .map((name) => ({ value: name, label: name })),
+    [items]
+  );
+
+  const visibleItems = useMemo(() => {
+    const terms = normalize(search).split(/\s+/).filter(Boolean);
+
+    return items.filter((item) => {
+      if (courseFilter && item.courseName !== courseFilter) return false;
+      const haystack = normalize(
+        [item.studentName, item.courseName, item.reason, item.sessionDate].join(" ")
+      );
+      return terms.every((term) => haystack.includes(term));
+    });
+  }, [items, search, courseFilter]);
+
+  const groupedItems = useMemo(() => {
+    if (!groupBy) return [];
+    const groups = new Map<string, JustificationItem[]>();
+    for (const item of visibleItems) {
+      const key = groupBy === "course" ? item.courseName : item.studentName;
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    }
+    return [...groups.entries()];
+  }, [visibleItems, groupBy]);
+
+  const clearAll = () => {
+    setSearch("");
+    setCourseFilter("");
+    setGroupBy("");
+    setStatus("PENDING");
+  };
 
   const close = () => {
     setNote("");
@@ -82,6 +129,52 @@ export default function AdminJustifications() {
     if (target) await resolve(target, false, note.trim());
   };
 
+  const renderItem = (item: JustificationItem) => (
+      <div key={item.id} className="px-5 py-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-[14rem] flex-1">
+            <Text variant="small" className="font-medium text-gray-900">
+              {item.studentName}
+            </Text>
+            <Text variant="caption" className="text-gray-500">
+              {item.courseName} · {item.sessionDate}
+            </Text>
+          </div>
+          <Badge tone={TONE[item.status]}>{JUSTIFICATION_LABELS[item.status]}</Badge>
+
+          {canResolve && item.status === "PENDING" ? (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                className="px-3 py-1.5 text-sm"
+                disabled={isSubmitting}
+                onClick={() => void resolve(item, true)}
+              >
+                Aprobar
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="px-3 py-1.5 text-sm"
+                disabled={isSubmitting}
+                onClick={() => setTarget(item)}
+              >
+                Rechazar
+              </Button>
+            </div>
+          ) : null}
+        </div>
+        <Text variant="small" className="mt-2 text-gray-700">
+          Motivo: {item.reason}
+        </Text>
+        {item.resolutionNote ? (
+          <Text variant="caption" className="mt-1 text-gray-500">
+            Resolución: {item.resolutionNote}
+          </Text>
+        ) : null}
+      </div>
+  );
+
   return (
     <Container className="py-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -95,20 +188,45 @@ export default function AdminJustifications() {
           </Text>
         </div>
 
-        <div className="w-52">
-          <Label htmlFor="justification-status">Estado</Label>
-          <Select
-            id="justification-status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as JustificationStatus)}
-          >
-            {(Object.keys(JUSTIFICATION_LABELS) as JustificationStatus[]).map((value) => (
-              <option key={value} value={value}>
-                {JUSTIFICATION_LABELS[value]}
-              </option>
-            ))}
-          </Select>
-        </div>
+      </div>
+
+      <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4">
+        <ListToolbar
+          search={search}
+          searchPlaceholder="Buscar por estudiante, curso, motivo o fecha"
+          searchLabel="Buscar justificaciones"
+          onSearchChange={setSearch}
+          onClear={clearAll}
+          filters={[
+            {
+              id: "status",
+              label: "Estado",
+              value: status,
+              allLabel: JUSTIFICATION_LABELS.PENDING,
+              options: (Object.keys(JUSTIFICATION_LABELS) as JustificationStatus[])
+                .filter((value) => value !== "PENDING")
+                .map((value) => ({ value, label: JUSTIFICATION_LABELS[value] })),
+              onChange: (value) =>
+                setStatus((value || "PENDING") as JustificationStatus),
+            },
+            {
+              id: "course",
+              label: "Curso",
+              value: courseFilter,
+              allLabel: "Todos los cursos",
+              options: courseOptions,
+              onChange: setCourseFilter,
+            },
+          ]}
+          group={{
+            value: groupBy,
+            options: [
+              { value: "course", label: "Curso" },
+              { value: "student", label: "Estudiante" },
+            ],
+            onChange: (value) => setGroupBy(value as JustificationGroupBy),
+          }}
+        />
       </div>
 
       {error ? (
@@ -119,70 +237,35 @@ export default function AdminJustifications() {
         </div>
       ) : null}
 
-      <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white">
-        {isLoading ? (
-          <div className="px-6 py-10 text-center">
-            <Text variant="small">Cargando...</Text>
-          </div>
-        ) : null}
+      {isLoading ? (
+        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-10 text-center">
+          <Text variant="small">Cargando...</Text>
+        </div>
+      ) : null}
 
-        {!isLoading
-          ? items.map((item) => (
-              <div key={item.id} className="px-5 py-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="min-w-[14rem] flex-1">
-                    <Text variant="small" className="font-medium text-gray-900">
-                      {item.studentName}
-                    </Text>
-                    <Text variant="caption" className="text-gray-500">
-                      {item.courseName} · {item.sessionDate}
-                    </Text>
-                  </div>
-                  <Badge tone={TONE[item.status]}>{JUSTIFICATION_LABELS[item.status]}</Badge>
+      {!isLoading && visibleItems.length === 0 ? (
+        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-10 text-center">
+          <Text variant="small" className="text-gray-600">
+            No hay justificaciones que coincidan con la búsqueda o los filtros.
+          </Text>
+        </div>
+      ) : null}
 
-                  {canResolve && item.status === "PENDING" ? (
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        className="px-3 py-1.5 text-sm"
-                        disabled={isSubmitting}
-                        onClick={() => void resolve(item, true)}
-                      >
-                        Aprobar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="px-3 py-1.5 text-sm"
-                        disabled={isSubmitting}
-                        onClick={() => setTarget(item)}
-                      >
-                        Rechazar
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-                <Text variant="small" className="mt-2 text-gray-700">
-                  Motivo: {item.reason}
-                </Text>
-                {item.resolutionNote ? (
-                  <Text variant="caption" className="mt-1 text-gray-500">
-                    Resolución: {item.resolutionNote}
-                  </Text>
-                ) : null}
+      {!isLoading && visibleItems.length > 0 && !groupBy ? (
+        <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white">
+          {visibleItems.map(renderItem)}
+        </div>
+      ) : null}
+
+      {!isLoading && groupBy
+        ? groupedItems.map(([label, groupItems]) => (
+            <CollapsibleGroup key={label} label={label} count={groupItems.length}>
+              <div className="divide-y divide-gray-100">
+                {groupItems.map(renderItem)}
               </div>
-            ))
-          : null}
-
-        {!isLoading && items.length === 0 ? (
-          <div className="px-6 py-10 text-center">
-            <Text variant="small" className="text-gray-600">
-              No hay justificaciones en este estado.
-            </Text>
-          </div>
-        ) : null}
-      </div>
-
+            </CollapsibleGroup>
+          ))
+        : null}
       <Modal isOpen={Boolean(target)} onClose={close} ariaLabel="Rechazar justificación">
         <form
           onSubmit={reject}

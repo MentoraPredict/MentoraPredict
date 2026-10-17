@@ -8,12 +8,12 @@ import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
 import Input from "@/components/atoms/Input";
 import Label from "@/components/atoms/Label";
-import Select from "@/components/atoms/Select";
 import Text from "@/components/atoms/Text";
 import Textarea from "@/components/atoms/Textarea";
 import Modal from "@/components/molecules/Modal";
 import Pagination from "@/components/molecules/Pagination";
-import SearchBar from "@/components/molecules/SearchBar";
+import CollapsibleGroup from "@/components/molecules/CollapsibleGroup";
+import ListToolbar from "@/components/molecules/ListToolbar";
 import StatCard from "@/components/molecules/StatCard";
 import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
 
@@ -232,7 +232,7 @@ export default function AdminCoursesManagement() {
     null
   );
   const [search, setSearch] = useState("");
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [groupBy, setGroupBy] = useState<"" | "teacher" | "status" | "period">("");
   const [statusFilter, setStatusFilter] = useState("");
   const [teacherFilter, setTeacherFilter] = useState("");
   const [periodFilter, setPeriodFilter] = useState("");
@@ -273,7 +273,51 @@ export default function AdminCoursesManagement() {
     setStatusFilter("");
     setTeacherFilter("");
     setPeriodFilter("");
+    setGroupBy("");
   };
+
+  const groupedCourses = useMemo(() => {
+    if (!groupBy) return [];
+    const groups = new Map<string, Course[]>();
+    for (const course of filteredCourses) {
+      const key =
+        groupBy === "teacher"
+          ? course.teacherName
+          : groupBy === "period"
+            ? course.semester
+            : (course.isActive ?? true)
+              ? "Activos"
+              : "Inactivos";
+      groups.set(key, [...(groups.get(key) ?? []), course]);
+    }
+    return [...groups.entries()];
+  }, [filteredCourses, groupBy]);
+
+  const teacherName = (teacher: (typeof teachers)[number]) =>
+    [teacher.firstName, teacher.lastName].filter(Boolean).join(" ") ||
+    teacher.email;
+
+  const renderGrid = (list: Course[]) => (
+    <CourseGrid
+      courses={list}
+      isDeleteMode={isDeleteMode}
+      deletingCourseId={deletingCourseId}
+      showTeacherDetails
+      onCourseClick={(courseId) => {
+        navigate(getAdminCourseStudentsPath(courseId));
+      }}
+      onSecondaryCourseAction={(courseId) => {
+        const course = courses.find((item) => item.id === courseId);
+        if (course) setEditingCourse(course);
+      }}
+      secondaryCourseActionLabel="Editar"
+      onDeleteCourse={async (courseId) => {
+        const success = await deleteCourse(courseId);
+        if (success) setIsDeleteMode(false);
+      }}
+      onCancelDeleteMode={() => setIsDeleteMode(false)}
+    />
+  );
 
   const stats = useMemo(() => {
     const activePeriod = periods.find((period) => period.status === "ACTIVE");
@@ -350,108 +394,73 @@ export default function AdminCoursesManagement() {
           <StatCard value={String(stats.inActivePeriod)} label="En periodo activo" />
         </div>
 
-        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="min-w-0 flex-1">
-              <SearchBar
-                value={search}
-                placeholder="Buscar por nombre o descripción del curso"
-                onChange={setSearch}
-                onClear={() => setSearch("")}
-                onSearch={() => {}}
-              />
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="lg:min-w-28"
-              onClick={() => setIsFiltersOpen((current) => !current)}
-            >
-              Filtros
-            </Button>
-          </div>
-
-          {isFiltersOpen ? (
-            <div className="mt-4 grid gap-4 border-t border-gray-100 pt-4 lg:grid-cols-4">
-              <div>
-                <Label className="mb-2 block text-xs font-semibold text-gray-600">
-                  Estado
-                </Label>
-                <Select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                >
-                  <option value="">Todos los estados</option>
-                  <option value="true">Activo</option>
-                  <option value="false">Inactivo</option>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="mb-2 block text-xs font-semibold text-gray-600">
-                  Docente
-                </Label>
-                <Select
-                  value={teacherFilter}
-                  onChange={(event) => setTeacherFilter(event.target.value)}
-                >
-                  <option value="">Todos los docentes</option>
-                  {teachers.map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {[teacher.firstName, teacher.lastName].filter(Boolean).join(" ") ||
-                        teacher.email}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <div>
-                <Label className="mb-2 block text-xs font-semibold text-gray-600">
-                  Periodo
-                </Label>
-                <Select
-                  value={periodFilter}
-                  onChange={(event) => setPeriodFilter(event.target.value)}
-                >
-                  <option value="">Todos los periodos</option>
-                  {periods.map((period) => (
-                    <option key={period.id} value={period.name}>
-                      {period.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="
-                    inline-flex
-                    w-full
-                    items-center
-                    justify-center
-                    rounded-xl
-                    border
-                    border-blue-200
-                    bg-blue-50
-                    px-4
-                    py-3
-                    text-sm
-                    font-semibold
-                    text-blue-700
-                    transition
-                    hover:bg-blue-100
-                  "
-                >
-                  Reiniciar filtros
-                </button>
-              </div>
-            </div>
-          ) : null}
+        <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4">
+          <ListToolbar
+            search={search}
+            searchPlaceholder="Buscar por nombre o descripción del curso"
+            searchLabel="Buscar cursos"
+            onSearchChange={setSearch}
+            onClear={clearFilters}
+            filters={[
+              {
+                id: "status",
+                label: "Estado",
+                value: statusFilter,
+                allLabel: "Todos los estados",
+                options: [
+                  { value: "true", label: "Activo" },
+                  { value: "false", label: "Inactivo" },
+                ],
+                onChange: setStatusFilter,
+              },
+              {
+                id: "teacher",
+                label: "Docente",
+                value: teacherFilter,
+                allLabel: "Todos los docentes",
+                options: teachers.map((teacher) => ({
+                  value: teacher.id,
+                  label: teacherName(teacher),
+                })),
+                onChange: setTeacherFilter,
+              },
+              {
+                id: "period",
+                label: "Periodo",
+                value: periodFilter,
+                allLabel: "Todos los periodos",
+                options: periods.map((period) => ({
+                  value: period.name,
+                  label: period.name,
+                })),
+                onChange: setPeriodFilter,
+              },
+            ]}
+            group={{
+              value: groupBy,
+              options: [
+                { value: "teacher", label: "Docente" },
+                { value: "period", label: "Periodo" },
+                { value: "status", label: "Estado" },
+              ],
+              onChange: (value) =>
+                setGroupBy(value as "" | "teacher" | "status" | "period"),
+            }}
+          />
         </div>
 
+        {!isLoading && !error && !groupBy ? (
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              pageSize={COURSES_PER_PAGE}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              itemLabel="cursos"
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        ) : null}
         {error ? (
           <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-6 py-4">
             <Text variant="small" className="font-medium text-red-700">
@@ -478,39 +487,15 @@ export default function AdminCoursesManagement() {
               Ningún curso coincide con la búsqueda o los filtros aplicados.
             </Text>
           </div>
+        ) : groupBy ? (
+          groupedCourses.map(([label, list]) => (
+            <CollapsibleGroup key={label} label={label} count={list.length}>
+              <div className="p-4">{renderGrid(list)}</div>
+            </CollapsibleGroup>
+          ))
         ) : (
-          <CourseGrid
-            courses={paginatedCourses}
-            isDeleteMode={isDeleteMode}
-            deletingCourseId={deletingCourseId}
-            showTeacherDetails
-            onCourseClick={(courseId) => {
-              navigate(getAdminCourseStudentsPath(courseId));
-            }}
-            onSecondaryCourseAction={(courseId) => {
-              const course = courses.find((item) => item.id === courseId);
-              if (course) setEditingCourse(course);
-            }}
-            secondaryCourseActionLabel="Editar"
-            onDeleteCourse={async (courseId) => {
-              const success = await deleteCourse(courseId);
-              if (success) setIsDeleteMode(false);
-            }}
-            onCancelDeleteMode={() => setIsDeleteMode(false)}
-          />
-        )}
-
-        {!isLoading && !error ? (
-          <Pagination
-            currentPage={currentPage}
-            pageSize={COURSES_PER_PAGE}
-            totalItems={totalItems}
-            totalPages={totalPages}
-            itemLabel="cursos"
-            onPageChange={setCurrentPage}
-          />
-        ) : null}
-      </Container>
+          renderGrid(paginatedCourses)
+        )}      </Container>
 
       <Modal
         isOpen={isCreateModalOpen}

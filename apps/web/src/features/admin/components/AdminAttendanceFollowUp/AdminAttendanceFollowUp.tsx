@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Badge from "@/components/atoms/Badge";
 import Container from "@/components/atoms/Container";
-import Heading from "@/components/atoms/Heading";
 import Label from "@/components/atoms/Label";
 import Select from "@/components/atoms/Select";
 import Text from "@/components/atoms/Text";
+import CollapsibleGroup from "@/components/molecules/CollapsibleGroup";
+import ListToolbar from "@/components/molecules/ListToolbar";
 
 import { getGradeLevels, getSections } from "@/services/academic-structure.service";
 import { getSectionAttendance } from "@/services/attendance.service";
@@ -26,6 +27,10 @@ const STATUS_TONE: Record<AttendanceStatus, "green" | "amber" | "red"> = {
   EXCEEDED: "red",
 };
 
+function normalize(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export default function AdminAttendanceFollowUp() {
   const [years, setYears] = useState<SchoolYear[]>([]);
   const [gradeNames, setGradeNames] = useState<Map<string, string>>(new Map());
@@ -36,6 +41,9 @@ export default function AdminAttendanceFollowUp() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRows, setIsLoadingRows] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [groupByStatus, setGroupByStatus] = useState("");
 
   useEffect(() => {
     Promise.all([getSchoolYears(), getGradeLevels()])
@@ -82,17 +90,59 @@ export default function AdminAttendanceFollowUp() {
 
   const flagged = rows.filter((row) => row.worstStatus !== "OK").length;
 
-  return (
-    <Container className="py-8">
-      <div className="mb-6">
-        <Heading as="h3" className="text-gray-900">
-          Seguimiento de asistencia
-        </Heading>
-        <Text variant="small" className="mt-1 text-gray-600">
-          Estudiantes de un paralelo ordenados por su situación de faltas
-          injustificadas. Los que superan el límite quedan primero.
+  const visibleRows = useMemo(() => {
+    const terms = normalize(search).split(/\s+/).filter(Boolean);
+
+    return rows.filter(
+      (row) =>
+        (!statusFilter || row.worstStatus === statusFilter) &&
+        terms.every((term) => normalize(row.name).includes(term))
+    );
+  }, [rows, search, statusFilter]);
+
+  const groupedRows = useMemo(() => {
+    const groups = new Map<AttendanceStatus, SectionAttendanceRow[]>();
+    for (const row of visibleRows) {
+      groups.set(row.worstStatus, [...(groups.get(row.worstStatus) ?? []), row]);
+    }
+    return (["EXCEEDED", "WARNING", "OK"] as AttendanceStatus[])
+      .filter((status) => groups.has(status))
+      .map((status) => [status, groups.get(status) ?? []] as const);
+  }, [visibleRows]);
+
+  const clearAll = () => {
+    setSearch("");
+    setStatusFilter("");
+    setGroupByStatus("");
+  };
+
+  const renderRow = (row: SectionAttendanceRow) => (
+    <div key={row.studentId} className="px-5 py-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <Text variant="small" className="min-w-[12rem] flex-1 font-medium text-gray-900">
+          {row.name}
         </Text>
+        <Badge tone={STATUS_TONE[row.worstStatus]}>
+          {ATTENDANCE_STATUS_LABELS[row.worstStatus]}
+        </Badge>
       </div>
+      {row.worstStatus !== "OK" ? (
+        <Text variant="caption" className="mt-1 text-gray-600">
+          {row.courses
+            .filter((c) => c.status !== "OK")
+            .map((c) => `${c.name}: ${c.unjustifiedPct} % (${c.absences} falta(s))`)
+            .join(" · ")}
+        </Text>
+      ) : null}
+    </div>
+  );
+
+  return (
+    <Container className="py-6">
+      <Text variant="small" className="mb-4 text-gray-600">
+        Estudiantes de un paralelo ordenados por su situación de faltas
+        injustificadas. Los que superan el límite quedan primero.
+      </Text>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div>
@@ -135,43 +185,64 @@ export default function AdminAttendanceFollowUp() {
       ) : null}
 
       {!isLoading && !isLoadingRows && sectionId ? (
-        <section className="rounded-2xl border border-gray-200 bg-white">
-          <header className="px-5 py-4">
-            <Text variant="small" className="text-gray-600">
-              {rows.length} estudiante(s) · {flagged} con aviso o límite superado
-            </Text>
-          </header>
-          <div className="divide-y divide-gray-100 border-t border-gray-100">
-            {rows.map((row) => (
-              <div key={row.studentId} className="px-5 py-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Text variant="small" className="min-w-[12rem] flex-1 font-medium text-gray-900">
-                    {row.name}
-                  </Text>
-                  <Badge tone={STATUS_TONE[row.worstStatus]}>
-                    {ATTENDANCE_STATUS_LABELS[row.worstStatus]}
-                  </Badge>
-                </div>
-                {row.worstStatus !== "OK" ? (
-                  <Text variant="caption" className="mt-1 text-gray-600">
-                    {row.courses
-                      .filter((c) => c.status !== "OK")
-                      .map((c) => `${c.name}: ${c.unjustifiedPct} % (${c.absences} falta(s))`)
-                      .join(" · ")}
-                  </Text>
-                ) : null}
-              </div>
-            ))}
-            {rows.length === 0 ? (
-              <div className="px-5 py-8 text-center">
-                <Text variant="small" className="text-gray-600">
-                  Este paralelo no tiene estudiantes matriculados.
-                </Text>
-              </div>
-            ) : null}
+        <>
+          <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4">
+            <ListToolbar
+              search={search}
+              searchPlaceholder="Buscar estudiante por nombre"
+              searchLabel="Buscar estudiantes"
+              onSearchChange={setSearch}
+              onClear={clearAll}
+              filters={[
+                {
+                  id: "attendance-status",
+                  label: "Situación",
+                  value: statusFilter,
+                  allLabel: "Todas las situaciones",
+                  options: (Object.keys(ATTENDANCE_STATUS_LABELS) as AttendanceStatus[]).map(
+                    (value) => ({ value, label: ATTENDANCE_STATUS_LABELS[value] })
+                  ),
+                  onChange: setStatusFilter,
+                },
+              ]}
+              group={{
+                value: groupByStatus,
+                options: [{ value: "status", label: "Situación" }],
+                onChange: setGroupByStatus,
+              }}
+            />
           </div>
-        </section>
-      ) : null}
-    </Container>
+
+          <Text variant="small" className="mb-3 text-gray-600">
+            {rows.length} estudiante(s) · {flagged} con aviso o límite superado
+          </Text>
+
+          {visibleRows.length === 0 ? (
+            <div className="rounded-2xl border border-gray-200 bg-white px-5 py-8 text-center">
+              <Text variant="small" className="text-gray-600">
+                {rows.length === 0
+                  ? "Este paralelo no tiene estudiantes matriculados."
+                  : "Ningún estudiante coincide con la búsqueda o los filtros."}
+              </Text>
+            </div>
+          ) : groupByStatus ? (
+            groupedRows.map(([status, groupRows]) => (
+              <CollapsibleGroup
+                key={status}
+                label={ATTENDANCE_STATUS_LABELS[status]}
+                count={groupRows.length}
+              >
+                <div className="divide-y divide-gray-100">
+                  {groupRows.map(renderRow)}
+                </div>
+              </CollapsibleGroup>
+            ))
+          ) : (
+            <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white">
+              {visibleRows.map(renderRow)}
+            </div>
+          )}
+        </>
+      ) : null}    </Container>
   );
 }
