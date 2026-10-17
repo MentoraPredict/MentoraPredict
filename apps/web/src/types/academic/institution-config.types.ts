@@ -66,6 +66,7 @@ export interface PromotionRule {
   levelCode: string;
   minAverage: number;
   allowsSupplementary: boolean;
+  supplementaryMinAverage: number;
   repetitionPolicy: RepetitionPolicy;
 }
 

@@ -5,6 +5,7 @@ import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
 import AttendanceRuleForm from "@/features/admin/components/AttendanceRuleForm";
+import GradingComponentsForm from "@/features/admin/components/GradingComponentsForm";
 import GradingScaleForm from "@/features/admin/components/GradingScaleForm";
 import InstitutionLevelsForm from "@/features/admin/components/InstitutionLevelsForm";
 import InstitutionProfileForm from "@/features/admin/components/InstitutionProfileForm";
@@ -17,6 +18,7 @@ const TABS: { id: ConfigSection; label: string }[] = [
   { id: "institution", label: "Institución" },
   { id: "levels", label: "Niveles y jornadas" },
   { id: "gradingScale", label: "Escala de calificaciones" },
+  { id: "gradingComponents", label: "Componentes de la nota" },
   { id: "attendance", label: "Asistencia" },
   { id: "promotion", label: "Promoción" },
 ];
@@ -24,6 +26,7 @@ const TABS: { id: ConfigSection; label: string }[] = [
 export default function AdminInstitutionConfig() {
   const {
     config,
+    components,
     isLoading,
     loadError,
     savingSection,
@@ -32,6 +35,7 @@ export default function AdminInstitutionConfig() {
     saveInstitution,
     saveLevels,
     saveGradingScale,
+    saveComponents,
     saveAttendanceRule,
     savePromotionRules,
   } = useInstitutionConfig();
@@ -115,6 +119,14 @@ export default function AdminInstitutionConfig() {
               scale={config.gradingScale}
               onSave={(payload) => void saveGradingScale(payload)}
               {...sectionProps("gradingScale")}
+            />
+          ) : null}
+
+          {activeTab === "gradingComponents" ? (
+            <GradingComponentsForm
+              components={components}
+              onSave={(items) => void saveComponents(items)}
+              {...sectionProps("gradingComponents")}
             />
           ) : null}
 

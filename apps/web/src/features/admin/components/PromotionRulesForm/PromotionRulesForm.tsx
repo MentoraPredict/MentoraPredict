@@ -37,6 +37,7 @@ export default function PromotionRulesForm({
           levelCode: level.code,
           minAverage: 7,
           allowsSupplementary: false,
+          supplementaryMinAverage: 4,
           repetitionPolicy: "NOT_APPLICABLE" as RepetitionPolicy,
         },
       ])
@@ -53,7 +54,7 @@ export default function PromotionRulesForm({
   return (
     <AdminConfigSection
       title="Reglas de promoción"
-      description="Promedio mínimo, examen supletorio y política de repetición por nivel. El supletorio solo puede habilitarse en los niveles que lo admiten."
+      description="Promedio mínimo, examen supletorio (y desde qué promedio se rinde) y política de repetición por nivel. El supletorio solo puede habilitarse en los niveles que lo admiten."
       isSaving={isSaving}
       isSaved={isSaved}
       errorMessage={errorMessage}
@@ -66,6 +67,7 @@ export default function PromotionRulesForm({
               <th className="px-4 py-3 font-medium">Nivel</th>
               <th className="px-4 py-3 font-medium">Promedio mínimo</th>
               <th className="px-4 py-3 font-medium">Supletorio</th>
+              <th className="px-4 py-3 font-medium">Desde promedio</th>
               <th className="px-4 py-3 font-medium">Repetición</th>
             </tr>
           </thead>
@@ -108,6 +110,21 @@ export default function PromotionRulesForm({
                       />
                       {level.allowsSupplementary ? "Admite" : "No aplica"}
                     </label>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Input
+                      aria-label={`Promedio para supletorio ${level.name}`}
+                      type="number"
+                      step="0.01"
+                      className="w-28 py-2"
+                      disabled={!rule.allowsSupplementary}
+                      value={rule.supplementaryMinAverage}
+                      onChange={(e) =>
+                        update(level.code, {
+                          supplementaryMinAverage: Number(e.target.value),
+                        })
+                      }
+                    />
                   </td>
                   <td className="px-4 py-3">
                     <Select

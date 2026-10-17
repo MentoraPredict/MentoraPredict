@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { AxiosError } from "axios";
 
 import {
+  getGradingComponents,
+  saveGradingComponents,
+} from "@/services/grading.service";
+import {
   getInstitutionConfig,
   updateAttendanceRule,
   updateGradingScale,
@@ -9,6 +13,7 @@ import {
   updateInstitutionLevels,
   updatePromotionRules,
 } from "@/services/institution-config.service";
+import type { GradingComponent } from "@/types/academic/grading.types";
 import type {
   InstitutionConfig,
 } from "@/types/academic/institution-config.types";
@@ -17,6 +22,7 @@ export type ConfigSection =
   | "institution"
   | "levels"
   | "gradingScale"
+  | "gradingComponents"
   | "attendance"
   | "promotion";
 
@@ -38,6 +44,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export default function useInstitutionConfig() {
   const [config, setConfig] = useState<InstitutionConfig | null>(null);
+  const [components, setComponents] = useState<GradingComponent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [savingSection, setSavingSection] = useState<ConfigSection | null>(
@@ -54,7 +61,13 @@ export default function useInstitutionConfig() {
     setLoadError(null);
 
     try {
-      setConfig(await getInstitutionConfig());
+      const [loaded, loadedComponents] = await Promise.all([
+        getInstitutionConfig(),
+        getGradingComponents(),
+      ]);
+
+      setConfig(loaded);
+      setComponents(loadedComponents);
     } catch (err) {
       setLoadError(
         getErrorMessage(err, "No se pudo cargar la configuración institucional.")
@@ -77,7 +90,13 @@ export default function useInstitutionConfig() {
       try {
         await action();
         // Se recarga todo: validaciones cruzadas pueden afectar otras secciones.
-        setConfig(await getInstitutionConfig());
+        const [loaded, loadedComponents] = await Promise.all([
+          getInstitutionConfig(),
+          getGradingComponents(),
+        ]);
+
+        setConfig(loaded);
+        setComponents(loadedComponents);
         setSavedSection(section);
         return true;
       } catch (err) {
@@ -95,6 +114,7 @@ export default function useInstitutionConfig() {
 
   return {
     config,
+    components,
     isLoading,
     loadError,
     savingSection,
@@ -106,6 +126,8 @@ export default function useInstitutionConfig() {
       save("levels", () => updateInstitutionLevels(levels)),
     saveGradingScale: (payload: Parameters<typeof updateGradingScale>[0]) =>
       save("gradingScale", () => updateGradingScale(payload)),
+    saveComponents: (items: Parameters<typeof saveGradingComponents>[0]) =>
+      save("gradingComponents", () => saveGradingComponents(items)),
     saveAttendanceRule: (payload: Parameters<typeof updateAttendanceRule>[0]) =>
       save("attendance", () => updateAttendanceRule(payload)),
     savePromotionRules: (rules: Parameters<typeof updatePromotionRules>[0]) =>
