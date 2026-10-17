@@ -55,6 +55,11 @@ import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerforman
 
 import TeacherCourseUploadDataPage from "@/pages/teacher/TeacherCourseUploadDataPage";
 import TeacherCourseGradebookPage from "@/pages/teacher/TeacherCourseGradebookPage";
+import TeacherCourseAttendancePage from "@/pages/teacher/TeacherCourseAttendancePage";
+import StudentAttendancePage from "@/pages/student/StudentAttendancePage";
+import GuardianStudentAttendancePage from "@/pages/guardian/GuardianStudentAttendancePage";
+import AdminAttendancePage from "@/pages/admin/AdminAttendancePage";
+import AdminJustificationsPage from "@/pages/admin/AdminJustificationsPage";
 
 import TeacherCourseStudentsPage from "@/pages/teacher/TeacherCourseStudentsPage";
 
@@ -83,6 +88,7 @@ const COURSE_TAB_SEGMENTS = new Set([
   "edit",
   "dropout-risk",
   "gradebook",
+  "attendance",
 ]);
 
 function getAnimationKey(pathname: string) {
@@ -172,6 +178,10 @@ function AnimatedRoutes() {
               element={<StudentEvaluationsPage />}
             />
             <Route
+              path={APP_PATHS.student.attendance}
+              element={<StudentAttendancePage />}
+            />
+            <Route
               path={APP_PATHS.student.progress}
               element={<StudentProgressPage />}
             />
@@ -207,11 +217,31 @@ function AnimatedRoutes() {
             >
               <Route path="performance" element={<TeacherCoursePerformancePage />} />
               <Route path="gradebook" element={<TeacherCourseGradebookPage />} />
+              <Route path="attendance" element={<TeacherCourseAttendancePage />} />
               <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
               <Route path="students" element={<TeacherCourseStudentsPage />} />
               <Route path="dropout-risk" element={<TeacherCourseDropoutRiskPage />} />
               <Route path="edit" element={<TeacherCourseEditPage />} />
             </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN", "INSPECTOR", "DECE"]} />}>
+            <Route
+              path={APP_PATHS.admin.attendance}
+              element={<AdminAttendancePage />}
+            />
+            <Route
+              path={APP_PATHS.admin.justifications}
+              element={<AdminJustificationsPage />}
+            />
+          </Route>
+
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SECRETARY", "INSPECTOR", "DECE"]} />
+            }
+          >
+            <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={["ADMIN", "SECRETARY"]} />}>
@@ -223,13 +253,16 @@ function AnimatedRoutes() {
               path={APP_PATHS.admin.students}
               element={<AdminStudentsPage />}
             />
-            <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={["GUARDIAN"]} />}>
             <Route
               path={APP_PATHS.guardian.students}
               element={<GuardianStudentsPage />}
+            />
+            <Route
+              path={APP_PATHS.guardian.studentAttendance}
+              element={<GuardianStudentAttendancePage />}
             />
             <Route
               path={APP_PATHS.guardian.studentResults}

@@ -1,7 +1,9 @@
 import { ReactNode, useState } from "react";
 import {
   FiAward,
+  FiFileText,
   FiLock,
+  FiUserCheck,
   FiMenu,
   FiX,
   FiBookOpen,
@@ -47,6 +49,18 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
       to: APP_PATHS.admin.students,
       icon: <FiUser size={16} />,
       roles: ["ADMIN", "SECRETARY"],
+    },
+    {
+      label: "Seguimiento de asistencia",
+      to: APP_PATHS.admin.attendance,
+      icon: <FiUserCheck size={16} />,
+      roles: ["ADMIN", "INSPECTOR", "DECE"],
+    },
+    {
+      label: "Justificaciones",
+      to: APP_PATHS.admin.justifications,
+      icon: <FiFileText size={16} />,
+      roles: ["ADMIN", "INSPECTOR", "DECE"],
     },
     {
       label: "Cierre de periodos",

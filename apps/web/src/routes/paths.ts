@@ -24,6 +24,7 @@ export const APP_PATHS = {
     materials: "/student/materials",
     evaluations: "/student/evaluations",
     progress: "/student/progress",
+    attendance: "/student/attendance",
     notifications: "/student/notifications",
     courseDetail: "/student/courses/:courseId",
     coursePerformance: "/student/courses/:courseId/performance",
@@ -44,10 +45,12 @@ export const APP_PATHS = {
     courseEdit: "/teacher/courses/:courseId/edit",
     courseDropoutRisk: "/teacher/courses/:courseId/dropout-risk",
     courseGradebook: "/teacher/courses/:courseId/gradebook",
+    courseAttendance: "/teacher/courses/:courseId/attendance",
   },
   guardian: {
     students: "/guardian/students",
     studentResults: "/guardian/students/:studentId/results",
+    studentAttendance: "/guardian/students/:studentId/attendance",
     profile: "/guardian/profile",
   },
   admin: {
@@ -63,6 +66,8 @@ export const APP_PATHS = {
     students: "/admin/students",
     gradingPeriods: "/admin/grading-periods",
     promotion: "/admin/promotion",
+    attendance: "/admin/attendance",
+    justifications: "/admin/justifications",
     profile: "/admin/profile",
     courseStudents: "/admin/courses/:courseId/students",
   },
@@ -78,6 +83,9 @@ export function getDashboardPath(role: UserRole) {
       return APP_PATHS.admin.users;
     case "SECRETARY":
       return APP_PATHS.admin.enrollments;
+    case "DECE":
+    case "INSPECTOR":
+      return APP_PATHS.admin.attendance;
     case "GUARDIAN":
       return APP_PATHS.guardian.students;
     default:
@@ -107,6 +115,14 @@ export function getTeacherCourseDropoutRiskPath(courseId: string) {
 
 export function getTeacherCourseGradebookPath(courseId: string) {
   return `/teacher/courses/${courseId}/gradebook`;
+}
+
+export function getTeacherCourseAttendancePath(courseId: string) {
+  return `/teacher/courses/${courseId}/attendance`;
+}
+
+export function getGuardianStudentAttendancePath(studentId: string) {
+  return `/guardian/students/${studentId}/attendance`;
 }
 
 export function getGuardianStudentResultsPath(studentId: string) {
