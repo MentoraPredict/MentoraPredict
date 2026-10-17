@@ -1,23 +1,15 @@
 -- =====================================================
--- STUDENT ANALYTICS SAMPLE DATA
--- Weekly check-ins, subject metrics, and predictions
+-- DATOS DE ANALÍTICA DE EJEMPLO
+-- Check-ins semanales, métricas por asignatura y predicciones.
 --
--- Originally 09_student_analytics.sql, renumbered twice while closing a
--- fresh-database seeding gap (docs/database/database-architecture.md §4):
--- the per-topic comprehension block below needs real topic UUIDs from
--- `topics` (seeded first, 10_topics.sql — Fase C), and the metrics/
--- predictions blocks need analytics_*/prediction_*_references populated
--- (11_subject_period_references.sql) before they can insert.
+-- Escala de notas 0-10 (aprobar con 7). Los check-ins se generan por cada
+-- matrícula activa desde el inicio del periodo activo hasta hoy (nunca
+-- fechas futuras). La asistencia autorreportada refleja el mismo perfil
+-- que la asistencia del docente de 07_attendance.sql. average_grade lleva
+-- una pendiente ascendente deliberada para que la tendencia sea clara.
 --
--- Check-in dates anchor to the ACTIVE period's start_date (not current_date
--- like before) so the generated weeks always land inside the period's real
--- span — the period itself is seeded to 16 weeks (04_academicPeriods.sql),
--- and this seed now generates exactly 16 weeks of check-ins/metrics to
--- match, giving CalculateTrendUseCase/GetStudentSubjectMetricsUseCase's
--- linear regression a full, dense trend line to work with instead of 4
--- scattered points. average_grade also gets a deliberate per-week upward
--- slope (see metric_rows below) so the trend/projection shown in
--- "Evolución de mi promedio" is clearly ASCENDING instead of noise-flat.
+-- Necesita los temas del temario (04_structure.sql) y las tablas de
+-- referencia (02_user_references.sql, 08_subject_period_references.sql).
 -- =====================================================
 
 -- Corridas anteriores anclaban check_in_date a current_date, asi que cada
@@ -92,6 +84,7 @@ BEGIN
         (ae.period_start_date + (w.week_offset * interval '7 days'))::date AS check_in_date
       FROM active_enrollments ae
       CROSS JOIN weeks w
+      WHERE (ae.period_start_date + (w.week_offset * interval '7 days'))::date <= current_date
     ),
 
     check_ins AS (
@@ -109,7 +102,11 @@ BEGIN
         EXTRACT(WEEK FROM check_in_date)::int AS academic_week,
         EXTRACT(YEAR FROM check_in_date)::int AS academic_year,
         check_in_date,
-        (50 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 51))::int AS attendance,
+        (CASE
+           WHEN (right(student_id::text, 3)::int) % 7 = 0 THEN 70 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 11)
+           WHEN (right(student_id::text, 3)::int) % 11 = 0 THEN 82 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9)
+           ELSE 92 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9)
+         END)::int AS attendance,
         (55 + (('x' || substr(seed_hash, 3, 2))::bit(8)::int % 46))::int AS task_completion,
         (1 + (('x' || substr(seed_hash, 5, 2))::bit(8)::int % 10))::numeric(5,2) AS study_hours,
         CASE (('x' || substr(seed_hash, 7, 2))::bit(8)::int % 5)
@@ -270,19 +267,18 @@ BEGIN
         lc.academic_year,
         ROUND(
           LEAST(
-            20,
+            10,
             GREATEST(
               0,
               COALESCE(
                 ga.average_grade,
-                (10 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9))::numeric
+                (5 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 4))::numeric
               )
-              -- Pendiente ascendente deliberada: -4.5 en la primera semana
-              -- hasta +4.5 en la última (16 semanas, índice 0..15), para
-              -- que la regresión lineal de "Evolución de mi promedio"
-              -- muestre una tendencia ASCENDING clara en vez de ruido plano.
-              + ((lc.week_index - 7.5) * 0.6)
-              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 5)
+              -- Pendiente ascendente deliberada (de -1,1 en la primera semana a
+              -- +1,1 en la última) para que la regresión lineal de "Evolución de
+              -- mi promedio" muestre una tendencia ASCENDING clara.
+              + ((lc.week_index - 5.5) * 0.2)
+              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 10)
             )
           ),
           2
@@ -299,7 +295,7 @@ BEGIN
     ),
 
     -- Mismo "piso" que ClassifyRiskUseCase (analytics-service): un promedio
-    -- reprobatorio siempre escala al menos a MEDIUM (<14) o HIGH (<10), sin
+    -- reprobatorio siempre escala al menos a MEDIUM (<7) o HIGH (<5), sin
     -- importar qué tan bien salgan los demás factores. Se calcula por rango
     -- numérico (0=LOW..3=CRITICAL) y se toma el peor de score vs. piso, para
     -- nunca degradar una clasificación que ya era peor.
@@ -307,14 +303,14 @@ BEGIN
       SELECT
         *,
         CASE
-          WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 40 THEN 3
-          WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 55 THEN 2
-          WHEN ((average_grade * 5) + compliance_index + attendance_rate + comprehension_avg) / 4 < 70 THEN 1
+          WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 40 THEN 3
+          WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 55 THEN 2
+          WHEN ((average_grade * 10) + compliance_index + attendance_rate + comprehension_avg) / 4 < 70 THEN 1
           ELSE 0
         END AS score_rank,
         CASE
-          WHEN average_grade < 10 THEN 2
-          WHEN average_grade < 14 THEN 1
+          WHEN average_grade < 5 THEN 2
+          WHEN average_grade < 7 THEN 1
           ELSE 0
         END AS grade_floor_rank
       FROM metric_rows

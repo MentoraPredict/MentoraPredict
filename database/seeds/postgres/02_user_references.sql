@@ -11,7 +11,7 @@
 -- directo desde `users` para que las FK RESTRICT que ya dependen de estas
 -- tablas (subjects.teacher_id, enrollments.student_id, grades.student_id,
 -- subject_teachers.teacher_id, weekly_check_ins.student_id, etc.) tengan
--- algo que referenciar. Debe correr antes de 05_subjects.sql (el primer
+-- algo que referenciar. Debe correr antes de 04_structure.sql (el primer
 -- seed que inserta contra academic_user_references).
 -- =====================================================
 

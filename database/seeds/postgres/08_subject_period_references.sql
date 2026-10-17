@@ -3,10 +3,10 @@
 -- analytics_subject_references, analytics_period_references,
 -- prediction_subject_references, prediction_period_references
 --
--- Mismo patron y mismo motivo que 01_user_references.sql (ver ese archivo),
+-- Mismo patron y mismo motivo que 02_user_references.sql (ver ese archivo),
 -- aplicado a `subjects`/`academic_periods` en vez de `users`. Corre despues
--- de 05_subjects.sql y de 04_academicPeriods.sql (ambas tablas ya existen a
--- esta altura) y antes de 12_student_analytics.sql, el seed que inserta
+-- de 04_structure.sql y de 03_school_year.sql (ambas tablas ya existen a
+-- esta altura) y antes de 09_student_analytics.sql, el seed que inserta
 -- contra estas tablas via FK RESTRICT (student_subject_metrics,
 -- student_subject_predictions).
 -- =====================================================
