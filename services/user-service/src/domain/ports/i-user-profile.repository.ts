@@ -6,14 +6,23 @@ export interface UserProfileFilters {
   ids?: string[];
 }
 
+/** Campo por el que se agrupa (ordena) el listado para mostrarlo en bloques. */
+export type UserProfileGroupBy = "role" | "status";
+
 export interface UserProfilePagination {
   page: number;
   limit: number;
+  groupBy?: UserProfileGroupBy;
 }
 
 export interface PaginatedUserProfiles {
   items: UserProfileEntity[];
   total: number;
+}
+
+export interface UserProfileGroupCount {
+  key: string;
+  count: number;
 }
 
 export interface IUserProfileRepository {
@@ -33,4 +42,9 @@ export interface IUserProfileRepository {
     filters: UserProfileFilters,
     pagination: UserProfilePagination,
   ): Promise<PaginatedUserProfiles>;
+  /** Cantidad de perfiles por valor del campo de agrupación, con los mismos filtros. */
+  countByGroup(
+    filters: UserProfileFilters,
+    groupBy: UserProfileGroupBy,
+  ): Promise<UserProfileGroupCount[]>;
 }

@@ -33,6 +33,7 @@ const mockRepo = (): jest.Mocked<IUserProfileRepository> => ({
   softDelete: jest.fn(),
   findAll: jest.fn(),
   findPaginated: jest.fn(),
+  countByGroup: jest.fn(),
 });
 
 const mockAuthClient = (): jest.Mocked<IAuthServiceClient> => ({

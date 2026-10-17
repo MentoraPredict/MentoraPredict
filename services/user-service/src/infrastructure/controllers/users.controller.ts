@@ -18,6 +18,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { UserProfilePagination } from "../../domain/ports/i-user-profile.repository";
 import {
   ApiTags,
   ApiOperation,
@@ -82,12 +83,14 @@ export class UsersController {
     @Query("search") search?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("groupBy") groupBy?: string,
   ) {
     const callerRole = req.user?.role;
     const shouldPaginate = page !== undefined || limit !== undefined;
-    const pagination = {
+    const pagination: UserProfilePagination = {
       page: Number.parseInt(page ?? "1", 10),
       limit: Number.parseInt(limit ?? "20", 10),
+      groupBy: groupBy === "role" || groupBy === "status" ? groupBy : undefined,
     };
 
     // Secretaría gestiona matrículas: solo ve estudiantes y representantes.
