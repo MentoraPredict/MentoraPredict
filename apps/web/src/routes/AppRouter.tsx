@@ -29,8 +29,11 @@ import AdminStructurePage from "@/pages/admin/AdminStructurePage";
 import AdminSubjectsPage from "@/pages/admin/AdminSubjectsPage";
 import AdminEnrollmentsPage from "@/pages/admin/AdminEnrollmentsPage";
 import AdminStudentsPage from "@/pages/admin/AdminStudentsPage";
+import AdminGradingPeriodsPage from "@/pages/admin/AdminGradingPeriodsPage";
+import AdminPromotionPage from "@/pages/admin/AdminPromotionPage";
 import GuardianStudentsPage from "@/pages/guardian/GuardianStudentsPage";
 import GuardianProfilePage from "@/pages/guardian/GuardianProfilePage";
+import GuardianStudentResultsPage from "@/pages/guardian/GuardianStudentResultsPage";
 import AdminCourseStudentsPage from "@/pages/admin/AdminCourseStudentsPage";
 import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 
@@ -51,6 +54,7 @@ import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCours
 import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerformancePage";
 
 import TeacherCourseUploadDataPage from "@/pages/teacher/TeacherCourseUploadDataPage";
+import TeacherCourseGradebookPage from "@/pages/teacher/TeacherCourseGradebookPage";
 
 import TeacherCourseStudentsPage from "@/pages/teacher/TeacherCourseStudentsPage";
 
@@ -78,6 +82,7 @@ const COURSE_TAB_SEGMENTS = new Set([
   "students",
   "edit",
   "dropout-risk",
+  "gradebook",
 ]);
 
 function getAnimationKey(pathname: string) {
@@ -201,6 +206,7 @@ function AnimatedRoutes() {
               element={<TeacherCoursePageLayout />}
             >
               <Route path="performance" element={<TeacherCoursePerformancePage />} />
+              <Route path="gradebook" element={<TeacherCourseGradebookPage />} />
               <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
               <Route path="students" element={<TeacherCourseStudentsPage />} />
               <Route path="dropout-risk" element={<TeacherCourseDropoutRiskPage />} />
@@ -224,6 +230,10 @@ function AnimatedRoutes() {
             <Route
               path={APP_PATHS.guardian.students}
               element={<GuardianStudentsPage />}
+            />
+            <Route
+              path={APP_PATHS.guardian.studentResults}
+              element={<GuardianStudentResultsPage />}
             />
             <Route
               path={APP_PATHS.guardian.profile}
@@ -260,6 +270,14 @@ function AnimatedRoutes() {
             <Route
               path={APP_PATHS.admin.subjects}
               element={<AdminSubjectsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.gradingPeriods}
+              element={<AdminGradingPeriodsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.promotion}
+              element={<AdminPromotionPage />}
             />
           </Route>
 

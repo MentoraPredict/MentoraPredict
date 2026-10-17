@@ -43,9 +43,11 @@ export const APP_PATHS = {
     courseStudents: "/teacher/courses/:courseId/students",
     courseEdit: "/teacher/courses/:courseId/edit",
     courseDropoutRisk: "/teacher/courses/:courseId/dropout-risk",
+    courseGradebook: "/teacher/courses/:courseId/gradebook",
   },
   guardian: {
     students: "/guardian/students",
+    studentResults: "/guardian/students/:studentId/results",
     profile: "/guardian/profile",
   },
   admin: {
@@ -59,6 +61,8 @@ export const APP_PATHS = {
     subjects: "/admin/subjects",
     enrollments: "/admin/enrollments",
     students: "/admin/students",
+    gradingPeriods: "/admin/grading-periods",
+    promotion: "/admin/promotion",
     profile: "/admin/profile",
     courseStudents: "/admin/courses/:courseId/students",
   },
@@ -99,6 +103,14 @@ export function getTeacherCourseStudentsPath(courseId: string) {
 
 export function getTeacherCourseDropoutRiskPath(courseId: string) {
   return `/teacher/courses/${courseId}/dropout-risk`;
+}
+
+export function getTeacherCourseGradebookPath(courseId: string) {
+  return `/teacher/courses/${courseId}/gradebook`;
+}
+
+export function getGuardianStudentResultsPath(studentId: string) {
+  return `/guardian/students/${studentId}/results`;
 }
 
 export function getAdminCourseStudentsPath(courseId: string) {
