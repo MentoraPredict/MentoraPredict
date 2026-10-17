@@ -48,7 +48,6 @@ export class GeneratePredictionUseCase implements IGeneratePredictionUseCase {
         subjects: context.subjects.map((s) => ({
           name: s.name,
           currentGrade: s.currentGrade,
-          credits: s.credits,
         })),
       });
     } catch (err) {

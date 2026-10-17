@@ -3,7 +3,6 @@ export interface Enrollment {
   studentId: string;
   subjectId: string;
   subjectName?: string;
-  subjectCredits: number;
   periodId: string;
   status: string;
 }

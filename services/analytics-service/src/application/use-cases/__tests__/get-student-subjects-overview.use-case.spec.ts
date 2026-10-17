@@ -43,7 +43,6 @@ function enrollment(subjectId: string, status = 'ACTIVE'): Enrollment {
     id: `enr-${subjectId}`,
     studentId: 's1',
     subjectId,
-    subjectCredits: 3,
     periodId: 'period-1',
     status,
   };

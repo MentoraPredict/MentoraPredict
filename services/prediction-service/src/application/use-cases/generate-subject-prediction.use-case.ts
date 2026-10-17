@@ -104,7 +104,6 @@ export class GenerateSubjectPredictionUseCase {
           {
             name: gradesContext.subjectName,
             currentGrade: gradesContext.currentGrade,
-            credits: gradesContext.credits,
           },
         ],
         topics,

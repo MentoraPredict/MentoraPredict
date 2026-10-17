@@ -5,7 +5,6 @@ export interface AcademicContext {
     subjectId: string;
     name: string;
     currentGrade: number | null;
-    credits: number;
   }>;
 }
 
@@ -22,7 +21,6 @@ export interface SubjectOwnership {
 
 export interface SubjectGradesContext {
   subjectName: string;
-  credits: number;
   currentGrade: number | null;
   failedEvaluations: number;
 }

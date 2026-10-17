@@ -25,7 +25,6 @@ const PASSING_GRADE = 7;
 interface StudentGradeView {
   subjectId: string;
   subjectName: string;
-  subjectCredits: number;
   value: number;
 }
 
@@ -79,7 +78,6 @@ export class AcademicHttpClient implements IAcademicContextClient {
           subjectId: g.subjectId,
           name: g.subjectName,
           currentGrade: g.value,
-          credits: g.subjectCredits,
         })),
       };
     } catch (err) {
@@ -110,7 +108,6 @@ export class AcademicHttpClient implements IAcademicContextClient {
 
     return {
       subjectName: subjectGrades[0]?.subjectName ?? '',
-      credits: subjectGrades[0]?.subjectCredits ?? 0,
       currentGrade:
         subjectGrades.length > 0
           ? subjectGrades.reduce((sum, g) => sum + g.value, 0) / subjectGrades.length

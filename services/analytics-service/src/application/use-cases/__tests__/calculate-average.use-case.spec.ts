@@ -5,8 +5,8 @@ import { IMetricsCachePort } from '../../../domain/ports/i-metrics-cache.port';
 import { Grade } from '../../../domain/entities/grade.vo';
 
 const grades: Grade[] = [
-  { id: 'g1', studentId: 's1', subjectId: 'sub1', subjectCredits: 3, value: 8, periodId: 'p1', evaluationId: null },
-  { id: 'g2', studentId: 's1', subjectId: 'sub2', subjectCredits: 2, value: 6, periodId: 'p1', evaluationId: null },
+  { id: 'g1', studentId: 's1', subjectId: 'sub1', value: 8, periodId: 'p1', evaluationId: null },
+  { id: 'g2', studentId: 's1', subjectId: 'sub2', value: 6, periodId: 'p1', evaluationId: null },
 ];
 
 const mockAcademic = (): jest.Mocked<IAcademicServiceClient> => ({
@@ -35,7 +35,7 @@ const mockCache = (): jest.Mocked<IMetricsCachePort> => ({
 });
 
 describe('CalculateAverageUseCase', () => {
-  it('calculates weighted global average and caches result', async () => {
+  it('calculates global average (simple mean of subjects) and caches result', async () => {
     const academic = mockAcademic();
     const metricsRepo = mockMetricsRepo();
     const cache = mockCache();
@@ -48,7 +48,7 @@ describe('CalculateAverageUseCase', () => {
     const useCase = new CalculateAverageUseCase(academic, metricsRepo, cache);
     const result = await useCase.execute('s1', 'p1');
 
-    expect(result.globalAverage).toBe(7.2);
+    expect(result.globalAverage).toBe(7);
     expect(result.subjectAverages.sub1).toBe(8);
     expect(cache.set).toHaveBeenCalledWith('metrics:s1:p1', expect.any(String), 300);
   });

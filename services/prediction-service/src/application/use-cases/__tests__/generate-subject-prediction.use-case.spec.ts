@@ -70,7 +70,6 @@ describe('GenerateSubjectPredictionUseCase', () => {
     analyticsClient.getLatestSubjectMetric.mockResolvedValue(null);
     academicClient.getSubjectGradesContext.mockResolvedValue({
       subjectName: 'Matematicas',
-      credits: 3,
       currentGrade: null,
       failedEvaluations: 0,
     });
@@ -94,7 +93,6 @@ describe('GenerateSubjectPredictionUseCase', () => {
     analyticsClient.getLatestSubjectMetric.mockResolvedValue(fullMetric);
     academicClient.getSubjectGradesContext.mockResolvedValue({
       subjectName: 'Matematicas',
-      credits: 3,
       currentGrade: 15,
       failedEvaluations: 1,
     });
@@ -113,7 +111,7 @@ describe('GenerateSubjectPredictionUseCase', () => {
     expect(aiProvider.generate).toHaveBeenCalledWith(
       expect.objectContaining({
         topics: ['Unidad 1', 'Unidad 2'],
-        subjects: [{ name: 'Matematicas', currentGrade: 15, credits: 3 }],
+        subjects: [{ name: 'Matematicas', currentGrade: 15 }],
         risk: expect.objectContaining({ riskLevel: 'MEDIUM', failedEvaluations: 1 }),
       }),
     );
@@ -130,7 +128,6 @@ describe('GenerateSubjectPredictionUseCase', () => {
     analyticsClient.getLatestSubjectMetric.mockResolvedValue(fullMetric);
     academicClient.getSubjectGradesContext.mockResolvedValue({
       subjectName: 'Matematicas',
-      credits: 3,
       currentGrade: 15,
       failedEvaluations: 0,
     });
