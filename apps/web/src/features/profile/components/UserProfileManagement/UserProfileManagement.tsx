@@ -86,7 +86,7 @@ export default function UserProfileManagement({
           : role === "SECRETARY"
             ? APP_PATHS.admin.enrollments
             : role === "INSPECTOR" || role === "DECE"
-              ? APP_PATHS.admin.attendance
+              ? APP_PATHS.admin.alerts
               : APP_PATHS.admin.users;
 
   const handleChangeImage = (file: File) => {

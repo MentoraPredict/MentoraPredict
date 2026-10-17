@@ -9,6 +9,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import AdminUserEditPage from "@/pages/admin/AdminUserEditPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import LandingPage from "@/pages/public/LandingPage";
 import LoginPage from "@/pages/auth/LoginPage";
@@ -28,7 +29,6 @@ import AdminInstitutionConfigPage from "@/pages/admin/AdminInstitutionConfigPage
 import AdminStructurePage from "@/pages/admin/AdminStructurePage";
 import AdminSubjectsPage from "@/pages/admin/AdminSubjectsPage";
 import AdminEnrollmentsPage from "@/pages/admin/AdminEnrollmentsPage";
-import AdminStudentsPage from "@/pages/admin/AdminStudentsPage";
 import AdminGradingPeriodsPage from "@/pages/admin/AdminGradingPeriodsPage";
 import AdminPromotionPage from "@/pages/admin/AdminPromotionPage";
 import GuardianStudentsPage from "@/pages/guardian/GuardianStudentsPage";
@@ -58,7 +58,7 @@ import TeacherCourseGradebookPage from "@/pages/teacher/TeacherCourseGradebookPa
 import TeacherCourseAttendancePage from "@/pages/teacher/TeacherCourseAttendancePage";
 import StudentAttendancePage from "@/pages/student/StudentAttendancePage";
 import GuardianStudentAttendancePage from "@/pages/guardian/GuardianStudentAttendancePage";
-import AdminAttendancePage from "@/pages/admin/AdminAttendancePage";
+import AdminAlertsPage from "@/pages/admin/AdminAlertsPage";
 import AdminJustificationsPage from "@/pages/admin/AdminJustificationsPage";
 
 import TeacherCourseStudentsPage from "@/pages/teacher/TeacherCourseStudentsPage";
@@ -227,8 +227,8 @@ function AnimatedRoutes() {
 
           <Route element={<ProtectedRoute allowedRoles={["ADMIN", "INSPECTOR", "DECE"]} />}>
             <Route
-              path={APP_PATHS.admin.attendance}
-              element={<AdminAttendancePage />}
+              path={APP_PATHS.admin.alerts}
+              element={<AdminAlertsPage />}
             />
             <Route
               path={APP_PATHS.admin.justifications}
@@ -248,10 +248,6 @@ function AnimatedRoutes() {
             <Route
               path={APP_PATHS.admin.enrollments}
               element={<AdminEnrollmentsPage />}
-            />
-            <Route
-              path={APP_PATHS.admin.students}
-              element={<AdminStudentsPage />}
             />
           </Route>
 
@@ -280,6 +276,10 @@ function AnimatedRoutes() {
               element={<Navigate to={APP_PATHS.admin.users} replace />}
             />
             <Route path={APP_PATHS.admin.users} element={<AdminUsersPage />} />
+            <Route
+              path={APP_PATHS.admin.userDetail}
+              element={<AdminUserEditPage />}
+            />
             <Route
               path={APP_PATHS.admin.courses}
               element={<AdminCoursesPage />}

@@ -57,16 +57,16 @@ export const APP_PATHS = {
     root: "/admin",
     dashboard: "/admin/dashboard",
     users: "/admin/users",
+    userDetail: "/admin/users/:userId",
     courses: "/admin/courses",
     schoolYears: "/admin/school-years",
     institution: "/admin/institution",
     structure: "/admin/structure",
     subjects: "/admin/subjects",
     enrollments: "/admin/enrollments",
-    students: "/admin/students",
     gradingPeriods: "/admin/grading-periods",
     promotion: "/admin/promotion",
-    attendance: "/admin/attendance",
+    alerts: "/admin/alerts",
     justifications: "/admin/justifications",
     profile: "/admin/profile",
     courseStudents: "/admin/courses/:courseId/students",
@@ -85,7 +85,7 @@ export function getDashboardPath(role: UserRole) {
       return APP_PATHS.admin.enrollments;
     case "DECE":
     case "INSPECTOR":
-      return APP_PATHS.admin.attendance;
+      return APP_PATHS.admin.alerts;
     case "GUARDIAN":
       return APP_PATHS.guardian.students;
     default:
@@ -127,6 +127,10 @@ export function getGuardianStudentAttendancePath(studentId: string) {
 
 export function getGuardianStudentResultsPath(studentId: string) {
   return `/guardian/students/${studentId}/results`;
+}
+
+export function getAdminUserEditPath(userId: string) {
+  return `/admin/users/${userId}`;
 }
 
 export function getAdminCourseStudentsPath(courseId: string) {

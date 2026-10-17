@@ -3,7 +3,7 @@ import {
   FiAward,
   FiFileText,
   FiLock,
-  FiUserCheck,
+  FiAlertTriangle,
   FiMenu,
   FiX,
   FiBookOpen,
@@ -13,15 +13,23 @@ import {
   FiGrid,
   FiLayers,
   FiClipboard,
-  FiUser,
 } from "react-icons/fi";
 
 import DashboardNavbar from "@/components/organisms/DashboardNavbar";
 import DashboardSidebar from "@/components/organisms/DashboardSidebar";
-import Footer from "@/components/organisms/Footer";
 import { APP_PATHS } from "@/routes/paths";
 import { useAuthStore } from "@/store/auth.store";
 import type { UserRole } from "@/types/user/role.types";
+
+const ADMIN_PANEL_TITLES: Record<UserRole, string> = {
+  ADMIN: "Panel administrativo",
+  SECRETARY: "Panel de secretaría",
+  DECE: "Panel DECE",
+  INSPECTOR: "Panel de inspección",
+  TEACHER: "Panel docente",
+  STUDENT: "Panel del estudiante",
+  GUARDIAN: "Panel del representante",
+};
 
 interface AdminTemplateProps {
   children: ReactNode;
@@ -45,15 +53,9 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
       roles: ["ADMIN", "SECRETARY"],
     },
     {
-      label: "Estudiantes",
-      to: APP_PATHS.admin.students,
-      icon: <FiUser size={16} />,
-      roles: ["ADMIN", "SECRETARY"],
-    },
-    {
-      label: "Seguimiento de asistencia",
-      to: APP_PATHS.admin.attendance,
-      icon: <FiUserCheck size={16} />,
+      label: "Alertas",
+      to: APP_PATHS.admin.alerts,
+      icon: <FiAlertTriangle size={16} />,
       roles: ["ADMIN", "INSPECTOR", "DECE"],
     },
     {
@@ -112,6 +114,9 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
     },
   ];
 
+  // El rol del panel se indica solo en la barra lateral, junto al logo.
+  const panelTitle = role ? ADMIN_PANEL_TITLES[role] : "Panel administrativo";
+
   const sections = [
     {
       items: allItems
@@ -124,12 +129,12 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
     <div className="app-page min-h-screen bg-[var(--color-app-background)]">
       <div className="flex min-h-screen">
         {isSidebarVisible ? (
-          <DashboardSidebar title="Panel administrativo" sections={sections} />
+          <DashboardSidebar title={panelTitle} sections={sections} />
         ) : null}
 
         <div className="flex min-h-screen flex-1 flex-col">
           <DashboardNavbar
-            title="Panel administrativo"
+            logoOnlyOnMobile
             leadingAction={
               <button
                 type="button"
@@ -162,8 +167,6 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
           <main className="min-w-0 flex-1">{children}</main>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

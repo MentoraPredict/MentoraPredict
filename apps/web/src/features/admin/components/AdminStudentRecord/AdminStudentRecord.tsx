@@ -1,7 +1,4 @@
-import { useState } from "react";
-
 import Badge from "@/components/atoms/Badge";
-import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
@@ -13,66 +10,38 @@ import {
   type ConsentPurpose,
 } from "@/types/academic/people-enrollment.types";
 
+export type StudentRecordTab = "profile" | "guardians" | "consents";
+
 interface AdminStudentRecordProps {
   studentId: string;
-  studentName: string;
-  onClose: () => void;
+  tab: StudentRecordTab;
 }
 
-type Tab = "profile" | "guardians" | "consents";
+const SECTION_TITLES: Record<StudentRecordTab, string> = {
+  profile: "Ficha del estudiante",
+  guardians: "Representantes",
+  consents: "Consentimientos",
+};
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "profile", label: "Ficha" },
-  { id: "guardians", label: "Representantes" },
-  { id: "consents", label: "Consentimientos" },
-];
-
+/**
+ * Contenido de la ficha de un estudiante. La pestaña la elige quien lo usa
+ * (la vista del usuario); este componente solo carga y muestra los datos.
+ */
 export default function AdminStudentRecord({
   studentId,
-  studentName,
-  onClose,
+  tab,
 }: AdminStudentRecordProps) {
   const record = useStudentRecord(studentId);
-  const [tab, setTab] = useState<Tab>("profile");
 
   const activeConsents = new Set(
     record.consents.filter((c) => !c.revokedAt).map((c) => c.purpose)
   );
 
   return (
-    <div className="max-h-[88vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <Heading as="h4" className="text-gray-900">
-            {studentName}
-          </Heading>
-          <Text variant="caption" className="mt-1 text-gray-600">
-            Ficha del estudiante
-          </Text>
-        </div>
-        <Button type="button" variant="outline" className="px-3 py-1.5 text-sm" onClick={onClose}>
-          Cerrar
-        </Button>
-      </div>
-
-      <div role="tablist" className="flex flex-wrap gap-2 border-b border-gray-200">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.id}
-            onClick={() => setTab(item.id)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition ${
-              tab === item.id
-                ? "border-blue-700 text-blue-700"
-                : "border-transparent text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+    <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6">
+      <Heading as="h5" className="text-gray-900">
+        {SECTION_TITLES[tab]}
+      </Heading>
 
       {record.error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
