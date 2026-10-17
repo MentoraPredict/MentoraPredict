@@ -70,8 +70,6 @@ function buildOptimisticCourse(variables: CreateCourseMutationVariables): Course
     semester: "",
     description: variables.payload.description,
     riskLevel: "UNKNOWN",
-    credits: variables.payload.credits,
-    careerId: variables.payload.careerId,
     enrolledCount: variables.studentIds.length,
     isPendingSync: true,
   };

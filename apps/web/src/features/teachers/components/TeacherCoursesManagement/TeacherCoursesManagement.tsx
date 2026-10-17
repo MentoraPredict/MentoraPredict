@@ -45,8 +45,6 @@ export default function TeacherCoursesManagement({
 
   const {
     courses: backendCourses,
-    faculties,
-    careers,
     periods,
     students,
     isLoading,
@@ -157,7 +155,7 @@ export default function TeacherCoursesManagement({
         realMetrics.averageAcrossCourses === null
           ? "--"
           : realMetrics.averageAcrossCourses.toFixed(2),
-      hint: "Escala 0-20, promedio entre tus materias",
+      hint: "Escala 0-10, promedio entre tus materias",
       icon: FiTrendingUp,
       tone: getAverageTone(realMetrics.averageAcrossCourses),
     },
@@ -288,7 +286,7 @@ export default function TeacherCoursesManagement({
 
                   return {
                     averageLabel: analytics
-                      ? `${analytics.average.toFixed(2)} / 20`
+                      ? `${analytics.average.toFixed(2)} / 10`
                       : "Sin datos",
                     enrolledCount: course.enrolledCount ?? 0,
                   };
@@ -322,8 +320,6 @@ export default function TeacherCoursesManagement({
       >
         <CreateCourseForm
           availableStudents={students}
-          faculties={faculties}
-          careers={careers}
           periods={periods}
           teacherName={teacherName}
           isSubmitting={isCreating}

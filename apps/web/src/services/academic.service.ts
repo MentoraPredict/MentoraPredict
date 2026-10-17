@@ -9,9 +9,6 @@ interface SubjectApiResponse {
   name: string;
   description?: string;
   code?: string;
-  credits?: number;
-  careerId?: string;
-  career_id?: string;
   academicPeriodId?: string;
   academic_period_id?: string;
   maxCapacity?: number;
@@ -28,31 +25,13 @@ interface SubjectApiResponse {
   enrolled_count?: number;
 }
 
-interface StudentEnrollmentDetailApiResponse {
-  id: string;
-  studentId?: string;
-  student_id?: string;
-  subjectId?: string;
-  subject_id?: string;
-  subjectName?: string;
-  subject_name?: string;
-  subjectCredits?: number;
-  subject_credits?: number;
-  periodId?: string;
-  period_id?: string;
-  status?: string;
-}
-
 interface TeacherSubjectApiResponse {
   id: string;
   name: string;
   code: string;
   description: string;
-  credits: number;
   maxCapacity: number;
   isActive: boolean;
-  career: { id: string; name: string; code: string };
-  faculty: { id: string; name: string; code: string };
   period: {
     id: string;
     name: string;
@@ -69,21 +48,6 @@ interface AcademicPeriodApiResponse {
   status?: string;
 }
 
-interface StudentEnrollmentApiResponse {
-  id: string;
-  studentId?: string;
-  student_id?: string;
-  subjectId?: string;
-  subject_id?: string;
-  subjectName?: string;
-  subject_name?: string;
-  subjectCredits?: number;
-  subject_credits?: number;
-  periodId?: string;
-  period_id?: string;
-  status?: string;
-}
-
 interface StudentSubjectApiResponse {
   enrollmentId: string;
   subjectId: string;
@@ -91,31 +55,15 @@ interface StudentSubjectApiResponse {
   code: string;
   description?: string | null;
   imageUrl?: string | null;
-  credits: number;
   maxCapacity: number;
   teacherId?: string | null;
   teacherName?: string | null;
   periodId: string;
   periodName: string;
-  careerId: string;
-  careerName: string;
   status: string;
   enrolledAt: string;
   currentAverage?: number | null;
   riskLevel?: RiskLevel | null;
-}
-
-export interface CourseCareerOption {
-  id: string;
-  name: string;
-  code?: string;
-  facultyId: string;
-}
-
-export interface CourseFacultyOption {
-  id: string;
-  name: string;
-  code?: string;
 }
 
 export interface CoursePeriodOption {
@@ -125,19 +73,10 @@ export interface CoursePeriodOption {
   status?: string;
 }
 
-export interface StudentAcademicContext {
-  facultyName?: string;
-  careerName?: string;
-  semester?: string;
-  activeEnrollments: number;
-}
-
 export interface CreateTeacherCoursePayload {
   name: string;
   code: string;
   description: string;
-  credits: number;
-  careerId: string;
   academicPeriodId: string;
   maxCapacity: number;
   teacherId: string;
@@ -192,22 +131,6 @@ export interface StudentCheckInResponse extends StudentCheckInPayload {
   updatedAt: string;
 }
 
-interface CareerApiResponse {
-  id: string;
-  name: string;
-  code?: string;
-  status?: string;
-  facultyId?: string;
-  faculty_id?: string;
-}
-
-interface FacultyApiResponse {
-  id: string;
-  name: string;
-  code?: string;
-  status?: string;
-}
-
 interface MaybeWrappedArray<T> {
   value?: T[];
   data?: T[];
@@ -227,8 +150,6 @@ const ACADEMIC_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const subjectsCache: RequestCache<SubjectApiResponse[]> = {};
 const periodsCache: RequestCache<AcademicPeriodApiResponse[]> = {};
-const facultiesCache: RequestCache<FacultyApiResponse[]> = {};
-const careersCache: RequestCache<CareerApiResponse[]> = {};
 
 const studentRiskLabels = {
   CRITICAL: "Riesgo crítico",
@@ -237,8 +158,6 @@ const studentRiskLabels = {
   LOW: "Riesgo bajo",
   UNKNOWN: "Sin datos de riesgo",
 };
-
-const studentAcademicContextCache = new Map<string, StudentAcademicContext>();
 
 function loadCached<T>(
   cache: RequestCache<T>,
@@ -301,26 +220,6 @@ function getPeriods() {
   });
 }
 
-function getFaculties() {
-  return loadCached(facultiesCache, async () => {
-    const response = await api.get<
-      FacultyApiResponse[] | MaybeWrappedArray<FacultyApiResponse>
-    >(endpoints.academic.faculties);
-
-    return unwrapArray(response.data);
-  });
-}
-
-function getCareers() {
-  return loadCached(careersCache, async () => {
-    const response = await api.get<
-      CareerApiResponse[] | MaybeWrappedArray<CareerApiResponse>
-    >(endpoints.academic.careers);
-
-    return unwrapArray(response.data);
-  });
-}
-
 function getTeacherName(subject: SubjectApiResponse) {
   const teacherName = subject.teacherName ?? subject.teacher_name;
   const teacherId = subject.teacherId ?? subject.teacher_id;
@@ -373,11 +272,6 @@ function teacherSubjectToCourse(
     description: subject.description ?? "Sin descripcion registrada.",
     riskLevel: "LOW",
     riskLabel: subject.isActive ? "Curso activo" : "Curso inactivo",
-    credits: subject.credits,
-    careerId: subject.career.id,
-    careerName: subject.career.name,
-    facultyId: subject.faculty.id,
-    facultyName: subject.faculty.name,
     enrolledCount: subject.enrolledCount,
   };
 }
@@ -390,68 +284,6 @@ async function getAcademicCourseData() {
     subjects,
     periodsById,
   };
-}
-
-export async function getStudentAcademicContext(
-  studentId: string
-): Promise<StudentAcademicContext | null> {
-  const cached = studentAcademicContextCache.get(studentId);
-
-  if (cached) {
-    return cached;
-  }
-
-  const response = await api.get<
-    StudentEnrollmentDetailApiResponse[] | MaybeWrappedArray<StudentEnrollmentDetailApiResponse>
-  >(endpoints.academic.enrollments, {
-    params: { studentId },
-  });
-
-  const enrollments = unwrapArray(response.data);
-  const activeEnrollment =
-    enrollments.find((enrollment) => enrollment.status === "ACTIVE") ??
-    enrollments[0];
-
-  if (!activeEnrollment?.subjectId) {
-    return null;
-  }
-
-  const [subjectResponse, careers, faculties, periods] = await Promise.all([
-    api.get<SubjectApiResponse>(endpoints.academic.subject(activeEnrollment.subjectId)),
-    getCareers(),
-    getFaculties(),
-    getPeriods(),
-  ]);
-
-  const subject = subjectResponse.data;
-  const careersById = new Map(careers.map((career) => [career.id, career]));
-  const facultiesById = new Map(
-    faculties.map((faculty) => [faculty.id, faculty])
-  );
-  const periodsById = new Map(periods.map((period) => [period.id, period]));
-
-  const careerId = subject.careerId ?? subject.career_id;
-  const academicPeriodId =
-    subject.academicPeriodId ?? subject.academic_period_id;
-  const career = careerId ? careersById.get(careerId) : undefined;
-  const facultyId = career?.facultyId ?? career?.faculty_id;
-  const faculty = facultyId ? facultiesById.get(facultyId) : undefined;
-  const period = academicPeriodId
-    ? periodsById.get(academicPeriodId)
-    : undefined;
-
-  const context: StudentAcademicContext = {
-    facultyName: faculty?.name,
-    careerName: career?.name,
-    semester: period?.name ?? period?.code,
-    activeEnrollments: enrollments.filter(
-      (enrollment) => enrollment.status === "ACTIVE"
-    ).length,
-  };
-
-  studentAcademicContextCache.set(studentId, context);
-
-  return context;
 }
 
 export async function getAdminCourses(): Promise<Course[]> {
@@ -493,8 +325,7 @@ export async function getTeacherCourses(
 }
 
 export async function getStudentCourses(): Promise<Course[]> {
-  const [response, careers, faculties] = await Promise.all([
-    api.get<
+  const response = await api.get<
       StudentSubjectApiResponse[] | MaybeWrappedArray<StudentSubjectApiResponse>
     >(endpoints.academic.studentSubjects, {
       params: {
@@ -502,21 +333,9 @@ export async function getStudentCourses(): Promise<Course[]> {
         page: 1,
         limit: 100,
       },
-    }),
-    getCareers(),
-    getFaculties(),
-  ]);
-
-  const careersById = new Map(careers.map((career) => [career.id, career]));
-  const facultiesById = new Map(
-    faculties.map((faculty) => [faculty.id, faculty])
-  );
+    });
 
   return unwrapArray(response.data).map((subject) => {
-    const career = careersById.get(subject.careerId);
-    const facultyId = career?.facultyId ?? career?.faculty_id;
-    const faculty = facultyId ? facultiesById.get(facultyId) : undefined;
-
     return {
       id: subject.subjectId,
       name: subject.name,
@@ -527,11 +346,6 @@ export async function getStudentCourses(): Promise<Course[]> {
       imageUrl: subject.imageUrl ?? undefined,
       riskLevel: subject.riskLevel ?? "UNKNOWN",
       riskLabel: studentRiskLabels[subject.riskLevel ?? "UNKNOWN"],
-      credits: subject.credits,
-      careerId: subject.careerId,
-      careerName: career?.name ?? subject.careerName,
-      facultyId,
-      facultyName: faculty?.name,
       currentAverage: subject.currentAverage ?? null,
     };
   });
@@ -568,54 +382,10 @@ export async function getActivePeriodOptions(): Promise<CoursePeriodOption[]> {
     }));
 }
 
-// Faculty/career dropdown options are only needed once a course-creation
-// form is actually open — callers with their own "create course" flow
-// (e.g. the periods list) should defer this instead of loading it eagerly
-// alongside periods.
-export async function getFacultyAndCareerOptions(): Promise<{
-  faculties: CourseFacultyOption[];
-  careers: CourseCareerOption[];
-}> {
-  const [loadedFaculties, loadedCareers] = await Promise.all([
-    getFaculties(),
-    getCareers(),
-  ]);
-
-  const faculties = loadedFaculties
-    .filter((faculty) => !faculty.status || faculty.status === "ACTIVE")
-    .map((faculty) => ({
-      id: faculty.id,
-      name: faculty.name,
-      code: faculty.code,
-    }));
-
-  const careers = loadedCareers
-    .filter(
-      (career) =>
-        (!career.status || career.status === "ACTIVE") &&
-        !!(career.facultyId ?? career.faculty_id)
-    )
-    .map((career) => ({
-      id: career.id,
-      name: career.name,
-      code: career.code,
-      facultyId: career.facultyId ?? career.faculty_id ?? "",
-    }));
-
-  return { faculties, careers };
-}
-
 export async function getCourseCreationOptions(): Promise<{
-  faculties: CourseFacultyOption[];
-  careers: CourseCareerOption[];
   periods: CoursePeriodOption[];
 }> {
-  const [{ faculties, careers }, periods] = await Promise.all([
-    getFacultyAndCareerOptions(),
-    getActivePeriodOptions(),
-  ]);
-
-  return { faculties, careers, periods };
+  return { periods: await getActivePeriodOptions() };
 }
 
 export async function enrollStudentsInCourse(
@@ -690,8 +460,6 @@ export async function createTeacherCourse(
       name: payload.name,
       code: payload.code,
       description: payload.description,
-      credits: payload.credits,
-      careerId: payload.careerId,
       maxCapacity: payload.maxCapacity,
     }
   );
@@ -717,8 +485,6 @@ export async function createAdminCourse(
       name: payload.name,
       code: payload.code,
       description: payload.description,
-      credits: payload.credits,
-      careerId: payload.careerId,
       maxCapacity: payload.maxCapacity,
       teacherId: payload.teacherId,
     }

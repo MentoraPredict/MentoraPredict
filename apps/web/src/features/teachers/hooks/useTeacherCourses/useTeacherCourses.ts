@@ -307,8 +307,6 @@ export default function useTeacherCourses(
 
   return {
     courses: coursesQuery.data ?? [],
-    faculties: creationOptionsQuery.data?.faculties ?? [],
-    careers: creationOptionsQuery.data?.careers ?? [],
     periods: creationOptionsQuery.data?.periods ?? [],
     students: studentsQuery.data ?? [],
     isLoading: teacherIdValid ? coursesQuery.isLoading : false,

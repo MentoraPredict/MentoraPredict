@@ -21,7 +21,7 @@ export default function AdminCourseStudents({ course }: AdminCourseStudentsProps
   const navigate = useNavigate();
   const averageLabel =
     typeof course.currentAverage === "number"
-      ? `${course.currentAverage.toFixed(2)} / 20`
+      ? `${course.currentAverage.toFixed(2)} / 10`
       : "Sin promedio";
 
   return (
@@ -66,7 +66,7 @@ export default function AdminCourseStudents({ course }: AdminCourseStudentsProps
 
             <div>
               <Text variant="caption" className="font-bold uppercase text-gray-500">
-                Semestre
+                Periodo
               </Text>
               <Text variant="small" className="mt-1 font-semibold text-gray-900">
                 {course.semester}

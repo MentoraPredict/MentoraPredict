@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 
 import {
@@ -97,8 +97,6 @@ function useRoleScopedUsers(role: UserRole, search: string) {
 
 export default function useAdminUsers() {
     const [search, setSearch] = useState("");
-    const [facultyFilter, setFacultyFilter] = useState("");
-    const [careerFilter, setCareerFilter] = useState("");
     const [isCreatingUser, setIsCreatingUser] = useState(false);
     const [createUserError, setCreateUserError] = useState<string | null>(null);
     const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -124,53 +122,12 @@ export default function useAdminUsers() {
         ]);
     }, [admins, teachers, students, guardians, secretaries, deces, inspectors]);
 
-    const filteredStudents = useMemo(() => {
-        const normalizedFaculty = facultyFilter.trim().toLowerCase();
-        const normalizedCareer = careerFilter.trim().toLowerCase();
-
-        return students.users.filter((user) => {
-            const matchesFaculty =
-                !normalizedFaculty ||
-                (user.facultyName ?? "").toLowerCase().includes(normalizedFaculty);
-            const matchesCareer =
-                !normalizedCareer ||
-                (user.careerName ?? "").toLowerCase().includes(normalizedCareer);
-
-            return matchesFaculty && matchesCareer;
-        });
-    }, [careerFilter, facultyFilter, students.users]);
-
-    const studentFilterOptions = useMemo(() => {
-        const faculties = Array.from(
-            new Set(
-                students.users
-                    .map((user) => user.facultyName?.trim())
-                    .filter((value): value is string => Boolean(value))
-            )
-        ).sort((a, b) => a.localeCompare(b));
-
-        const careers = Array.from(
-            new Set(
-                students.users
-                    .map((user) => user.careerName?.trim())
-                    .filter((value): value is string => Boolean(value))
-            )
-        ).sort((a, b) => a.localeCompare(b));
-
-        return { faculties, careers };
-    }, [students.users]);
-
     const clearSearch = useCallback(() => {
         setSearch("");
     }, []);
 
     const clearMutationError = useCallback(() => {
         setMutationError(null);
-    }, []);
-
-    const clearStudentFilters = useCallback(() => {
-        setFacultyFilter("");
-        setCareerFilter("");
     }, []);
 
     const toggleStatus = useCallback(
@@ -431,7 +388,7 @@ export default function useAdminUsers() {
             setCurrentPage: inspectors.setCurrentPage,
         },
         students: {
-            users: filteredStudents,
+            users: students.users,
             isLoading: students.isLoading,
             error: students.error,
             currentPage: students.currentPage,
@@ -439,12 +396,6 @@ export default function useAdminUsers() {
             totalUsers: students.totalUsers,
             totalPages: students.totalPages,
             setCurrentPage: students.setCurrentPage,
-            facultyFilter,
-            setFacultyFilter,
-            careerFilter,
-            setCareerFilter,
-            filterOptions: studentFilterOptions,
-            clearFilters: clearStudentFilters,
         },
         toggleStatus,
         toggleTeacherRole,

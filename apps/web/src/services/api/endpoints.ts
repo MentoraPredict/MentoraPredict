@@ -18,7 +18,6 @@ export const endpoints = {
     academic: {
         subjects: "/v1/academic/subjects",
         subject: (id: string) => `/v1/academic/subjects/${id}`,
-        faculties: "/v1/academic/faculties",
         periods: "/v1/academic/periods",
         period: (id: string) => `/v1/academic/periods/${id}`,
         institutionConfig: "/v1/academic/institution/config",
@@ -97,7 +96,6 @@ export const endpoints = {
         schoolYearStatus: (id: string) =>
             `/v1/academic/school-years/${id}/status`,
         activePeriod: "/v1/academic/periods/active",
-        careers: "/v1/academic/careers",
         enrollments: "/v1/academic/enrollments",
         studentEnrollments: (studentId: string) =>
             `/v1/academic/enrollments?studentId=${studentId}`,

@@ -2,7 +2,6 @@ import { AxiosError } from "axios";
 
 import api from "@/services/api";
 import { endpoints } from "@/services/api/endpoints";
-import { getStudentAcademicContext } from "@/services/academic.service";
 import { register } from "@/services/auth.service";
 import type { AuthSessionUser } from "@/types/auth/auth.types";
 import type { AppUser } from "@/types/user/user.types";
@@ -88,29 +87,6 @@ function toAppUser(user: UserApiResponse): AppUser {
   };
 }
 
-async function enrichStudentContext(user: AppUser): Promise<AppUser> {
-    if (user.role !== "STUDENT") {
-        return user;
-    }
-
-    try {
-        const context = await getStudentAcademicContext(user.id);
-
-        if (!context) {
-            return user;
-        }
-
-        return {
-            ...user,
-            facultyName: context.facultyName,
-            careerName: context.careerName,
-            semester: context.semester,
-        };
-    } catch {
-        return user;
-    }
-}
-
 export async function getCurrentUser() {
   const response = await api.get<AuthSessionUser>(endpoints.users.me);
 
@@ -146,16 +122,13 @@ export async function getUsers(
         ? response.data.data
         : response.data;
     const loadedUsers = rawUsers.map(toAppUser);
-    const enrichedUsers = await Promise.all(
-        loadedUsers.map((user) => enrichStudentContext(user))
-    );
 
     if (!shouldPaginate || !isPaginatedUsersResponse(response.data)) {
-        return enrichedUsers;
+        return loadedUsers;
     }
 
     return {
-        data: enrichedUsers,
+        data: loadedUsers,
         page: response.data.page,
         limit: response.data.limit,
         total: response.data.total,

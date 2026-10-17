@@ -1,10 +1,11 @@
 import type { DashboardMetricTone } from "../components/DashboardMetricCard";
+import { GOOD_GRADE, PASSING_GRADE } from "@/utils/gradeScale";
 
-/** Escala 0-20 — mismo umbral que se usa en todo el dominio académico. */
+/** Escala 0-10 (ver utils/gradeScale). */
 export function getAverageTone(average: number | null): DashboardMetricTone {
   if (average === null) return "neutral";
-  if (average >= 16) return "success";
-  if (average >= 14) return "warning";
+  if (average >= GOOD_GRADE) return "success";
+  if (average >= PASSING_GRADE) return "warning";
   return "danger";
 }
 

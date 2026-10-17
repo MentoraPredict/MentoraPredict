@@ -1,3 +1,4 @@
+import { PASSING_GRADE } from "@/utils/gradeScale";
 import type {
   StudentSubjectAnalytics,
   SubjectTrendClassification,
@@ -60,7 +61,7 @@ export function deriveStrengthsAndOpportunities({
     opportunities.push("Revertir la tendencia descendente de tus calificaciones");
   }
 
-  if (average >= 14) {
+  if (average >= PASSING_GRADE) {
     strengths.push("Promedio dentro del rango aprobatorio");
   } else {
     opportunities.push("Elevar el promedio general de la materia");

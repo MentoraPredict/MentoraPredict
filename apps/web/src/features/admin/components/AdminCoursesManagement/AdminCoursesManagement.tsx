@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 
@@ -208,8 +208,6 @@ export default function AdminCoursesManagement() {
   const {
     courses,
     teachers,
-    faculties,
-    careers,
     periods,
     isLoading,
     error,
@@ -220,7 +218,6 @@ export default function AdminCoursesManagement() {
     deletingCourseId,
     updatingCourseId,
     reload,
-    loadFacultyAndCareerOptionsOnce,
     createCourse,
     updateCourse,
     updateCourseStatus,
@@ -229,11 +226,6 @@ export default function AdminCoursesManagement() {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (isCreateModalOpen) {
-      void loadFacultyAndCareerOptionsOnce();
-    }
-  }, [isCreateModalOpen, loadFacultyAndCareerOptionsOnce]);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [removingImageCourseId, setRemovingImageCourseId] = useState<string | null>(
@@ -530,8 +522,6 @@ export default function AdminCoursesManagement() {
       >
         <AdminCreateCourseForm
           teachers={teachers}
-          faculties={faculties}
-          careers={careers}
           periods={periods}
           isSubmitting={isCreating}
           errorMessage={createError}

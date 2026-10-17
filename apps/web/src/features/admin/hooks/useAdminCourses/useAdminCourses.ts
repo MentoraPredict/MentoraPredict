@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AxiosError } from "axios";
 
 import {
@@ -7,10 +7,7 @@ import {
   deleteTeacherCourse,
   getActivePeriodOptions,
   getAdminCourses,
-  getFacultyAndCareerOptions,
   updateTeacherCourse,
-  type CourseCareerOption,
-  type CourseFacultyOption,
   type CoursePeriodOption,
   type UpdateTeacherCoursePayload,
 } from "@/services/academic.service";
@@ -110,8 +107,6 @@ function getDeleteErrorMessage(error: unknown) {
 export default function useAdminCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [teachers, setTeachers] = useState<AppUser[]>([]);
-  const [faculties, setFaculties] = useState<CourseFacultyOption[]>([]);
-  const [careers, setCareers] = useState<CourseCareerOption[]>([]);
   const [periods, setPeriods] = useState<CoursePeriodOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,17 +115,14 @@ export default function useAdminCourses() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
   const [updatingCourseId, setUpdatingCourseId] = useState<string | null>(null);
-  const hasLoadedFacultyAndCareerOptions = useRef(false);
 
   const loadCourses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     setCreationDataError(null);
 
-    // Faculty/career options are only needed once the create-course modal
-    // is actually open (loadFacultyAndCareerOptionsOnce) — periods are
-    // fetched here because the page's own stats/filters need them
-    // regardless of that modal.
+    // Los periodos se cargan aquí porque las estadísticas y filtros de la
+    // página los necesitan aunque el modal de creación esté cerrado.
     const [coursesResult, periodsResult, teachersResult] = await Promise.allSettled([
       getAdminCourses(),
       getActivePeriodOptions(),
@@ -171,23 +163,6 @@ export default function useAdminCourses() {
   useEffect(() => {
     void loadCourses();
   }, [loadCourses]);
-
-  const loadFacultyAndCareerOptionsOnce = useCallback(async () => {
-    if (hasLoadedFacultyAndCareerOptions.current) {
-      return;
-    }
-    hasLoadedFacultyAndCareerOptions.current = true;
-
-    try {
-      const { faculties: loadedFaculties, careers: loadedCareers } =
-        await getFacultyAndCareerOptions();
-      setFaculties(loadedFaculties);
-      setCareers(loadedCareers);
-    } catch (creationOptionsError) {
-      hasLoadedFacultyAndCareerOptions.current = false;
-      setCreationDataError(getCreationDataErrorMessage(creationOptionsError));
-    }
-  }, []);
 
   const createCourse = useCallback(
     async (payload: AdminCreateCoursePayload) => {
@@ -282,8 +257,6 @@ export default function useAdminCourses() {
   return {
     courses,
     teachers,
-    faculties,
-    careers,
     periods,
     isLoading,
     error,
@@ -294,7 +267,6 @@ export default function useAdminCourses() {
     deletingCourseId,
     updatingCourseId,
     reload: loadCourses,
-    loadFacultyAndCareerOptionsOnce,
     createCourse,
     updateCourse,
     updateCourseStatus,

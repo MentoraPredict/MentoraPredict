@@ -66,7 +66,7 @@ export default function TeacherCourseStudentsTableRow({
 
         <td className="px-6 py-4">
           <Text variant="small">
-            {student.average === null ? "-" : `${student.average}/20`}
+            {student.average === null ? "-" : `${student.average}/10`}
           </Text>
         </td>
 
@@ -111,7 +111,7 @@ export default function TeacherCourseStudentsTableRow({
                     Promedio
                   </Text>
                   <Text variant="small" className="mt-1 font-semibold text-gray-900">
-                    {student.average === null ? "Sin datos" : `${student.average}/20`}
+                    {student.average === null ? "Sin datos" : `${student.average}/10`}
                   </Text>
                 </div>
                 <div className="rounded-xl border border-white bg-white p-4">

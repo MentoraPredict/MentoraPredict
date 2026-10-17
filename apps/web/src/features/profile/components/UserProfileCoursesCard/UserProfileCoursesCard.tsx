@@ -8,8 +8,6 @@ interface UserProfileCourseSummary {
   id: string;
   name: string;
   semester?: string;
-  careerName?: string;
-  credits?: number;
   currentAverage?: number | null;
 }
 
@@ -80,21 +78,12 @@ export default function UserProfileCoursesCard({
                   </Text>
                 ) : null}
 
-                {course.careerName ? (
-                  <Text
-                    variant="caption"
-                    className="rounded-full bg-white px-3 py-1 text-gray-600"
-                  >
-                    {course.careerName}
-                  </Text>
-                ) : null}
-
                 {typeof course.currentAverage === "number" ? (
                   <Text
                     variant="caption"
                     className="rounded-full bg-blue-50 px-3 py-1 font-semibold text-blue-700"
                   >
-                    Promedio {course.currentAverage.toFixed(2)} / 20
+                    Promedio {course.currentAverage.toFixed(2)} / 10
                   </Text>
                 ) : null}
               </div>

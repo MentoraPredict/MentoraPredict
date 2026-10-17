@@ -238,9 +238,6 @@ export default function StudentCourseUploadData({
             <Text variant="small" className="mt-2 font-semibold text-gray-900">
               {course?.semester ?? "Periodo no registrado"}
             </Text>
-            <Text variant="caption" className="mt-1 text-gray-600">
-              {course?.careerName ?? "Carrera no registrada"}
-            </Text>
           </div>
         </div>
       </MotionCard>

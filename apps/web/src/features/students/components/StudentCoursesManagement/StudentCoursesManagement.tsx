@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiActivity,
   FiAlertTriangle,
   FiAward,
   FiBookOpen,
@@ -33,7 +32,6 @@ import CircularGaugeCard, {
 import DashboardMetricCard, {
   dashboardMetricToneStyles,
   type DashboardMetric,
-  type DashboardMetricTone,
 } from "@/features/dashboard/components/DashboardMetricCard";
 import RiskOverviewBanner from "@/features/dashboard/components/RiskOverviewBanner";
 import useStudentDashboardKpis from "@/features/dashboard/hooks/useStudentDashboardKpis";
@@ -60,6 +58,7 @@ import {
 import { getActiveAcademicPeriod } from "@/services/student-performance.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { Course, CourseAlert, CourseRecommendation } from "@/types/course";
+import { GOOD_GRADE, PASSING_GRADE } from "@/utils/gradeScale";
 import { mapWithConcurrency } from "@/utils/mapWithConcurrency";
 
 // Predictions still need one request per subject (they live in
@@ -70,7 +69,6 @@ const PREDICTION_CONCURRENCY = 3;
 
 const RECOMMENDATIONS_PAGE_SIZE = 3;
 
-type MetricTone = DashboardMetricTone;
 
 interface SubjectPrediction {
   subjectId: string;
@@ -232,15 +230,11 @@ export default function StudentCoursesManagement({
       .filter((average): average is number => typeof average === "number");
 
     const contextCourse = courses.find(
-      (course) => course.facultyName || course.careerName || course.semester
+      (course) => course.semester
     );
 
     return {
       activeCourses: courses.length,
-      totalCredits: courses.reduce(
-        (total, course) => total + (course.credits ?? 0),
-        0
-      ),
       globalAverage:
         averages.length > 0
           ? averages.reduce((total, average) => total + average, 0) /
@@ -248,8 +242,6 @@ export default function StudentCoursesManagement({
           : null,
       coursesAtRisk: courses.filter((course) => isAtRiskLevel(course.riskLevel))
         .length,
-      facultyName: contextCourse?.facultyName ?? "Facultad no registrada",
-      careerName: contextCourse?.careerName ?? "Carrera no registrada",
       periodName: contextCourse?.semester ?? "Periodo no registrado",
       nextCourse:
         courses.find((course) => course.riskLevel === "CRITICAL") ??
@@ -364,10 +356,10 @@ export default function StudentCoursesManagement({
     label: "Promedio general",
     value:
       dashboard.globalAverage === null ? "--" : dashboard.globalAverage.toFixed(2),
-    hint: "Escala 0-20, calculado con materias que reportan notas",
+    hint: "Escala 0-10, calculado con materias que reportan notas",
     icon: FiAward,
     tone: getAverageTone(dashboard.globalAverage),
-    percentage: dashboard.globalAverage === null ? 0 : (dashboard.globalAverage / 20) * 100,
+    percentage: dashboard.globalAverage === null ? 0 : (dashboard.globalAverage / 10) * 100,
   };
 
   const attendanceGauge: CircularGaugeMetric = {
@@ -396,14 +388,6 @@ export default function StudentCoursesManagement({
     onClick: () => {
       setShowAlerts((current) => !current);
     },
-  };
-
-  const creditsMetric: DashboardMetric = {
-    label: "Creditos activos",
-    value: dashboard.totalCredits > 0 ? dashboard.totalCredits.toString() : "--",
-    hint: "Carga academica registrada",
-    icon: FiActivity,
-    tone: "neutral" as MetricTone,
   };
 
   const remainingMetrics: DashboardMetric[] = [
@@ -474,12 +458,6 @@ export default function StudentCoursesManagement({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Badge className="w-fit bg-gray-100 text-gray-700">
-                    {dashboard.facultyName}
-                  </Badge>
-                  <Badge className="w-fit bg-gray-100 text-gray-700">
-                    {dashboard.careerName}
-                  </Badge>
                   <Badge className="w-fit bg-gray-100 text-gray-700">
                     {dashboard.periodName}
                   </Badge>
@@ -606,7 +584,6 @@ export default function StudentCoursesManagement({
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <CircularGaugeCard {...globalAverageGauge} />
                 <DashboardMetricCard {...alertsMetric} />
-                <DashboardMetricCard {...creditsMetric} />
                 <CircularGaugeCard {...attendanceGauge} />
                 {remainingMetrics.map((metric) => (
                   <DashboardMetricCard key={metric.label} {...metric} />
@@ -703,9 +680,9 @@ export default function StudentCoursesManagement({
                         const tone =
                           latest === null
                             ? dashboardMetricToneStyles.neutral
-                            : latest >= 16
+                            : latest >= GOOD_GRADE
                               ? dashboardMetricToneStyles.success
-                              : latest >= 14
+                              : latest >= PASSING_GRADE
                                 ? dashboardMetricToneStyles.warning
                                 : dashboardMetricToneStyles.danger;
 
@@ -728,7 +705,7 @@ export default function StudentCoursesManagement({
                             </div>
                             <div className="text-left md:text-right">
                               <Text variant="small" className="font-bold">
-                                {latest?.toFixed(2)} / 20
+                                {latest?.toFixed(2)} / 10
                               </Text>
                               <Text variant="caption">
                                 {delta === null

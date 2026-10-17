@@ -26,9 +26,6 @@ interface ProfileCourse {
   id: string;
   name: string;
   semester?: string;
-  careerName?: string;
-  facultyName?: string;
-  credits?: number;
   currentAverage?: number | null;
 }
 
@@ -62,22 +59,15 @@ export default function UserProfileManagement({
 
   const academicSummary = useMemo(() => {
     const contextCourse = courses.find(
-      (course) => course.facultyName || course.careerName || course.semester
-    );
-    const totalCredits = courses.reduce(
-      (total, course) => total + (course.credits ?? 0),
-      0
+      (course) => course.semester
     );
     const averages = courses
       .map((course) => course.currentAverage)
       .filter((average): average is number => typeof average === "number");
 
     return {
-      facultyName: contextCourse?.facultyName ?? "Facultad no registrada",
-      careerName: contextCourse?.careerName ?? "Carrera no registrada",
       periodName: contextCourse?.semester ?? "Periodo no registrado",
       totalCourses: courses.length,
-      totalCredits,
       average:
         averages.length > 0
           ? averages.reduce((total, average) => total + average, 0) /
@@ -216,18 +206,10 @@ export default function UserProfileManagement({
                 </Text>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
                 {[
-                  ["Facultad", academicSummary.facultyName],
-                  ["Carrera", academicSummary.careerName],
                   ["Periodo", academicSummary.periodName],
-                  ["Materias", academicSummary.totalCourses.toString()],
-                  [
-                    "Creditos",
-                    academicSummary.totalCredits > 0
-                      ? academicSummary.totalCredits.toString()
-                      : "--",
-                  ],
+                  ["Asignaturas", academicSummary.totalCourses.toString()],
                 ].map(([label, value]) => (
                   <div
                     key={label}

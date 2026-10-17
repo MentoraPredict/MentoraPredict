@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 
 import Button from "@/components/atoms/Button";
@@ -14,7 +14,6 @@ const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
 interface AdminUsersTableRowProps {
   user: AppUser;
-  showAcademicColumns?: boolean;
   showRoleColumn?: boolean;
   onToggleStatus?: (userId: string) => void;
   onToggleTeacherRole?: (userId: string) => void;
@@ -34,7 +33,6 @@ interface AdminUsersTableRowProps {
 
 export default function AdminUsersTableRow({
   user,
-  showAcademicColumns = false,
   showRoleColumn = false,
   onToggleStatus,
   onToggleTeacherRole,
@@ -44,7 +42,7 @@ export default function AdminUsersTableRow({
   onUploadAvatar,
   onDeleteAvatar,
 }: AdminUsersTableRowProps) {
-  const columnCount = 5 + (showAcademicColumns ? 3 : 0) + (showRoleColumn ? 1 : 0);
+  const columnCount = 5 + (showRoleColumn ? 1 : 0);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
@@ -99,14 +97,6 @@ export default function AdminUsersTableRow({
       setIsSavingAvatar(false);
     }
   };
-
-  const academicContext = useMemo(() => {
-    const parts = [user.facultyName, user.careerName, user.semester].filter(
-      Boolean
-    );
-
-    return parts.length > 0 ? parts.join(" | ") : "Sin datos academicos";
-  }, [user.careerName, user.facultyName, user.semester]);
 
   const handleSave = async () => {
     if (!onSaveUserProfile) {
@@ -182,28 +172,6 @@ export default function AdminUsersTableRow({
             {user.email}
           </Text>
         </td>
-
-        {showAcademicColumns ? (
-          <>
-            <td className="px-4 py-4">
-              <Text variant="small" className="truncate" title={user.facultyName}>
-                {user.facultyName ?? "Sin datos"}
-              </Text>
-            </td>
-
-            <td className="px-4 py-4">
-              <Text variant="small" className="truncate" title={user.careerName}>
-                {user.careerName ?? "Sin datos"}
-              </Text>
-            </td>
-
-            <td className="px-4 py-4">
-              <Text variant="small" className="truncate">
-                {user.semester ?? "Sin datos"}
-              </Text>
-            </td>
-          </>
-        ) : null}
 
         <td className="px-4 py-4 text-center">
           <AdminUserStatusCell
@@ -356,11 +324,6 @@ export default function AdminUsersTableRow({
               ) : null}
             </div>
 
-            {showAcademicColumns ? (
-              <Text variant="caption" className="mt-4 text-gray-600">
-                {academicContext}
-              </Text>
-            ) : null}
           </td>
         </tr>
       ) : null}

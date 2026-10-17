@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   FiAward,
-  FiBookOpen,
   FiCalendar,
   FiHash,
   FiRefreshCw,
@@ -12,7 +11,6 @@ import {
 } from "react-icons/fi";
 import { AxiosError } from "axios";
 
-import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
@@ -32,6 +30,7 @@ import useCoursePerformanceExtras from "@/features/students/hooks/useCoursePerfo
 import useStudentCoursePerformance from "@/features/students/hooks/useStudentCoursePerformance";
 import { estimateRiskProbabilityPercent } from "@/features/students/mocks/coursePerformanceExtras.mock";
 import { buildPeriodProgress } from "@/utils/buildPeriodProgress";
+import { MAX_GRADE } from "@/utils/gradeScale";
 import { deriveStrengthsAndOpportunities } from "@/features/students/utils/deriveStrengthsOpportunities";
 import {
   getLatestSubjectAiPrediction,
@@ -216,13 +215,6 @@ export default function StudentCoursePerformance({
                 <FiUser size={14} className="text-gray-400" />
                 {course?.teacherName ?? "Docente sin asignar"}
               </Text>
-              <Text
-                variant="small"
-                className="flex items-center gap-2 text-gray-600"
-              >
-                <FiBookOpen size={14} className="text-gray-400" />
-                {course?.careerName ?? "Carrera no registrada"}
-              </Text>
             </div>
           </div>
 
@@ -248,7 +240,7 @@ export default function StudentCoursePerformance({
           hint={averageHint}
           icon={FiAward}
           tone={getAverageTone(data.average)}
-          percentage={(data.average / 20) * 100}
+          percentage={(data.average / MAX_GRADE) * 100}
         />
 
         <CircularGaugeCard

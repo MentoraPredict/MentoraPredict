@@ -16,11 +16,6 @@ import AdminUserRestrictionDialog from "@/features/admin/components/AdminUserRes
 import useAdminUsers from "@/features/admin/hooks/useAdminUsers";
 import type { AppUser } from "@/types/user/user.types";
 
-interface FilterOptions {
-  faculties: string[];
-  careers: string[];
-}
-
 interface UserRoleSectionProps {
   title: string;
   description: string;
@@ -32,16 +27,7 @@ interface UserRoleSectionProps {
   totalUsers: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  showAcademicColumns?: boolean;
   showRoleColumn?: boolean;
-  isFiltersOpen?: boolean;
-  onToggleFilters?: () => void;
-  facultyFilter?: string;
-  careerFilter?: string;
-  filterOptions?: FilterOptions;
-  onFacultyFilterChange?: (value: string) => void;
-  onCareerFilterChange?: (value: string) => void;
-  onClearFilters?: () => void;
   onToggleStatus?: (userId: string) => void;
   onToggleTeacherRole?: (userId: string) => void;
   deletingUserId?: string | null;
@@ -65,16 +51,7 @@ function UserRoleSection({
   totalUsers,
   totalPages,
   onPageChange,
-  showAcademicColumns,
   showRoleColumn,
-  isFiltersOpen,
-  onToggleFilters,
-  facultyFilter,
-  careerFilter,
-  filterOptions,
-  onFacultyFilterChange,
-  onCareerFilterChange,
-  onClearFilters,
   onToggleStatus,
   onToggleTeacherRole,
   deletingUserId,
@@ -95,16 +72,6 @@ function UserRoleSection({
           </Text>
         </div>
 
-        {onToggleFilters ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="px-4 py-2 text-sm"
-            onClick={onToggleFilters}
-          >
-            Filtros
-          </Button>
-        ) : null}
       </div>
 
       {error ? (
@@ -122,15 +89,7 @@ function UserRoleSection({
       ) : (
         <AdminUsersTable
           users={users}
-          showAcademicColumns={showAcademicColumns}
           showRoleColumn={showRoleColumn}
-          isFiltersOpen={isFiltersOpen}
-          facultyFilter={facultyFilter}
-          careerFilter={careerFilter}
-          filterOptions={filterOptions}
-          onFacultyFilterChange={onFacultyFilterChange}
-          onCareerFilterChange={onCareerFilterChange}
-          onClearFilters={onClearFilters}
           onToggleStatus={onToggleStatus}
           onToggleTeacherRole={onToggleTeacherRole}
           deletingUserId={deletingUserId}
@@ -181,7 +140,6 @@ export default function AdminUsersManagement() {
     deletingUserId,
     removeUser,
   } = useAdminUsers();
-  const [isStudentFiltersOpen, setIsStudentFiltersOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const stats = useMemo(
@@ -291,7 +249,7 @@ export default function AdminUsersManagement() {
 
         <UserRoleSection
           title="Estudiantes"
-          description="Cuentas matriculadas en cursos, con su contexto académico."
+          description="Cuentas de estudiantes; la matrícula y el paralelo se gestionan en Estudiantes."
           users={students.users}
           isLoading={students.isLoading}
           error={students.error}
@@ -300,16 +258,7 @@ export default function AdminUsersManagement() {
           totalUsers={students.totalUsers}
           totalPages={students.totalPages}
           onPageChange={students.setCurrentPage}
-          showAcademicColumns
           showRoleColumn
-          isFiltersOpen={isStudentFiltersOpen}
-          onToggleFilters={() => setIsStudentFiltersOpen((current) => !current)}
-          facultyFilter={students.facultyFilter}
-          careerFilter={students.careerFilter}
-          filterOptions={students.filterOptions}
-          onFacultyFilterChange={students.setFacultyFilter}
-          onCareerFilterChange={students.setCareerFilter}
-          onClearFilters={students.clearFilters}
           onToggleStatus={toggleStatus}
           onToggleTeacherRole={toggleTeacherRole}
           deletingUserId={deletingUserId}

@@ -1,5 +1,6 @@
 import api from "@/services/api";
 import { endpoints } from "@/services/api/endpoints";
+import { MAX_GRADE, PASSING_GRADE } from "@/utils/gradeScale";
 import type {
   CourseAlert,
   CourseProgressPoint,
@@ -202,7 +203,7 @@ export async function getStudentSubjectPrediction(
 }
 
 const PROJECTION_STEPS = 2;
-const AVERAGE_SCALE_MAX = 20;
+const AVERAGE_SCALE_MAX = MAX_GRADE;
 
 function clampAverage(value: number): number {
   return Math.min(AVERAGE_SCALE_MAX, Math.max(0, value));
@@ -353,12 +354,12 @@ export async function getStudentSubjectAnalytics(
     });
   }
   const currentAverage = latest?.averageGrade ?? risk.factors.averageGrade;
-  if (currentAverage !== null && currentAverage < 14) {
+  if (currentAverage !== null && currentAverage < PASSING_GRADE) {
     studentWarnings.push({
       id: "current-average-below-passing",
       severity: "HIGH",
       message:
-        "Tu promedio actual está por debajo de la nota mínima de aprobación de 14/20.",
+        `Tu promedio actual está por debajo de la nota mínima de aprobación de ${PASSING_GRADE}/${MAX_GRADE}.`,
     });
   }
 
@@ -427,11 +428,11 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
     }));
 
   const courseWarnings: CourseAlert[] = [];
-  if ((summary.averageGrade ?? 20) < 14) {
+  if ((summary.averageGrade ?? MAX_GRADE) < PASSING_GRADE) {
     courseWarnings.push({
       id: "course-average-below-passing",
       severity: "HIGH",
-      message: `El promedio general del curso es ${round2(summary.averageGrade ?? 0)}/20, por debajo de la nota mínima de aprobación.`,
+      message: `El promedio general del curso es ${round2(summary.averageGrade ?? 0)}/${MAX_GRADE}, por debajo de la nota mínima de aprobación.`,
     });
   }
   if (summary.HIGH + summary.CRITICAL > 1) {

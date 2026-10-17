@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { FiHelpCircle } from "react-icons/fi";
@@ -13,8 +13,6 @@ import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
 
 import type { AppUser } from "@/types/user/user.types";
 import type {
-  CourseCareerOption,
-  CourseFacultyOption,
   CoursePeriodOption,
   CreateTeacherCoursePayload,
 } from "@/services/academic.service";
@@ -23,9 +21,6 @@ interface AdminCreateCourseFormValues {
   name: string;
   code: string;
   description: string;
-  credits: string;
-  facultyId: string;
-  careerId: string;
   academicPeriodId: string;
   maxCapacity: string;
   teacherId: string;
@@ -39,8 +34,6 @@ export interface AdminCreateCoursePayload
 
 interface AdminCreateCourseFormProps {
   teachers: AppUser[];
-  faculties: CourseFacultyOption[];
-  careers: CourseCareerOption[];
   periods: CoursePeriodOption[];
   isSubmitting?: boolean;
   errorMessage?: string | null;
@@ -58,8 +51,6 @@ function getTeacherDisplayName(teacher: AppUser) {
 
 export default function AdminCreateCourseForm({
   teachers,
-  faculties,
-  careers,
   periods,
   isSubmitting = false,
   errorMessage,
@@ -77,32 +68,17 @@ export default function AdminCreateCourseForm({
     reset,
     setValue,
     getValues,
-    watch,
     formState: { errors },
   } = useForm<AdminCreateCourseFormValues>({
     defaultValues: {
       name: "",
       code: "",
       description: "",
-      credits: "4",
-      facultyId: "",
-      careerId: "",
       academicPeriodId: periods[0]?.id ?? "",
       maxCapacity: "30",
       teacherId: "",
     },
   });
-
-  const selectedFacultyId = watch("facultyId");
-  const selectedCareerId = watch("careerId");
-  const filteredCareers = useMemo(
-    () => careers.filter((career) => career.facultyId === selectedFacultyId),
-    [careers, selectedFacultyId]
-  );
-  const selectedCareer = useMemo(
-    () => careers.find((career) => career.id === selectedCareerId),
-    [careers, selectedCareerId]
-  );
 
   useEffect(() => {
     if (!getValues("academicPeriodId") && periods[0]?.id) {
@@ -110,23 +86,8 @@ export default function AdminCreateCourseForm({
     }
   }, [getValues, periods, setValue]);
 
-  useEffect(() => {
-    if (!getValues("facultyId") && faculties[0]?.id) {
-      setValue("facultyId", faculties[0].id, { shouldValidate: true });
-    }
-  }, [faculties, getValues, setValue]);
-
-  useEffect(() => {
-    const currentCareerId = getValues("careerId");
-    const belongsToFaculty = filteredCareers.some((career) => career.id === currentCareerId);
-
-    if (!belongsToFaculty) {
-      setValue("careerId", filteredCareers[0]?.id ?? "", { shouldValidate: true });
-    }
-  }, [filteredCareers, getValues, setValue]);
-
   const onSubmit = (values: AdminCreateCourseFormValues) => {
-    if (!values.careerId || !values.academicPeriodId || !values.teacherId) {
+    if (!values.academicPeriodId || !values.teacherId) {
       return;
     }
 
@@ -137,8 +98,6 @@ export default function AdminCreateCourseForm({
         name: values.name,
         code: values.code,
         description: values.description,
-        credits: Number(values.credits),
-        careerId: values.careerId,
         academicPeriodId: values.academicPeriodId,
         maxCapacity: Number(values.maxCapacity),
         teacherId: values.teacherId,
@@ -198,7 +157,7 @@ export default function AdminCreateCourseForm({
           />
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2">
           <div>
             <div className="flex items-center gap-2">
               <Label htmlFor="code">Codigo institucional</Label>
@@ -225,8 +184,8 @@ export default function AdminCreateCourseForm({
                   exit={{ height: 0, marginBottom: 0, opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
                 >
-                  Usa las siglas de la carrera en mayusculas, un guion y un
-                  numero. Ejemplo: {selectedCareer?.code ?? "SIGLAS"}-701.
+                  Usa las siglas de la asignatura en mayusculas, un guion y un
+                  numero. Ejemplo: MAT-101.
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -236,19 +195,6 @@ export default function AdminCreateCourseForm({
               placeholder="Ej. PW-701"
               hasError={!!errors.code}
               {...register("code", { required: true, maxLength: 20 })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="credits">Creditos academicos</Label>
-
-            <Input
-              id="credits"
-              type="number"
-              min={1}
-              max={10}
-              hasError={!!errors.credits}
-              {...register("credits", { required: true, min: 1, max: 10 })}
             />
           </div>
 
@@ -297,43 +243,6 @@ export default function AdminCreateCourseForm({
           <p className="mt-1 text-xs text-gray-500">
             El curso se crea en el periodo academico activo; no se puede elegir otro.
           </p>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <div>
-            <Label htmlFor="facultyId">Facultad</Label>
-
-            <Select
-              id="facultyId"
-              hasError={!!errors.facultyId}
-              {...register("facultyId", { required: true })}
-            >
-              <option value="">Selecciona la facultad</option>
-              {faculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.id}>
-                  {faculty.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="careerId">Carrera</Label>
-
-            <Select
-              id="careerId"
-              hasError={!!errors.careerId}
-              disabled={!selectedFacultyId}
-              {...register("careerId", { required: true })}
-            >
-              <option value="">Selecciona la carrera</option>
-              {filteredCareers.map((career) => (
-                <option key={career.id} value={career.id}>
-                  {career.name}
-                </option>
-              ))}
-            </Select>
-          </div>
         </div>
 
         <div>

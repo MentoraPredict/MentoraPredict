@@ -15,11 +15,6 @@ export interface Course {
   riskLevel: CourseRiskLevel;
   imageUrl?: string;
   riskLabel?: string;
-  credits?: number;
-  careerId?: string;
-  careerName?: string;
-  facultyId?: string;
-  facultyName?: string;
   currentAverage?: number | null;
   enrolledCount?: number;
   /** Client-only: true while this course is queued for offline sync and hasn't reached the server yet. */

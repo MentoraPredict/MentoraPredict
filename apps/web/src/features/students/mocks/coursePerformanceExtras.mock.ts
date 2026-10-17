@@ -83,7 +83,7 @@ export function getMockClassRanking(subjectId: string, average: number): Promise
 
   // Promedios más altos deberían tender a mejores posiciones (número más
   // bajo = mejor), con algo de variación determinista por materia.
-  const performanceRatio = clamp(average / 20, 0, 1);
+  const performanceRatio = clamp(average / 10, 0, 1);
   const worstPossiblePosition = totalStudents;
   const bestPossiblePosition = 1;
   const jitter = (hash % 7) - 3; // -3..3
