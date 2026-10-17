@@ -78,6 +78,8 @@ export interface PromotionRule {
   levelCode: string;
   minAverage: number;
   allowsSupplementary: boolean;
+  /** Promedio anual mínimo para poder rendir el supletorio. */
+  supplementaryMinAverage: number;
   repetitionPolicy: RepetitionPolicy;
 }
 

@@ -130,12 +130,19 @@ describe('institution-rules', () => {
       levelCode: 'EGB_MEDIA',
       minAverage: 7,
       allowsSupplementary: true,
+      supplementaryMinAverage: 4,
       repetitionPolicy: 'FAMILY_REQUEST',
       ...over,
     });
 
     it('acepta una regla coherente', () => {
       expect(validatePromotionRules([rule({})], catalog, scale())).toEqual([]);
+    });
+
+    it('exige que el promedio para supletorio sea menor al promedio mínimo', () => {
+      const errors = validatePromotionRules([rule({ supplementaryMinAverage: 7 })], catalog, scale());
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toContain('supletorio');
     });
 
     it('no permite supletorio en niveles que no lo admiten', () => {

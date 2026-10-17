@@ -188,6 +188,16 @@ export function validatePromotionRules(
     if (rule.allowsSupplementary && !level.allowsSupplementary) {
       errors.push(`${rule.levelCode}: este nivel no admite examen supletorio`);
     }
+    if (rule.allowsSupplementary) {
+      if (
+        rule.supplementaryMinAverage < scale.minValue ||
+        rule.supplementaryMinAverage >= rule.minAverage
+      ) {
+        errors.push(
+          `${rule.levelCode}: el promedio para rendir el supletorio debe estar dentro de la escala y por debajo del promedio mínimo`,
+        );
+      }
+    }
   }
   return errors;
 }
