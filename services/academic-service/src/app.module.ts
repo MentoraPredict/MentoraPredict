@@ -52,6 +52,34 @@ import { ClassScheduleOrmEntity } from "./infrastructure/persistence/class-sched
 import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-session.orm-entity";
 import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
+import {
+  GradingComponentOrmEntity,
+  PeriodClosureOrmEntity,
+  PeriodResultOrmEntity,
+  SupplementaryGradeOrmEntity,
+  PromotionDecisionOrmEntity,
+} from "./infrastructure/persistence/grading.orm-entities";
+import { GradingRepository } from "./infrastructure/persistence/grading.repository";
+import { GradingCalculator } from "./application/services/grading-calculator";
+import { GradingController } from "./infrastructure/controllers/grading.controller";
+import { ListSectionCoursesUseCase } from "./application/use-cases/section-courses.use-cases";
+import {
+  GetGradingComponentsUseCase,
+  UpdateGradingComponentsUseCase,
+  GetGradebookUseCase,
+  CreateActivityUseCase,
+  UpdateActivityUseCase,
+  ToggleActivityUseCase,
+  SaveGradesUseCase,
+  GetPeriodClosureUseCase,
+  ClosePeriodUseCase,
+  ReopenPeriodUseCase,
+  GetStudentResultsUseCase,
+  ListSupplementaryCandidatesUseCase,
+  RegisterSupplementaryUseCase,
+  GetSectionPromotionUseCase,
+  ConfirmPromotionUseCase,
+} from "./application/use-cases/grading.use-cases";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 import { TeacherObservationOrmEntity } from "./infrastructure/persistence/teacher-observation.orm-entity";
 
@@ -275,6 +303,11 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           TopicOrmEntity,
           TeacherObservationOrmEntity,
           UserReferenceOrmEntity,
+          GradingComponentOrmEntity,
+          PeriodClosureOrmEntity,
+          PeriodResultOrmEntity,
+          SupplementaryGradeOrmEntity,
+          PromotionDecisionOrmEntity,
         ],
         // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
@@ -336,6 +369,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     InstitutionConfigController,
     AcademicStructureController,
     PeopleEnrollmentController,
+    GradingController,
     InternalAcademicController,
     ObservationsController,
     UploadsController,
@@ -380,6 +414,8 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       provide: "IStudentEnrollmentRepository",
       useClass: StudentEnrollmentRepository,
     },
+    { provide: "IGradingRepository", useClass: GradingRepository },
+    GradingCalculator,
     {
       provide: "ISubjectTeacherRepository",
       useClass: SubjectTeacherRepository,
@@ -467,6 +503,22 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     EndStudentEnrollmentUseCase,
     ListSectionEnrollmentsUseCase,
     ListStudentEnrollmentsUseCase,
+    ListSectionCoursesUseCase,
+    GetGradingComponentsUseCase,
+    UpdateGradingComponentsUseCase,
+    GetGradebookUseCase,
+    CreateActivityUseCase,
+    UpdateActivityUseCase,
+    ToggleActivityUseCase,
+    SaveGradesUseCase,
+    GetPeriodClosureUseCase,
+    ClosePeriodUseCase,
+    ReopenPeriodUseCase,
+    GetStudentResultsUseCase,
+    ListSupplementaryCandidatesUseCase,
+    RegisterSupplementaryUseCase,
+    GetSectionPromotionUseCase,
+    ConfirmPromotionUseCase,
     // Career use-cases
     CreateCareerUseCase,
     GetCareerUseCase,

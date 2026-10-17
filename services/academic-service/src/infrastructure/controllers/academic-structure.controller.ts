@@ -32,6 +32,7 @@ import {
   UpdateSectionUseCase,
   UpdateSubjectCatalogUseCase,
 } from '../../application/use-cases/academic-structure.use-cases';
+import { ListSectionCoursesUseCase } from '../../application/use-cases/section-courses.use-cases';
 import {
   AssignCourseTeacherDto,
   CreateSectionCourseDto,
@@ -60,6 +61,7 @@ export class AcademicStructureController {
     private readonly createSectionCourseUC: CreateSectionCourseUseCase,
     private readonly assignTeacherUC: AssignCourseTeacherUseCase,
     private readonly updateCatalogUC: UpdateSubjectCatalogUseCase,
+    private readonly listSectionCoursesUC: ListSectionCoursesUseCase,
   ) {}
 
   @Get('grade-levels')
@@ -136,6 +138,15 @@ export class AcademicStructureController {
   @ApiResponse({ status: 409 })
   async generateCourses(@Param('id') id: string) {
     return this.generateCoursesUC.execute(id);
+  }
+
+  @Get('sections/:id/courses')
+  @Roles('ADMIN', 'SECRETARY')
+  @ApiOperation({ summary: 'Courses of a section with their assigned teacher' })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
+  async listSectionCourses(@Param('id') id: string) {
+    return this.listSectionCoursesUC.execute(id);
   }
 
   @Post('sections/:id/courses')

@@ -17,6 +17,8 @@ export interface GradingPeriodView {
   endDate: string;
   gradesDueDate: string | null;
   isCurrent: boolean;
+  /** Cerrado: sus notas están congeladas hasta que se reabra. */
+  isClosed: boolean;
 }
 
 export interface SchoolYearView {
@@ -86,6 +88,7 @@ export function buildSchoolYearView(
       endDate: toIsoDate(p.endDate),
       gradesDueDate: p.gradesDueDate ? toIsoDate(p.gradesDueDate) : null,
       isCurrent: current?.id === p.id,
+      isClosed: p.isClosed,
     })),
     currentPeriodId: current?.id ?? null,
     warnings: buildCalendarWarnings(

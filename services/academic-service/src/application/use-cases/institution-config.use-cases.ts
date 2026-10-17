@@ -183,6 +183,7 @@ export class UpdatePromotionRulesUseCase {
       levelCode: r.levelCode,
       minAverage: r.minAverage,
       allowsSupplementary: r.allowsSupplementary,
+      supplementaryMinAverage: r.supplementaryMinAverage,
       repetitionPolicy: r.repetitionPolicy,
     }));
 

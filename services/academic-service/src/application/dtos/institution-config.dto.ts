@@ -203,6 +203,10 @@ export class PromotionRuleDto {
   @IsBoolean()
   allowsSupplementary!: boolean;
 
+  @ApiProperty({ example: 4 })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  supplementaryMinAverage!: number;
+
   @ApiProperty({ enum: REPETITION_POLICIES })
   @IsIn(REPETITION_POLICIES)
   repetitionPolicy!: (typeof REPETITION_POLICIES)[number];
