@@ -44,6 +44,13 @@ import {
   StudentEnrollmentOrmEntity,
 } from "./infrastructure/persistence/people.orm-entities";
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
+import {
+  GradingComponentOrmEntity,
+  PeriodClosureOrmEntity,
+  PeriodResultOrmEntity,
+  SupplementaryGradeOrmEntity,
+  PromotionDecisionOrmEntity,
+} from "./infrastructure/persistence/grading.orm-entities";
 
 export default new DataSource({
   type: "postgres",
@@ -90,6 +97,11 @@ export default new DataSource({
     SessionAttendanceOrmEntity,
     TeacherObservationOrmEntity,
     UserReferenceOrmEntity,
+    GradingComponentOrmEntity,
+    PeriodClosureOrmEntity,
+    PeriodResultOrmEntity,
+    SupplementaryGradeOrmEntity,
+    PromotionDecisionOrmEntity,
   ],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   migrationsTableName: "migrations_academic",

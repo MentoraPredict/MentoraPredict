@@ -10,6 +10,8 @@ export class EvaluationOrmEntity {
   @ManyToOne(() => SubjectOrmEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'subject_id', foreignKeyConstraintName: 'FK_evaluations_subject_id' })
   subject?: SubjectOrmEntity;
+  @Column({ name: 'period_id', type: 'uuid', nullable: true }) periodId!: string | null;
+  @Column({ name: 'component_code', type: 'varchar', length: 20, nullable: true }) componentCode!: string | null;
   @Column({ name: 'due_date', type: 'timestamptz', nullable: true }) dueDate!: Date | null;
   @Column({ name: 'is_active', default: true }) isActive!: boolean;
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt!: Date;

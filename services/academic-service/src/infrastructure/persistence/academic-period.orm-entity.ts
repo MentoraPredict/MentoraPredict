@@ -24,6 +24,8 @@ export class AcademicPeriodOrmEntity {
   @Column({ name: 'school_year_id', type: 'uuid', nullable: true }) schoolYearId!: string | null;
   @Column({ name: 'period_number', type: 'int', nullable: true }) number!: number | null;
   @Column({ name: 'grades_due_date', type: 'date', nullable: true }) gradesDueDate!: string | null;
+  @Column({ name: 'closed_at', type: 'timestamptz', nullable: true }) closedAt!: Date | null;
+  @Column({ name: 'closed_by', type: 'uuid', nullable: true }) closedBy!: string | null;
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt!: Date;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt!: Date;
 }

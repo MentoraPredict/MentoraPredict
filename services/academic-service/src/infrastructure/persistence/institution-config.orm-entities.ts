@@ -90,6 +90,7 @@ export class PromotionRuleOrmEntity {
   @PrimaryColumn({ name: 'level_code', length: 30 }) levelCode!: string;
   @Column({ name: 'min_average', type: 'numeric', precision: 5, scale: 2 }) minAverage!: string;
   @Column({ name: 'allows_supplementary', type: 'boolean', default: false }) allowsSupplementary!: boolean;
+  @Column({ name: 'supplementary_min_average', type: 'numeric', precision: 5, scale: 2, default: 4 }) supplementaryMinAverage!: string;
   @Column({ name: 'repetition_policy', length: 20 }) repetitionPolicy!: string;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt!: Date;
 }

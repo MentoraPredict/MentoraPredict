@@ -205,6 +205,7 @@ export class InstitutionConfigRepository implements IInstitutionConfigRepository
       levelCode: r.levelCode,
       minAverage: Number(r.minAverage),
       allowsSupplementary: r.allowsSupplementary,
+      supplementaryMinAverage: Number(r.supplementaryMinAverage),
       repetitionPolicy: r.repetitionPolicy as RepetitionPolicy,
     }));
   }
@@ -220,6 +221,7 @@ export class InstitutionConfigRepository implements IInstitutionConfigRepository
             levelCode: r.levelCode,
             minAverage: String(r.minAverage),
             allowsSupplementary: r.allowsSupplementary,
+            supplementaryMinAverage: String(r.supplementaryMinAverage),
             repetitionPolicy: r.repetitionPolicy,
           }),
         ),

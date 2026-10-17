@@ -91,6 +91,8 @@ export class AcademicPeriodRepository implements IAcademicPeriodRepository {
       o.schoolYearId,
       o.number,
       o.gradesDueDate,
+      o.closedAt,
+      o.closedBy,
     );
   }
 
@@ -109,6 +111,8 @@ export class AcademicPeriodRepository implements IAcademicPeriodRepository {
     o.schoolYearId = d.schoolYearId;
     o.number = d.number;
     o.gradesDueDate = d.gradesDueDate;
+    o.closedAt = d.closedAt;
+    o.closedBy = d.closedBy;
     return o;
   }
 }
