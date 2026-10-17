@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import {
   FiBarChart2,
+  FiBookOpen,
   FiCheckSquare,
   FiClipboard,
   FiEdit3,
@@ -20,6 +21,7 @@ import {
   getStudentCourseSurveyPath,
   getTeacherCourseDropoutRiskPath,
   getTeacherCourseEditPath,
+  getTeacherCourseGradebookPath,
   getTeacherCoursePerformancePath,
   getTeacherCourseStudentsPath,
   getTeacherCourseUploadDataPath,
@@ -44,6 +46,11 @@ function getTeacherActions(courseId: string): ToolbarAction[] {
       to: getTeacherCoursePerformancePath(courseId),
       label: "Rendimiento",
       icon: <FiBarChart2 size={16} />,
+    },
+    {
+      to: getTeacherCourseGradebookPath(courseId),
+      label: "Calificaciones",
+      icon: <FiBookOpen size={16} />,
     },
     {
       to: getTeacherCourseUploadDataPath(courseId),
