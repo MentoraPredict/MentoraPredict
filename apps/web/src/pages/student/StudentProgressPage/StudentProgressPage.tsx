@@ -1,26 +1,22 @@
-import { FiTrendingUp } from "react-icons/fi";
-
 import Container from "@/components/atoms/Container";
 import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalyticsLayout";
-import ComingSoonSection from "@/features/students/components/ComingSoonSection";
 import StudentMainSidebar from "@/features/students/components/StudentMainSidebar";
+import StudentResultsReport from "@/features/students/components/StudentResultsReport";
 import useStudentCourses from "@/hooks/queries/useStudentCourses";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function StudentProgressPage() {
   const { courses } = useStudentCourses();
+  const studentId = useAuthStore((state) => state.user?.id);
 
   return (
     <CourseAnalyticsLayout
-      title="Mi Progreso"
+      title="Mis calificaciones"
       sidebar={<StudentMainSidebar courses={courses} />}
     >
       <section className="py-2">
         <Container>
-          <ComingSoonSection
-            icon={FiTrendingUp}
-            title="Mi progreso"
-            description="Aquí verás la evolución de tu rendimiento académico a lo largo del período."
-          />
+          <StudentResultsReport studentId={studentId} />
         </Container>
       </section>
     </CourseAnalyticsLayout>

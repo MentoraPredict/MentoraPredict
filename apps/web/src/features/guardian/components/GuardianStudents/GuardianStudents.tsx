@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Container from "@/components/atoms/Container";
@@ -5,6 +7,7 @@ import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
 import useMyStudents from "@/features/guardian/hooks/useMyStudents";
+import { getGuardianStudentResultsPath } from "@/routes/paths";
 import { SHIFT_LABELS, type Shift } from "@/types/academic/institution-config.types";
 import {
   CONSENT_LABELS,
@@ -75,17 +78,27 @@ export default function GuardianStudents() {
                   </Text>
                 </div>
 
-                {student.activeEnrollment ? (
-                  <Badge tone="green">
-                    {student.activeEnrollment.gradeName} «
-                    {student.activeEnrollment.sectionName}»
-                    {student.activeEnrollment.shift
-                      ? ` · ${SHIFT_LABELS[student.activeEnrollment.shift as Shift]}`
-                      : ""}
-                  </Badge>
-                ) : (
-                  <Badge tone="amber">Sin matrícula activa</Badge>
-                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  {student.activeEnrollment ? (
+                    <Badge tone="green">
+                      {student.activeEnrollment.gradeName} «
+                      {student.activeEnrollment.sectionName}»
+                      {student.activeEnrollment.shift
+                        ? ` · ${SHIFT_LABELS[student.activeEnrollment.shift as Shift]}`
+                        : ""}
+                    </Badge>
+                  ) : (
+                    <Badge tone="amber">Sin matrícula activa</Badge>
+                  )}
+
+                  {student.activeEnrollment ? (
+                    <Link to={getGuardianStudentResultsPath(student.studentId)}>
+                      <Button type="button" variant="outline" className="px-4 py-2 text-sm">
+                        Ver calificaciones
+                      </Button>
+                    </Link>
+                  ) : null}
+                </div>
               </header>
 
               <div className="mt-5 space-y-3">

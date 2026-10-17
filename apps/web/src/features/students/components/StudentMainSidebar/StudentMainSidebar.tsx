@@ -34,6 +34,11 @@ export default function StudentMainSidebar({
           label: "Inicio",
         },
         {
+          to: APP_PATHS.student.progress,
+          icon: <FiTrendingUp size={18} />,
+          label: "Mis calificaciones",
+        },
+        {
           to: APP_PATHS.student.survey,
           icon: <FiClipboard size={18} />,
           label: "Encuestas",
