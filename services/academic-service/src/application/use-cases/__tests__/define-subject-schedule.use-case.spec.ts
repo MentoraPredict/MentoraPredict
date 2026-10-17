@@ -65,6 +65,9 @@ const makePeriod = () =>
     'ACTIVE', 'SEMESTER', new Date(), new Date(),
   );
 
+import { IAcademicStructureRepository } from '../../ports/output/i-academic-structure.repository';
+import { ISchoolYearRepository } from '../../ports/output/i-school-year.repository';
+
 describe('DefineSubjectScheduleUseCase', () => {
   let useCase: DefineSubjectScheduleUseCase;
   let subjectRepo: jest.Mocked<ISubjectRepository>;
@@ -72,8 +75,12 @@ describe('DefineSubjectScheduleUseCase', () => {
   let scheduleRepo: jest.Mocked<IClassScheduleRepository>;
   let sessionRepo: jest.Mocked<IClassSessionRepository>;
   let checkOwnershipUC: jest.Mocked<Pick<CheckSubjectOwnershipUseCase, 'execute'>>;
+  let structure: { findSection: jest.Mock };
+  let schoolYears: { findById: jest.Mock };
 
   beforeEach(() => {
+    structure = { findSection: jest.fn() };
+    schoolYears = { findById: jest.fn() };
     subjectRepo = mockSubjectRepo();
     periodRepo = mockPeriodRepo();
     scheduleRepo = mockScheduleRepo();
@@ -85,6 +92,8 @@ describe('DefineSubjectScheduleUseCase', () => {
       scheduleRepo,
       sessionRepo,
       checkOwnershipUC as unknown as CheckSubjectOwnershipUseCase,
+      structure as unknown as IAcademicStructureRepository,
+      schoolYears as unknown as ISchoolYearRepository,
     );
   });
 
@@ -148,5 +157,18 @@ describe('DefineSubjectScheduleUseCase', () => {
     await useCase.execute('subj-1', [{ dayOfWeek: 'MONDAY', startTime: '08:00', endTime: '10:00' }], 'admin-1', 'ADMIN');
 
     expect(checkOwnershipUC.execute).not.toHaveBeenCalled();
+  });
+  it('generates the sessions of a section course over the whole school year', async () => {
+    subjectRepo.findById.mockResolvedValue({ ...makeSubject(), sectionId: 'sec-1' } as never);
+    scheduleRepo.findBySubjectId.mockResolvedValue([]);
+    periodRepo.findById.mockResolvedValue(makePeriod());
+    structure.findSection.mockResolvedValue({ id: 'sec-1', schoolYearId: 'year-1' });
+    schoolYears.findById.mockResolvedValue({ startDate: '2026-02-02', endDate: '2026-03-09' });
+    scheduleRepo.saveMany.mockImplementation(async (schedules) => schedules);
+
+    await useCase.execute('subject-1', [{ dayOfWeek: 'MONDAY', startTime: '08:00', endTime: '10:00' }], 'teacher-1', 'TEACHER');
+
+    // 2, 9, 16, 23 de febrero y 2, 9 de marzo: seis lunes, más que los cuatro del periodo ancla.
+    expect(sessionRepo.saveMany.mock.calls[0][0]).toHaveLength(6);
   });
 });

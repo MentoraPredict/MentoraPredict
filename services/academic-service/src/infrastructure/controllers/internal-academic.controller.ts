@@ -10,6 +10,7 @@ import { GetAcademicPeriodUseCase } from '../../application/use-cases/get-academ
 import { GetTeacherStudentsUseCase } from '../../application/use-cases/get-teacher-students.use-case';
 import { GetSubjectTopicsInternalUseCase } from '../../application/use-cases/get-subject-topics-internal.use-case';
 import { CheckUserDeactivationEligibilityUseCase } from '../../application/use-cases/check-user-deactivation-eligibility.use-case';
+import { GetAttendanceRateUseCase } from '../../application/use-cases/attendance.use-cases';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 @ApiTags('academic-internal')
@@ -27,6 +28,7 @@ export class InternalAcademicController {
     private readonly getTeacherStudentsUC: GetTeacherStudentsUseCase,
     private readonly getSubjectTopicsUC: GetSubjectTopicsInternalUseCase,
     private readonly checkUserDeactivationUC: CheckUserDeactivationEligibilityUseCase,
+    private readonly getAttendanceRateUC: GetAttendanceRateUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
@@ -55,6 +57,12 @@ export class InternalAcademicController {
     @Query('periodId') periodId: string,
   ) {
     return this.getLatestCheckInUC.execute(studentId, subjectId, periodId);
+  }
+
+  @Get('students/:studentId/attendance-rate')
+  @ApiOperation({ summary: 'Internal: attendance recorded by the teacher for a student in a subject (null if none)' })
+  attendanceRate(@Param('studentId') studentId: string, @Query('subjectId') subjectId: string) {
+    return this.getAttendanceRateUC.execute(studentId, subjectId);
   }
 
   @Get('subjects/:subjectId/teachers/:teacherId/is-owner')

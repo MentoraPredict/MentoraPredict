@@ -19,6 +19,7 @@ import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.rep
 import { IAcademicStructureRepository } from '../ports/output/i-academic-structure.repository';
 import { CourseSummary, GradeRow, IGradingRepository } from '../ports/output/i-grading.repository';
 import { IInstitutionConfigRepository } from '../ports/output/i-institution-config.repository';
+import { AttendanceCalculator, AttendanceContext } from './attendance-calculator';
 
 export interface GradingConfig {
   components: GradingComponent[];
@@ -67,6 +68,7 @@ export interface SectionContext {
   periods: AcademicPeriodEntity[];
   courses: CourseSummary[];
   rule: PromotionRule | undefined;
+  attendance: AttendanceContext;
 }
 
 /**
@@ -81,6 +83,7 @@ export class GradingCalculator {
     @Inject('IInstitutionConfigRepository') private readonly config: IInstitutionConfigRepository,
     @Inject('IAcademicPeriodRepository') private readonly periodRepo: IAcademicPeriodRepository,
     @Inject('IAcademicStructureRepository') private readonly structure: IAcademicStructureRepository,
+    private readonly attendanceCalc: AttendanceCalculator,
   ) {}
 
   async loadConfig(): Promise<GradingConfig> {
@@ -118,17 +121,19 @@ export class GradingCalculator {
     const section = await this.structure.findSection(sectionId);
     if (!section) throw new NotFoundException(`Paralelo '${sectionId}' no encontrado`);
 
-    const [config, periods, courses, gradeLevel] = await Promise.all([
+    const [config, periods, courses, gradeLevel, attendance] = await Promise.all([
       this.loadConfig(),
       this.periodRepo.findBySchoolYear(section.schoolYearId),
       this.grading.listSectionCourses(sectionId),
       this.structure.findGradeLevel(section.gradeLevelCode),
+      this.attendanceCalc.contextForSection(sectionId),
     ]);
     return {
       config,
       periods,
       courses,
       rule: config.rules.find((r) => r.levelCode === gradeLevel?.levelCode),
+      attendance,
     };
   }
 
@@ -195,9 +200,16 @@ export class GradingCalculator {
       };
     });
 
+    // Superar el límite de faltas injustificadas en alguna asignatura impide la promoción.
+    const attendanceFailed = await this.attendanceCalc.studentExceeded(
+      enrollment.studentId,
+      courses.map((course) => course.id),
+      ctx.attendance,
+    );
     const suggestion = suggestPromotion({
       results: results.map((r) => ({ status: r.status, finalGrade: r.finalGrade })),
       rule,
+      attendanceFailed,
     });
 
     return {

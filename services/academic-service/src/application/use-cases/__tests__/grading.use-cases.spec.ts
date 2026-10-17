@@ -186,7 +186,14 @@ function buildCalculator(opts: {
     listSections: jest.fn().mockResolvedValue([section]),
     listGradeLevels: jest.fn().mockResolvedValue([{ code: 'EGB_8', name: '8.º EGB' }]),
   };
-  const calculator = new GradingCalculator(grading, config, periodRepo, structure);
+  const attendanceCalc: any = {
+    contextForSection: jest.fn().mockResolvedValue({
+      rule: { maxUnjustifiedPct: 10, warningPcts: [5], appliesFromLevelOrder: 1, justificationDays: 3 },
+      applies: true,
+    }),
+    studentExceeded: jest.fn().mockResolvedValue(false),
+  };
+  const calculator = new GradingCalculator(grading, config, periodRepo, structure, attendanceCalc);
   return { calculator, grading, periodRepo, structure };
 }
 

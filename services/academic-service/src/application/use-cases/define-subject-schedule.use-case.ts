@@ -4,6 +4,8 @@ import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { IClassScheduleRepository } from '../ports/output/i-class-schedule.repository';
 import { IClassSessionRepository } from '../ports/output/i-class-session.repository';
+import { IAcademicStructureRepository } from '../ports/output/i-academic-structure.repository';
+import { ISchoolYearRepository } from '../ports/output/i-school-year.repository';
 import { ClassScheduleEntity, DayOfWeek } from '../../domain/entities/class-schedule.entity';
 import { ClassSessionEntity } from '../../domain/entities/class-session.entity';
 import { CheckSubjectOwnershipUseCase } from './check-subject-ownership.use-case';
@@ -18,6 +20,8 @@ export class DefineSubjectScheduleUseCase {
     @Inject('IClassScheduleRepository') private readonly scheduleRepo: IClassScheduleRepository,
     @Inject('IClassSessionRepository') private readonly sessionRepo: IClassSessionRepository,
     private readonly checkOwnershipUC: CheckSubjectOwnershipUseCase,
+    @Inject('IAcademicStructureRepository') private readonly structure: IAcademicStructureRepository,
+    @Inject('ISchoolYearRepository') private readonly schoolYears: ISchoolYearRepository,
   ) {}
 
   async execute(
@@ -48,6 +52,18 @@ export class DefineSubjectScheduleUseCase {
     const period = await this.periodRepo.findById(subject.academicPeriodId);
     if (!period) throw new NotFoundException(`Academic period '${subject.academicPeriodId}' not found`);
 
+    // Un curso de paralelo dura todo el año lectivo; los anteriores, su periodo.
+    let rangeStart = period.startDate;
+    let rangeEnd = period.endDate;
+    if (subject.sectionId) {
+      const section = await this.structure.findSection(subject.sectionId);
+      const year = section ? await this.schoolYears.findById(section.schoolYearId) : null;
+      if (year) {
+        rangeStart = new Date(year.startDate);
+        rangeEnd = new Date(year.endDate);
+      }
+    }
+
     const now = new Date();
     const schedules = await this.scheduleRepo.saveMany(
       slots.map(
@@ -57,7 +73,7 @@ export class DefineSubjectScheduleUseCase {
 
     const sessions: ClassSessionEntity[] = [];
     for (const schedule of schedules) {
-      const dates = getSessionDatesInRange(period.startDate, period.endDate, schedule.dayOfWeek);
+      const dates = getSessionDatesInRange(rangeStart, rangeEnd, schedule.dayOfWeek);
       for (const date of dates) {
         const { academicWeek, academicYear } = getAcademicWeek(date);
         sessions.push(

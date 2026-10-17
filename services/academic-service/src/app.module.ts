@@ -63,6 +63,21 @@ import { GradingRepository } from "./infrastructure/persistence/grading.reposito
 import { GradingCalculator } from "./application/services/grading-calculator";
 import { GradingController } from "./infrastructure/controllers/grading.controller";
 import { ListSectionCoursesUseCase } from "./application/use-cases/section-courses.use-cases";
+import { AbsenceJustificationOrmEntity } from "./infrastructure/persistence/absence-justification.orm-entity";
+import { AttendanceRepository } from "./infrastructure/persistence/attendance.repository";
+import { AttendanceCalculator } from "./application/services/attendance-calculator";
+import { AttendanceNotifier } from "./application/services/attendance-notifier";
+import { AttendanceController } from "./infrastructure/controllers/attendance.controller";
+import {
+  GetCourseAttendanceUseCase,
+  GetSectionAttendanceUseCase,
+  GetSessionAttendanceUseCase,
+  GetStudentAttendanceUseCase,
+  RequestJustificationUseCase,
+  ListJustificationsUseCase,
+  ResolveJustificationUseCase,
+  GetAttendanceRateUseCase,
+} from "./application/use-cases/attendance.use-cases";
 import {
   GetGradingComponentsUseCase,
   UpdateGradingComponentsUseCase,
@@ -308,6 +323,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           PeriodResultOrmEntity,
           SupplementaryGradeOrmEntity,
           PromotionDecisionOrmEntity,
+          AbsenceJustificationOrmEntity,
         ],
         // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
@@ -370,6 +386,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     AcademicStructureController,
     PeopleEnrollmentController,
     GradingController,
+    AttendanceController,
     InternalAcademicController,
     ObservationsController,
     UploadsController,
@@ -415,7 +432,10 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       useClass: StudentEnrollmentRepository,
     },
     { provide: "IGradingRepository", useClass: GradingRepository },
+    { provide: "IAttendanceRepository", useClass: AttendanceRepository },
     GradingCalculator,
+    AttendanceCalculator,
+    AttendanceNotifier,
     {
       provide: "ISubjectTeacherRepository",
       useClass: SubjectTeacherRepository,
@@ -504,6 +524,14 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     ListSectionEnrollmentsUseCase,
     ListStudentEnrollmentsUseCase,
     ListSectionCoursesUseCase,
+    GetCourseAttendanceUseCase,
+    GetSectionAttendanceUseCase,
+    GetSessionAttendanceUseCase,
+    GetStudentAttendanceUseCase,
+    RequestJustificationUseCase,
+    ListJustificationsUseCase,
+    ResolveJustificationUseCase,
+    GetAttendanceRateUseCase,
     GetGradingComponentsUseCase,
     UpdateGradingComponentsUseCase,
     GetGradebookUseCase,
