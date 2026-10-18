@@ -16,7 +16,26 @@ import { StudentSubjectPredictionRepository } from "./infrastructure/persistence
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 import { SubjectReferenceOrmEntity } from "./infrastructure/persistence/subject-reference.orm-entity";
 import { PeriodReferenceOrmEntity } from "./infrastructure/persistence/period-reference.orm-entity";
-
+import { AiSettingsOrmEntity } from "./infrastructure/persistence/ai-settings.orm-entity";
+import { AiUsageOrmEntity } from "./infrastructure/persistence/ai-usage.orm-entity";
+import { AiSettingsRepository } from "./infrastructure/persistence/ai-settings.repository";
+import { AiUsageRepository } from "./infrastructure/persistence/ai-usage.repository";
+import { AesSecretCipher } from "./infrastructure/adapters/aes-secret-cipher";
+import { OpenAiConnectionChecker } from "./infrastructure/adapters/openai-connection.checker";
+import { AiSettingsController } from "./infrastructure/controllers/ai-settings.controller";
+import {
+  AiRuntimeConfigService,
+  AI_SETTINGS_REPO,
+  SECRET_CIPHER,
+} from "./application/services/ai-runtime-config.service";
+import {
+  AI_CONNECTION_CHECKER,
+  AI_USAGE_REPO,
+  GetAiSettingsUseCase,
+  GetAiUsageUseCase,
+  TestAiConnectionUseCase,
+  UpdateAiSettingsUseCase,
+} from "./application/use-cases/ai-settings.use-cases";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
@@ -69,6 +88,8 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
           UserReferenceOrmEntity,
           SubjectReferenceOrmEntity,
           PeriodReferenceOrmEntity,
+          AiSettingsOrmEntity,
+          AiUsageOrmEntity,
         ],
         // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
         // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
@@ -81,6 +102,8 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
       UserReferenceOrmEntity,
       SubjectReferenceOrmEntity,
       PeriodReferenceOrmEntity,
+      AiSettingsOrmEntity,
+      AiUsageOrmEntity,
     ]),
 
     JwtModule.registerAsync({
@@ -99,7 +122,7 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
       },
     }),
   ],
-  controllers: [PredictionController, InternalPredictionController, HealthController, RootController],
+  controllers: [PredictionController, AiSettingsController, InternalPredictionController, HealthController, RootController],
   providers: [
     InternalJwtService,
     RolesGuard,
@@ -108,6 +131,15 @@ import { RequestSubjectPredictionUseCase } from "./application/use-cases/request
     { provide: ACADEMIC_CONTEXT_CLIENT, useClass: AcademicHttpClient },
     { provide: USER_SERVICE_CLIENT, useClass: UserHttpClient },
     { provide: AI_PROVIDER, useClass: OpenAiRecommendationProvider },
+    { provide: AI_SETTINGS_REPO, useClass: AiSettingsRepository },
+    { provide: AI_USAGE_REPO, useClass: AiUsageRepository },
+    { provide: SECRET_CIPHER, useClass: AesSecretCipher },
+    { provide: AI_CONNECTION_CHECKER, useClass: OpenAiConnectionChecker },
+    AiRuntimeConfigService,
+    GetAiSettingsUseCase,
+    UpdateAiSettingsUseCase,
+    TestAiConnectionUseCase,
+    GetAiUsageUseCase,
     { provide: PREDICTION_LOG_REPO, useClass: PredictionLogRepository },
     { provide: STUDENT_SUBJECT_PREDICTION_REPO, useClass: StudentSubjectPredictionRepository },
     GeneratePredictionUseCase,

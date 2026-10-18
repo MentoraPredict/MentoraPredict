@@ -6,6 +6,8 @@ import { PredictionLogOrmEntity } from "./infrastructure/persistence/prediction-
 import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
 import { SubjectReferenceOrmEntity } from "./infrastructure/persistence/subject-reference.orm-entity";
 import { PeriodReferenceOrmEntity } from "./infrastructure/persistence/period-reference.orm-entity";
+import { AiSettingsOrmEntity } from "./infrastructure/persistence/ai-settings.orm-entity";
+import { AiUsageOrmEntity } from "./infrastructure/persistence/ai-usage.orm-entity";
 
 export default new DataSource({
   type: "postgres",
@@ -20,6 +22,8 @@ export default new DataSource({
     UserReferenceOrmEntity,
     SubjectReferenceOrmEntity,
     PeriodReferenceOrmEntity,
+    AiSettingsOrmEntity,
+    AiUsageOrmEntity,
   ],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   migrationsTableName: "migrations_prediction",
