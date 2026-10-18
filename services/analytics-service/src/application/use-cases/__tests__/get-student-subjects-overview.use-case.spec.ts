@@ -188,6 +188,7 @@ describe('GetStudentSubjectsOverviewUseCase', () => {
       {
         subjectId: 'subj-1',
         averageGrade: null,
+        comprehensionAvg: null,
         riskLevel: null,
         trendDirection: null,
         computedAt: null,
