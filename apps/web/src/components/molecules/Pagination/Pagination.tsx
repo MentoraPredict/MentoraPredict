@@ -69,7 +69,7 @@ export default function Pagination({
       className="mt-6 flex flex-col items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 sm:flex-row sm:px-6"
     >
       <Text variant="small" className="text-center text-gray-600 sm:text-left">
-        Mostrando {firstItem}–{lastItem} de {totalItems} {itemLabel}
+        {firstItem}–{lastItem} de {totalItems}
       </Text>
 
       {totalPages > 1 ? (

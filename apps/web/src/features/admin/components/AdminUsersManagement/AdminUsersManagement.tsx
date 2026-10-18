@@ -51,7 +51,6 @@ export default function AdminUsersManagement() {
     setCurrentPage,
     mutationError,
     clearMutationError,
-    toggleStatus,
     createUser,
     isCreatingUser,
     createUserError,
@@ -164,7 +163,6 @@ export default function AdminUsersManagement() {
             groupUsers={groupUsers}
             onToggleGroup={(key) => void toggleGroup(key)}
             onEditUser={(userId) => navigate(getAdminUserEditPath(userId))}
-            onToggleStatus={(userId) => void toggleStatus(userId)}
           />
         )}
 

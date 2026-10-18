@@ -1,41 +1,16 @@
 import Badge from "@/components/atoms/Badge";
-import Text from "@/components/atoms/Text";
 
 interface AdminUserStatusCellProps {
   isActive?: boolean;
-  onToggleStatus?: () => void;
 }
 
+/** Solo muestra el estado; para cambiarlo se usa la vista de edición. */
 export default function AdminUserStatusCell({
   isActive = false,
-  onToggleStatus,
 }: AdminUserStatusCellProps) {
   return (
-    <button
-      type="button"
-      onClick={onToggleStatus}
-      className="
-                group
-                inline-flex
-                min-w-28
-                items-center
-                justify-center
-            "
-    >
-      <span className="group-hover:hidden">
-        <Badge tone={isActive ? "blue" : "red"} className="min-w-20">
-          {isActive ? "Activo" : "Inactivo"}
-        </Badge>
-      </span>
-
-      <span className="hidden group-hover:block">
-        <Text
-          variant="caption"
-          className={`font-semibold ${isActive ? "text-red-700" : "text-blue-700"}`}
-        >
-          {isActive ? "Desactivar" : "Activar"}
-        </Text>
-      </span>
-    </button>
+    <Badge tone={isActive ? "blue" : "red"} className="min-w-20">
+      {isActive ? "Activo" : "Inactivo"}
+    </Badge>
   );
 }

@@ -36,6 +36,7 @@ export default function CourseSidebar({
           to: `${basePath}/courses`,
           icon: <FiGrid size={18} />,
           label: "Inicio",
+          end: true,
         },
         ...(courses.length > 0
           ? [
@@ -46,6 +47,7 @@ export default function CourseSidebar({
                   to: `${basePath}/courses/${course.id}/performance`,
                   icon: <FiBookOpen size={14} />,
                   label: course.name,
+                  matchPrefix: `${basePath}/courses/${course.id}`,
                 })),
               },
             ]

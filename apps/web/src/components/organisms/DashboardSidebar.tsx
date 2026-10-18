@@ -10,6 +10,10 @@ export interface DashboardSidebarItem {
   to?: string;
   icon?: ReactNode;
   onClick?: () => void;
+  /** Activo solo cuando la ruta coincide exactamente (no con sus subrutas). */
+  end?: boolean;
+  /** Se marca activo mientras la ruta esté bajo este prefijo (p. ej. todas las pestañas de una materia). */
+  matchPrefix?: string;
   /** Ítems anidados — se renderizan como un submenú colapsable, expandido
    * automáticamente si la ruta activa coincide con alguno de sus hijos. */
   children?: DashboardSidebarItem[];
@@ -86,6 +90,10 @@ const themeStyles: Record<
   },
 };
 
+function isUnderPath(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 function SidebarLeafItem({
   item,
   theme,
@@ -94,6 +102,10 @@ function SidebarLeafItem({
   theme: DashboardSidebarTheme;
 }) {
   const styles = themeStyles[theme];
+  const { pathname } = useLocation();
+  const matchesPrefix = item.matchPrefix
+    ? isUnderPath(pathname, item.matchPrefix)
+    : undefined;
 
   if (item.onClick) {
     return (
@@ -113,11 +125,17 @@ function SidebarLeafItem({
   return (
     <NavLink
       to={item.to ?? "#"}
+      end={item.end}
       className={({ isActive }) =>
-        `${itemBaseClassName} ${isActive ? styles.itemActive : styles.itemIdle}`
+        `${itemBaseClassName} ${
+          (matchesPrefix ?? isActive) ? styles.itemActive : styles.itemIdle
+        }`
       }
     >
-      {({ isActive }) => (
+      {({ isActive: linkActive }) => {
+        const isActive = matchesPrefix ?? linkActive;
+
+        return (
         <>
           {isActive && styles.accentBar ? (
             <span
@@ -132,7 +150,8 @@ function SidebarLeafItem({
             {item.label}
           </Text>
         </>
-      )}
+        );
+      }}
     </NavLink>
   );
 }
@@ -146,8 +165,10 @@ function SidebarNavItem({
 }) {
   const { pathname } = useLocation();
   const styles = themeStyles[theme];
-  const hasActiveChild = !!item.children?.some(
-    (child) => child.to && pathname.startsWith(child.to)
+  const hasActiveChild = !!item.children?.some((child) =>
+    child.matchPrefix
+      ? isUnderPath(pathname, child.matchPrefix)
+      : child.to && pathname.startsWith(child.to)
   );
   const [isExpanded, setIsExpanded] = useState(hasActiveChild);
 

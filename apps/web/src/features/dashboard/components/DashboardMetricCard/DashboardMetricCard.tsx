@@ -1,6 +1,5 @@
 import type { IconType } from "react-icons";
 
-import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 
@@ -13,11 +12,19 @@ export const dashboardMetricToneStyles: Record<DashboardMetricTone, string> = {
   neutral: "border-gray-200 bg-gray-50 text-gray-700",
 };
 
+/** Franja lateral y color del valor según el tono. */
+const toneAccent: Record<DashboardMetricTone, { bar: string; value: string }> = {
+  success: { bar: "bg-emerald-500", value: "text-emerald-700" },
+  warning: { bar: "bg-amber-500", value: "text-amber-700" },
+  danger: { bar: "bg-red-500", value: "text-red-700" },
+  neutral: { bar: "bg-blue-600", value: "text-gray-900" },
+};
+
 export interface DashboardMetric {
   label: string;
   value: string;
-  hint: string;
-  icon: IconType;
+  hint?: string;
+  icon?: IconType;
   tone: DashboardMetricTone;
   onClick?: () => void;
   isLoading?: boolean;
@@ -32,6 +39,8 @@ export default function DashboardMetricCard({
   onClick,
   isLoading = false,
 }: DashboardMetric) {
+  const accent = toneAccent[tone];
+
   return (
     <MotionCard
       as="article"
@@ -44,25 +53,31 @@ export default function DashboardMetricCard({
           onClick();
         }
       }}
-      className={`w-full rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md ${dashboardMetricToneStyles[tone]}`}
+      className={`relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white py-5 pl-7 pr-5 text-left shadow-sm transition hover:shadow-md ${
+        onClick ? "cursor-pointer" : ""
+      }`}
     >
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-current">
-          <Icon size={20} />
-        </div>
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-1.5 ${accent.bar}`}
+      />
+
+      <div className="flex items-start justify-between gap-3">
+        <Text variant="caption" className="font-semibold uppercase tracking-wide text-gray-500">
+          {label}
+        </Text>
+        {Icon ? <Icon size={18} className="shrink-0 text-gray-400" /> : null}
       </div>
 
-      <Text variant="caption" className="font-bold uppercase text-current opacity-75">
-        {label}
-      </Text>
-
-      <Heading as="h4" className="mt-2 text-current">
+      <p className={`mt-2 text-3xl font-bold leading-tight ${accent.value}`}>
         {isLoading ? "…" : value}
-      </Heading>
+      </p>
 
-      <Text variant="small" className="mt-2 text-current opacity-80">
-        {hint}
-      </Text>
+      {hint ? (
+        <Text variant="small" className="mt-2 text-gray-500">
+          {hint}
+        </Text>
+      ) : null}
     </MotionCard>
   );
 }

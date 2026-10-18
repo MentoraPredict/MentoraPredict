@@ -5,7 +5,6 @@ import {
   createUserWithRole,
   getUsers,
   PartialUserCreationError,
-  updateUserStatus,
   uploadUserAvatar,
   type CreateUserWithRolePayload,
   type UserStatus,
@@ -155,29 +154,6 @@ export default function useAdminUsers() {
   const clearMutationError = useCallback(() => setMutationError(null), []);
   const clearCreateUserError = useCallback(() => setCreateUserError(null), []);
 
-  const toggleStatus = useCallback(
-    async (userId: string) => {
-      const user = [...users, ...Object.values(groupUsers).flat()].find(
-        (current) => current.id === userId,
-      );
-      if (!user) return;
-
-      setMutationError(null);
-      try {
-        await updateUserStatus(userId, !user.isActive);
-        await load();
-      } catch (requestError) {
-        setMutationError(
-          getApiErrorMessage(
-            requestError,
-            "No se pudo actualizar el estado del usuario.",
-          ),
-        );
-      }
-    },
-    [users, groupUsers, load],
-  );
-
   const createUser = useCallback(
     async (payload: CreateUserWithRolePayload, avatarFile?: File) => {
       setCreateUserError(null);
@@ -234,7 +210,6 @@ export default function useAdminUsers() {
     setCurrentPage,
     mutationError,
     clearMutationError,
-    toggleStatus,
     createUser,
     isCreatingUser,
     createUserError,

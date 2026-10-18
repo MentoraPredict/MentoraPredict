@@ -26,7 +26,6 @@ interface AdminUsersTableProps {
   groupUsers?: Record<string, AppUser[]>;
   onToggleGroup?: (key: string) => void;
   onEditUser: (userId: string) => void;
-  onToggleStatus: (userId: string) => void;
 }
 
 const COLUMN_COUNT = 5;
@@ -45,10 +44,9 @@ function getGroupLabel(key: string, groupBy: UsersGroupBy): string {
 interface UserRowProps {
   user: AppUser;
   onEditUser: (userId: string) => void;
-  onToggleStatus: (userId: string) => void;
 }
 
-function UserRow({ user, onEditUser, onToggleStatus }: UserRowProps) {
+function UserRow({ user, onEditUser }: UserRowProps) {
   const fullName =
     [user.firstName, user.lastName].filter(Boolean).join(" ") || "Sin nombre";
 
@@ -82,10 +80,7 @@ function UserRow({ user, onEditUser, onToggleStatus }: UserRowProps) {
       </td>
 
       <td className="px-4 py-3 text-center">
-        <AdminUserStatusCell
-          isActive={user.isActive}
-          onToggleStatus={() => onToggleStatus(user.id)}
-        />
+        <AdminUserStatusCell isActive={user.isActive} />
       </td>
 
       <td className="px-4 py-3">
@@ -111,7 +106,6 @@ export default function AdminUsersTable({
   groupUsers = {},
   onToggleGroup,
   onEditUser,
-  onToggleStatus,
 }: AdminUsersTableProps) {
   const isGrouped = groupBy !== "";
 
@@ -140,12 +134,7 @@ export default function AdminUsersTable({
           <tbody>
             {!isGrouped
               ? users.map((user) => (
-                  <UserRow
-                    key={user.id}
-                    user={user}
-                    onEditUser={onEditUser}
-                    onToggleStatus={onToggleStatus}
-                  />
+                  <UserRow key={user.id} user={user} onEditUser={onEditUser} />
                 ))
               : groups.map((group) => {
                   const isOpen = expandedGroups.includes(group.key);
@@ -192,7 +181,6 @@ export default function AdminUsersTable({
                               key={user.id}
                               user={user}
                               onEditUser={onEditUser}
-                              onToggleStatus={onToggleStatus}
                             />
                           ))
                         : null}
