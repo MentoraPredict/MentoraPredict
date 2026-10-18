@@ -4,6 +4,7 @@ import { GetStudentGradesUseCase } from '../../application/use-cases/get-student
 import { GetStudentEnrollmentsUseCase } from '../../application/use-cases/get-student-enrollments.use-case';
 import { GetSubjectEvaluationWeightsUseCase } from '../../application/use-cases/get-subject-evaluation-weights.use-case';
 import { GetLatestCheckInUseCase } from '../../application/use-cases/get-latest-check-in.use-case';
+import { GetLatestEmotionalStateUseCase } from '../../application/use-cases/get-latest-emotional-state.use-case';
 import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-subject-ownership.use-case';
 import { GetSubjectUseCase } from '../../application/use-cases/get-subject.use-case';
 import { GetAcademicPeriodUseCase } from '../../application/use-cases/get-academic-period.use-case';
@@ -29,6 +30,7 @@ export class InternalAcademicController {
     private readonly getSubjectTopicsUC: GetSubjectTopicsInternalUseCase,
     private readonly checkUserDeactivationUC: CheckUserDeactivationEligibilityUseCase,
     private readonly getAttendanceRateUC: GetAttendanceRateUseCase,
+    private readonly getLatestEmotionalStateUC: GetLatestEmotionalStateUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
@@ -57,6 +59,12 @@ export class InternalAcademicController {
     @Query('periodId') periodId: string,
   ) {
     return this.getLatestCheckInUC.execute(studentId, subjectId, periodId);
+  }
+
+  @Get('students/:studentId/subjects/:subjectId/emotional-state')
+  @ApiOperation({ summary: 'Internal: emotional state of the latest weekly check-in (null if none)' })
+  emotionalState(@Param('studentId') studentId: string, @Param('subjectId') subjectId: string) {
+    return this.getLatestEmotionalStateUC.execute(studentId, subjectId);
   }
 
   @Get('students/:studentId/attendance-rate')

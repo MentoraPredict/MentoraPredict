@@ -237,6 +237,7 @@ import { ListSurveyQuestionsUseCase } from "./application/use-cases/list-survey-
 import { SubmitSurveyResponseUseCase } from "./application/use-cases/submit-survey-response.use-case";
 import { GetSurveyResponseHistoryUseCase } from "./application/use-cases/get-survey-response-history.use-case";
 import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
+import { GetLatestEmotionalStateUseCase } from "./application/use-cases/get-latest-emotional-state.use-case";
 import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subject-ownership.use-case";
 // File storage (Phase 10)
 import { UploadSubjectImageUseCase } from "./application/use-cases/upload-subject-image.use-case";
@@ -560,6 +561,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     SubmitSurveyResponseUseCase,
     GetSurveyResponseHistoryUseCase,
     GetLatestCheckInUseCase,
+    GetLatestEmotionalStateUseCase,
     CheckSubjectOwnershipUseCase,
     // File storage (Phase 10)
     UploadSubjectImageUseCase,
