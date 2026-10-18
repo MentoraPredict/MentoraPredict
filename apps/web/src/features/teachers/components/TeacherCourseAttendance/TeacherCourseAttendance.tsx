@@ -1,9 +1,14 @@
+import { useMemo, useState } from "react";
+
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import Label from "@/components/atoms/Label";
 import Select from "@/components/atoms/Select";
 import Text from "@/components/atoms/Text";
+import ListToolbar from "@/components/molecules/ListToolbar";
+import Pagination from "@/components/molecules/Pagination";
+import usePagination from "@/hooks/usePagination";
 
 import ScheduleForm from "@/features/teachers/components/ScheduleForm";
 import useCourseAttendance from "@/features/teachers/hooks/useCourseAttendance";
@@ -22,6 +27,11 @@ const STATUS_TONE: Record<AttendanceStatus, "green" | "amber" | "red"> = {
   WARNING: "amber",
   EXCEEDED: "red",
 };
+
+const STUDENTS_PER_PAGE = 10;
+
+const normalize = (value: string) =>
+  value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 const weekday = (isoDate: string) => {
   const [y, m, d] = isoDate.split("-").map(Number);
@@ -50,6 +60,26 @@ export default function TeacherCourseAttendance({
     save,
     saveSchedule,
   } = useCourseAttendance(courseId);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  const visibleStudents = useMemo(() => {
+    const terms = normalize(search).split(/\s+/).filter(Boolean);
+
+    return (attendance?.students ?? []).filter((student) => {
+      if (statusFilter && student.status !== statusFilter) return false;
+      const name = normalize(student.name);
+      return terms.every((term) => name.includes(term));
+    });
+  }, [attendance?.students, search, statusFilter]);
+
+  const {
+    currentPage,
+    paginatedItems: pageStudents,
+    totalItems,
+    totalPages,
+    setCurrentPage,
+  } = usePagination(visibleStudents, STUDENTS_PER_PAGE, `${search}|${statusFilter}`);
 
   if (isLoading) {
     return (
@@ -137,83 +167,126 @@ export default function TeacherCourseAttendance({
               </Button>
             </div>
 
-            <div className="mt-4 divide-y divide-gray-100 rounded-xl border border-gray-200">
-              {attendance.students.map((student) => {
-                const present = marks[student.studentId] ?? true;
-
-                return (
-                  <div
-                    key={student.studentId}
-                    className="flex flex-wrap items-center gap-3 px-4 py-2.5"
-                  >
-                    <Text variant="small" className="min-w-[12rem] flex-1 font-medium text-gray-900">
-                      {student.name}
-                    </Text>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={present ? "primary" : "outline"}
-                        className="px-3 py-1.5 text-sm"
-                        onClick={() => setPresent(student.studentId, true)}
-                      >
-                        Presente
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={present ? "outline" : "primary"}
-                        className="px-3 py-1.5 text-sm"
-                        onClick={() => setPresent(student.studentId, false)}
-                      >
-                        Falta
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-              {attendance.students.length === 0 ? (
-                <div className="px-4 py-6 text-center">
-                  <Text variant="small" className="text-gray-600">
-                    Este curso aún no tiene estudiantes matriculados.
-                  </Text>
-                </div>
-              ) : null}
+            <div className="mt-4">
+              <ListToolbar
+                search={search}
+                searchPlaceholder="Buscar estudiantes por nombre"
+                searchLabel="Buscar estudiantes"
+                onSearchChange={setSearch}
+                onClear={() => {
+                  setSearch("");
+                  setStatusFilter("");
+                }}
+                filters={[
+                  {
+                    id: "attendance-status",
+                    label: "Estado de asistencia",
+                    value: statusFilter,
+                    allLabel: "Todos los estados",
+                    options: (Object.keys(ATTENDANCE_STATUS_LABELS) as AttendanceStatus[]).map(
+                      (status) => ({
+                        value: status,
+                        label: ATTENDANCE_STATUS_LABELS[status],
+                      }),
+                    ),
+                    onChange: setStatusFilter,
+                  },
+                ]}
+              />
             </div>
-          </section>
 
-          <section className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
-            <table className="w-full min-w-[34rem] text-left text-sm">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Estudiante</th>
-                  <th className="px-4 py-3 text-center font-medium">Clases</th>
-                  <th className="px-4 py-3 text-center font-medium">Faltas</th>
-                  <th className="px-4 py-3 text-center font-medium">Injustificadas</th>
-                  <th className="px-4 py-3 font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {attendance.students.map((student) => (
-                  <tr key={student.studentId}>
-                    <td className="px-4 py-2.5 font-medium text-gray-900">{student.name}</td>
-                    <td className="px-4 py-2.5 text-center text-gray-700">{student.summary.held}</td>
-                    <td className="px-4 py-2.5 text-center text-gray-700">{student.summary.absences}</td>
-                    <td className="px-4 py-2.5 text-center text-gray-700">
-                      {student.summary.unjustified} ({student.summary.unjustifiedPct} %)
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Badge tone={STATUS_TONE[student.status]}>
-                        {ATTENDANCE_STATUS_LABELS[student.status]}
-                      </Badge>
-                    </td>
+            {totalPages > 1 ? (
+              <div className="mt-4">
+                <Pagination
+                  currentPage={currentPage}
+                  pageSize={STUDENTS_PER_PAGE}
+                  totalItems={totalItems}
+                  totalPages={totalPages}
+                  itemLabel="estudiantes"
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            ) : null}
+
+            <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
+              <table className="w-full min-w-[44rem] text-left text-sm">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Estudiante</th>
+                    <th className="px-4 py-3 text-center font-medium">Clases</th>
+                    <th className="px-4 py-3 text-center font-medium">Faltas</th>
+                    <th className="px-4 py-3 text-center font-medium">Injustificadas</th>
+                    <th className="px-4 py-3 font-medium">Estado</th>
+                    <th className="px-4 py-3 font-medium">Asistencia de la clase</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <Text variant="caption" className="px-4 py-3 text-gray-500">
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {pageStudents.map((student) => {
+                    const present = marks[student.studentId] ?? true;
+
+                    return (
+                      <tr key={student.studentId}>
+                        <td className="px-4 py-2.5 font-medium text-gray-900">
+                          {student.name}
+                        </td>
+                        <td className="px-4 py-2.5 text-center text-gray-700">
+                          {student.summary.held}
+                        </td>
+                        <td className="px-4 py-2.5 text-center text-gray-700">
+                          {student.summary.absences}
+                        </td>
+                        <td className="px-4 py-2.5 text-center text-gray-700">
+                          {student.summary.unjustified} ({student.summary.unjustifiedPct} %)
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <Badge tone={STATUS_TONE[student.status]}>
+                            {ATTENDANCE_STATUS_LABELS[student.status]}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant={present ? "primary" : "outline"}
+                              className="px-3 py-1.5 text-sm"
+                              onClick={() => setPresent(student.studentId, true)}
+                            >
+                              Presente
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={present ? "outline" : "primary"}
+                              className="px-3 py-1.5 text-sm"
+                              onClick={() => setPresent(student.studentId, false)}
+                            >
+                              Falta
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {pageStudents.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center">
+                        <Text variant="small" className="text-gray-600">
+                          {attendance.students.length === 0
+                            ? "Este curso aún no tiene estudiantes matriculados."
+                            : "Ningún estudiante coincide con la búsqueda."}
+                        </Text>
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+
+            <Text variant="caption" className="mt-3 block text-gray-500">
               {attendance.held} de {attendance.planned} clases programadas con asistencia
               registrada.
-            </Text>
-          </section>
+            </Text>          </section>
+
         </>
       )}
     </div>

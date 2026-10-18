@@ -47,7 +47,8 @@ import StudentProgressPage from "@/pages/student/StudentProgressPage";
 import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
 import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerformancePage";
 
-import TeacherCourseDropoutRiskPage from "@/pages/teacher/TeacherCourseDropoutRiskPage";
+import TeacherCourseActivityPage from "@/pages/teacher/TeacherCourseActivityPage";
+import TeacherCourseStudentPage from "@/pages/teacher/TeacherCourseStudentPage";
 import TeacherCourseGradebookPage from "@/pages/teacher/TeacherCourseGradebookPage";
 import TeacherCourseAttendancePage from "@/pages/teacher/TeacherCourseAttendancePage";
 import StudentAttendancePage from "@/pages/student/StudentAttendancePage";
@@ -90,7 +91,15 @@ function getAnimationKey(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
   const lastSegment = segments[segments.length - 1];
 
-  if (lastSegment && COURSE_TAB_SEGMENTS.has(lastSegment)) {
+  // /teacher/courses/:id/gradebook/activities/:activityId comparte la animación de la materia.
+  const gradebookIndex = segments.indexOf("gradebook");
+
+  if (gradebookIndex >= 0) {
+    segments.length = gradebookIndex;
+  } else if (segments[segments.length - 2] === "students") {
+    segments.pop();
+    segments.pop();
+  } else if (lastSegment && COURSE_TAB_SEGMENTS.has(lastSegment)) {
     segments.pop();
   }
 
@@ -193,12 +202,17 @@ function AnimatedRoutes() {
             >
               <Route path="performance" element={<TeacherCoursePerformancePage />} />
               <Route path="gradebook" element={<TeacherCourseGradebookPage />} />
+              <Route
+                path="gradebook/activities/:activityId"
+                element={<TeacherCourseActivityPage />}
+              />
               <Route path="attendance" element={<TeacherCourseAttendancePage />} />
               {/* Rutas anteriores: se conservan para enlaces guardados. */}
               <Route path="syllabus" element={<Navigate to="../edit" replace />} />
               <Route path="upload-data" element={<Navigate to="../gradebook" replace />} />
-              <Route path="dropout-risk" element={<TeacherCourseDropoutRiskPage />} />
+              <Route path="dropout-risk" element={<Navigate to="../students" replace />} />
               <Route path="students" element={<TeacherCourseStudentsPage />} />
+              <Route path="students/:studentId" element={<TeacherCourseStudentPage />} />
               <Route path="edit" element={<TeacherCourseEditPage />} />
             </Route>
           </Route>

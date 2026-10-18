@@ -141,6 +141,8 @@ export const endpoints = {
             `/v1/analytics/subjects/${subjectId}/metrics/summary`,
         subjectProgress: (subjectId: string) =>
             `/v1/analytics/subjects/${subjectId}/metrics/progress`,
+        studentRiskSignals: (subjectId: string, studentId: string) =>
+            `/v1/analytics/subjects/${subjectId}/students/${studentId}/risk-signals`,
         subjectAlerts: (subjectId: string) =>
             `/v1/analytics/subjects/${subjectId}/alerts`,
     },

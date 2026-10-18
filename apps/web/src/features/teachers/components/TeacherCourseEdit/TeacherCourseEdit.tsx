@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AxiosError } from "axios";
 
 import Button from "@/components/atoms/Button";
@@ -15,7 +15,16 @@ interface TeacherCourseEditProps {
   onSave: (payload: UpdateTeacherCoursePayload) => Promise<void>;
   onUploadImage: (file: File) => Promise<string | undefined>;
   onDeleteImage: () => Promise<void>;
+  /** Contenido de la pestaña «Temas del sílabo». */
+  syllabus: ReactNode;
 }
+
+type SettingsTab = "description" | "syllabus";
+
+const TABS: { id: SettingsTab; label: string }[] = [
+  { id: "description", label: "Descripción" },
+  { id: "syllabus", label: "Temas del sílabo" },
+];
 
 function getSaveErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
@@ -51,7 +60,9 @@ export default function TeacherCourseEdit({
   onSave,
   onUploadImage,
   onDeleteImage,
+  syllabus,
 }: TeacherCourseEditProps) {
+  const [activeTab, setActiveTab] = useState<SettingsTab>("description");
   const [description, setDescription] = useState(course.description);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -104,10 +115,6 @@ export default function TeacherCourseEdit({
       <Heading as="h4" className="text-gray-900">
         Configuración de la materia
       </Heading>
-      <Text variant="small" className="mt-2 text-gray-600">
-        Solo puedes cambiar la portada y la descripción. El resto de los datos
-        los define la administración.
-      </Text>
 
       <div className="mt-6 grid gap-8 md:grid-cols-[auto_1fr]">
         <div>
@@ -166,30 +173,53 @@ export default function TeacherCourseEdit({
         </div>
       ) : null}
 
-      <div className="mt-8">
-        <Heading as="h5" className="text-gray-900">
-          Descripción de la materia
-        </Heading>
-
-        <Textarea
-          rows={6}
-          maxLength={500}
-          value={description}
-          onChange={(event) => {
-            setDescription(event.target.value);
-            setSuccessMessage(null);
-          }}
-          placeholder="Descripción"
-          className="mt-4"
-        />
-
-        <div className="mt-2 flex justify-end">
-          <Text variant="caption">{description.length} / 500</Text>
-        </div>
+      <div
+        role="tablist"
+        aria-label="Configuración de la materia"
+        className="mb-5 mt-8 flex gap-2 border-b border-gray-200"
+      >
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition ${
+              activeTab === tab.id
+                ? "border-blue-700 text-blue-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
+      {activeTab === "description" ? (
+        <div>
+          <Textarea
+            rows={6}
+            maxLength={500}
+            value={description}
+            onChange={(event) => {
+              setDescription(event.target.value);
+              setSuccessMessage(null);
+            }}
+            placeholder="Descripción de la materia"
+            aria-label="Descripción de la materia"
+          />
+
+          <div className="mt-2 flex justify-end">
+            <Text variant="caption">{description.length} / 500</Text>
+          </div>
+        </div>
+      ) : (
+        syllabus
+      )}
+
       {hasChanges ? (
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-5">
           <Button
             type="button"
             variant="outline"

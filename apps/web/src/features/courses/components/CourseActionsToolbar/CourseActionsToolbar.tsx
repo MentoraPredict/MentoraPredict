@@ -8,7 +8,6 @@ import {
   FiMessageCircle,
   FiSettings,
   FiSmile,
-  FiTrendingDown,
   FiUserCheck,
   FiUsers,
 } from "react-icons/fi";
@@ -22,7 +21,6 @@ import {
   getStudentCoursePerformancePath,
   getStudentCourseSurveyPath,
   getTeacherCourseAttendancePath,
-  getTeacherCourseDropoutRiskPath,
   getTeacherCourseEditPath,
   getTeacherCourseGradebookPath,
   getTeacherCoursePerformancePath,
@@ -63,11 +61,6 @@ function getTeacherActions(courseId: string): ToolbarAction[] {
       to: getTeacherCourseStudentsPath(courseId),
       label: "Estudiantes",
       icon: <FiUsers size={16} />,
-    },
-    {
-      to: getTeacherCourseDropoutRiskPath(courseId),
-      label: "Riesgo de deserción",
-      icon: <FiTrendingDown size={16} />,
     },
     {
       to: getTeacherCourseEditPath(courseId),

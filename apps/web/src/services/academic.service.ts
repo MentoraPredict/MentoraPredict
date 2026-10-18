@@ -545,20 +545,6 @@ export async function deleteTeacherCourseImage(courseId: string) {
   invalidateSubjectsCache();
 }
 
-export async function importGradesFile(
-  file: File
-): Promise<ImportGradesResponse> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await api.post<ImportGradesResponse>(
-    endpoints.academic.importGrades,
-    formData
-  );
-
-  return response.data;
-}
-
 export async function getCurrentStudentCheckIn(
   subjectId: string
 ): Promise<StudentCheckInResponse | null> {

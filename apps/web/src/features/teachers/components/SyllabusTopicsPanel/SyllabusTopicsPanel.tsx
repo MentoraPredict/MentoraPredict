@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { FiUploadCloud, FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
-import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 import Input from "@/components/atoms/Input";
 import Textarea from "@/components/atoms/Textarea";
 import Button from "@/components/atoms/Button";
 import IconButton from "@/components/atoms/IconButton";
 import ErrorMessage from "@/components/atoms/ErrorMessage";
-import Pagination from "@/components/molecules/Pagination";
-import usePagination from "@/hooks/usePagination";
 import {
   getSubjectTopics,
   createSubjectTopic,
@@ -18,10 +15,10 @@ import {
   type SubjectTopic,
 } from "@/services/academic.service";
 
-const TOPICS_PER_PAGE = 8;
-
 interface SyllabusTopicsPanelProps {
   subjectId: string;
+  /** Sin borde ni relleno propios, para ir dentro de otra tarjeta. */
+  bare?: boolean;
 }
 
 function getRequestErrorMessage(error: unknown, fallback: string): string {
@@ -36,7 +33,7 @@ function parseSyllabusTopics(text: string): string[] {
   const seen = new Set<string>();
   const titles: string[] = [];
 
-  for (const rawTitle of text.split(/[;\n]+/)) {
+  for (const rawTitle of text.split(/\n+/)) {
     const title = rawTitle.trim();
     const key = title.toLowerCase();
     if (title && !seen.has(key)) {
@@ -50,6 +47,7 @@ function parseSyllabusTopics(text: string): string[] {
 
 export default function SyllabusTopicsPanel({
   subjectId,
+  bare = false,
 }: SyllabusTopicsPanelProps) {
   const [topics, setTopics] = useState<SubjectTopic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,14 +57,6 @@ export default function SyllabusTopicsPanel({
   const [bulkText, setBulkText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
-
-  const {
-    currentPage,
-    paginatedItems: paginatedTopics,
-    totalItems,
-    totalPages,
-    setCurrentPage,
-  } = usePagination(topics, TOPICS_PER_PAGE, subjectId);
 
   useEffect(() => {
     let isMounted = true;
@@ -183,22 +173,12 @@ export default function SyllabusTopicsPanel({
 
   return (
     <section
-      className="
-                rounded-2xl
-                border
-                border-gray-200
-                bg-white
-                p-6
-                shadow-sm
-            "
+      className={
+        bare ? "" : "rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+      }
     >
-      <Heading as="h5" className="text-gray-900">
-        Temas del sílabo
-      </Heading>
-
-      <Text variant="caption" className="mt-2 block">
-        Pega el temario completo separado por punto y coma (;) o con un salto
-        de línea por tema. Se detectarán automáticamente los temas nuevos.
+      <Text variant="caption" className="block">
+        Escribe un tema por línea. Se detectarán automáticamente los temas nuevos.
       </Text>
 
       {error ? <ErrorMessage message={error} /> : null}
@@ -207,7 +187,7 @@ export default function SyllabusTopicsPanel({
         <Textarea
           value={bulkText}
           onChange={(event) => setBulkText(event.target.value)}
-          placeholder={"Ej: Transformaciones lineales; Espacios vectoriales; Valores propios\no un tema por línea"}
+          placeholder={"Transformaciones lineales\nEspacios vectoriales\nValores propios"}
           rows={3}
           disabled={isSaving}
           className="sm:flex-1"
@@ -228,20 +208,9 @@ export default function SyllabusTopicsPanel({
         </Text>
       ) : topics.length > 0 ? (
         <>
-          <div className="mt-4">
-            <Pagination
-              currentPage={currentPage}
-              pageSize={TOPICS_PER_PAGE}
-              totalItems={totalItems}
-              totalPages={totalPages}
-              itemLabel="temas"
-              onPageChange={setCurrentPage}
-            />
-          </div>
-
-          <div className="mt-4 min-w-0 overflow-x-auto rounded-xl border border-gray-200">
+          <div className="mt-4 max-h-96 min-w-0 overflow-auto rounded-xl border border-gray-200">
             <table className="w-full min-w-[480px] text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50">
+              <thead className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50">
                 <tr>
                   <th className="w-16 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-500">
                     N.º
@@ -255,10 +224,10 @@ export default function SyllabusTopicsPanel({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {paginatedTopics.map((topic, index) => (
+                {topics.map((topic, index) => (
                   <tr key={topic.id}>
                     <td className="px-4 py-3 text-gray-500">
-                      {(currentPage - 1) * TOPICS_PER_PAGE + index + 1}
+                      {index + 1}
                     </td>
                     <td className="px-4 py-3">
                       {editingId === topic.id ? (

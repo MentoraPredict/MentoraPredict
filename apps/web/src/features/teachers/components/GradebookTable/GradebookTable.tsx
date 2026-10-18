@@ -1,5 +1,7 @@
 import Badge from "@/components/atoms/Badge";
 import Text from "@/components/atoms/Text";
+import Pagination from "@/components/molecules/Pagination";
+import usePagination from "@/hooks/usePagination";
 
 import type { Gradebook } from "@/types/academic/grading.types";
 
@@ -9,8 +11,11 @@ interface GradebookTableProps {
   cellValue: (studentId: string, activityId: string) => string;
   isInvalid: (studentId: string, activityId: string) => boolean;
   onChange: (studentId: string, activityId: string, text: string) => void;
-  onArchive: (activityId: string) => void;
+  onOpenActivity: (activityId: string) => void;
+  onAddActivity: (componentCode: string) => void;
 }
+
+const STUDENTS_PER_PAGE = 10;
 
 const format = (value: number | null | undefined, decimals: number) =>
   value === null || value === undefined ? "—" : value.toFixed(decimals);
@@ -21,9 +26,17 @@ export default function GradebookTable({
   cellValue,
   isInvalid,
   onChange,
-  onArchive,
+  onOpenActivity,
+  onAddActivity,
 }: GradebookTableProps) {
   const { components, activities, students, scale } = gradebook;
+  const {
+    currentPage,
+    paginatedItems: pageStudents,
+    totalItems,
+    totalPages,
+    setCurrentPage,
+  } = usePagination(students, STUDENTS_PER_PAGE);
   const bandLabel = new Map(scale.bands.map((band) => [band.code, band.label]));
 
   const groups = components.map((component) => ({
@@ -32,6 +45,20 @@ export default function GradebookTable({
   }));
 
   return (
+    <div className="min-w-0">
+      {totalPages > 1 ? (
+        <div className="mb-3">
+          <Pagination
+            currentPage={currentPage}
+            pageSize={STUDENTS_PER_PAGE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="estudiantes"
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      ) : null}
+
     <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
       <table className="w-full min-w-[40rem] text-left text-sm">
         <thead className="bg-gray-50 text-gray-600">
@@ -45,11 +72,27 @@ export default function GradebookTable({
                 colSpan={Math.max(list.length, 1) + 1}
                 className="border-l border-gray-200 px-4 py-2 text-center font-medium"
               >
-                {component.name} · {component.weight}%
+                <span className="inline-flex items-center justify-center gap-2">
+                  {component.name} · {component.weight}%
+                  {isReadOnly ? null : (
+                    <button
+                      type="button"
+                      aria-label={`Nueva actividad de ${component.name}`}
+                      title={`Nueva actividad de ${component.name}`}
+                      onClick={() => onAddActivity(component.code)}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-700 text-base font-bold leading-none text-white transition hover:bg-blue-800"
+                    >
+                      +
+                    </button>
+                  )}
+                </span>
               </th>
             ))}
             <th rowSpan={2} className="border-l border-gray-200 px-4 py-3 text-center font-medium">
               Nota del periodo
+            </th>
+            <th rowSpan={2} className="border-l border-gray-200 px-4 py-3 font-medium">
+              Calificación cualitativa
             </th>
           </tr>
           <tr>
@@ -57,15 +100,14 @@ export default function GradebookTable({
               <HeaderCells
                 key={component.code}
                 activities={list}
-                isReadOnly={isReadOnly}
-                onArchive={onArchive}
+                onOpenActivity={onOpenActivity}
               />
             ))}
           </tr>
         </thead>
 
         <tbody className="divide-y divide-gray-100">
-          {students.map((student) => (
+          {pageStudents.map((student) => (
             <tr key={student.studentId}>
               <td className="sticky left-0 z-10 bg-white px-4 py-2 font-medium text-gray-900">
                 {student.name}
@@ -95,14 +137,17 @@ export default function GradebookTable({
                 >
                   {format(student.periodGrade, scale.decimals)}
                 </span>
+              </td>
+
+              <td className="border-l border-gray-200 px-4 py-2">
                 {student.bandCode ? (
-                  <div className="mt-1 flex justify-center">
-                    <Badge tone={student.isComplete ? "blue" : "neutral"}>
-                      {bandLabel.get(student.bandCode) ?? student.bandCode}
-                      {student.isComplete ? "" : " (parcial)"}
-                    </Badge>
-                  </div>
-                ) : null}
+                  <Badge tone={student.isComplete ? "blue" : "neutral"}>
+                    {bandLabel.get(student.bandCode) ?? student.bandCode}
+                    {student.isComplete ? "" : " (parcial)"}
+                  </Badge>
+                ) : (
+                  <span className="text-gray-400">—</span>
+                )}
               </td>
             </tr>
           ))}
@@ -119,16 +164,16 @@ export default function GradebookTable({
         </tbody>
       </table>
     </div>
+    </div>
   );
 }
 
 interface HeaderCellsProps {
   activities: Gradebook["activities"];
-  isReadOnly: boolean;
-  onArchive: (activityId: string) => void;
+  onOpenActivity: (activityId: string) => void;
 }
 
-function HeaderCells({ activities, isReadOnly, onArchive }: HeaderCellsProps) {
+function HeaderCells({ activities, onOpenActivity }: HeaderCellsProps) {
   return (
     <>
       {activities.length === 0 ? (
@@ -143,18 +188,14 @@ function HeaderCells({ activities, isReadOnly, onArchive }: HeaderCellsProps) {
               index === 0 ? "border-l border-gray-200" : ""
             }`}
           >
-            <span className="block max-w-[8rem] truncate" title={activity.name}>
+            <button
+              type="button"
+              title={`Abrir «${activity.name}»`}
+              onClick={() => onOpenActivity(activity.id)}
+              className="block max-w-[8rem] cursor-pointer truncate rounded px-1 py-0.5 font-medium text-blue-700 underline-offset-2 transition hover:bg-blue-50 hover:underline"
+            >
               {activity.name}
-            </span>
-            {isReadOnly ? null : (
-              <button
-                type="button"
-                className="mt-0.5 text-[11px] font-normal text-gray-400 hover:text-red-600"
-                onClick={() => onArchive(activity.id)}
-              >
-                Archivar
-              </button>
-            )}
+            </button>
           </th>
         ))
       )}

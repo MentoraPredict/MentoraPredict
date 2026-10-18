@@ -2,8 +2,6 @@ export { default as TeacherCoursesManagement } from "./TeacherCoursesManagement"
 
 export { default as TeacherCoursePerformance } from "./TeacherCoursePerformance";
 
-export { default as TeacherCourseGradesImport } from "./TeacherCourseGradesImport";
-export { default as CourseFilesUploadPanel } from "./CourseFilesUploadPanel";
 export { default as GradeEvaluationPanel } from "./GradeEvaluationPanel";
 export { default as SyllabusTopicsPanel } from "./SyllabusTopicsPanel";
 

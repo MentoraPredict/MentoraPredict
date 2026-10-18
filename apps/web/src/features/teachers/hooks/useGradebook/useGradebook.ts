@@ -5,6 +5,7 @@ import {
   getGradebook,
   saveGrades,
   setActivityActive,
+  updateActivity,
 } from "@/services/grading.service";
 import type {
   ActivityPayload,
@@ -27,7 +28,8 @@ function parseGrade(text: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export default function useGradebook(courseId: string) {
+/** `initialPeriodId` abre el libro en ese periodo (si no, en el vigente). */
+export default function useGradebook(courseId: string, initialPeriodId?: string) {
   const [gradebook, setGradebook] = useState<Gradebook | null>(null);
   const [periodId, setPeriodId] = useState<string | undefined>(undefined);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -57,8 +59,8 @@ export default function useGradebook(courseId: string) {
   );
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load(initialPeriodId);
+  }, [load, initialPeriodId]);
 
   const selectPeriod = useCallback(
     (nextPeriodId: string) => {
@@ -175,9 +177,35 @@ export default function useGradebook(courseId: string) {
     [courseId, gradebook, load]
   );
 
+  const editActivity = useCallback(
+    async (
+      activityId: string,
+      payload: { name?: string; componentCode?: string; dueDate?: string | null }
+    ) => {
+      if (!gradebook) return false;
+
+      setIsSaving(true);
+      setError(null);
+
+      try {
+        await updateActivity(activityId, payload);
+        await load(gradebook.period.id);
+
+        return true;
+      } catch (err) {
+        setError(getApiErrorMessage(err, "No se pudo guardar la actividad."));
+
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [gradebook, load]
+  );
+
   const archiveActivity = useCallback(
     async (activityId: string) => {
-      if (!gradebook) return;
+      if (!gradebook) return false;
 
       setIsSaving(true);
       setError(null);
@@ -185,8 +213,12 @@ export default function useGradebook(courseId: string) {
       try {
         await setActivityActive(activityId, false);
         await load(gradebook.period.id);
+
+        return true;
       } catch (err) {
         setError(getApiErrorMessage(err, "No se pudo archivar la actividad."));
+
+        return false;
       } finally {
         setIsSaving(false);
       }
@@ -209,6 +241,7 @@ export default function useGradebook(courseId: string) {
     hasInvalid: pending.invalid.size > 0,
     save,
     addActivity,
+    editActivity,
     archiveActivity,
   };
 }

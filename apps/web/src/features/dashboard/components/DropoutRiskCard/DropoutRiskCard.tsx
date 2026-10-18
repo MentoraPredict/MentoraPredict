@@ -17,6 +17,8 @@ interface DropoutRiskCardProps {
   isLoading: boolean;
   title?: string;
   subtitle?: string;
+  /** Muestra los factores desde el inicio. */
+  defaultShowFactors?: boolean;
 }
 
 export default function DropoutRiskCard({
@@ -24,8 +26,9 @@ export default function DropoutRiskCard({
   isLoading,
   title = "Riesgo de deserción estimado",
   subtitle = "Basado en tendencia, cumplimiento y actividad reciente",
+  defaultShowFactors = false,
 }: DropoutRiskCardProps) {
-  const [showFactors, setShowFactors] = useState(false);
+  const [showFactors, setShowFactors] = useState(defaultShowFactors);
   const presentation = estimate
     ? riskLevelPresentation[estimate.level]
     : insufficientDataPresentation;

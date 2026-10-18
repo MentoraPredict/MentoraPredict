@@ -39,8 +39,10 @@ export const APP_PATHS = {
     courseSyllabus: "/teacher/courses/:courseId/syllabus",
     courseDropoutRisk: "/teacher/courses/:courseId/dropout-risk",
     courseStudents: "/teacher/courses/:courseId/students",
+    courseStudentDetail: "/teacher/courses/:courseId/students/:studentId",
     courseEdit: "/teacher/courses/:courseId/edit",
     courseGradebook: "/teacher/courses/:courseId/gradebook",
+    courseActivity: "/teacher/courses/:courseId/gradebook/activities/:activityId",
     courseAttendance: "/teacher/courses/:courseId/attendance",
   },
   guardian: {
@@ -110,8 +112,28 @@ export function getTeacherCourseStudentsPath(courseId: string) {
   return `/teacher/courses/${courseId}/students`;
 }
 
+export function getTeacherCourseStudentDetailPath(
+  courseId: string,
+  studentId: string,
+) {
+  return `/teacher/courses/${courseId}/students/${studentId}`;
+}
+
 export function getTeacherCourseGradebookPath(courseId: string) {
   return `/teacher/courses/${courseId}/gradebook`;
+}
+
+export function getTeacherCourseActivityPath(
+  courseId: string,
+  activityId: string,
+  options: { periodId?: string; componentCode?: string } = {},
+) {
+  const params = new URLSearchParams();
+  if (options.periodId) params.set("period", options.periodId);
+  if (options.componentCode) params.set("component", options.componentCode);
+  const query = params.toString();
+
+  return `/teacher/courses/${courseId}/gradebook/activities/${activityId}${query ? `?${query}` : ""}`;
 }
 
 export function getTeacherCourseAttendancePath(courseId: string) {

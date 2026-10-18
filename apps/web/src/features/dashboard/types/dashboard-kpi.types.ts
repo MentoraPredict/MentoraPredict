@@ -56,12 +56,8 @@ export interface ComprehensionSummary {
 export type DropoutRiskFactorKey =
   | "AVERAGE_TREND"
   | "COMPLIANCE_TREND"
-  | "SUBJECT_LOAD_TREND"
-  | "WITHDRAWALS"
   | "EMOTIONAL_STATE"
-  | "ALERT_FREQUENCY"
-  | "ENGAGEMENT"
-  | "SOCIOECONOMIC";
+  | "ENGAGEMENT";
 
 export interface DropoutRiskFactor {
   key: DropoutRiskFactorKey;

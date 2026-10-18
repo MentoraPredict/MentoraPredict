@@ -1,3 +1,4 @@
+import type { StudentRiskSignals } from "@/services/course-analytics.service";
 import type { Course } from "@/types/course";
 import type { RiskLevel } from "@/types/risk";
 
@@ -213,9 +214,10 @@ function factorScoreFromStudent(student: {
   average: number | null;
 }): number {
   if (student.average === null) return hashScore(student.id);
-  if (student.average >= 16) return 10;
-  if (student.average >= 14) return 40;
-  if (student.average >= 10) return 70;
+  // Escala 0-10 (aprobado con 7).
+  if (student.average >= 8.5) return 10;
+  if (student.average >= 7) return 40;
+  if (student.average >= 5) return 70;
   return 95;
 }
 
@@ -228,61 +230,103 @@ function factorScoreFromStudent(student: {
 export function getMockStudentDropoutRisk(student: {
   id: string;
   average: number | null;
+  /** Porcentaje de asistencia (0-100) del registro del docente. */
+  attendance?: number | null;
+  /** Estado emocional y actividad de ingresos reales del estudiante. */
+  signals?: StudentRiskSignals | null;
 }): Promise<DropoutRiskEstimate> {
-  return withMockLatency(buildDropoutEstimate(factorScoreFromStudent(student)));
+  return withMockLatency(
+    buildDropoutEstimate(
+      factorScoreFromStudent(student),
+      student.attendance ?? null,
+      student.signals ?? null
+    )
+  );
 }
 
-function buildDropoutEstimate(riskFactorScore: number): DropoutRiskEstimate {
-  const factors: DropoutRiskFactor[] = [
+const EMOTIONAL_SCORES: Record<string, number> = {
+  GREAT: 5,
+  GOOD: 25,
+  NEUTRAL: 50,
+  BAD: 75,
+  CRITICAL: 95,
+};
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function describeLastLogin(lastLoginAt: string | null): string {
+  if (!lastLoginAt) return "sin ingresos";
+  const days = Math.floor((Date.now() - new Date(lastLoginAt).getTime()) / MS_PER_DAY);
+  if (days <= 0) return "último ingreso hoy";
+  if (days === 1) return "último ingreso ayer";
+  return `último ingreso hace ${days} días`;
+}
+
+function loginScore(lastLoginAt: string | null, count: number): number {
+  if (!lastLoginAt) return 95;
+  const days = (Date.now() - new Date(lastLoginAt).getTime()) / MS_PER_DAY;
+  const base = days <= 3 ? 10 : days <= 7 ? 30 : days <= 14 ? 60 : 90;
+  const adjust = count < 4 ? 20 : count >= 12 ? -10 : 0;
+  return Math.max(0, Math.min(100, base + adjust));
+}
+
+/**
+ * Factores con datos reales del colegio: notas, asistencia del docente,
+ * estado emocional del último registro semanal y ingresos a la plataforma
+ * (cantidad en 30 días y último ingreso). Cada factor aparece solo si hay
+ * dato, y los pesos se reparten entre los que existen. La encuesta
+ * socioeconómica no se muestra al docente: es un dato sensible que se verá
+ * solo en la ficha del DECE, con consentimiento (fase 7). La carga de
+ * materias, los retiros y las alertas se retiraron: no tenían datos propios
+ * o repetían lo que ya miden las notas y la asistencia.
+ */
+function buildDropoutEstimate(
+  averageScore: number,
+  attendance: number | null,
+  signals: StudentRiskSignals | null
+): DropoutRiskEstimate {
+  const candidates: Array<Omit<DropoutRiskFactor, "weight"> & { baseWeight: number }> = [
     {
       key: "AVERAGE_TREND",
-      label: "Tendencia de promedio entre períodos",
-      weight: 0.25,
-      normalizedScore: riskFactorScore,
-    },
-    {
-      key: "COMPLIANCE_TREND",
-      label: "Tendencia de cumplimiento y asistencia",
-      weight: 0.2,
-      normalizedScore: riskFactorScore,
-    },
-    {
-      key: "SUBJECT_LOAD_TREND",
-      label: "Carga de materias entre períodos",
-      weight: 0.1,
-      normalizedScore: 20,
-    },
-    {
-      key: "WITHDRAWALS",
-      label: "Retiros acumulados en el período actual",
-      weight: 0.1,
-      normalizedScore: 15,
-    },
-    {
-      key: "EMOTIONAL_STATE",
-      label: "Estado emocional autorreportado",
-      weight: 0.15,
-      normalizedScore: riskFactorScore,
-    },
-    {
-      key: "ALERT_FREQUENCY",
-      label: "Frecuencia de alertas altas/críticas",
-      weight: 0.1,
-      normalizedScore: riskFactorScore,
-    },
-    {
-      key: "ENGAGEMENT",
-      label: "Actividad reciente en la plataforma",
-      weight: 0.05,
-      normalizedScore: 20,
-    },
-    {
-      key: "SOCIOECONOMIC",
-      label: "Encuesta socioeconómica",
-      weight: 0.05,
-      normalizedScore: 50,
+      label: "Promedio de notas",
+      baseWeight: 0.4,
+      normalizedScore: averageScore,
     },
   ];
+
+  if (attendance !== null) {
+    candidates.push({
+      key: "COMPLIANCE_TREND",
+      label: "Asistencia a clases",
+      baseWeight: 0.25,
+      normalizedScore: Math.max(0, Math.min(100, Math.round(100 - attendance))),
+    });
+  }
+
+  if (signals?.emotional) {
+    candidates.push({
+      key: "EMOTIONAL_STATE",
+      label: `Estado emocional autorreportado (semana ${signals.emotional.academicWeek})`,
+      baseWeight: 0.2,
+      normalizedScore: EMOTIONAL_SCORES[signals.emotional.emotionalState] ?? 50,
+    });
+  }
+
+  if (signals?.loginActivity) {
+    const { lastLoginAt, loginCountLast30Days } = signals.loginActivity;
+    candidates.push({
+      key: "ENGAGEMENT",
+      label: `Ingresos a la plataforma (${loginCountLast30Days} en 30 días · ${describeLastLogin(lastLoginAt)})`,
+      baseWeight: 0.15,
+      normalizedScore: loginScore(lastLoginAt, loginCountLast30Days),
+    });
+  }
+
+  const totalWeight = candidates.reduce((sum, factor) => sum + factor.baseWeight, 0);
+  const factors: DropoutRiskFactor[] = candidates.map(({ baseWeight, ...factor }) => ({
+    ...factor,
+    weight: baseWeight / totalWeight,
+  }));
 
   const score = Math.round(
     factors.reduce((sum, factor) => sum + factor.normalizedScore * factor.weight, 0)
@@ -296,10 +340,9 @@ function buildDropoutEstimate(riskFactorScore: number): DropoutRiskEstimate {
     dataSource: "MOCK_HEURISTIC",
     computedAt: new Date().toISOString(),
     disclaimer:
-      "Estimación preliminar calculada en el frontend con datos limitados — todavía no existe un cálculo real de deserción en el backend.",
+      "Estimación preliminar calculada en el frontend con datos reales (notas, asistencia, estado emocional e ingresos) — todavía no existe un cálculo de deserción en el backend.",
   };
 }
-
 /**
  * Parte mockeada del panel del docente (asistencia agregada, materias sin
  * horario, deserción estimada, tendencia) — ver docs/frontend/

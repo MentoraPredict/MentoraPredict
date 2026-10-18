@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  FiAlertTriangle,
-  FiBookOpen,
-  FiGrid,
-  FiList,
-  FiTrendingUp,
-  FiUsers,
-} from "react-icons/fi";
+import { FiGrid, FiList } from "react-icons/fi";
 
 import Container from "@/components/atoms/Container";
 import Heading from "@/components/atoms/Heading";
@@ -33,6 +26,7 @@ import Text from "@/components/atoms/Text";
 
 import { useNavigate } from "react-router-dom";
 import { getTeacherCoursePerformancePath } from "@/routes/paths";
+import { MAX_GRADE } from "@/utils/gradeScale";
 import type { Course } from "@/types/course";
 import type { RiskLevelOrUnknown } from "@/types/risk";
 
@@ -230,30 +224,22 @@ export default function TeacherCoursesManagement({
       value:
         realMetrics.averageAcrossCourses === null
           ? "--"
-          : realMetrics.averageAcrossCourses.toFixed(2),
-      hint: "Escala 0-10, promedio entre tus materias",
-      icon: FiTrendingUp,
+          : `${realMetrics.averageAcrossCourses.toFixed(2)} / ${MAX_GRADE}`,
       tone: getAverageTone(realMetrics.averageAcrossCourses),
     },
     {
       label: "Estudiantes a atender",
       value: realMetrics.studentsAtRisk.toString(),
-      hint: "Con riesgo medio, alto o crítico en alguna materia",
-      icon: FiAlertTriangle,
       tone: getCountTone(realMetrics.studentsAtRisk),
     },
     {
       label: "Materias a cargo",
       value: realMetrics.totalCourses.toString(),
-      hint: "Materias asignadas en el año lectivo activo",
-      icon: FiBookOpen,
       tone: "neutral",
     },
     {
-      label: "Estudiantes",
+      label: "Total de estudiantes",
       value: realMetrics.totalStudents.toString(),
-      hint: "Matriculados en tus materias",
-      icon: FiUsers,
       tone: "neutral",
     },
   ];
@@ -276,16 +262,6 @@ export default function TeacherCoursesManagement({
               </Heading>
               <div className="mt-2 h-1 w-14 rounded-full bg-blue-700" />
             </div>
-
-            {!isLoading && hasCourses ? (
-              <div className="mb-6 space-y-6">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  {dashboardMetrics.map((metric) => (
-                    <DashboardMetricCard key={metric.label} {...metric} />
-                  ))}
-                </div>
-              </div>
-            ) : null}
 
             {!isOnline ? (
               <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4">
@@ -375,6 +351,12 @@ export default function TeacherCoursesManagement({
                     </div>
                   }
                 />
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {dashboardMetrics.map((metric) => (
+                    <DashboardMetricCard key={metric.label} {...metric} />
+                  ))}
+                </div>
 
                 {visibleCourses.length === 0 ? (
                   <Text variant="small" className="text-gray-600">

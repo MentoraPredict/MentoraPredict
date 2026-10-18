@@ -50,6 +50,10 @@ export default function CourseCard({
     onClick(course.id);
   };
 
+  // Con métricas el periodo ya se muestra arriba; sin docente que mostrar el
+  // desplegable quedaría vacío, así que no se ofrece.
+  const hasDetails = showTeacherDetails || !metrics;
+
   const averageLabel =
     typeof course.currentAverage === "number"
       ? `${course.currentAverage.toFixed(2)} / 10`
@@ -169,51 +173,46 @@ export default function CourseCard({
         </div>
 
         {metrics ? (
-          <div className="grid grid-cols-3 gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <div>
-              <Text variant="caption" className="font-bold uppercase text-blue-700">
-                Promedio
-              </Text>
-              <Text variant="small" className="mt-1 font-semibold text-gray-900">
-                {metrics.averageLabel}
-              </Text>
-            </div>
-
-            <div>
-              <Text variant="caption" className="font-bold uppercase text-blue-700">
-                Estudiantes
-              </Text>
-              <Text variant="small" className="mt-1 font-semibold text-gray-900">
-                {metrics.enrolledCount}
-              </Text>
-            </div>
-
-            <div>
-              <Text variant="caption" className="font-bold uppercase text-blue-700">
-                Periodo
-              </Text>
-              <Text variant="small" className="mt-1 font-semibold text-gray-900">
-                {course.semester}
-              </Text>
-            </div>
-          </div>
+          <dl className="divide-y divide-gray-100 text-sm">
+            {[
+              ["Promedio", metrics.averageLabel],
+              ["Estudiantes", String(metrics.enrolledCount)],
+              ["Periodo", course.semester],
+              ["Descripción", course.description],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-baseline justify-between gap-6 py-2">
+                <dt className="shrink-0 text-gray-500">{label}</dt>
+                <dd
+                  className={`min-w-0 text-right text-gray-900 ${
+                    label === "Descripción"
+                      ? "line-clamp-3 text-gray-600"
+                      : "font-semibold"
+                  }`}
+                >
+                  {value || "—"}
+                </dd>
+              </div>
+            ))}
+          </dl>
         ) : null}
 
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            setShowDetails((current) => !current);
-          }}
-          className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left transition hover:bg-gray-100"
-        >
-          <Text variant="small" className="font-semibold text-gray-800">
-            Detalles académicos
-          </Text>
-          {showDetails ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
-        </button>
+        {hasDetails ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setShowDetails((current) => !current);
+            }}
+            className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left transition hover:bg-gray-100"
+          >
+            <Text variant="small" className="font-semibold text-gray-800">
+              Detalles académicos
+            </Text>
+            {showDetails ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
+          </button>
+        ) : null}
 
-        {showDetails ? (
+        {hasDetails && showDetails ? (
           <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 sm:grid-cols-2">
             {showTeacherDetails ? (
               <div>
@@ -246,6 +245,7 @@ export default function CourseCard({
           </div>
         ) : null}
 
+        {!metrics ? (
         <div>
           <Text
             variant="caption"
@@ -270,6 +270,7 @@ export default function CourseCard({
             {course.description}
           </Text>
         </div>
+        ) : null}
       </div>
 
       <div className="mt-auto flex flex-wrap justify-center gap-3 pt-6">

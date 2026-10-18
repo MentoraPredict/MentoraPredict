@@ -478,6 +478,57 @@ export async function getTeacherSubjectAnalytics(subjectId: string) {
   };
 }
 
+/** Estado emocional y actividad de ingresos de un estudiante, para su docente. */
+export interface StudentRiskSignals {
+  emotional: {
+    emotionalState: "GREAT" | "GOOD" | "NEUTRAL" | "BAD" | "CRITICAL";
+    academicWeek: number;
+    academicYear: number;
+  } | null;
+  loginActivity: {
+    lastLoginAt: string | null;
+    loginCountLast30Days: number;
+  } | null;
+}
+
+export async function getStudentRiskSignals(
+  subjectId: string,
+  studentId: string
+): Promise<StudentRiskSignals> {
+  const response = await api.get<StudentRiskSignals>(
+    endpoints.analytics.studentRiskSignals(subjectId, studentId)
+  );
+
+  return response.data;
+}
+
+/** Evolución semanal de un estudiante en la materia, vista por su docente. */
+export async function getTeacherStudentProgress(
+  subjectId: string,
+  studentId: string
+): Promise<{
+  progress: CourseProgressPoint[];
+  trend: SubjectWeeklyProgressResponse["trend"];
+}> {
+  const response = await api.get<SubjectWeeklyProgressResponse>(
+    endpoints.analytics.subjectProgress(subjectId),
+    { params: { studentId } }
+  );
+
+  return {
+    progress: withProjection(
+      response.data.data.map((point) => ({
+        week: `S${point.academicWeek}`,
+        actual: round2(point.averageGrade),
+        academicWeek: point.academicWeek,
+        academicYear: point.academicYear,
+      })),
+      response.data.trend
+    ),
+    trend: response.data.trend,
+  };
+}
+
 // Lightweight companion to getTeacherSubjectAnalytics for callers that only
 // need the course-level average (e.g. the admin course card), so they don't
 // pay for the alerts/predictions calls that function also makes.

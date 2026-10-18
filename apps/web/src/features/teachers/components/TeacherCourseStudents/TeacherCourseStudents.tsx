@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { FiGrid, FiList } from "react-icons/fi";
+import { useSearchParams } from "react-router-dom";
 
 import Text from "@/components/atoms/Text";
 import CollapsibleGroup from "@/components/molecules/CollapsibleGroup";
 import ListToolbar from "@/components/molecules/ListToolbar";
+import TeacherStudentRiskCards from "@/features/teachers/components/TeacherStudentRiskCards";
 import TeacherCourseStudentsTable from "@/features/teachers/components/TeacherCourseStudentsTable";
 import { getCourseEnrolledStudents } from "@/services/academic.service";
 import {
-  getTeacherStudentSubjectPrediction,
   getTeacherSubjectAnalytics,
   type TeacherStudentPrediction,
 } from "@/services/course-analytics.service";
@@ -27,6 +29,13 @@ const RISK_LABELS: Record<string, string> = {
 
 const RISK_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"];
 
+// Valor del filtro que agrupa los dos niveles que el Resumen cuenta como «alto».
+const HIGH_AND_CRITICAL = "HIGH,CRITICAL";
+const RISK_FILTER_OPTIONS = [
+  { value: HIGH_AND_CRITICAL, label: "Alto y crítico" },
+  ...RISK_ORDER.map((value) => ({ value, label: RISK_LABELS[value] })),
+];
+
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
@@ -45,13 +54,18 @@ export default function TeacherCourseStudents({
     TeacherStudentPrediction[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [regeneratingPredictionStudentId, setRegeneratingPredictionStudentId] =
-    useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [riskFilter, setRiskFilter] = useState("");
+  // El Resumen enlaza aquí con ?risk=... para abrir la lista ya filtrada.
+  const [searchParams] = useSearchParams();
+  const initialRisk = searchParams.get("risk") ?? "";
+  const [riskFilter, setRiskFilter] = useState(
+    RISK_FILTER_OPTIONS.some((option) => option.value === initialRisk)
+      ? initialRisk
+      : "",
+  );
   const [groupBy, setGroupBy] = useState("");
+  const [view, setView] = useState<"table" | "cards">("table");
 
   useEffect(() => {
     let isMounted = true;
@@ -106,7 +120,9 @@ export default function TeacherCourseStudents({
     const terms = normalize(search).split(/\s+/).filter(Boolean);
 
     return enrolledStudents.filter((student) => {
-      if (riskFilter && riskOf(student) !== riskFilter) return false;
+      if (riskFilter && !riskFilter.split(",").includes(riskOf(student))) {
+        return false;
+      }
 
       const haystack = normalize(
         [student.user.firstName, student.user.lastName, student.user.email]
@@ -135,45 +151,19 @@ export default function TeacherCourseStudents({
     setGroupBy("");
   };
 
-  const handleRegeneratePrediction = async (studentId: string) => {
-    setRegeneratingPredictionStudentId(studentId);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      const prediction = await getTeacherStudentSubjectPrediction(
-        courseId,
-        studentId,
-      );
-
-      if (!prediction) {
-        setError("No se obtuvo una recomendación para este estudiante.");
-        return;
-      }
-
-      setStudentPredictions((currentPredictions) => [
-        prediction,
-        ...currentPredictions.filter(
-          (currentPrediction) => currentPrediction.studentId !== studentId,
-        ),
-      ]);
-      setSuccessMessage("Recomendación actualizada.");
-    } catch {
-      setError("No se pudo actualizar la recomendación.");
-    } finally {
-      setRegeneratingPredictionStudentId(null);
-    }
-  };
-
-  const renderTable = (students: CourseEnrolledStudent[], bare = false) => (
+  const renderTable = (students: CourseEnrolledStudent[], bare = false) =>
+    view === "cards" ? (
+      <div className={bare ? "p-4" : ""}>
+        <TeacherStudentRiskCards courseId={courseId} students={students} />
+      </div>
+    ) : (
     <TeacherCourseStudentsTable
+      courseId={courseId}
       students={students}
       bare={bare}
       studentPredictionsById={studentPredictionsById}
-      regeneratingPredictionStudentId={regeneratingPredictionStudentId}
-      onRegeneratePrediction={handleRegeneratePrediction}
     />
-  );
+    );
 
   return (
     <div>
@@ -190,10 +180,7 @@ export default function TeacherCourseStudents({
               label: "Riesgo esperado",
               value: riskFilter,
               allLabel: "Todos los niveles",
-              options: RISK_ORDER.map((value) => ({
-                value,
-                label: RISK_LABELS[value],
-              })),
+              options: RISK_FILTER_OPTIONS,
               onChange: setRiskFilter,
             },
           ]}
@@ -202,6 +189,36 @@ export default function TeacherCourseStudents({
             options: [{ value: "risk", label: "Riesgo esperado" }],
             onChange: setGroupBy,
           }}
+          actions={
+            <div
+              role="group"
+              aria-label="Tipo de vista"
+              className="inline-flex h-12 overflow-hidden rounded-xl border border-gray-200 bg-white"
+            >
+              {(
+                [
+                  { value: "table", label: "Tabla", icon: FiList },
+                  { value: "cards", label: "Riesgo en tarjetas", icon: FiGrid },
+                ] as const
+              ).map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={view === value}
+                  title={label}
+                  onClick={() => setView(value)}
+                  className={`inline-flex items-center gap-2 px-4 text-sm font-medium transition ${
+                    view === value
+                      ? "bg-blue-700 text-white"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Icon size={16} aria-hidden="true" />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
+          }
         />
       </div>
 
@@ -209,14 +226,6 @@ export default function TeacherCourseStudents({
         <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-5 py-4">
           <Text variant="small" className="font-medium text-red-700">
             {error}
-          </Text>
-        </div>
-      ) : null}
-
-      {successMessage ? (
-        <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-5 py-4">
-          <Text variant="small" className="font-medium text-emerald-700">
-            {successMessage}
           </Text>
         </div>
       ) : null}
