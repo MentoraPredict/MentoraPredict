@@ -80,6 +80,7 @@ import {
   GetGradingComponentsUseCase,
   UpdateGradingComponentsUseCase,
   GetGradebookUseCase,
+  GetMyGradeBreakdownUseCase,
   CreateActivityUseCase,
   UpdateActivityUseCase,
   ToggleActivityUseCase,
@@ -160,7 +161,7 @@ import { TeacherObservationRepository } from "./infrastructure/persistence/teach
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { NotificationHttpClient } from "./infrastructure/adapters/notification-http.client";
-import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-image-storage.adapter";
+import { imageStorageProvider } from "./infrastructure/storage/image-storage.provider";
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
@@ -434,7 +435,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
     { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },
     { provide: "INotificationClientPort", useClass: NotificationHttpClient },
-    { provide: "IImageStoragePort", useClass: SupabaseImageStorageAdapter },
+    imageStorageProvider,
     RecordGradeUseCase,
     RegisterGradeUseCase,
     UpdateGradeUseCase,
@@ -504,6 +505,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     GetGradingComponentsUseCase,
     UpdateGradingComponentsUseCase,
     GetGradebookUseCase,
+  GetMyGradeBreakdownUseCase,
     CreateActivityUseCase,
     UpdateActivityUseCase,
     ToggleActivityUseCase,

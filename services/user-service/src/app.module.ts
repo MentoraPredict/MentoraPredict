@@ -27,7 +27,7 @@ import { GetUserUseCase } from "./application/use-cases/get-user.use-case";
 import { UploadAvatarUseCase } from "./application/use-cases/upload-avatar.use-case";
 import { DeleteAvatarUseCase } from "./application/use-cases/delete-avatar.use-case";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
-import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-image-storage.adapter";
+import { imageStorageProvider } from "./infrastructure/storage/image-storage.provider";
 
 @Module({
   imports: [
@@ -86,7 +86,7 @@ import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-i
     { provide: "IAuthSyncClient", useClass: AuthSyncClient },
     { provide: "IAcademicStatusClient", useClass: AcademicStatusHttpClient },
     { provide: "INotificationClient", useClass: NotificationHttpClient },
-    { provide: "IImageStoragePort", useClass: SupabaseImageStorageAdapter },
+    imageStorageProvider,
     GetUserUseCase,
     UpdateUserUseCase,
     SoftDeleteUserUseCase,
