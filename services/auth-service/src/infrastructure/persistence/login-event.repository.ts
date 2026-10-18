@@ -23,4 +23,20 @@ export class LoginEventRepository implements ILoginEventRepository {
     o.deviceType = event.deviceType;
     await this.repo.save(o);
   }
+
+  async summarize(
+    userId: string,
+    since: Date,
+  ): Promise<{ lastLoginAt: Date | null; count: number }> {
+    const [last, count] = await Promise.all([
+      this.repo.findOne({ where: { userId }, order: { occurredAt: "DESC" } }),
+      this.repo
+        .createQueryBuilder("event")
+        .where("event.user_id = :userId", { userId })
+        .andWhere("event.occurred_at >= :since", { since })
+        .getCount(),
+    ]);
+
+    return { lastLoginAt: last?.occurredAt ?? null, count };
+  }
 }

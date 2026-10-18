@@ -20,6 +20,7 @@ const mockCache   = (): jest.Mocked<ITokenCache>       => ({
 });
 const mockLoginEventRepo = (): jest.Mocked<ILoginEventRepository> => ({
   save: jest.fn().mockResolvedValue(undefined),
+  summarize: jest.fn(),
 });
 
 describe('LoginUserUseCase', () => {
