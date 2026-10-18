@@ -22,6 +22,7 @@ export class GetSubjectWeeklyProgressUseCase {
     subjectId: string,
     callerId: string,
     callerRole: string,
+    studentId?: string,
   ): Promise<{ data: SubjectWeeklyProgress[]; trend: SubjectTrendSummary | null }> {
     if (callerRole !== 'ADMIN') {
       const { isOwner } = await this.academic.getSubjectOwnership(callerId, subjectId);
@@ -30,8 +31,29 @@ export class GetSubjectWeeklyProgressUseCase {
       }
     }
 
-    const data = await this.metricsRepo.getWeeklyProgressBySubject(subjectId);
+    // Con `studentId` se devuelve la evolución de ese estudiante en la materia
+    // (la propiedad del curso ya se comprobó arriba), en lugar del promedio del grupo.
+    const data = studentId
+      ? await this.getStudentWeeklyProgress(studentId, subjectId)
+      : await this.metricsRepo.getWeeklyProgressBySubject(subjectId);
     return { data, trend: this.calculateTrend(data) };
+  }
+
+  private async getStudentWeeklyProgress(
+    studentId: string,
+    subjectId: string,
+  ): Promise<SubjectWeeklyProgress[]> {
+    const { items } = await this.metricsRepo.findByStudentSubjectPaginated(studentId, subjectId, {
+      page: 1,
+      limit: 100,
+    });
+
+    // Las métricas llegan de la más reciente a la más antigua.
+    return [...items].reverse().map((metric) => ({
+      academicYear: metric.academicYear,
+      academicWeek: metric.academicWeek,
+      averageGrade: metric.averageGrade ?? 0,
+    }));
   }
 
   // Mismo criterio que GetStudentSubjectMetricsUseCase.calculateTrend() —

@@ -68,6 +68,28 @@ describe('GetSubjectWeeklyProgressUseCase', () => {
     expect(academicClient.getSubjectOwnership).not.toHaveBeenCalled();
   });
 
+  it('returns one student\'s weekly evolution, oldest first, when studentId is given', async () => {
+    const metricsRepo = mockMetricsRepo();
+    metricsRepo.findByStudentSubjectPaginated.mockResolvedValue({
+      items: [
+        { academicYear: 2026, academicWeek: 2, averageGrade: 8 },
+        { academicYear: 2026, academicWeek: 1, averageGrade: null },
+      ] as never,
+      total: 2,
+    });
+    const academicClient = mockAcademicClient();
+    const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
+
+    const result = await useCase.execute('subj-1', 'teacher-1', 'TEACHER', 'student-1');
+
+    expect(result.data).toEqual([
+      { academicYear: 2026, academicWeek: 1, averageGrade: 0 },
+      { academicYear: 2026, academicWeek: 2, averageGrade: 8 },
+    ]);
+    expect(academicClient.getSubjectOwnership).toHaveBeenCalledWith('teacher-1', 'subj-1');
+    expect(metricsRepo.getWeeklyProgressBySubject).not.toHaveBeenCalled();
+  });
+
   it('computes an ASCENDING trend once at least 3 weeks are available', async () => {
     const metricsRepo = mockMetricsRepo();
     const risingProgress = [

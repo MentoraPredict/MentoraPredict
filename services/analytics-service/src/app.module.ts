@@ -25,6 +25,8 @@ import { DatasetVersionRepository } from "./infrastructure/persistence/dataset-v
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { MetricsCacheAdapter } from "./infrastructure/cache/metrics-cache.adapter";
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
+import { StudentSignalsHttpClient } from "./infrastructure/adapters/student-signals-http.client";
+import { GetStudentRiskSignalsUseCase } from "./application/use-cases/get-student-risk-signals.use-case";
 import { PredictionHttpClient } from "./infrastructure/adapters/prediction-http.client";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
@@ -150,6 +152,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     InternalJwtService,
     RolesGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
+  { provide: "IStudentSignalsClient", useClass: StudentSignalsHttpClient },
     { provide: "IPredictionClientPort", useClass: PredictionHttpClient },
     { provide: "IUserServiceClient", useClass: UserHttpClient },
     {
@@ -197,6 +200,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     GetStudentSubjectMetricsUseCase,
     GetSubjectMetricsSummaryUseCase,
     GetSubjectWeeklyProgressUseCase,
+  GetStudentRiskSignalsUseCase,
     GetLatestSubjectMetricUseCase,
     GetSubjectRiskUseCase,
     GetStudentSubjectsOverviewUseCase,
