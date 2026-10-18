@@ -238,8 +238,8 @@ export class AcademicController {
   // ─── Enrollments ──────────────────────────────────────────────────────────────
 
   @Post("enrollments")
-  @Roles("TEACHER", "ADMIN")
-  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (TEACHER: own courses only; ADMIN: any course)" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (ADMIN only; teachers no longer manage enrollment)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 409, description: "Already enrolled or no capacity" })
@@ -275,9 +275,9 @@ export class AcademicController {
   }
 
   @Post("subjects/:subjectId/enrollments/batch")
-  @Roles("TEACHER", "ADMIN")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Batch enroll multiple students in a subject (TEACHER: own courses only; ADMIN: any course)" })
+  @ApiOperation({ summary: "Batch enroll multiple students in a subject (ADMIN only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 404 })
@@ -293,8 +293,8 @@ export class AcademicController {
   }
 
   @Patch("enrollments/:enrollmentId/status")
-  @Roles("TEACHER", "ADMIN")
-  @ApiOperation({ summary: "Change enrollment status (TEACHER: own courses only)" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Change enrollment status (ADMIN only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
@@ -914,11 +914,11 @@ export class AcademicController {
   }
 
   @Post("subjects")
-  @Roles("TEACHER", "ADMIN")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary:
-      "Create a new subject (TEACHER creates their own; ADMIN must assign a teacherId)",
+      "Create a new subject (ADMIN only; the admin assigns the teacherId)",
   })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 400 })

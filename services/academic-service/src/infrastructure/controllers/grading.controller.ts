@@ -30,6 +30,7 @@ import {
   CreateActivityUseCase,
   GetGradebookUseCase,
   GetGradingComponentsUseCase,
+  GetMyGradeBreakdownUseCase,
   GetPeriodClosureUseCase,
   GetSectionPromotionUseCase,
   GetStudentResultsUseCase,
@@ -63,6 +64,7 @@ export class GradingController {
     private readonly getComponentsUC: GetGradingComponentsUseCase,
     private readonly updateComponentsUC: UpdateGradingComponentsUseCase,
     private readonly getGradebookUC: GetGradebookUseCase,
+    private readonly myBreakdownUC: GetMyGradeBreakdownUseCase,
     private readonly createActivityUC: CreateActivityUseCase,
     private readonly updateActivityUC: UpdateActivityUseCase,
     private readonly toggleActivityUC: ToggleActivityUseCase,
@@ -109,6 +111,19 @@ export class GradingController {
     @Req() req: JwtRequest,
   ) {
     return this.getGradebookUC.execute(subjectId, periodId, caller(req));
+  }
+
+  @Get('students/me/subjects/:subjectId/grade-breakdown')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: "How the student's own period grade is made up, by component and activity" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: 'Not enrolled in this course' })
+  getMyGradeBreakdown(
+    @Param('subjectId') subjectId: string,
+    @Query('periodId') periodId: string | undefined,
+    @Req() req: JwtRequest,
+  ) {
+    return this.myBreakdownUC.execute(subjectId, periodId, req.user?.sub ?? '');
   }
 
   @Post('subjects/:subjectId/activities')

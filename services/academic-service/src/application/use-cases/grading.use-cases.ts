@@ -278,6 +278,78 @@ export class GetGradebookUseCase {
   }
 }
 
+// ── Desglose de la nota para el propio estudiante ────────────────────────────
+
+export interface MyGradeBreakdownView {
+  subject: { id: string; name: string };
+  period: { id: string; name: string; number: number | null };
+  scale: Pick<GradingScale, 'minValue' | 'maxValue' | 'passingGrade' | 'decimals'>;
+  /** Promedio por componente del periodo y su peso; null si aún no tiene notas en él. */
+  components: Array<{ code: string; name: string; weight: number; average: number | null }>;
+  periodGrade: number | null;
+  activities: Array<{ id: string; name: string; componentCode: string; dueDate: string | null; grade: number | null }>;
+}
+
+@Injectable()
+export class GetMyGradeBreakdownUseCase {
+  constructor(
+    @Inject('ISubjectRepository') private readonly subjectRepo: ISubjectRepository,
+    @Inject('IAcademicPeriodRepository') private readonly periodRepo: IAcademicPeriodRepository,
+    @Inject('IAcademicStructureRepository') private readonly structure: IAcademicStructureRepository,
+    @Inject('IGradingRepository') private readonly grading: IGradingRepository,
+    private readonly calculator: GradingCalculator,
+  ) {}
+
+  /** Solo muestra las notas del estudiante que consulta, en un curso donde está matriculado. */
+  async execute(subjectId: string, periodId: string | undefined, studentId: string): Promise<MyGradeBreakdownView> {
+    const subject = await loadSchoolCourse(this.subjectRepo, subjectId);
+
+    const section = await this.structure.findSection(subject.sectionId as string);
+    const periods = section ? await this.periodRepo.findBySchoolYear(section.schoolYearId) : [];
+    const period = periodId ? periods.find((p) => p.id === periodId) : pickDefaultPeriod(periods);
+    if (!period) throw new NotFoundException('No se encontró el periodo');
+
+    const [activities, computed] = await Promise.all([
+      this.grading.listActivities(subjectId, period.id),
+      this.calculator.coursePeriod(subjectId, period.id),
+    ]);
+    const { config, studentIds, rows, byStudent } = computed;
+
+    if (!studentIds.includes(studentId)) {
+      throw new ForbiddenException('No estás matriculado en este curso');
+    }
+
+    const result = byStudent.get(studentId);
+    const myGrades = new Map(rows.filter((r) => r.studentId === studentId).map((r) => [r.activityId, r.value]));
+
+    return {
+      subject: { id: subject.id, name: subject.name },
+      period: { id: period.id, name: period.name, number: period.number },
+      scale: {
+        minValue: config.scale.minValue,
+        maxValue: config.scale.maxValue,
+        passingGrade: config.scale.passingGrade,
+        decimals: config.scale.decimals,
+      },
+      components: config.components.map((c) => ({
+        code: c.code,
+        name: c.name,
+        weight: c.weight,
+        average: result?.componentAverages?.[c.code] ?? null,
+      })),
+      periodGrade: result?.value ?? null,
+      activities: activities
+        .filter((a) => a.isActive)
+        .map((a) => ({
+          id: a.id,
+          name: a.name,
+          componentCode: a.componentCode,
+          dueDate: a.dueDate ? isoDate(a.dueDate) : null,
+          grade: myGrades.get(a.id) ?? null,
+        })),
+    };
+  }
+}
 @Injectable()
 export class CreateActivityUseCase {
   constructor(
