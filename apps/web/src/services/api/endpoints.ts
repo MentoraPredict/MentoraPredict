@@ -87,6 +87,8 @@ export const endpoints = {
             `/v1/academic/periods/${periodId}/close`,
         reopenPeriod: (periodId: string) =>
             `/v1/academic/periods/${periodId}/reopen`,
+        myGradeBreakdown: (subjectId: string) =>
+            `/v1/academic/students/me/subjects/${subjectId}/grade-breakdown`,
         studentResults: (studentId: string) =>
             `/v1/academic/students/${studentId}/results`,
         sectionPromotion: (sectionId: string) =>
@@ -155,6 +157,9 @@ export const endpoints = {
             `/v1/prediction/students/me/subjects/${subjectId}/generate`,
         history: (studentId: string) =>
             `/v1/prediction/students/${studentId}/history`,
+        aiSettings: "/v1/prediction/ai-settings",
+        aiSettingsTest: "/v1/prediction/ai-settings/test",
+        aiUsage: "/v1/prediction/ai-settings/usage",
     },
     notifications: {
         mine: "/v1/notifications/me",

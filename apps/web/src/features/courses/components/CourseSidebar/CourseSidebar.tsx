@@ -35,7 +35,7 @@ export default function CourseSidebar({
         {
           to: `${basePath}/courses`,
           icon: <FiGrid size={18} />,
-          label: isTeacher ? "Panel docente" : "Panel academico",
+          label: "Inicio",
         },
         ...(courses.length > 0
           ? [

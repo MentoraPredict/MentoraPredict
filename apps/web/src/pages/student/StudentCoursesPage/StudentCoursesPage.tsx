@@ -10,7 +10,7 @@ export default function StudentCoursesPage() {
 
   return (
     <CourseAnalyticsLayout
-      title="Panel academico del estudiante"
+      title="Panel académico del estudiante"
       sidebar={<StudentMainSidebar courses={courses} />}
     >
       <StudentCoursesManagement

@@ -193,12 +193,12 @@ export default function StudentCourseUploadData({
       });
 
       setMessage(
-        "Registro semanal guardado. La analitica de la materia se recalculara automaticamente."
+        "Registro semanal guardado. La analítica de la materia se recalculará automáticamente."
       );
       setMessageTone("success");
     } catch {
       setMessage(
-        "No se pudo guardar el registro semanal. Revisa tu sesion e intenta nuevamente."
+        "No se pudo guardar el registro semanal. Revisa tu sesión e intenta nuevamente."
       );
       setMessageTone("error");
     } finally {
@@ -223,8 +223,8 @@ export default function StudentCourseUploadData({
             </Heading>
 
             <Text variant="small" className="mt-2 max-w-2xl text-gray-600">
-              Actualiza asistencia, cumplimiento, habitos de estudio y
-              comprension para que el acompanamiento academico sea mas preciso.
+              Actualiza asistencia, cumplimiento, hábitos de estudio y
+              comprensión para que el acompañamiento académico sea mas preciso.
             </Text>
           </div>
 

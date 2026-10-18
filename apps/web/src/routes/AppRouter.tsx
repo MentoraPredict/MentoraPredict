@@ -42,28 +42,22 @@ import TeacherCoursesPage from "@/pages/teacher/TeacherCoursesPage";
 import StudentCoursesPage from "@/pages/student/StudentCoursesPage";
 import StudentSurveyPage from "@/pages/student/StudentSurveyPage";
 import StudentSurveyWizardPage from "@/pages/student/StudentSurveyWizardPage";
-import StudentCalendarPage from "@/pages/student/StudentCalendarPage";
-import StudentTasksPage from "@/pages/student/StudentTasksPage";
-import StudentMaterialsPage from "@/pages/student/StudentMaterialsPage";
-import StudentEvaluationsPage from "@/pages/student/StudentEvaluationsPage";
 import StudentProgressPage from "@/pages/student/StudentProgressPage";
-import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage";
-import StudentAiChatPage from "@/pages/student/StudentAiChatPage";
 
 import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
 import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerformancePage";
 
-import TeacherCourseUploadDataPage from "@/pages/teacher/TeacherCourseUploadDataPage";
+import TeacherCourseDropoutRiskPage from "@/pages/teacher/TeacherCourseDropoutRiskPage";
 import TeacherCourseGradebookPage from "@/pages/teacher/TeacherCourseGradebookPage";
 import TeacherCourseAttendancePage from "@/pages/teacher/TeacherCourseAttendancePage";
 import StudentAttendancePage from "@/pages/student/StudentAttendancePage";
 import GuardianStudentAttendancePage from "@/pages/guardian/GuardianStudentAttendancePage";
 import AdminAlertsPage from "@/pages/admin/AdminAlertsPage";
+import AdminAiSettingsPage from "@/pages/admin/AdminAiSettingsPage";
 import AdminJustificationsPage from "@/pages/admin/AdminJustificationsPage";
 
 import TeacherCourseStudentsPage from "@/pages/teacher/TeacherCourseStudentsPage";
 
-import TeacherCourseDropoutRiskPage from "@/pages/teacher/TeacherCourseDropoutRiskPage";
 
 import TeacherCourseEditPage from "@/pages/teacher/TeacherCourseEditPage";
 
@@ -71,11 +65,10 @@ import TeacherProfilePage from "@/pages/teacher/TeacherProfilePage";
 import StudentProfilePage from "@/pages/student/StudentProfilePage";
 
 import StudentCoursePageLayout from "@/features/students/components/StudentCoursePageLayout";
-import StudentCourseActivitiesPage from "@/pages/student/StudentCourseActivitiesPage";
-import StudentCourseAiChatPage from "@/pages/student/StudentCourseAiChatPage";
-import StudentCourseEvaluationsPage from "@/pages/student/StudentCourseEvaluationsPage";
 import StudentCoursePerformancePage from "@/pages/student/StudentCoursePerformancePage";
+import StudentCourseComingSoonPage from "@/pages/student/StudentCourseComingSoonPage";
 import StudentCourseSurveyPage from "@/pages/student/StudentCourseSurveyPage";
+import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage";
 import StudentCourseUploadDataPage from "@/pages/student/StudentCourseUploadDataPage";
 
 const COURSE_TAB_SEGMENTS = new Set([
@@ -83,9 +76,11 @@ const COURSE_TAB_SEGMENTS = new Set([
   "upload-data",
   "activities",
   "evaluations",
+  "materials",
   "ai-chat",
   "students",
   "edit",
+  "syllabus",
   "dropout-risk",
   "gradebook",
   "attendance",
@@ -158,36 +153,16 @@ function AnimatedRoutes() {
               element={<StudentSurveyWizardPage />}
             />
             <Route
-              path={APP_PATHS.student.aiChat}
-              element={<StudentAiChatPage />}
-            />
-            <Route
-              path={APP_PATHS.student.calendar}
-              element={<StudentCalendarPage />}
-            />
-            <Route
-              path={APP_PATHS.student.tasks}
-              element={<StudentTasksPage />}
-            />
-            <Route
-              path={APP_PATHS.student.materials}
-              element={<StudentMaterialsPage />}
-            />
-            <Route
-              path={APP_PATHS.student.evaluations}
-              element={<StudentEvaluationsPage />}
-            />
-            <Route
               path={APP_PATHS.student.attendance}
               element={<StudentAttendancePage />}
             />
             <Route
-              path={APP_PATHS.student.progress}
-              element={<StudentProgressPage />}
-            />
-            <Route
               path={APP_PATHS.student.notifications}
               element={<StudentNotificationsPage />}
+            />
+            <Route
+              path={APP_PATHS.student.progress}
+              element={<StudentProgressPage />}
             />
             <Route
               path={APP_PATHS.student.courseDetail}
@@ -195,9 +170,10 @@ function AnimatedRoutes() {
             >
               <Route path="performance" element={<StudentCoursePerformancePage />} />
               <Route path="upload-data" element={<StudentCourseUploadDataPage />} />
-              <Route path="activities" element={<StudentCourseActivitiesPage />} />
-              <Route path="evaluations" element={<StudentCourseEvaluationsPage />} />
-              <Route path="ai-chat" element={<StudentCourseAiChatPage />} />
+              <Route path="activities" element={<StudentCourseComingSoonPage section="activities" />} />
+              <Route path="evaluations" element={<StudentCourseComingSoonPage section="evaluations" />} />
+              <Route path="materials" element={<StudentCourseComingSoonPage section="materials" />} />
+              <Route path="ai-chat" element={<StudentCourseComingSoonPage section="ai-chat" />} />
               <Route path="survey/:surveyId" element={<StudentCourseSurveyPage />} />
             </Route>
           </Route>
@@ -218,9 +194,11 @@ function AnimatedRoutes() {
               <Route path="performance" element={<TeacherCoursePerformancePage />} />
               <Route path="gradebook" element={<TeacherCourseGradebookPage />} />
               <Route path="attendance" element={<TeacherCourseAttendancePage />} />
-              <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
-              <Route path="students" element={<TeacherCourseStudentsPage />} />
+              {/* Rutas anteriores: se conservan para enlaces guardados. */}
+              <Route path="syllabus" element={<Navigate to="../edit" replace />} />
+              <Route path="upload-data" element={<Navigate to="../gradebook" replace />} />
               <Route path="dropout-risk" element={<TeacherCourseDropoutRiskPage />} />
+              <Route path="students" element={<TeacherCourseStudentsPage />} />
               <Route path="edit" element={<TeacherCourseEditPage />} />
             </Route>
           </Route>
@@ -276,6 +254,7 @@ function AnimatedRoutes() {
               element={<Navigate to={APP_PATHS.admin.users} replace />}
             />
             <Route path={APP_PATHS.admin.users} element={<AdminUsersPage />} />
+            <Route path={APP_PATHS.admin.ai} element={<AdminAiSettingsPage />} />
             <Route
               path={APP_PATHS.admin.userDetail}
               element={<AdminUserEditPage />}

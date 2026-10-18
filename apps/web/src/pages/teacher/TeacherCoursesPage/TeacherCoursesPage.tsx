@@ -29,10 +29,7 @@ export default function TeacherCoursesPage() {
         />
       }
     >
-      <TeacherCoursesManagement
-        teacherName={teacherName}
-        courseState={courseState}
-      />
+      <TeacherCoursesManagement courseState={courseState} />
     </CourseAnalyticsLayout>
   );
 }

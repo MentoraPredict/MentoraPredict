@@ -3,11 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import {
   FiAward,
   FiCalendar,
+  FiEye,
   FiHash,
   FiRefreshCw,
   FiTrendingUp,
   FiUser,
-  FiUsers,
 } from "react-icons/fi";
 import { AxiosError } from "axios";
 
@@ -16,7 +16,6 @@ import Heading from "@/components/atoms/Heading";
 import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
 import AiRecommendationPanel from "@/features/courses/components/AiRecommendationPanel";
-import ComparativeMetricsPanel from "@/features/courses/components/ComparativeMetricsPanel";
 import CourseAlertsPanel from "@/features/courses/components/CourseAlertsPanel";
 import CourseProgressChart from "@/features/courses/components/CourseProgressChart";
 import GradeBreakdownDonutChart from "@/features/courses/components/GradeBreakdownDonutChart";
@@ -26,11 +25,12 @@ import type { DashboardMetricTone } from "@/features/dashboard/components/Dashbo
 import { getAverageTone } from "@/features/dashboard/utils/metricTone";
 import { getRiskPresentation } from "@/features/dashboard/utils/riskLevelPresentation";
 import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
-import useCoursePerformanceExtras from "@/features/students/hooks/useCoursePerformanceExtras";
+import useMyGradeBreakdown from "@/features/students/hooks/useMyGradeBreakdown";
+import useStudentAttendance from "@/features/students/hooks/useStudentAttendance";
 import useStudentCoursePerformance from "@/features/students/hooks/useStudentCoursePerformance";
-import { estimateRiskProbabilityPercent } from "@/features/students/mocks/coursePerformanceExtras.mock";
 import { buildPeriodProgress } from "@/utils/buildPeriodProgress";
 import { MAX_GRADE } from "@/utils/gradeScale";
+import { deriveRiskCauses } from "@/features/students/utils/deriveRiskCauses";
 import { deriveStrengthsAndOpportunities } from "@/features/students/utils/deriveStrengthsOpportunities";
 import {
   getLatestSubjectAiPrediction,
@@ -70,17 +70,13 @@ export default function StudentCoursePerformance({
 }: StudentCoursePerformanceProps) {
   const { data, isLoading, error, reload } =
     useStudentCoursePerformance(courseId);
-  const extras = useCoursePerformanceExtras(
-    courseId,
-    data?.average ?? 0,
-    data?.risk.riskLevel ?? "UNKNOWN",
-    data?.risk.factors.attendanceRate ?? null,
-  );
   const { data: activePeriod } = useQuery({
     queryKey: ["academic-period", "active"],
     queryFn: getActiveAcademicPeriod,
   });
   const user = useAuthStore((state) => state.user);
+  const attendanceReport = useStudentAttendance(user?.id);
+  const gradeBreakdown = useMyGradeBreakdown(courseId);
   const [aiPrediction, setAiPrediction] = useState<AiPrediction | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
@@ -128,11 +124,11 @@ export default function StudentCoursePerformance({
       ) {
         setAiError(
           (requestError.response.data as { message?: string })?.message ??
-            "Ya generaste una recomendacion para esta materia recientemente. Intenta mas tarde.",
+            "Ya generaste una recomendación para esta materia recientemente. Inténtalo más tarde.",
         );
       } else {
         setAiError(
-          "No se pudo generar la recomendacion con IA. Intenta nuevamente.",
+          "No se pudo generar la recomendación con IA. Inténtalo nuevamente.",
         );
       }
     } finally {
@@ -165,21 +161,29 @@ export default function StudentCoursePerformance({
   });
   const riskLevel = data.risk.riskLevel ?? "UNKNOWN";
   const riskPresentation = getRiskPresentation(riskLevel);
-  const riskProbabilityPercent = estimateRiskProbabilityPercent(riskLevel, courseId);
 
-  const classAverage = extras.comparative.data?.classAverage ?? null;
-  const averageHint =
-    classAverage === null
-      ? "Comparando con el promedio de la clase…"
-      : `${data.average < classAverage ? "Debajo" : "Encima"} del promedio de la clase (${classAverage.toFixed(2)})`;
-
-  const attendanceDetail = extras.attendance.data;
-  const attendanceHint = !attendanceDetail
-    ? "Calculando asistencia…"
-    : attendanceDetail.isBelowThreshold
-      ? `Por debajo del ${attendanceDetail.recommendedThresholdPercent}% recomendado`
-      : `${attendanceDetail.sessionsAttended} de ${attendanceDetail.sessionsTotal} clases asistidas`;
-
+  // Asistencia real de la materia, tomada del registro del docente.
+  const courseAttendance = attendanceReport.data?.courses.find(
+    (item) => item.subjectId === courseId,
+  );
+  const sessionsHeld = courseAttendance?.summary.held ?? 0;
+  const sessionsAttended = sessionsHeld - (courseAttendance?.summary.absences ?? 0);
+  const attendanceRate =
+    sessionsHeld > 0 ? Math.round((sessionsAttended / sessionsHeld) * 100) : null;
+  const riskCauses = deriveRiskCauses({
+    riskLevel,
+    average: data.average,
+    trendClassification: data.trend?.classification,
+    factors: data.risk.factors,
+    attendanceStatus: courseAttendance?.status,
+    unjustifiedPct: courseAttendance?.summary.unjustifiedPct,
+    maxUnjustifiedPct: attendanceReport.data?.rule.maxPct,
+  });
+  const comprehension = data.risk.factors.comprehensionAvg;
+  const attendanceHint =
+    attendanceRate === null
+      ? "Aún no hay clases registradas"
+      : `${sessionsAttended} de ${sessionsHeld} clases asistidas`;
   const periodProgress = buildPeriodProgress(
     data.progress,
     activePeriod?.startDate ?? null,
@@ -228,7 +232,7 @@ export default function StudentCoursePerformance({
             className="gap-2 px-5 py-2 text-sm"
           >
             <FiRefreshCw size={16} />
-            Recargar analitica
+            Recargar analítica
           </Button>
         </div>
       </MotionCard>
@@ -237,7 +241,7 @@ export default function StudentCoursePerformance({
         <CircularGaugeCard
           label="Mi promedio en la materia"
           value={data.average.toFixed(2)}
-          hint={averageHint}
+          hint="Escala 0-10"
           icon={FiAward}
           tone={getAverageTone(data.average)}
           percentage={(data.average / MAX_GRADE) * 100}
@@ -245,12 +249,25 @@ export default function StudentCoursePerformance({
 
         <CircularGaugeCard
           label="Asistencia"
-          value={attendanceDetail ? `${attendanceDetail.ratePercent}%` : "--"}
+          value={attendanceRate === null ? "--" : `${attendanceRate}%`}
           hint={attendanceHint}
           icon={FiCalendar}
-          tone={attendanceTone(attendanceDetail?.ratePercent ?? null)}
-          percentage={attendanceDetail?.ratePercent ?? 0}
-          isLoading={extras.attendance.isLoading}
+          tone={attendanceTone(attendanceRate)}
+          percentage={attendanceRate ?? 0}
+          isLoading={attendanceReport.isLoading}
+        />
+
+        <CircularGaugeCard
+          label="Comprensión de los temas"
+          value={comprehension === null ? "--" : `${Math.round(comprehension)}%`}
+          hint={
+            comprehension === null
+              ? "Responde la encuesta del sílabo para verla"
+              : "Lo que tú reportas de los temas del sílabo"
+          }
+          icon={FiEye}
+          tone={getAverageTone(comprehension === null ? null : comprehension / 10)}
+          percentage={comprehension ?? 0}
         />
 
         <div className={kpiCardShellClassName}>
@@ -267,36 +284,16 @@ export default function StudentCoursePerformance({
             {SHORT_RISK_LABELS[riskLevel]}
           </span>
 
-          <Text variant="caption" className="mt-3 flex items-center gap-1 text-gray-500">
-            Probabilidad de riesgo: {riskProbabilityPercent}%
+          <Text variant="caption" className="mt-3 font-semibold text-gray-600">
+            {riskLevel === "LOW" || riskLevel === "UNKNOWN" ? "Situación" : "Por qué"}
           </Text>
-        </div>
-
-        <div className={kpiCardShellClassName}>
-          <div className="flex items-center gap-2 text-gray-500">
-            <FiUsers size={16} />
-            <Text variant="caption" className="font-bold uppercase text-gray-500">
-              Posición en la materia
-            </Text>
-          </div>
-
-          {extras.ranking.isLoading || !extras.ranking.data ? (
-            <Heading as="h3" className="mt-2 text-gray-300">
-              --
-            </Heading>
-          ) : (
-            <>
-              <Heading as="h3" className="mt-2 text-gray-900">
-                {extras.ranking.data.position}{" "}
-                <span className="text-lg font-medium text-gray-400">
-                  / {extras.ranking.data.totalStudents}
-                </span>
-              </Heading>
-              <Text variant="caption" className="mt-2 font-semibold text-emerald-600">
-                Mejor que el {extras.ranking.data.betterThanPercent}% de la clase
-              </Text>
-            </>
-          )}
+          <ul className="mt-1 list-disc space-y-1 pl-4">
+            {riskCauses.map((cause) => (
+              <li key={cause} className="text-xs text-gray-600">
+                {cause}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
@@ -308,23 +305,16 @@ export default function StudentCoursePerformance({
           classification={data.trend?.classification}
         />
         <GradeBreakdownDonutChart
-          breakdown={extras.gradeBreakdown.data}
-          average={data.average}
-          isLoading={extras.gradeBreakdown.isLoading}
+          breakdown={gradeBreakdown.breakdown}
+          isLoading={gradeBreakdown.isLoading}
+          hasError={gradeBreakdown.hasError}
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <StrengthsOpportunitiesPanel
-          strengths={strengthsAndOpportunities.strengths}
-          opportunities={strengthsAndOpportunities.opportunities}
-        />
-        <ComparativeMetricsPanel
-          metrics={extras.comparative.data}
-          isLoading={extras.comparative.isLoading}
-        />
-      </div>
-
+      <StrengthsOpportunitiesPanel
+        strengths={strengthsAndOpportunities.strengths}
+        opportunities={strengthsAndOpportunities.opportunities}
+      />
       <div className="space-y-6">
         <CourseAlertsPanel
           alerts={data.alerts}
@@ -332,14 +322,14 @@ export default function StudentCoursePerformance({
         />
 
         <AiRecommendationPanel
-          title="Recomendacion con IA para esta materia"
-          description="Basada en tu avance semanal y el silabo de la materia"
+          title="Recomendación con IA para esta materia"
+          description="Basada en tu avance semanal y el sílabo de la materia"
           prediction={aiPrediction}
           isLoading={isLoadingAi}
           isGenerating={isGeneratingAi}
           error={aiError}
-          emptyMessage="Aun no has generado una recomendacion con IA para esta materia. Presiona el boton para generar una basada en tu avance semanal y el silabo."
-          generateLabel="Generar recomendacion para esta materia"
+          emptyMessage="Aún no has generado una recomendación con IA para esta materia. Presiona el botón para generar una basada en tu avance semanal y el sílabo."
+          generateLabel="Generar recomendación para esta materia"
           onGenerate={() => {
             void handleGenerateSubjectAiPrediction();
           }}

@@ -4,11 +4,11 @@ import {
   FiBookOpen,
   FiCheckSquare,
   FiClipboard,
-  FiEdit3,
+  FiFolder,
   FiMessageCircle,
+  FiSettings,
   FiSmile,
   FiTrendingDown,
-  FiUploadCloud,
   FiUserCheck,
   FiUsers,
 } from "react-icons/fi";
@@ -18,6 +18,7 @@ import {
   getStudentCourseActivitiesPath,
   getStudentCourseAiChatPath,
   getStudentCourseEvaluationsPath,
+  getStudentCourseMaterialsPath,
   getStudentCoursePerformancePath,
   getStudentCourseSurveyPath,
   getTeacherCourseAttendancePath,
@@ -26,7 +27,6 @@ import {
   getTeacherCourseGradebookPath,
   getTeacherCoursePerformancePath,
   getTeacherCourseStudentsPath,
-  getTeacherCourseUploadDataPath,
 } from "@/routes/paths";
 
 type CourseActionsToolbarMode = "teacher" | "student";
@@ -46,7 +46,7 @@ function getTeacherActions(courseId: string): ToolbarAction[] {
   return [
     {
       to: getTeacherCoursePerformancePath(courseId),
-      label: "Rendimiento",
+      label: "Resumen",
       icon: <FiBarChart2 size={16} />,
     },
     {
@@ -60,11 +60,6 @@ function getTeacherActions(courseId: string): ToolbarAction[] {
       icon: <FiUserCheck size={16} />,
     },
     {
-      to: getTeacherCourseUploadDataPath(courseId),
-      label: "Subir datos",
-      icon: <FiUploadCloud size={16} />,
-    },
-    {
       to: getTeacherCourseStudentsPath(courseId),
       label: "Estudiantes",
       icon: <FiUsers size={16} />,
@@ -76,8 +71,8 @@ function getTeacherActions(courseId: string): ToolbarAction[] {
     },
     {
       to: getTeacherCourseEditPath(courseId),
-      label: "Editar curso",
-      icon: <FiEdit3 size={16} />,
+      label: "Configuración",
+      icon: <FiSettings size={16} />,
     },
   ];
 }
@@ -86,17 +81,12 @@ function getStudentActions(courseId: string): ToolbarAction[] {
   return [
     {
       to: getStudentCoursePerformancePath(courseId),
-      label: "Rendimiento",
+      label: "Resumen",
       icon: <FiBarChart2 size={16} />,
     },
     {
-      to: getStudentCourseSurveyPath(courseId, "syllabus-comprehension"),
-      label: "Encuesta del sílabo",
-      icon: <FiSmile size={16} />,
-    },
-    {
       to: getStudentCourseActivitiesPath(courseId),
-      label: "Actividades",
+      label: "Actividades y tareas",
       icon: <FiCheckSquare size={16} />,
     },
     {
@@ -105,13 +95,22 @@ function getStudentActions(courseId: string): ToolbarAction[] {
       icon: <FiClipboard size={16} />,
     },
     {
+      to: getStudentCourseMaterialsPath(courseId),
+      label: "Materiales y temas",
+      icon: <FiFolder size={16} />,
+    },
+    {
+      to: getStudentCourseSurveyPath(courseId, "syllabus-comprehension"),
+      label: "Encuesta del sílabo",
+      icon: <FiSmile size={16} />,
+    },
+    {
       to: getStudentCourseAiChatPath(courseId),
-      label: "Charlar con IA",
+      label: "Asistente con IA",
       icon: <FiMessageCircle size={16} />,
     },
   ];
 }
-
 export default function CourseActionsToolbar({
   mode,
   courseId,

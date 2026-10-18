@@ -1,10 +1,8 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
-import Input from "@/components/atoms/Input";
-import Label from "@/components/atoms/Label";
 import Text from "@/components/atoms/Text";
 import Textarea from "@/components/atoms/Textarea";
 import ImageUploadPreview from "@/components/molecules/ImageUploadPreview";
@@ -21,12 +19,30 @@ interface TeacherCourseEditProps {
 
 function getSaveErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
-    return `No se pudieron guardar los cambios. Codigo HTTP: ${
+    return `No se pudieron guardar los cambios. Código HTTP: ${
       error.response?.status ?? "desconocido"
     }.`;
   }
 
   return "No se pudieron guardar los cambios. Intenta nuevamente.";
+}
+
+interface ReadOnlyFieldProps {
+  label: string;
+  value: string;
+}
+
+function ReadOnlyField({ label, value }: ReadOnlyFieldProps) {
+  return (
+    <div>
+      <Text variant="caption" className="font-bold uppercase text-gray-500">
+        {label}
+      </Text>
+      <Text variant="small" className="mt-1 text-gray-900">
+        {value || "—"}
+      </Text>
+    </div>
+  );
 }
 
 export default function TeacherCourseEdit({
@@ -36,137 +52,102 @@ export default function TeacherCourseEdit({
   onUploadImage,
   onDeleteImage,
 }: TeacherCourseEditProps) {
-  const [courseName, setCourseName] = useState(course.name);
   const [description, setDescription] = useState(course.description);
-  const [isEditingName, setIsEditingName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState(course.imageUrl);
 
+  const previewUrl = useMemo(
+    () => (selectedImage ? URL.createObjectURL(selectedImage) : null),
+    [selectedImage],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const hasChanges =
+    description.trim() !== (course.description ?? "").trim() ||
+    selectedImage !== null;
+
   const handleCancel = () => {
-    setCourseName(course.name);
     setDescription(course.description);
-    setIsEditingName(false);
     setError(null);
     setSuccessMessage(null);
     setSelectedImage(null);
-    setImageUrl(course.imageUrl);
   };
 
   const handleSave = async () => {
-    const normalizedName = courseName.trim();
-
-    if (!normalizedName) {
-      setError("El nombre del curso es obligatorio.");
-      return;
-    }
-
     setError(null);
     setSuccessMessage(null);
 
     try {
-      await onSave({
-        name: normalizedName,
-        description: description.trim(),
-      });
+      if (description.trim() !== (course.description ?? "").trim()) {
+        await onSave({ name: course.name, description: description.trim() });
+        setDescription(description.trim());
+      }
       if (selectedImage) {
         setImageUrl(await onUploadImage(selectedImage));
         setSelectedImage(null);
       }
-      setCourseName(normalizedName);
-      setDescription(description.trim());
-      setIsEditingName(false);
-      setSuccessMessage("Curso actualizado correctamente.");
+      setSuccessMessage("Cambios guardados correctamente.");
     } catch (saveError) {
       setError(getSaveErrorMessage(saveError));
     }
   };
 
   return (
-    <section
-      className="
-                rounded-2xl
-                border
-                border-gray-200
-                bg-white
-                p-8
-                shadow-sm
-            "
-    >
-      <div>
-        <ImageUploadPreview
-          imageUrl={imageUrl}
-          alt={`Portada de ${courseName}`}
-          helperText="Cambiar portada del curso"
-          onChangeImage={(file) => setSelectedImage(file)}
-        />
-        {imageUrl ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-3 px-4 py-2 text-sm"
-            disabled={isSaving}
-            onClick={async () => {
-              try {
-                await onDeleteImage();
-                setImageUrl(undefined);
-                setSelectedImage(null);
-                setSuccessMessage("Portada eliminada correctamente.");
-              } catch (deleteError) {
-                setError(getSaveErrorMessage(deleteError));
-              }
-            }}
-          >
-            Eliminar portada
-          </Button>
-        ) : null}
+    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+      <Heading as="h4" className="text-gray-900">
+        Configuración de la materia
+      </Heading>
+      <Text variant="small" className="mt-2 text-gray-600">
+        Solo puedes cambiar la portada y la descripción. El resto de los datos
+        los define la administración.
+      </Text>
 
-        <div className="pt-4">
-          {isEditingName ? (
-            <div className="max-w-md">
-              <Label htmlFor="courseName">Nombre del curso</Label>
-
-              <Input
-                id="courseName"
-                value={courseName}
-                onChange={(event) => {
-                  setCourseName(event.target.value);
-                }}
-              />
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditingName(false);
-                }}
-                className="mt-2"
-              >
-                <Text variant="caption" className="font-semibold text-blue-700">
-                  Confirmar nombre
-                </Text>
-              </button>
-            </div>
-          ) : (
-            <>
-              <Heading as="h3" className="text-gray-900">
-                {courseName}
-              </Heading>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditingName(true);
-                }}
-                className="mt-2"
-              >
-                <Text variant="caption" className="font-semibold text-blue-700">
-                  ¿Editar nombre del curso?
-                </Text>
-              </button>
-            </>
-          )}
+      <div className="mt-6 grid gap-8 md:grid-cols-[auto_1fr]">
+        <div>
+          <ImageUploadPreview
+            imageUrl={previewUrl ?? imageUrl}
+            alt={`Portada de ${course.name}`}
+            helperText="Cambiar portada de la materia"
+            onChangeImage={(file) => setSelectedImage(file)}
+          />
+          {imageUrl && !selectedImage ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 px-4 py-2 text-sm"
+              disabled={isSaving}
+              onClick={async () => {
+                try {
+                  await onDeleteImage();
+                  setImageUrl(undefined);
+                  setSuccessMessage("Portada eliminada correctamente.");
+                } catch (deleteError) {
+                  setError(getSaveErrorMessage(deleteError));
+                }
+              }}
+            >
+              Eliminar portada
+            </Button>
+          ) : null}
         </div>
+
+        <dl className="grid content-start gap-4 sm:grid-cols-2">
+          <ReadOnlyField label="Materia" value={course.name} />
+          <ReadOnlyField label="Código" value={course.code ?? ""} />
+          <ReadOnlyField label="Periodo" value={course.semester} />
+          <ReadOnlyField label="Docente" value={course.teacherName} />
+          <ReadOnlyField
+            label="Estudiantes matriculados"
+            value={String(course.enrolledCount ?? 0)}
+          />
+        </dl>
       </div>
 
       {error ? (
@@ -187,50 +168,48 @@ export default function TeacherCourseEdit({
 
       <div className="mt-8">
         <Heading as="h5" className="text-gray-900">
-          Descripción del curso
+          Descripción de la materia
         </Heading>
 
         <Textarea
-          rows={7}
+          rows={6}
           maxLength={500}
           value={description}
           onChange={(event) => {
             setDescription(event.target.value);
+            setSuccessMessage(null);
           }}
           placeholder="Descripción"
           className="mt-4"
         />
 
-        <div className="mt-2 flex items-center justify-between">
-          <button type="button">
-            <Text variant="caption" className="font-semibold text-blue-700">
-              Cambiar la descripción
-            </Text>
-          </button>
-
+        <div className="mt-2 flex justify-end">
           <Text variant="caption">{description.length} / 500</Text>
         </div>
       </div>
 
-      <div className="mt-8 flex justify-center gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleCancel}
-          className="min-w-28"
-        >
-          Cancelar
-        </Button>
+      {hasChanges ? (
+        <div className="mt-6 flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSaving}
+            className="min-w-28"
+          >
+            Cancelar
+          </Button>
 
-        <Button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving || !courseName.trim()}
-          className="min-w-28"
-        >
-          {isSaving ? "Guardando..." : "Guardar"}
-        </Button>
-      </div>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="min-w-28"
+          >
+            {isSaving ? "Guardando..." : "Guardar"}
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }

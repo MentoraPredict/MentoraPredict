@@ -4,9 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 import CourseAlertsPanel from "@/features/courses/components/CourseAlertsPanel";
-import CourseAverageChart from "@/features/courses/components/CourseAverageChart";
 import CourseProgressChart from "@/features/courses/components/CourseProgressChart";
 import CourseRecommendationsPanel from "@/features/courses/components/CourseRecommendationsPanel";
+import { FiAward, FiUsers } from "react-icons/fi";
+
+import DashboardMetricCard from "@/features/dashboard/components/DashboardMetricCard";
+import { getAverageTone } from "@/features/dashboard/utils/metricTone";
 import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
 import useTeacherCourseAnalytics from "@/features/teachers/hooks/useTeacherCourseAnalytics";
 import { getActiveAcademicPeriod } from "@/services/student-performance.service";
@@ -24,16 +27,16 @@ const riskLabels = {
 
 const riskStyles = {
   high: {
-    button: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
-    active: "border-red-700 bg-red-700 text-white",
+    button: "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
+    active: "border-red-700 bg-red-700 text-white ring-2 ring-red-300 ring-offset-2",
   },
   medium: {
-    button: "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100",
-    active: "border-amber-600 bg-amber-600 text-white",
+    button: "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100",
+    active: "border-amber-600 bg-amber-600 text-white ring-2 ring-amber-300 ring-offset-2",
   },
   low: {
-    button: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-    active: "border-emerald-700 bg-emerald-700 text-white",
+    button: "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+    active: "border-emerald-700 bg-emerald-700 text-white ring-2 ring-emerald-300 ring-offset-2",
   },
 };
 
@@ -87,8 +90,8 @@ export default function TeacherCoursePerformance({
   if (isLoading) {
     return (
       <StudentPerformanceUnavailableCard
-        title="Cargando metricas"
-        description="Estamos consultando la informacion real del curso."
+        title="Cargando métricas"
+        description="Estamos consultando la información del curso."
       />
     );
   }
@@ -96,7 +99,7 @@ export default function TeacherCoursePerformance({
   if (error || !data) {
     return (
       <StudentPerformanceUnavailableCard
-        title="No se pudieron cargar las metricas"
+        title="No se pudieron cargar las métricas"
         description={error ?? "No existen datos disponibles."}
       />
     );
@@ -111,15 +114,31 @@ export default function TeacherCoursePerformance({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <DashboardMetricCard
+          label="Promedio del curso"
+          value={data.average.toFixed(2)}
+          hint="Escala 0-10, todos los estudiantes"
+          icon={FiAward}
+          tone={getAverageTone(data.average)}
+        />
+        <DashboardMetricCard
+          label="Estudiantes"
+          value={data.students.length.toString()}
+          hint="Matriculados en esta materia"
+          icon={FiUsers}
+          tone="neutral"
+        />
+      </div>
+
+      <div>
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="mb-5">
             <Heading as="h4" className="text-gray-900">
               Riesgo del curso
             </Heading>
             <Text variant="small" className="mt-2 text-gray-600">
-              Selecciona un nivel para ver que estudiantes estan clasificados
-              por prediction-service en esta materia.
+              Selecciona un nivel para ver qué estudiantes están clasificados en esa categoría en esta materia. La recomendación de cada uno aparece debajo de su nombre.
             </Text>
           </div>
 
@@ -134,14 +153,21 @@ export default function TeacherCoursePerformance({
                   onClick={() => {
                     setSelectedRiskGroup(riskGroup);
                   }}
+                  aria-pressed={isSelected}
                   className={`
+                    cursor-pointer
                     rounded-xl
-                    border
+                    border-2
                     px-4
                     py-3
-                    text-left
+                    text-center
                     font-semibold
+                    shadow-sm
                     transition
+                    hover:-translate-y-0.5
+                    hover:shadow-md
+                    active:translate-y-0
+                    active:shadow-sm
                     ${
                       isSelected
                         ? riskStyles[riskGroup].active
@@ -208,11 +234,6 @@ export default function TeacherCoursePerformance({
             )}
           </div>
         </section>
-
-        <CourseAverageChart
-          average={Number(data.average.toFixed(2))}
-          title="Promedio del curso"
-        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">

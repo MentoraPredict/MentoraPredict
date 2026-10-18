@@ -32,11 +32,11 @@ export default function StudentSyllabusSurveyPanel({
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div className="border-b border-gray-200 bg-blue-800 px-6 py-5">
         <Heading as="h5" className="text-white">
-          Comprension por tema
+          Comprensión por tema
         </Heading>
         <Text variant="small" className="mt-2 text-white/85">
-          Aqui aparece cada tema del sílabo cargado por tu docente. Para cada
-          uno, elige la carita que mejor represente tu comprension: del 1
+          Aquí aparece cada tema del sílabo cargado por tu docente. Para cada
+          uno, elige la carita que mejor represente tu comprensión: del 1
           (carita roja, muy bajo) al 5 (carita azul, muy alto).
         </Text>
       </div>

@@ -24,7 +24,6 @@ export interface CircularGaugeMetric {
   /** 0-100 — proporción del anillo a rellenar (estilo semáforo por color). */
   percentage: number;
   onClick?: () => void;
-  isMocked?: boolean;
   isLoading?: boolean;
 }
 
@@ -36,7 +35,6 @@ export default function CircularGaugeCard({
   tone,
   percentage,
   onClick,
-  isMocked = false,
   isLoading = false,
 }: CircularGaugeMetric) {
   const clampedPercentage = Math.max(0, Math.min(100, percentage));

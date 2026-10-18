@@ -6,6 +6,7 @@ import type {
   GradeEntry,
   Gradebook,
   GradingComponent,
+  MyGradeBreakdown,
   PeriodClosure,
   PromotionConfirmResult,
   PromotionDecisionPayload,
@@ -153,6 +154,17 @@ export async function confirmPromotion(
   const response = await api.post<PromotionConfirmResult[]>(
     endpoints.academic.sectionPromotion(sectionId),
     { decisions }
+  );
+
+  return response.data;
+}
+
+/** Cómo se forma la nota del periodo del propio estudiante en una materia. */
+export async function getMyGradeBreakdown(
+  subjectId: string
+): Promise<MyGradeBreakdown> {
+  const response = await api.get<MyGradeBreakdown>(
+    endpoints.academic.myGradeBreakdown(subjectId)
   );
 
   return response.data;

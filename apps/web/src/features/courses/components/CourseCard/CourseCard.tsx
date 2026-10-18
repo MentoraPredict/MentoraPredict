@@ -208,7 +208,7 @@ export default function CourseCard({
           className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left transition hover:bg-gray-100"
         >
           <Text variant="small" className="font-semibold text-gray-800">
-            Detalles academicos
+            Detalles académicos
           </Text>
           {showDetails ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
         </button>

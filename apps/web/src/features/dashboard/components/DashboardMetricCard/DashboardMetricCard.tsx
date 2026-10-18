@@ -20,7 +20,6 @@ export interface DashboardMetric {
   icon: IconType;
   tone: DashboardMetricTone;
   onClick?: () => void;
-  isMocked?: boolean;
   isLoading?: boolean;
 }
 
@@ -31,7 +30,6 @@ export default function DashboardMetricCard({
   icon: Icon,
   tone,
   onClick,
-  isMocked = false,
   isLoading = false,
 }: DashboardMetric) {
   return (

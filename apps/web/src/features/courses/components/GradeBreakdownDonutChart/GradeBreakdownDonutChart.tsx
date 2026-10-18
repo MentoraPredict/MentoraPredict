@@ -3,43 +3,56 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 
-import type { GradeComponentBreakdown } from "@/features/students/mocks/coursePerformanceExtras.mock";
+import type { MyGradeBreakdown } from "@/types/academic/grading.types";
 
 interface GradeBreakdownDonutChartProps {
-  breakdown: GradeComponentBreakdown[] | null;
-  average: number;
+  breakdown: MyGradeBreakdown | null;
   isLoading: boolean;
+  hasError?: boolean;
 }
 
-const COMPONENT_COLORS: Record<string, string> = {
-  tareas: "#2563eb",
-  quizzes: "#16a34a",
-  parciales: "#f97316",
-  proyecto: "#7c3aed",
-};
+const COLORS = ["#2563eb", "#16a34a", "#f97316", "#7c3aed", "#0891b2"];
 
+/**
+ * Cómo se forma la nota del periodo: el anillo reparte los pesos de cada
+ * componente y la lista muestra el promedio real del estudiante en cada uno.
+ */
 export default function GradeBreakdownDonutChart({
   breakdown,
-  average,
   isLoading,
+  hasError = false,
 }: GradeBreakdownDonutChartProps) {
-  const items = breakdown ?? [];
-  const chartData = items.map((item) => ({
-    name: item.label,
-    value: item.weightPercent,
-    color: COMPONENT_COLORS[item.id] ?? "#9ca3af",
+  const components = breakdown?.components ?? [];
+  const chartData = components.map((component, index) => ({
+    name: component.name,
+    value: component.weight,
+    color: COLORS[index % COLORS.length],
   }));
+  const decimals = breakdown?.scale.decimals ?? 2;
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <Heading as="h5" className="mb-5 text-gray-900">
-        Desglose de calificaciones
+      <Heading as="h5" className="text-gray-900">
+        Cómo se forma tu nota
       </Heading>
+      {breakdown ? (
+        <Text variant="caption" className="mb-5 mt-1 text-gray-500">
+          {breakdown.period.name}: cada componente pesa un porcentaje de la nota del periodo.
+        </Text>
+      ) : (
+        <div className="mb-5" />
+      )}
 
-      {isLoading || items.length === 0 ? (
-        <div className="flex h-48 items-center justify-center">
+      {isLoading ? (
+        <div className="flex h-40 items-center justify-center">
           <Text variant="small" className="text-gray-400">
-            Calculando desglose…
+            Calculando…
+          </Text>
+        </div>
+      ) : hasError || components.length === 0 ? (
+        <div className="flex h-40 items-center justify-center">
+          <Text variant="small" className="text-gray-500">
+            Todavía no hay notas para mostrar el desglose.
           </Text>
         </div>
       ) : (
@@ -64,31 +77,33 @@ export default function GradeBreakdownDonutChart({
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <Text variant="body" className="text-2xl font-bold text-gray-900">
-                {average.toFixed(2)}
+                {breakdown?.periodGrade === null || breakdown?.periodGrade === undefined
+                  ? "--"
+                  : breakdown.periodGrade.toFixed(decimals)}
               </Text>
               <Text variant="caption" className="text-gray-500">
-                Promedio
+                Nota del periodo
               </Text>
             </div>
           </div>
 
           <div className="w-full space-y-2">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
+            {components.map((component, index) => (
+              <div key={component.code} className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: COMPONENT_COLORS[item.id] ?? "#9ca3af" }}
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   />
-                  <Text variant="small" className="text-gray-700">
-                    {item.label}
+                  <Text variant="small" className="truncate text-gray-700">
+                    {component.name}
                   </Text>
-                  <Text variant="caption" className="text-gray-400">
-                    {item.weightPercent}%
+                  <Text variant="caption" className="shrink-0 text-gray-400">
+                    {component.weight}%
                   </Text>
                 </div>
-                <Text variant="small" className="font-semibold text-gray-900">
-                  {item.grade === null ? "--" : item.grade.toFixed(2)}
+                <Text variant="small" className="shrink-0 font-semibold text-gray-900">
+                  {component.average === null ? "--" : component.average.toFixed(decimals)}
                 </Text>
               </div>
             ))}

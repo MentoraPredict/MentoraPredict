@@ -5,7 +5,6 @@ import {
   FiAward,
   FiBookOpen,
   FiCalendar,
-  FiCheckCircle,
   FiChevronLeft,
   FiChevronRight,
   FiEye,
@@ -34,7 +33,7 @@ import DashboardMetricCard, {
   type DashboardMetric,
 } from "@/features/dashboard/components/DashboardMetricCard";
 import RiskOverviewBanner from "@/features/dashboard/components/RiskOverviewBanner";
-import useStudentDashboardKpis from "@/features/dashboard/hooks/useStudentDashboardKpis";
+import useStudentAttendance from "@/features/students/hooks/useStudentAttendance";
 import { computeAggregatedRisk } from "@/features/dashboard/utils/computeAggregatedRisk";
 import { getAverageTone, getCountTone } from "@/features/dashboard/utils/metricTone";
 import {
@@ -156,7 +155,7 @@ export default function StudentCoursesManagement({
       setPredictions(loadedPredictions);
     } catch {
       setInsightsError(
-        "No se pudo actualizar la analitica predictiva de tus materias."
+        "No se pudo actualizar la analítica predictiva de tus materias."
       );
     } finally {
       setIsLoadingInsights(false);
@@ -212,11 +211,11 @@ export default function StudentCoursesManagement({
       ) {
         setAiError(
           (requestError.response.data as { message?: string })?.message ??
-            "Ya generaste una recomendacion recientemente. Intenta mas tarde."
+            "Ya generaste una recomendación recientemente. Inténtalo más tarde."
         );
       } else {
         setAiError(
-          "No se pudo generar la recomendacion con IA. Intenta nuevamente."
+          "No se pudo generar la recomendación con IA. Inténtalo nuevamente."
         );
       }
     } finally {
@@ -270,7 +269,17 @@ export default function StudentCoursesManagement({
     [overview, coursesById]
   );
 
-  const dashboardKpis = useStudentDashboardKpis(courses);
+  const attendanceReport = useStudentAttendance(user?.id);
+  const attendanceTotals = useMemo(() => {
+    const courseRows = attendanceReport.data?.courses ?? [];
+    const held = courseRows.reduce((sum, row) => sum + row.summary.held, 0);
+    const absences = courseRows.reduce((sum, row) => sum + row.summary.absences, 0);
+
+    return {
+      held,
+      rate: held > 0 ? Math.round(((held - absences) / held) * 100) : null,
+    };
+  }, [attendanceReport.data]);
 
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
     const backendAlerts = overview.flatMap((subject): DashboardAlert[] => {
@@ -302,7 +311,7 @@ export default function StudentCoursesManagement({
         return [
           {
             id: prediction.predictionId,
-            title: "Recomendacion",
+            title: "Recomendación",
             description: prediction.recommendation,
             courseId: course.id,
             courseName: course.name,
@@ -356,31 +365,54 @@ export default function StudentCoursesManagement({
     label: "Promedio general",
     value:
       dashboard.globalAverage === null ? "--" : dashboard.globalAverage.toFixed(2),
-    hint: "Escala 0-10, calculado con materias que reportan notas",
+    hint: "Escala 0-10, con las materias que ya tienen notas",
     icon: FiAward,
     tone: getAverageTone(dashboard.globalAverage),
     percentage: dashboard.globalAverage === null ? 0 : (dashboard.globalAverage / 10) * 100,
   };
 
   const attendanceGauge: CircularGaugeMetric = {
-    label: "Asistencia real",
-    value: dashboardKpis.attendance.data
-      ? `${dashboardKpis.attendance.data.overallRate}%`
-      : "--",
-    hint: dashboardKpis.attendance.data?.unscheduledSubjectsCount
-      ? `${dashboardKpis.attendance.data.unscheduledSubjectsCount} materia(s) sin horario definido aún`
-      : "Combina registro docente y autorreporte",
+    label: "Asistencia",
+    value: attendanceTotals.rate === null ? "--" : `${attendanceTotals.rate}%`,
+    hint:
+      attendanceTotals.rate === null
+        ? "Aún no hay clases registradas"
+        : "Según el registro de tus docentes",
     icon: FiCalendar,
     tone: getAverageTone(
-      dashboardKpis.attendance.data ? dashboardKpis.attendance.data.overallRate / 5 : null
+      attendanceTotals.rate === null ? null : attendanceTotals.rate / 10
     ),
-    percentage: dashboardKpis.attendance.data?.overallRate ?? 0,
-    isMocked: true,
-    isLoading: dashboardKpis.attendance.isLoading,
+    percentage: attendanceTotals.rate ?? 0,
+    isLoading: attendanceReport.isLoading,
+  };
+  const comprehensionValues = overview
+    .map((subject) => subject.comprehensionAvg)
+    .filter((value): value is number => typeof value === "number");
+  const comprehensionAverage =
+    comprehensionValues.length > 0
+      ? Math.round(
+          comprehensionValues.reduce((sum, value) => sum + value, 0) /
+            comprehensionValues.length,
+        )
+      : null;
+
+  const comprehensionGauge: CircularGaugeMetric = {
+    label: "Comprensión",
+    value: comprehensionAverage === null ? "--" : `${comprehensionAverage}%`,
+    hint:
+      comprehensionAverage === null
+        ? "Responde la encuesta del sílabo para verla"
+        : "Promedio de lo que reportas de los temas del sílabo",
+    icon: FiEye,
+    tone: getAverageTone(
+      comprehensionAverage === null ? null : comprehensionAverage / 10,
+    ),
+    percentage: comprehensionAverage ?? 0,
+    isLoading: isLoadingInsights,
   };
 
   const alertsMetric: DashboardMetric = {
-    label: "Alertas academicas",
+    label: "Alertas académicas",
     value: dashboardAlerts.length.toString(),
     hint: "Presiona para ver detalle por materia",
     icon: FiAlertTriangle,
@@ -389,42 +421,6 @@ export default function StudentCoursesManagement({
       setShowAlerts((current) => !current);
     },
   };
-
-  const remainingMetrics: DashboardMetric[] = [
-    {
-      label: "Cumplimiento",
-      value: dashboardKpis.compliance.data
-        ? `${dashboardKpis.compliance.data.overallComplianceIndex}%`
-        : "--",
-      hint: "Entregas y tareas completadas a tiempo",
-      icon: FiCheckCircle,
-      tone: getAverageTone(
-        dashboardKpis.compliance.data
-          ? dashboardKpis.compliance.data.overallComplianceIndex / 5
-          : null
-      ),
-      isMocked: true,
-      isLoading: dashboardKpis.compliance.isLoading,
-    },
-    {
-      label: "Comprensión",
-      value: dashboardKpis.comprehension.data
-        ? `${dashboardKpis.comprehension.data.overallAverage}%`
-        : "--",
-      hint:
-        dashboardKpis.comprehension.data?.trend === "WORSENING"
-          ? "Bajando — revisa los temas más débiles por materia"
-          : "Promedio autorreportado por tema del sílabo",
-      icon: FiEye,
-      tone: getAverageTone(
-        dashboardKpis.comprehension.data
-          ? dashboardKpis.comprehension.data.overallAverage / 5
-          : null
-      ),
-      isMocked: true,
-      isLoading: dashboardKpis.comprehension.isLoading,
-    },
-  ];
 
   const handleRefresh = async () => {
     const loadedCourses = await reload();
@@ -576,7 +572,7 @@ export default function StudentCoursesManagement({
                     className="px-5 py-2 text-sm"
                   >
                     <FiRefreshCw size={16} />
-                    {isLoadingInsights ? "Actualizando" : "Recargar analitica"}
+                    {isLoadingInsights ? "Actualizando" : "Recargar analítica"}
                   </Button>
                 </div>
               ) : null}
@@ -585,9 +581,7 @@ export default function StudentCoursesManagement({
                 <CircularGaugeCard {...globalAverageGauge} />
                 <DashboardMetricCard {...alertsMetric} />
                 <CircularGaugeCard {...attendanceGauge} />
-                {remainingMetrics.map((metric) => (
-                  <DashboardMetricCard key={metric.label} {...metric} />
-                ))}
+                <CircularGaugeCard {...comprehensionGauge} />
               </div>
 
               {showAlerts ? (
@@ -595,11 +589,10 @@ export default function StudentCoursesManagement({
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <Heading as="h4" className="text-gray-900">
-                        Alertas y senales de riesgo
+                        Alertas y señales de riesgo
                       </Heading>
                       <Text variant="small" className="mt-2 text-gray-600">
-                        Detalle generado desde alertas del backend o desde el nivel
-                        de riesgo disponible por materia.
+                        Detalle por materia a partir de tus notas y asistencia.
                       </Text>
                     </div>
 
@@ -645,7 +638,7 @@ export default function StudentCoursesManagement({
                     </div>
                   ) : (
                     <Text variant="small" className="text-gray-600">
-                      No hay alertas activas con la informacion disponible.
+                      No hay alertas activas con la información disponible.
                     </Text>
                   )}
                 </div>
@@ -659,7 +652,7 @@ export default function StudentCoursesManagement({
                         Progreso semanal reciente
                       </Heading>
                       <Text variant="small" className="mt-2 text-gray-600">
-                        Ultima nota promedio disponible por materia y comparacion
+                        Última nota promedio disponible por materia y comparación
                         con la semana anterior.
                       </Text>
                     </div>
@@ -709,7 +702,7 @@ export default function StudentCoursesManagement({
                               </Text>
                               <Text variant="caption">
                                 {delta === null
-                                  ? "Sin comparacion previa"
+                                  ? "Sin comparación previa"
                                   : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)} vs semana anterior`}
                               </Text>
                             </div>
@@ -719,8 +712,8 @@ export default function StudentCoursesManagement({
                     </div>
                   ) : (
                     <Text variant="small" className="text-gray-600">
-                      Todavia no hay historial semanal suficiente. Registra tu
-                      avance semanal para alimentar la analitica.
+                      Todavía no hay historial semanal suficiente. Registra tu
+                      avance semanal para alimentar la analítica.
                     </Text>
                   )}
                 </div>
@@ -732,10 +725,10 @@ export default function StudentCoursesManagement({
                     </div>
                     <div>
                       <Heading as="h4" className="text-blue-900">
-                        Recomendaciones predictivas
+                        Recomendaciones para ti
                       </Heading>
                       <Text variant="caption" className="text-blue-800">
-                        Desde prediction-service
+                        Las más importantes de tus materias
                       </Text>
                     </div>
                   </div>
@@ -764,8 +757,8 @@ export default function StudentCoursesManagement({
                     </div>
                   ) : (
                     <Text variant="small" className="text-blue-900">
-                      Aun no hay recomendaciones calculadas. Guarda tu avance
-                      semanal o recarga la analitica despues del recalculo.
+                      Aún no hay recomendaciones calculadas. Guarda tu avance
+                      semanal o recarga la analítica después del recálculo.
                     </Text>
                   )}
 
@@ -785,7 +778,7 @@ export default function StudentCoursesManagement({
                       </Button>
 
                       <Text variant="caption" className="text-blue-800">
-                        Pagina {currentRecommendationsPage + 1} de {recommendationsPageCount}
+                        Página {currentRecommendationsPage + 1} de {recommendationsPageCount}
                       </Text>
 
                       <Button
@@ -808,13 +801,13 @@ export default function StudentCoursesManagement({
               </div>
 
               <AiRecommendationPanel
-                title="Recomendacion con IA"
-                description="Generada con OpenAI a partir de tu informacion academica actual"
+                title="Recomendación con IA"
+                description="Generada a partir de tu información académica actual"
                 prediction={aiPrediction}
                 isLoading={isLoadingAi}
                 isGenerating={isGeneratingAi}
                 error={aiError}
-                emptyMessage="Aun no has generado una recomendacion con IA. Presiona el boton para generar una basada en tu informacion academica actual."
+                emptyMessage="Aún no has generado una recomendación con IA. Presiona el botón para generar una basada en tu información académica actual."
                 onGenerate={() => {
                   void handleGenerateAiPrediction();
                 }}

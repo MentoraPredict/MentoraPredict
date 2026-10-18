@@ -18,11 +18,6 @@ export const APP_PATHS = {
     profile: "/student/profile",
     survey: "/student/survey",
     surveyWizard: "/student/survey/:surveyId",
-    aiChat: "/student/ai-chat",
-    calendar: "/student/calendar",
-    tasks: "/student/tasks",
-    materials: "/student/materials",
-    evaluations: "/student/evaluations",
     progress: "/student/progress",
     attendance: "/student/attendance",
     notifications: "/student/notifications",
@@ -31,6 +26,7 @@ export const APP_PATHS = {
     courseUploadData: "/student/courses/:courseId/upload-data",
     courseActivities: "/student/courses/:courseId/activities",
     courseEvaluations: "/student/courses/:courseId/evaluations",
+    courseMaterials: "/student/courses/:courseId/materials",
     courseAiChat: "/student/courses/:courseId/ai-chat",
     courseSurvey: "/student/courses/:courseId/survey/:surveyId",
   },
@@ -40,10 +36,10 @@ export const APP_PATHS = {
     profile: "/teacher/profile",
     courseDetail: "/teacher/courses/:courseId",
     coursePerformance: "/teacher/courses/:courseId/performance",
-    courseUploadData: "/teacher/courses/:courseId/upload-data",
+    courseSyllabus: "/teacher/courses/:courseId/syllabus",
+    courseDropoutRisk: "/teacher/courses/:courseId/dropout-risk",
     courseStudents: "/teacher/courses/:courseId/students",
     courseEdit: "/teacher/courses/:courseId/edit",
-    courseDropoutRisk: "/teacher/courses/:courseId/dropout-risk",
     courseGradebook: "/teacher/courses/:courseId/gradebook",
     courseAttendance: "/teacher/courses/:courseId/attendance",
   },
@@ -67,6 +63,7 @@ export const APP_PATHS = {
     gradingPeriods: "/admin/grading-periods",
     promotion: "/admin/promotion",
     alerts: "/admin/alerts",
+    ai: "/admin/ai",
     justifications: "/admin/justifications",
     profile: "/admin/profile",
     courseStudents: "/admin/courses/:courseId/students",
@@ -101,16 +98,16 @@ export function getStudentCoursePerformancePath(courseId: string) {
   return `/student/courses/${courseId}/performance`;
 }
 
-export function getTeacherCourseUploadDataPath(courseId: string) {
-  return `/teacher/courses/${courseId}/upload-data`;
+export function getTeacherCourseDropoutRiskPath(courseId: string) {
+  return `/teacher/courses/${courseId}/dropout-risk`;
+}
+
+export function getTeacherCourseSyllabusPath(courseId: string) {
+  return `/teacher/courses/${courseId}/syllabus`;
 }
 
 export function getTeacherCourseStudentsPath(courseId: string) {
   return `/teacher/courses/${courseId}/students`;
-}
-
-export function getTeacherCourseDropoutRiskPath(courseId: string) {
-  return `/teacher/courses/${courseId}/dropout-risk`;
 }
 
 export function getTeacherCourseGradebookPath(courseId: string) {
@@ -145,10 +142,6 @@ export function getStudentCourseUploadDataPath(courseId: string) {
   return `/student/courses/${courseId}/upload-data`;
 }
 
-export function getStudentSurveyWizardPath(surveyId: string) {
-  return `/student/survey/${surveyId}`;
-}
-
 export function getStudentCourseActivitiesPath(courseId: string) {
   return `/student/courses/${courseId}/activities`;
 }
@@ -157,8 +150,16 @@ export function getStudentCourseEvaluationsPath(courseId: string) {
   return `/student/courses/${courseId}/evaluations`;
 }
 
+export function getStudentCourseMaterialsPath(courseId: string) {
+  return `/student/courses/${courseId}/materials`;
+}
+
 export function getStudentCourseAiChatPath(courseId: string) {
   return `/student/courses/${courseId}/ai-chat`;
+}
+
+export function getStudentSurveyWizardPath(surveyId: string) {
+  return `/student/survey/${surveyId}`;
 }
 
 export function getStudentCourseSurveyPath(courseId: string, surveyId: string) {

@@ -4,6 +4,7 @@ import {
   FiFileText,
   FiLock,
   FiAlertTriangle,
+  FiCpu,
   FiMenu,
   FiX,
   FiBookOpen,
@@ -89,6 +90,12 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
       roles: ["ADMIN"],
     },
     {
+      label: "Inteligencia artificial",
+      to: APP_PATHS.admin.ai,
+      icon: <FiCpu size={16} />,
+      roles: ["ADMIN"],
+    },
+    {
       label: "Años lectivos",
       to: APP_PATHS.admin.schoolYears,
       icon: <FiCalendar size={16} />,
@@ -132,7 +139,7 @@ export default function AdminTemplate({ children }: AdminTemplateProps) {
           <DashboardSidebar title={panelTitle} sections={sections} />
         ) : null}
 
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <DashboardNavbar
             logoOnlyOnMobile
             leadingAction={

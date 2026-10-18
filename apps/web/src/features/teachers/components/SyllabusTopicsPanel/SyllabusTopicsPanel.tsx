@@ -193,7 +193,7 @@ export default function SyllabusTopicsPanel({
             "
     >
       <Heading as="h5" className="text-gray-900">
-        Temas del syllabus
+        Temas del sílabo
       </Heading>
 
       <Text variant="caption" className="mt-2 block">
@@ -237,69 +237,95 @@ export default function SyllabusTopicsPanel({
               itemLabel="temas"
               onPageChange={setCurrentPage}
             />
-          </div>          <div className="mt-4 flex flex-wrap gap-2">
-            {paginatedTopics.map((topic) => (
-              <div
-                key={topic.id}
-                className="flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 py-1.5 pl-3 pr-1.5"
-              >
-                {editingId === topic.id ? (
-                  <>
-                    <div className="w-40">
-                      <Input
-                        value={editingTitle}
-                        onChange={(event) => setEditingTitle(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            event.preventDefault();
-                            void handleSaveEdit(topic.id);
-                          }
-                          if (event.key === "Escape") cancelEditing();
-                        }}
-                        autoFocus
-                        className="px-2 py-1 text-xs"
-                      />
-                    </div>
-                    <IconButton
-                      onClick={() => void handleSaveEdit(topic.id)}
-                      disabled={isSaving}
-                      aria-label="Guardar"
-                      className="p-1"
-                    >
-                      <FiCheck className="text-green-600" size={14} />
-                    </IconButton>
-                    <IconButton
-                      onClick={cancelEditing}
-                      aria-label="Cancelar"
-                      className="p-1"
-                    >
-                      <FiX className="text-gray-500" size={14} />
-                    </IconButton>
-                  </>
-                ) : (
-                  <>
-                    <Text variant="caption" className="font-medium text-blue-800">
-                      {topic.title}
-                    </Text>
-                    <IconButton
-                      onClick={() => startEditing(topic)}
-                      aria-label={`Editar ${topic.title}`}
-                      className="p-1"
-                    >
-                      <FiEdit2 className="text-blue-600" size={13} />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => void handleDeleteTopic(topic.id)}
-                      disabled={isSaving}
-                      aria-label={`Eliminar ${topic.title}`}
-                      className="p-1"
-                    >
-                      <FiTrash2 className="text-red-500" size={13} />
-                    </IconButton>
-                  </>
-                )}
-              </div>
-            ))}
+          </div>
+
+          <div className="mt-4 min-w-0 overflow-x-auto rounded-xl border border-gray-200">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead className="border-b border-gray-200 bg-gray-50">
+                <tr>
+                  <th className="w-16 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-500">
+                    N.º
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Tema
+                  </th>
+                  <th className="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paginatedTopics.map((topic, index) => (
+                  <tr key={topic.id}>
+                    <td className="px-4 py-3 text-gray-500">
+                      {(currentPage - 1) * TOPICS_PER_PAGE + index + 1}
+                    </td>
+                    <td className="px-4 py-3">
+                      {editingId === topic.id ? (
+                        <Input
+                          value={editingTitle}
+                          onChange={(event) => setEditingTitle(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              void handleSaveEdit(topic.id);
+                            }
+                            if (event.key === "Escape") cancelEditing();
+                          }}
+                          autoFocus
+                          className="px-3 py-1.5 text-sm"
+                        />
+                      ) : (
+                        <Text variant="small" className="text-gray-900">
+                          {topic.title}
+                        </Text>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1">
+                        {editingId === topic.id ? (
+                          <>
+                            <IconButton
+                              onClick={() => void handleSaveEdit(topic.id)}
+                              disabled={isSaving}
+                              aria-label="Guardar"
+                              className="p-1.5"
+                            >
+                              <FiCheck className="text-green-600" size={16} />
+                            </IconButton>
+                            <IconButton
+                              onClick={cancelEditing}
+                              aria-label="Cancelar"
+                              className="p-1.5"
+                            >
+                              <FiX className="text-gray-500" size={16} />
+                            </IconButton>
+                          </>
+                        ) : (
+                          <>
+                            <IconButton
+                              onClick={() => startEditing(topic)}
+                              aria-label={`Editar ${topic.title}`}
+                              className="p-1.5"
+                            >
+                              <FiEdit2 className="text-blue-600" size={15} />
+                            </IconButton>
+                            <IconButton
+                              onClick={() => void handleDeleteTopic(topic.id)}
+                              disabled={isSaving}
+                              aria-label={`Eliminar ${topic.title}`}
+                              className="p-1.5"
+                            >
+                              <FiTrash2 className="text-red-500" size={15} />
+                            </IconButton>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       ) : (

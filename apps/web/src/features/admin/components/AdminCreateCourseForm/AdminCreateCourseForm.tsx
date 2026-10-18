@@ -164,7 +164,7 @@ export default function AdminCreateCourseForm({
 
               <button
                 type="button"
-                aria-label="Mostrar recomendacion para el codigo institucional"
+                aria-label="Mostrar recomendación para el codigo institucional"
                 aria-expanded={isCodeHelpOpen}
                 aria-controls="admin-course-code-help"
                 onClick={() => setIsCodeHelpOpen((isOpen) => !isOpen)}

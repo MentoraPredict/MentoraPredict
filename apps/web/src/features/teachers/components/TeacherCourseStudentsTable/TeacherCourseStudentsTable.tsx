@@ -7,36 +7,29 @@ import type { TeacherStudentPrediction } from "@/services/course-analytics.servi
 interface TeacherCourseStudentsTableProps {
   students: CourseEnrolledStudent[];
   studentPredictionsById?: Map<string, TeacherStudentPrediction>;
-  updatingEnrollmentId?: string | null;
   regeneratingPredictionStudentId?: string | null;
-  onEnrollmentStatusChange?: (
-    enrollmentId: string,
-    isCurrentlyEnrolled: boolean,
-  ) => void;
   onRegeneratePrediction?: (studentId: string) => void;
+  /** Sin borde propio, para usarla dentro de un grupo colapsable. */
+  bare?: boolean;
 }
 
 export default function TeacherCourseStudentsTable({
   students,
   studentPredictionsById,
-  updatingEnrollmentId,
   regeneratingPredictionStudentId,
-  onEnrollmentStatusChange,
   onRegeneratePrediction,
+  bare = false,
 }: TeacherCourseStudentsTableProps) {
   return (
     <div
-      className="
-                overflow-hidden
-                rounded-b-2xl
-                border-x
-                border-b
-                border-gray-200
-                bg-white
-            "
+      className={
+        bare
+          ? "overflow-hidden bg-white"
+          : "overflow-hidden rounded-2xl border border-gray-200 bg-white"
+      }
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse">
+        <table className="w-full min-w-[760px] border-collapse">
           <thead>
             <tr className="bg-gray-100 text-left">
               <th className="px-6 py-4">
@@ -89,16 +82,7 @@ export default function TeacherCourseStudentsTable({
                   variant="caption"
                   className="font-bold uppercase tracking-[0.14em] text-gray-600"
                 >
-                  Matriculado
-                </Text>
-              </th>
-
-              <th className="px-6 py-4">
-                <Text
-                  variant="caption"
-                  className="font-bold uppercase tracking-[0.14em] text-gray-600"
-                >
-                  Estado
+                  Detalle
                 </Text>
               </th>
             </tr>
@@ -110,20 +94,18 @@ export default function TeacherCourseStudentsTable({
                 key={student.id}
                 student={student}
                 prediction={studentPredictionsById?.get(student.user.id)}
-                isUpdating={updatingEnrollmentId === student.id}
                 isRegeneratingPrediction={
                   regeneratingPredictionStudentId === student.user.id
                 }
-                onEnrollmentStatusChange={onEnrollmentStatusChange}
                 onRegeneratePrediction={onRegeneratePrediction}
               />
             ))}
 
             {students.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-6 py-12 text-center">
                   <Text variant="small">
-                    No existen estudiantes matriculados.
+                    No hay estudiantes que mostrar.
                   </Text>
                 </td>
               </tr>

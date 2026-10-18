@@ -233,3 +233,23 @@ export const OUTCOME_LABELS: Record<PromotionOutcome, string> = {
   PROMOTED: "Promovido",
   REPEATS: "Repite el año",
 };
+
+export interface MyGradeBreakdown {
+  subject: { id: string; name: string };
+  period: { id: string; name: string; number: number | null };
+  scale: { minValue: number; maxValue: number; passingGrade: number; decimals: number };
+  components: Array<{
+    code: string;
+    name: string;
+    weight: number;
+    average: number | null;
+  }>;
+  periodGrade: number | null;
+  activities: Array<{
+    id: string;
+    name: string;
+    componentCode: string;
+    dueDate: string | null;
+    grade: number | null;
+  }>;
+}

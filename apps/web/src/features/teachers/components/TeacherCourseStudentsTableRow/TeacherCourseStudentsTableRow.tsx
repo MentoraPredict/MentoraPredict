@@ -3,7 +3,6 @@ import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 import Button from "@/components/atoms/Button";
 import Text from "@/components/atoms/Text";
-import StudentEnrollmentCell from "@/features/teachers/components/StudentEnrollmentCell";
 
 import type { CourseEnrolledStudent } from "@/types/course";
 import type { TeacherStudentPrediction } from "@/services/course-analytics.service";
@@ -11,32 +10,25 @@ import type { TeacherStudentPrediction } from "@/services/course-analytics.servi
 interface TeacherCourseStudentsTableRowProps {
   student: CourseEnrolledStudent;
   prediction?: TeacherStudentPrediction;
-  isUpdating?: boolean;
   isRegeneratingPrediction?: boolean;
-  onEnrollmentStatusChange?: (
-    enrollmentId: string,
-    isCurrentlyEnrolled: boolean,
-  ) => void;
   onRegeneratePrediction?: (studentId: string) => void;
 }
 
 export default function TeacherCourseStudentsTableRow({
   student,
   prediction,
-  isUpdating,
   isRegeneratingPrediction,
-  onEnrollmentStatusChange,
   onRegeneratePrediction,
 }: TeacherCourseStudentsTableRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const riskLabel = prediction?.predictedRiskLevel
     ? {
-        CRITICAL: "Critico",
+        CRITICAL: "Crítico",
         HIGH: "Alto",
         MEDIUM: "Medio",
         LOW: "Bajo",
       }[prediction.predictedRiskLevel]
-    : "Sin prediccion";
+    : "Sin predicción";
 
   return (
     <Fragment>
@@ -77,16 +69,6 @@ export default function TeacherCourseStudentsTableRow({
         </td>
 
         <td className="px-6 py-4">
-          <StudentEnrollmentCell
-            isEnrolled={student.isEnrolled}
-            isUpdating={isUpdating}
-            onStatusChange={() =>
-              onEnrollmentStatusChange?.(student.id, student.isEnrolled)
-            }
-          />
-        </td>
-
-        <td className="px-6 py-4">
           <Button
             type="button"
             variant="outline"
@@ -96,14 +78,14 @@ export default function TeacherCourseStudentsTableRow({
             className="gap-2 px-3 py-2 text-xs"
           >
             {isExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-            Estado
+            Detalle
           </Button>
         </td>
       </tr>
 
       {isExpanded ? (
         <tr className="border-t border-blue-100 bg-blue-50/60">
-          <td colSpan={7} className="px-6 py-5">
+          <td colSpan={6} className="px-6 py-5">
             <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                 <div className="rounded-xl border border-white bg-white p-4">
@@ -136,11 +118,11 @@ export default function TeacherCourseStudentsTableRow({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <Text variant="caption" className="font-bold uppercase text-blue-700">
-                      Recomendacion para este estudiante
+                      Recomendación para este estudiante
                     </Text>
                     <Text variant="small" className="mt-2 text-blue-950">
                       {prediction?.recommendation ??
-                        "Aun no hay una recomendacion predictiva disponible para este estudiante en esta materia."}
+                        "Aún no hay una recomendación predictiva disponible para este estudiante en esta materia."}
                     </Text>
                   </div>
 

@@ -172,6 +172,8 @@ interface StudentSubjectOverviewProgressPoint {
 export interface StudentSubjectOverview {
   subjectId: string;
   averageGrade: number | null;
+  /** 0-100, comprensión que reporta el estudiante; null si aún no responde. */
+  comprehensionAvg: number | null;
   riskLevel: RiskLevel | null;
   trendDirection: "IMPROVING" | "STABLE" | "WORSENING" | null;
   computedAt: string | null;

@@ -21,7 +21,7 @@ export default function CourseAnalyticsLayout({
       <div className="flex min-h-screen">
         {isSidebarVisible ? sidebar : null}
 
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <DashboardNavbar
             showLogo
             logoOnlyOnMobile
@@ -56,7 +56,7 @@ export default function CourseAnalyticsLayout({
             }
           />
 
-          <main className="flex-1 p-6">
+          <main className="min-w-0 flex-1 p-6">
             {children}
           </main>
         </div>

@@ -56,6 +56,11 @@ export default function TeacherCourseDropoutRisk({
         <Text variant="small" className="mt-2 text-gray-600">
           Estimación por cada estudiante matriculado en esta materia.
         </Text>
+        <Text variant="caption" className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
+          Estimación preliminar con datos de ejemplo, mientras se define cómo se
+          calculará el riesgo en el colegio. No la uses para tomar decisiones sobre
+          un estudiante.
+        </Text>
       </div>
 
       {isLoadingStudents ? (
