@@ -54,5 +54,20 @@ export function buildPeriodProgress(
     weeks.push(existing ? { ...existing, week: `Semana ${weekNumber}` } : { week: `Semana ${weekNumber}` });
   }
 
-  return [...weeks, ...projectionPoints];
+  // La proyección sigue a la última semana con datos, sobre las semanas aún
+  // vacías del periodo. Si se dejara al final del eje, la línea punteada
+  // quedaría separada de la real por todas las semanas sin datos y solo se
+  // vería un punto suelto en la última semana real.
+  if (maxOffset === 0) return [...weeks, ...projectionPoints];
+
+  projectionPoints.forEach((point, step) => {
+    const index = maxOffset + step;
+    if (index < weeks.length) {
+      weeks[index] = { ...weeks[index], projection: point.projection };
+    } else {
+      weeks.push({ week: `Semana ${index + 1}`, projection: point.projection });
+    }
+  });
+
+  return weeks;
 }
