@@ -73,7 +73,7 @@
 
 Schema is created by versioned TypeORM migrations, run as an explicit CD step before seeding (see §7). Seeding is handled separately by `infra/scripts/run-seeds.sh` (idempotent, sha256-checksummed per file, tracked in a `seed_history` table) inside the `database/Dockerfile.seed` container, run as the `seed-loader` service in every `docker-compose.*.yml`.
 
-The seeds describe a school (school year 2026-2027, three terms, four sections) and are meant for a **freshly created database**: the unique index of active periods and school years would reject them next to rows from the previous university seeds. All dates, hours and curricula are sample data, not the official calendar. See [../erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md) §5 to recreate the environment.
+The seeds describe a school (school year 2026-2027, three terms, two sections) and are meant for a **freshly created database**: the unique index of active periods and school years would reject them next to rows from the previous university seeds. All dates, hours and curricula are sample data, not the official calendar. See [../erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md) §5 to recreate the environment.
 
 | File | Seeds |
 |---|---|
@@ -92,7 +92,7 @@ The seeds describe a school (school year 2026-2027, three terms, four sections) 
 
 ### Seed credentials (local/QA only — safe to document, not real secrets)
 
-- Emails: `admin01..03`, `teacher01..15`, `student001..050`, `guardian01..25`, `secretary01`, `dece01` and `inspector01`, all `@mentorapredict.edu.ec`
+- Emails: `admin01`, `teacher01..08`, `student001..026`, `guardian01..13`, `secretary01`, `dece01` and `inspector01`, all `@mentorapredict.edu.ec`
 - Password (all seeded accounts): **`MP123456789`**
 - UUIDs are deterministic (`aaaaaaaa-0000-4000-8000-0000000000XX` for admins, `bbbbbbbb-...` teachers, `cccccccc-...` students, `dddddddd-...` guardians) — reproducible across environments.
 
