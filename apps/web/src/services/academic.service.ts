@@ -117,6 +117,8 @@ export interface StudentCheckInPayload {
     comprehension: number;
   }>;
   notes?: string;
+  /** Qué parte de la materia le gustaría que se explique mejor. */
+  explainBetter?: string;
 }
 
 export interface StudentCheckInResponse extends StudentCheckInPayload {
@@ -555,6 +557,18 @@ export async function getCurrentStudentCheckIn(
   return response.data;
 }
 
+/** Historial de avances registrados por el estudiante en una materia, del más reciente al más antiguo. */
+export async function listStudentCheckIns(
+  subjectId: string,
+  limit = 100
+): Promise<StudentCheckInResponse[]> {
+  const response = await api.get<
+    StudentCheckInResponse[] | MaybeWrappedArray<StudentCheckInResponse>
+  >(endpoints.academic.studentCheckIns(subjectId), { params: { page: 1, limit } });
+
+  return unwrapArray(response.data);
+}
+
 export async function saveStudentCheckIn(
   subjectId: string,
   payload: StudentCheckInPayload
@@ -636,4 +650,27 @@ export async function updateSubjectTopic(
 
 export async function deleteSubjectTopic(topicId: string): Promise<void> {
   await api.delete(endpoints.academic.topic(topicId));
+}
+
+/** Adjunta (o reemplaza) el material de un tema. Imagen hasta 2 MB; pdf, docx, pptx o xlsx hasta 10 MB. */
+export async function uploadSubjectTopicFile(
+  topicId: string,
+  file: File
+): Promise<SubjectTopic> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await api.post<SubjectTopicApiResponse>(
+    endpoints.academic.topicFile(topicId),
+    formData
+  );
+
+  return toSubjectTopic(response.data);
+}
+
+export async function deleteSubjectTopicFile(topicId: string): Promise<SubjectTopic> {
+  const response = await api.delete<SubjectTopicApiResponse>(
+    endpoints.academic.topicFile(topicId)
+  );
+
+  return toSubjectTopic(response.data);
 }
