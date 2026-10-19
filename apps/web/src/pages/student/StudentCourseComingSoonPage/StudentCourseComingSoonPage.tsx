@@ -1,12 +1,11 @@
 import type { IconType } from "react-icons";
-import { FiCheckSquare, FiClipboard, FiFolder, FiMessageCircle } from "react-icons/fi";
+import { FiCheckSquare, FiClipboard, FiMessageCircle } from "react-icons/fi";
 
 import ComingSoonSection from "@/features/students/components/ComingSoonSection";
 
 export type StudentCourseComingSoonSection =
   | "activities"
   | "evaluations"
-  | "materials"
   | "ai-chat";
 
 const SECTIONS: Record<
@@ -24,12 +23,6 @@ const SECTIONS: Record<
     title: "Evaluaciones",
     description:
       "Aquí rendirás las evaluaciones en línea de esta materia y verás su resultado.",
-  },
-  materials: {
-    icon: FiFolder,
-    title: "Materiales y temas",
-    description:
-      "Aquí encontrarás los temas del sílabo de esta materia y los archivos que comparta tu docente.",
   },
   "ai-chat": {
     icon: FiMessageCircle,

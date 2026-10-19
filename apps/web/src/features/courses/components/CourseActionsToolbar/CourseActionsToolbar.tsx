@@ -4,10 +4,10 @@ import {
   FiBookOpen,
   FiCheckSquare,
   FiClipboard,
+  FiEdit3,
   FiFolder,
   FiMessageCircle,
   FiSettings,
-  FiSmile,
   FiUserCheck,
   FiUsers,
 } from "react-icons/fi";
@@ -19,7 +19,7 @@ import {
   getStudentCourseEvaluationsPath,
   getStudentCourseMaterialsPath,
   getStudentCoursePerformancePath,
-  getStudentCourseSurveyPath,
+  getStudentCourseUploadDataPath,
   getTeacherCourseAttendancePath,
   getTeacherCourseEditPath,
   getTeacherCourseGradebookPath,
@@ -78,6 +78,11 @@ function getStudentActions(courseId: string): ToolbarAction[] {
       icon: <FiBarChart2 size={16} />,
     },
     {
+      to: getStudentCourseUploadDataPath(courseId),
+      label: "Registrar avance",
+      icon: <FiEdit3 size={16} />,
+    },
+    {
       to: getStudentCourseActivitiesPath(courseId),
       label: "Actividades y tareas",
       icon: <FiCheckSquare size={16} />,
@@ -91,11 +96,6 @@ function getStudentActions(courseId: string): ToolbarAction[] {
       to: getStudentCourseMaterialsPath(courseId),
       label: "Materiales y temas",
       icon: <FiFolder size={16} />,
-    },
-    {
-      to: getStudentCourseSurveyPath(courseId, "syllabus-comprehension"),
-      label: "Encuesta del sílabo",
-      icon: <FiSmile size={16} />,
     },
     {
       to: getStudentCourseAiChatPath(courseId),

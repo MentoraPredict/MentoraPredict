@@ -12,6 +12,8 @@ import {
 
 interface StudentResultsReportProps {
   studentId: string | undefined;
+  /** El propio estudiante ya sabe quién es; el representante sí lo necesita. */
+  showStudentName?: boolean;
 }
 
 const STATUS_TONE: Record<SubjectResultStatus, "green" | "amber" | "red" | "neutral"> = {
@@ -21,7 +23,10 @@ const STATUS_TONE: Record<SubjectResultStatus, "green" | "amber" | "red" | "neut
   INCOMPLETE: "neutral",
 };
 
-export default function StudentResultsReport({ studentId }: StudentResultsReportProps) {
+export default function StudentResultsReport({
+  studentId,
+  showStudentName = true,
+}: StudentResultsReportProps) {
   const { results, isLoading, error } = useStudentResults(studentId);
 
   if (isLoading) {
@@ -51,10 +56,15 @@ export default function StudentResultsReport({ studentId }: StudentResultsReport
   return (
     <div className="space-y-5">
       <div>
-        <Heading as="h4" className="text-gray-900">
-          {results.studentName}
-        </Heading>
-        <Text variant="small" className="mt-1 text-gray-600">
+        {showStudentName ? (
+          <Heading as="h4" className="text-gray-900">
+            {results.studentName}
+          </Heading>
+        ) : null}
+        <Text
+          variant="small"
+          className={showStudentName ? "mt-1 text-gray-600" : "text-gray-600"}
+        >
           {results.schoolYear.name} · {results.enrollment.sectionLabel} · escala{" "}
           {scale.minValue}–{scale.maxValue}, mínimo {scale.passingGrade}
         </Text>

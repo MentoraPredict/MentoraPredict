@@ -42,7 +42,6 @@ import TeacherCoursesPage from "@/pages/teacher/TeacherCoursesPage";
 import StudentCoursesPage from "@/pages/student/StudentCoursesPage";
 import StudentSurveyPage from "@/pages/student/StudentSurveyPage";
 import StudentSurveyWizardPage from "@/pages/student/StudentSurveyWizardPage";
-import StudentProgressPage from "@/pages/student/StudentProgressPage";
 
 import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
 import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerformancePage";
@@ -51,7 +50,6 @@ import TeacherCourseActivityPage from "@/pages/teacher/TeacherCourseActivityPage
 import TeacherCourseStudentPage from "@/pages/teacher/TeacherCourseStudentPage";
 import TeacherCourseGradebookPage from "@/pages/teacher/TeacherCourseGradebookPage";
 import TeacherCourseAttendancePage from "@/pages/teacher/TeacherCourseAttendancePage";
-import StudentAttendancePage from "@/pages/student/StudentAttendancePage";
 import GuardianStudentAttendancePage from "@/pages/guardian/GuardianStudentAttendancePage";
 import AdminAlertsPage from "@/pages/admin/AdminAlertsPage";
 import AdminAiSettingsPage from "@/pages/admin/AdminAiSettingsPage";
@@ -68,7 +66,7 @@ import StudentProfilePage from "@/pages/student/StudentProfilePage";
 import StudentCoursePageLayout from "@/features/students/components/StudentCoursePageLayout";
 import StudentCoursePerformancePage from "@/pages/student/StudentCoursePerformancePage";
 import StudentCourseComingSoonPage from "@/pages/student/StudentCourseComingSoonPage";
-import StudentCourseSurveyPage from "@/pages/student/StudentCourseSurveyPage";
+import StudentCourseMaterialsPage from "@/pages/student/StudentCourseMaterialsPage";
 import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage";
 import StudentCourseUploadDataPage from "@/pages/student/StudentCourseUploadDataPage";
 
@@ -163,7 +161,7 @@ function AnimatedRoutes() {
             />
             <Route
               path={APP_PATHS.student.attendance}
-              element={<StudentAttendancePage />}
+              element={<Navigate to={`${APP_PATHS.student.dashboard}?tab=attendance`} replace />}
             />
             <Route
               path={APP_PATHS.student.notifications}
@@ -171,7 +169,7 @@ function AnimatedRoutes() {
             />
             <Route
               path={APP_PATHS.student.progress}
-              element={<StudentProgressPage />}
+              element={<Navigate to={`${APP_PATHS.student.dashboard}?tab=grades`} replace />}
             />
             <Route
               path={APP_PATHS.student.courseDetail}
@@ -181,9 +179,8 @@ function AnimatedRoutes() {
               <Route path="upload-data" element={<StudentCourseUploadDataPage />} />
               <Route path="activities" element={<StudentCourseComingSoonPage section="activities" />} />
               <Route path="evaluations" element={<StudentCourseComingSoonPage section="evaluations" />} />
-              <Route path="materials" element={<StudentCourseComingSoonPage section="materials" />} />
+              <Route path="materials" element={<StudentCourseMaterialsPage />} />
               <Route path="ai-chat" element={<StudentCourseComingSoonPage section="ai-chat" />} />
-              <Route path="survey/:surveyId" element={<StudentCourseSurveyPage />} />
             </Route>
           </Route>
 

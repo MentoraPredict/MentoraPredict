@@ -21,6 +21,8 @@ interface StudentAttendanceReportProps {
   studentId: string | undefined;
   /** Solo el representante puede pedir justificar una falta. */
   canJustify?: boolean;
+  /** El propio estudiante ya sabe quién es; el representante sí lo necesita. */
+  showStudentName?: boolean;
 }
 
 const STATUS_TONE: Record<AttendanceStatus, "green" | "amber" | "red"> = {
@@ -38,6 +40,7 @@ const JUSTIFICATION_TONE: Record<JustificationStatus, "amber" | "green" | "red">
 export default function StudentAttendanceReport({
   studentId,
   canJustify = false,
+  showStudentName = true,
 }: StudentAttendanceReportProps) {
   const { data, isLoading, isSubmitting, error, actionError, clearActionError, justify } =
     useStudentAttendance(studentId);
@@ -82,10 +85,15 @@ export default function StudentAttendanceReport({
   return (
     <div className="space-y-5">
       <div>
-        <Heading as="h4" className="text-gray-900">
-          Asistencia de {data.studentName}
-        </Heading>
-        <Text variant="small" className="mt-1 text-gray-600">
+        {showStudentName ? (
+          <Heading as="h4" className="text-gray-900">
+            Asistencia de {data.studentName}
+          </Heading>
+        ) : null}
+        <Text
+          variant="small"
+          className={showStudentName ? "mt-1 text-gray-600" : "text-gray-600"}
+        >
           Las faltas injustificadas no deben superar el {data.rule.maxPct} % de las
           clases de cada asignatura. Las faltas se pueden justificar {deadline}.
         </Text>

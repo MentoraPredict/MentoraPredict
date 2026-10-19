@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  FiAlertTriangle,
-  FiAward,
   FiBookOpen,
-  FiCalendar,
-  FiChevronLeft,
-  FiChevronRight,
-  FiEye,
   FiGrid,
+  FiList,
   FiRefreshCw,
-  FiZap,
+  FiTrendingUp,
+  FiUserCheck,
 } from "react-icons/fi";
 import { AxiosError } from "axios";
 
@@ -21,20 +17,19 @@ import FeedbackMessage from "@/components/atoms/FeedbackMessage";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
 import UserAvatar from "@/components/atoms/UserAvatar";
+import ListToolbar from "@/components/molecules/ListToolbar";
 
 import AiRecommendationPanel from "@/features/courses/components/AiRecommendationPanel";
 import CourseGrid from "@/features/courses/components/CourseGrid";
+import StudentAttendanceReport from "@/features/students/components/StudentAttendanceReport";
 import StudentCoursesEmptyState from "@/features/students/components/StudentCoursesEmptyState";
-import CircularGaugeCard, {
-  type CircularGaugeMetric,
-} from "@/features/dashboard/components/CircularGaugeCard";
+import StudentCoursesTable from "@/features/students/components/StudentCoursesTable";
+import StudentResultsReport from "@/features/students/components/StudentResultsReport";
+
 import DashboardMetricCard, {
-  dashboardMetricToneStyles,
   type DashboardMetric,
 } from "@/features/dashboard/components/DashboardMetricCard";
-import RiskOverviewBanner from "@/features/dashboard/components/RiskOverviewBanner";
 import useStudentAttendance from "@/features/students/hooks/useStudentAttendance";
-import { computeAggregatedRisk } from "@/features/dashboard/utils/computeAggregatedRisk";
 import { getAverageTone, getCountTone } from "@/features/dashboard/utils/metricTone";
 import {
   courseRiskRank,
@@ -42,13 +37,9 @@ import {
   isAtRiskLevel,
 } from "@/features/dashboard/utils/riskLevelPresentation";
 
-import {
-  getStudentCoursePerformancePath,
-  getStudentCourseUploadDataPath,
-} from "@/routes/paths";
+import { getStudentCoursePerformancePath } from "@/routes/paths";
 import {
   getLatestAiPrediction,
-  getStudentSubjectPrediction,
   getStudentSubjectsOverview,
   requestAiPrediction,
   type AiPrediction,
@@ -56,31 +47,10 @@ import {
 } from "@/services/course-analytics.service";
 import { getActiveAcademicPeriod } from "@/services/student-performance.service";
 import { useAuthStore } from "@/store/auth.store";
-import type { Course, CourseAlert, CourseRecommendation } from "@/types/course";
-import { GOOD_GRADE, PASSING_GRADE } from "@/utils/gradeScale";
-import { mapWithConcurrency } from "@/utils/mapWithConcurrency";
-
-// Predictions still need one request per subject (they live in
-// prediction-service) — metrics/risk/alerts/progress no longer do, they all
-// come from one call to getStudentSubjectsOverview(). Capping how many
-// prediction calls run at once still bounds that remaining burst.
-const PREDICTION_CONCURRENCY = 3;
-
-const RECOMMENDATIONS_PAGE_SIZE = 3;
-
-
-interface SubjectPrediction {
-  subjectId: string;
-  recommendation: string | null;
-  predictionId: string | null;
-}
+import type { Course, CourseAlert } from "@/types/course";
+import { MAX_GRADE } from "@/utils/gradeScale";
 
 interface DashboardAlert extends CourseAlert {
-  courseId: string;
-  courseName: string;
-}
-
-interface DashboardRecommendation extends CourseRecommendation {
   courseId: string;
   courseName: string;
 }
@@ -92,7 +62,19 @@ interface StudentCoursesManagementProps {
   reload: () => Promise<Course[]>;
 }
 
-type DashboardTab = "courses" | "overview";
+type DashboardTab = "courses" | "grades" | "attendance" | "overview";
+
+const DASHBOARD_TABS: { id: DashboardTab; label: string; icon: typeof FiGrid }[] = [
+  { id: "courses", label: "Materias matriculadas", icon: FiBookOpen },
+  { id: "grades", label: "Mis calificaciones", icon: FiTrendingUp },
+  { id: "attendance", label: "Mi asistencia", icon: FiUserCheck },
+  { id: "overview", label: "Panel principal", icon: FiGrid },
+];
+
+const RISK_FILTER_LEVELS = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"] as const;
+
+const normalizeText = (value: string) =>
+  value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 function getRiskDerivedAlerts(courses: Course[]): DashboardAlert[] {
   return courses.filter((course) => isAtRiskLevel(course.riskLevel)).map((course) => ({
@@ -112,13 +94,20 @@ export default function StudentCoursesManagement({
 }: StudentCoursesManagementProps) {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const [dashboardTab, setDashboardTab] = useState<DashboardTab>("courses");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const dashboardTab: DashboardTab =
+    DASHBOARD_TABS.find((tab) => tab.id === tabParam)?.id ?? "courses";
+  const setDashboardTab = (tab: DashboardTab) =>
+    setSearchParams(tab === "courses" ? {} : { tab }, { replace: true });
+  const [coursesView, setCoursesView] = useState<"cards" | "list">("cards");
+  const [courseSearch, setCourseSearch] = useState("");
+  const [courseRiskFilter, setCourseRiskFilter] = useState("");
+  const [coursePeriodFilter, setCoursePeriodFilter] = useState("");
   const [overview, setOverview] = useState<StudentSubjectOverview[]>([]);
-  const [predictions, setPredictions] = useState<SubjectPrediction[]>([]);
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [showAlerts, setShowAlerts] = useState(false);
-  const [recommendationsPage, setRecommendationsPage] = useState(0);
   const [aiPrediction, setAiPrediction] = useState<AiPrediction | null>(null);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
@@ -127,7 +116,6 @@ export default function StudentCoursesManagement({
   const loadInsights = useCallback(async (studentCourses: Course[]) => {
     if (studentCourses.length === 0) {
       setOverview([]);
-      setPredictions([]);
       setInsightsError(null);
       return;
     }
@@ -136,23 +124,7 @@ export default function StudentCoursesManagement({
     setInsightsError(null);
 
     try {
-      const [loadedOverview, loadedPredictions] = await Promise.all([
-        getStudentSubjectsOverview(),
-        mapWithConcurrency(
-          studentCourses,
-          PREDICTION_CONCURRENCY,
-          async (course): Promise<SubjectPrediction> => {
-            const prediction = await getStudentSubjectPrediction(course.id);
-            return {
-              subjectId: course.id,
-              recommendation: prediction?.recommendation ?? null,
-              predictionId: prediction?.id ?? null,
-            };
-          },
-        ),
-      ]);
-      setOverview(loadedOverview);
-      setPredictions(loadedPredictions);
+      setOverview(await getStudentSubjectsOverview());
     } catch {
       setInsightsError(
         "No se pudo actualizar la analítica predictiva de tus materias."
@@ -242,12 +214,6 @@ export default function StudentCoursesManagement({
       coursesAtRisk: courses.filter((course) => isAtRiskLevel(course.riskLevel))
         .length,
       periodName: contextCourse?.semester ?? "Periodo no registrado",
-      nextCourse:
-        courses.find((course) => course.riskLevel === "CRITICAL") ??
-        courses.find((course) => course.riskLevel === "HIGH") ??
-        courses.find((course) => course.riskLevel === "MEDIUM") ??
-        courses[0] ??
-        null,
     };
   }, [courses]);
 
@@ -264,10 +230,30 @@ export default function StudentCoursesManagement({
     [courses]
   );
 
-  const aggregatedRisk = useMemo(
-    () => computeAggregatedRisk(overview, coursesById),
-    [overview, coursesById]
+  const periodOptions = useMemo(
+    () =>
+      [...new Set(courses.map((course) => course.semester).filter(Boolean))]
+        .sort()
+        .map((period) => ({ value: period, label: period })),
+    [courses]
   );
+
+  const visibleCourses = useMemo(() => {
+    const terms = normalizeText(courseSearch).split(/\s+/).filter(Boolean);
+
+    return sortedCourses.filter((course) => {
+      if (courseRiskFilter && course.riskLevel !== courseRiskFilter) return false;
+      if (coursePeriodFilter && course.semester !== coursePeriodFilter) return false;
+
+      const haystack = normalizeText(
+        [course.name, course.code, course.teacherName, course.description]
+          .filter(Boolean)
+          .join(" ")
+      );
+      return terms.every((term) => haystack.includes(term));
+    });
+  }, [sortedCourses, courseSearch, courseRiskFilter, coursePeriodFilter]);
+
 
   const attendanceReport = useStudentAttendance(user?.id);
   const attendanceTotals = useMemo(() => {
@@ -300,89 +286,24 @@ export default function StudentCoursesManagement({
       : getRiskDerivedAlerts(courses);
   }, [courses, coursesById, overview]);
 
-  const dashboardRecommendations = useMemo<DashboardRecommendation[]>(
-    () =>
-      predictions.flatMap((prediction) => {
-        const course = coursesById.get(prediction.subjectId);
-        if (!course || !prediction.recommendation || !prediction.predictionId) {
-          return [];
-        }
-
-        return [
-          {
-            id: prediction.predictionId,
-            title: "Recomendación",
-            description: prediction.recommendation,
-            courseId: course.id,
-            courseName: course.name,
-          },
-        ];
-      }),
-    [coursesById, predictions]
-  );
-
-  const recommendationsPageCount = Math.max(
-    1,
-    Math.ceil(dashboardRecommendations.length / RECOMMENDATIONS_PAGE_SIZE)
-  );
-  const currentRecommendationsPage = Math.min(
-    recommendationsPage,
-    recommendationsPageCount - 1
-  );
-  const paginatedRecommendations = dashboardRecommendations.slice(
-    currentRecommendationsPage * RECOMMENDATIONS_PAGE_SIZE,
-    currentRecommendationsPage * RECOMMENDATIONS_PAGE_SIZE + RECOMMENDATIONS_PAGE_SIZE
-  );
-
-  const weeklyProgress = useMemo(() => {
-    const latestPoints = overview
-      .map((subject) => {
-        const course = coursesById.get(subject.subjectId);
-        // recentProgress is newest-first (index 0 = latest week).
-        const [latest, previous] = subject.recentProgress;
-
-        return {
-          course,
-          latest: latest?.averageGrade ?? null,
-          previous: previous?.averageGrade ?? null,
-          weeks: subject.recentProgress.length,
-        };
-      })
-      .filter(
-        (item): item is typeof item & { course: Course; latest: number } =>
-          !!item.course && item.latest !== null
-      );
-
-    return latestPoints.slice(0, 4);
-  }, [coursesById, overview]);
-
   const studentName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
     user?.email ||
     "Estudiante";
 
-  const globalAverageGauge: CircularGaugeMetric = {
+  const globalAverageMetric: DashboardMetric = {
     label: "Promedio general",
     value:
-      dashboard.globalAverage === null ? "--" : dashboard.globalAverage.toFixed(2),
-    hint: "Escala 0-10, con las materias que ya tienen notas",
-    icon: FiAward,
+      dashboard.globalAverage === null ? "--" : `${dashboard.globalAverage.toFixed(2)} / ${MAX_GRADE}`,
     tone: getAverageTone(dashboard.globalAverage),
-    percentage: dashboard.globalAverage === null ? 0 : (dashboard.globalAverage / 10) * 100,
   };
 
-  const attendanceGauge: CircularGaugeMetric = {
+  const attendanceMetric: DashboardMetric = {
     label: "Asistencia",
     value: attendanceTotals.rate === null ? "--" : `${attendanceTotals.rate}%`,
-    hint:
-      attendanceTotals.rate === null
-        ? "Aún no hay clases registradas"
-        : "Según el registro de tus docentes",
-    icon: FiCalendar,
     tone: getAverageTone(
       attendanceTotals.rate === null ? null : attendanceTotals.rate / 10
     ),
-    percentage: attendanceTotals.rate ?? 0,
     isLoading: attendanceReport.isLoading,
   };
   const comprehensionValues = overview
@@ -396,26 +317,18 @@ export default function StudentCoursesManagement({
         )
       : null;
 
-  const comprehensionGauge: CircularGaugeMetric = {
+  const comprehensionMetric: DashboardMetric = {
     label: "Comprensión",
     value: comprehensionAverage === null ? "--" : `${comprehensionAverage}%`,
-    hint:
-      comprehensionAverage === null
-        ? "Responde la encuesta del sílabo para verla"
-        : "Promedio de lo que reportas de los temas del sílabo",
-    icon: FiEye,
     tone: getAverageTone(
       comprehensionAverage === null ? null : comprehensionAverage / 10,
     ),
-    percentage: comprehensionAverage ?? 0,
     isLoading: isLoadingInsights,
   };
-
   const alertsMetric: DashboardMetric = {
     label: "Alertas académicas",
     value: dashboardAlerts.length.toString(),
-    hint: "Presiona para ver detalle por materia",
-    icon: FiAlertTriangle,
+
     tone: getCountTone(dashboardAlerts.length),
     onClick: () => {
       setShowAlerts((current) => !current);
@@ -432,7 +345,7 @@ export default function StudentCoursesManagement({
       <Container>
         <div className="space-y-8">
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="grid gap-0 lg:grid-cols-[1.5fr_1fr]">
+            <div>
               <div className="space-y-5 p-6 md:p-8">
                 <div className="flex items-center gap-4">
                   <UserAvatar
@@ -460,66 +373,38 @@ export default function StudentCoursesManagement({
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 bg-gray-50 p-6 md:p-8 lg:border-l lg:border-t-0">
-                <RiskOverviewBanner
-                  summary={aggregatedRisk}
-                  nextCourse={dashboard.nextCourse}
-                  onViewCourse={(courseId) => {
-                    navigate(getStudentCoursePerformancePath(courseId));
-                  }}
-                />
-              </div>
             </div>
           </div>
 
           <div className="overflow-x-auto border-b border-gray-200">
             <div className="flex min-w-max gap-2">
-              <button
-                type="button"
-                onClick={() => setDashboardTab("courses")}
-                className={`inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition ${
-                  dashboardTab === "courses"
-                    ? "border-blue-700 text-blue-700"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <FiBookOpen size={16} />
-                Materias matriculadas
-              </button>
-              <button
-                type="button"
-                onClick={() => setDashboardTab("overview")}
-                className={`inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition ${
-                  dashboardTab === "overview"
-                    ? "border-blue-700 text-blue-700"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <FiGrid size={16} />
-                Panel principal
-              </button>
+              {DASHBOARD_TABS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setDashboardTab(id)}
+                  className={`inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition ${
+                    dashboardTab === id
+                      ? "border-blue-700 text-blue-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
+          {dashboardTab === "grades" ? (
+            <StudentResultsReport studentId={user?.id} showStudentName={false} />
+          ) : null}
+
+          {dashboardTab === "attendance" ? (
+            <StudentAttendanceReport studentId={user?.id} showStudentName={false} />
+          ) : null}
           {dashboardTab === "courses" ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="mb-6">
-                <div className="flex items-center gap-3">
-                  <Heading as="h4" className="text-gray-900">
-                    Materias matriculadas
-                  </Heading>
-                  <Badge tone="blue" className="gap-1">
-                    <FiBookOpen size={12} />
-                    {dashboard.activeCourses}
-                  </Badge>
-                </div>
-
-                <Text variant="small" className="mt-2 text-gray-600">
-                  Ingresa a una materia para revisar rendimiento, riesgo y
-                  recomendaciones.
-                </Text>
-              </div>
-
               {isLoading ? (
                 <div className="grid gap-4 md:grid-cols-3">
                   {[0, 1, 2].map((item) => (
@@ -530,17 +415,91 @@ export default function StudentCoursesManagement({
                   ))}
                 </div>
               ) : courses.length > 0 ? (
-                <CourseGrid
-                  courses={sortedCourses}
-                  onCourseClick={(courseId) => {
-                    navigate(getStudentCoursePerformancePath(courseId));
-                  }}
-                  onSecondaryCourseAction={(courseId) => {
-                    navigate(getStudentCourseUploadDataPath(courseId));
-                  }}
-                  secondaryCourseActionLabel="Registrar avance"
-                />
-              ) : (
+                <div className="space-y-5">
+                  <ListToolbar
+                    search={courseSearch}
+                    searchPlaceholder="Buscar por materia, código o docente"
+                    onSearchChange={setCourseSearch}
+                    filters={[
+                      {
+                        id: "course-risk",
+                        label: "Nivel de riesgo",
+                        value: courseRiskFilter,
+                        allLabel: "Todos los niveles",
+                        options: RISK_FILTER_LEVELS.map((level) => ({
+                          value: level,
+                          label: getRiskPresentation(level).label,
+                        })),
+                        onChange: setCourseRiskFilter,
+                      },
+                      {
+                        id: "course-period",
+                        label: "Periodo",
+                        value: coursePeriodFilter,
+                        allLabel: "Todos los periodos",
+                        options: periodOptions,
+                        onChange: setCoursePeriodFilter,
+                      },
+                    ]}
+                    onClear={() => {
+                      setCourseSearch("");
+                      setCourseRiskFilter("");
+                      setCoursePeriodFilter("");
+                    }}
+                    actions={
+                      <div
+                        role="group"
+                        aria-label="Tipo de vista"
+                        className="inline-flex h-12 overflow-hidden rounded-xl border border-gray-200 bg-white"
+                      >
+                        {(
+                          [
+                            { value: "cards", label: "Tarjetas", icon: FiGrid },
+                            { value: "list", label: "Lista", icon: FiList },
+                          ] as const
+                        ).map(({ value, label, icon: Icon }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={coursesView === value}
+                            title={label}
+                            onClick={() => setCoursesView(value)}
+                            className={`inline-flex items-center gap-2 px-4 text-sm font-medium transition ${
+                              coursesView === value
+                                ? "bg-blue-700 text-white"
+                                : "text-gray-600 hover:bg-gray-50"
+                            }`}
+                          >
+                            <Icon size={16} aria-hidden="true" />
+                            <span className="hidden sm:inline">{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    }
+                  />
+
+                  {visibleCourses.length === 0 ? (
+                    <Text variant="small" className="text-gray-600">
+                      Ninguna materia coincide con la búsqueda o los filtros.
+                    </Text>
+                  ) : coursesView === "cards" ? (
+                    <CourseGrid
+                      courses={visibleCourses}
+                      onCourseClick={(courseId) => {
+                        navigate(getStudentCoursePerformancePath(courseId));
+                      }}
+
+                    />
+                  ) : (
+                    <StudentCoursesTable
+                      courses={visibleCourses}
+                      onCourseClick={(courseId) => {
+                        navigate(getStudentCoursePerformancePath(courseId));
+                      }}
+
+                    />
+                  )}
+                </div>              ) : (
                 <StudentCoursesEmptyState />
               )}
             </div>
@@ -548,40 +507,11 @@ export default function StudentCoursesManagement({
 
           {dashboardTab === "overview" ? (
             <>
-              {dashboard.nextCourse ? (
-                <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      navigate(
-                        getStudentCoursePerformancePath(dashboard.nextCourse!.id)
-                      );
-                    }}
-                    className="px-5 py-2 text-sm"
-                  >
-                    Ver materia prioritaria
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      void handleRefresh();
-                    }}
-                    disabled={isLoading || isLoadingInsights}
-                    className="px-5 py-2 text-sm"
-                  >
-                    <FiRefreshCw size={16} />
-                    {isLoadingInsights ? "Actualizando" : "Recargar analítica"}
-                  </Button>
-                </div>
-              ) : null}
-
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <CircularGaugeCard {...globalAverageGauge} />
+                <DashboardMetricCard {...globalAverageMetric} />
+                <DashboardMetricCard {...attendanceMetric} />
+                <DashboardMetricCard {...comprehensionMetric} />
                 <DashboardMetricCard {...alertsMetric} />
-                <CircularGaugeCard {...attendanceGauge} />
-                <CircularGaugeCard {...comprehensionGauge} />
               </div>
 
               {showAlerts ? (
@@ -643,162 +573,6 @@ export default function StudentCoursesManagement({
                   )}
                 </div>
               ) : null}
-
-              <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                  <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <Heading as="h4" className="text-gray-900">
-                        Progreso semanal reciente
-                      </Heading>
-                      <Text variant="small" className="mt-2 text-gray-600">
-                        Última nota promedio disponible por materia y comparación
-                        con la semana anterior.
-                      </Text>
-                    </div>
-                    {isLoadingInsights ? (
-                      <Badge className="bg-blue-100 text-blue-700">
-                        Actualizando
-                      </Badge>
-                    ) : null}
-                  </div>
-
-                  {weeklyProgress.length > 0 ? (
-                    <div className="space-y-3">
-                      {weeklyProgress.map(({ course, latest, previous, weeks }) => {
-                        const delta =
-                          latest !== null && previous !== null
-                            ? latest - previous
-                            : null;
-                        const tone =
-                          latest === null
-                            ? dashboardMetricToneStyles.neutral
-                            : latest >= GOOD_GRADE
-                              ? dashboardMetricToneStyles.success
-                              : latest >= PASSING_GRADE
-                                ? dashboardMetricToneStyles.warning
-                                : dashboardMetricToneStyles.danger;
-
-                        return (
-                          <button
-                            key={course.id}
-                            type="button"
-                            onClick={() => {
-                              navigate(getStudentCoursePerformancePath(course.id));
-                            }}
-                            className={`grid w-full gap-3 rounded-xl border p-4 text-left md:grid-cols-[1fr_auto] md:items-center ${tone}`}
-                          >
-                            <div>
-                              <Text variant="small" className="font-semibold">
-                                {course.name}
-                              </Text>
-                              <Text variant="caption" className="mt-1">
-                                {weeks} semanas de historial disponible
-                              </Text>
-                            </div>
-                            <div className="text-left md:text-right">
-                              <Text variant="small" className="font-bold">
-                                {latest?.toFixed(2)} / 10
-                              </Text>
-                              <Text variant="caption">
-                                {delta === null
-                                  ? "Sin comparación previa"
-                                  : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)} vs semana anterior`}
-                              </Text>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <Text variant="small" className="text-gray-600">
-                      Todavía no hay historial semanal suficiente. Registra tu
-                      avance semanal para alimentar la analítica.
-                    </Text>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-cyan-200 bg-blue-50 p-6 shadow-sm">
-                  <div className="mb-5 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-700 text-white">
-                      <FiZap size={20} />
-                    </div>
-                    <div>
-                      <Heading as="h4" className="text-blue-900">
-                        Recomendaciones para ti
-                      </Heading>
-                      <Text variant="caption" className="text-blue-800">
-                        Las más importantes de tus materias
-                      </Text>
-                    </div>
-                  </div>
-
-                  {paginatedRecommendations.length > 0 ? (
-                    <div className="space-y-3">
-                      {paginatedRecommendations.map((recommendation) => (
-                        <button
-                          key={recommendation.id}
-                          type="button"
-                          onClick={() => {
-                            navigate(
-                              getStudentCoursePerformancePath(recommendation.courseId)
-                            );
-                          }}
-                          className="w-full rounded-xl border-l-4 border-blue-700 bg-white p-4 text-left shadow-sm transition hover:shadow-md"
-                        >
-                          <Badge className="bg-blue-100 text-xs text-blue-700">
-                            {recommendation.courseName}
-                          </Badge>
-                          <Text variant="small" className="mt-3 text-gray-700">
-                            {recommendation.description}
-                          </Text>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <Text variant="small" className="text-blue-900">
-                      Aún no hay recomendaciones calculadas. Guarda tu avance
-                      semanal o recarga la analítica después del recálculo.
-                    </Text>
-                  )}
-
-                  {dashboardRecommendations.length > RECOMMENDATIONS_PAGE_SIZE ? (
-                    <div className="mt-5 flex items-center justify-between gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setRecommendationsPage((current) => Math.max(0, current - 1));
-                        }}
-                        disabled={currentRecommendationsPage === 0}
-                        className="gap-2 bg-white px-4 py-2 text-sm"
-                      >
-                        <FiChevronLeft size={16} />
-                        Anterior
-                      </Button>
-
-                      <Text variant="caption" className="text-blue-800">
-                        Página {currentRecommendationsPage + 1} de {recommendationsPageCount}
-                      </Text>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setRecommendationsPage((current) =>
-                            Math.min(recommendationsPageCount - 1, current + 1)
-                          );
-                        }}
-                        disabled={currentRecommendationsPage >= recommendationsPageCount - 1}
-                        className="gap-2 bg-white px-4 py-2 text-sm"
-                      >
-                        Siguiente
-                        <FiChevronRight size={16} />
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
 
               <AiRecommendationPanel
                 title="Recomendación con IA"

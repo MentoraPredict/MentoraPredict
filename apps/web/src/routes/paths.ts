@@ -28,7 +28,6 @@ export const APP_PATHS = {
     courseEvaluations: "/student/courses/:courseId/evaluations",
     courseMaterials: "/student/courses/:courseId/materials",
     courseAiChat: "/student/courses/:courseId/ai-chat",
-    courseSurvey: "/student/courses/:courseId/survey/:surveyId",
   },
   teacher: {
     dashboard: "/teacher/courses",
@@ -182,8 +181,4 @@ export function getStudentCourseAiChatPath(courseId: string) {
 
 export function getStudentSurveyWizardPath(surveyId: string) {
   return `/student/survey/${surveyId}`;
-}
-
-export function getStudentCourseSurveyPath(courseId: string, surveyId: string) {
-  return `/student/courses/${courseId}/survey/${surveyId}`;
 }
