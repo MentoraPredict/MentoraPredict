@@ -37,6 +37,8 @@ import {
 } from "./infrastructure/persistence/academic-structure.orm-entities";
 import {
   StudentProfileOrmEntity,
+  StudentSocioeconomicSurveyOrmEntity,
+  UserContactDetailOrmEntity,
   GuardianStudentOrmEntity,
   ConsentOrmEntity,
   StudentEnrollmentOrmEntity,
@@ -62,6 +64,8 @@ export default new DataSource({
     AcademicPeriodOrmEntity,
     SchoolYearOrmEntity,
     StudentProfileOrmEntity,
+    StudentSocioeconomicSurveyOrmEntity,
+    UserContactDetailOrmEntity,
     GuardianStudentOrmEntity,
     ConsentOrmEntity,
     StudentEnrollmentOrmEntity,

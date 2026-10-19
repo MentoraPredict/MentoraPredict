@@ -28,6 +28,8 @@ import {
 } from "./infrastructure/persistence/academic-structure.orm-entities";
 import {
   StudentProfileOrmEntity,
+  StudentSocioeconomicSurveyOrmEntity,
+  UserContactDetailOrmEntity,
   GuardianStudentOrmEntity,
   ConsentOrmEntity,
   StudentEnrollmentOrmEntity,
@@ -268,6 +270,8 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           AcademicPeriodOrmEntity,
           SchoolYearOrmEntity,
           StudentProfileOrmEntity,
+          StudentSocioeconomicSurveyOrmEntity,
+          UserContactDetailOrmEntity,
           GuardianStudentOrmEntity,
           ConsentOrmEntity,
           StudentEnrollmentOrmEntity,

@@ -21,6 +21,50 @@ export class StudentProfileOrmEntity {
   @Column({ name: 'emergency_contact_name', type: 'varchar', length: 200, nullable: true }) emergencyContactName!: string | null;
   @Column({ name: 'emergency_contact_phone', type: 'varchar', length: 30, nullable: true }) emergencyContactPhone!: string | null;
   @Column({ name: 'previous_school', type: 'varchar', length: 200, nullable: true }) previousSchool!: string | null;
+  @Column({ name: 'document_type', type: 'varchar', length: 20, default: 'CEDULA' }) documentType!: string;
+  @Column({ type: 'varchar', length: 30, nullable: true }) phone!: string | null;
+  @Column({ name: 'blood_type', type: 'varchar', length: 3, nullable: true }) bloodType!: string | null;
+  @Column({ type: 'text', nullable: true }) allergies!: string | null;
+  @Column({ name: 'disability_type', type: 'varchar', length: 30, nullable: true }) disabilityType!: string | null;
+  @Column({ name: 'disability_percentage', type: 'smallint', nullable: true }) disabilityPercentage!: number | null;
+  @Column({ name: 'conadis_card', type: 'varchar', length: 20, nullable: true }) conadisCard!: string | null;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt!: Date;
+}
+
+/** Encuesta socioeconómica: solo la consulta el DECE. */
+@Check('CHK_socioeconomic_income', `"monthly_income_range" IS NULL OR "monthly_income_range" IN ('BELOW_1_SBU','1_TO_2_SBU','2_TO_4_SBU','ABOVE_4_SBU')`)
+@Check('CHK_socioeconomic_transport', `"transport_mode" IS NULL OR "transport_mode" IN ('WALK','BUS','CAR','BIKE','OTHER')`)
+@Check('CHK_socioeconomic_education', `"guardian_education_level" IS NULL OR "guardian_education_level" IN ('NONE','PRIMARY','SECONDARY','HIGHER')`)
+@Check('CHK_socioeconomic_housing', `"housing_type" IS NULL OR "housing_type" IN ('OWNED','RENTED','BORROWED')`)
+@Entity('student_socioeconomic_surveys')
+export class StudentSocioeconomicSurveyOrmEntity {
+  @PrimaryColumn({ name: 'student_id', type: 'uuid' }) studentId!: string;
+  @Column({ name: 'household_members', type: 'smallint', nullable: true }) householdMembers!: number | null;
+  @Column({ name: 'monthly_income_range', type: 'varchar', length: 20, nullable: true }) monthlyIncomeRange!: string | null;
+  @Column({ name: 'student_works', type: 'boolean', default: false }) studentWorks!: boolean;
+  @Column({ name: 'transport_mode', type: 'varchar', length: 20, nullable: true }) transportMode!: string | null;
+  @Column({ name: 'commute_minutes', type: 'smallint', nullable: true }) commuteMinutes!: number | null;
+  @Column({ name: 'guardian_education_level', type: 'varchar', length: 20, nullable: true }) guardianEducationLevel!: string | null;
+  @Column({ name: 'housing_type', type: 'varchar', length: 20, nullable: true }) housingType!: string | null;
+  @Column({ name: 'has_internet', type: 'boolean', default: false }) hasInternet!: boolean;
+  @Column({ name: 'has_computer', type: 'boolean', default: false }) hasComputer!: boolean;
+  @Column({ name: 'receives_government_aid', type: 'boolean', default: false }) receivesGovernmentAid!: boolean;
+  @Column({ type: 'text', nullable: true }) notes!: string | null;
+  @Column({ name: 'surveyed_by', type: 'uuid', nullable: true }) surveyedBy!: string | null;
+  @Column({ name: 'surveyed_at', type: 'timestamptz', default: () => 'now()' }) surveyedAt!: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt!: Date;
+}
+
+/** Contacto y datos profesionales de docentes, representantes y personal. */
+@Entity('user_contact_details')
+export class UserContactDetailOrmEntity {
+  @PrimaryColumn({ name: 'user_id', type: 'uuid' }) userId!: string;
+  @Column({ type: 'varchar', length: 30, nullable: true }) phone!: string | null;
+  @Column({ name: 'alternate_phone', type: 'varchar', length: 30, nullable: true }) alternatePhone!: string | null;
+  @Column({ type: 'varchar', length: 300, nullable: true }) address!: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) occupation!: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) specialty!: string | null;
+  @Column({ name: 'academic_title', type: 'varchar', length: 200, nullable: true }) academicTitle!: string | null;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt!: Date;
 }
 
