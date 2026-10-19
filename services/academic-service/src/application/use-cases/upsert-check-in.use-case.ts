@@ -82,6 +82,7 @@ export class UpsertCheckInUseCase {
       dto.generalComprehension,
       dto.topicResponses ?? [],
       dto.notes ?? null,
+      dto.explainBetter ?? null,
       now,
       now,
     );

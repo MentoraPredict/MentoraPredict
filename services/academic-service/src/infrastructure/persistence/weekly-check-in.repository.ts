@@ -99,8 +99,8 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
         `INSERT INTO weekly_check_ins (
            id, student_id, subject_id, period_id, academic_week, academic_year,
            check_in_date, attendance, task_completion, study_hours, emotional_state,
-           general_comprehension, notes, created_at, updated_at
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+           general_comprehension, notes, explain_better, created_at, updated_at
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
          ON CONFLICT (student_id, subject_id, academic_week, academic_year)
          DO UPDATE SET
            period_id = EXCLUDED.period_id,
@@ -111,6 +111,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
            emotional_state = EXCLUDED.emotional_state,
            general_comprehension = EXCLUDED.general_comprehension,
            notes = EXCLUDED.notes,
+           explain_better = EXCLUDED.explain_better,
            updated_at = EXCLUDED.updated_at
          RETURNING *`,
         [
@@ -127,6 +128,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
           entity.emotionalState,
           entity.generalComprehension,
           entity.notes,
+          entity.explainBetter,
           entity.createdAt,
           entity.updatedAt,
         ],
@@ -206,6 +208,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
       Number(row.general_comprehension),
       topicResponses,
       (row.notes as string | null) ?? null,
+      (row.explain_better as string | null) ?? null,
       new Date(row.created_at as string),
       new Date(row.updated_at as string),
     );
@@ -227,6 +230,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
       o.generalComprehension,
       topicResponses,
       o.notes,
+      o.explainBetter,
       o.createdAt,
       o.updatedAt,
     );
@@ -247,6 +251,7 @@ export class WeeklyCheckInRepository implements IWeeklyCheckInRepository {
     o.emotionalState = d.emotionalState;
     o.generalComprehension = d.generalComprehension;
     o.notes = d.notes;
+    o.explainBetter = d.explainBetter;
     o.createdAt = d.createdAt;
     o.updatedAt = d.updatedAt;
     return o;

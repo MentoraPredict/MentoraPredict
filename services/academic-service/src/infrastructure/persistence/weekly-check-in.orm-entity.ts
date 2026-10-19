@@ -58,6 +58,7 @@ export class WeeklyCheckInOrmEntity {
   generalComprehension!: number;
 
   @Column({ type: "text", nullable: true }) notes!: string | null;
+  @Column({ name: "explain_better", type: "text", nullable: true }) explainBetter!: string | null;
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt!: Date;
