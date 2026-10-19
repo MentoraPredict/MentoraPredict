@@ -4,9 +4,10 @@
 -- los pesos de los componentes (70/30) salen de `grading_components`,
 -- por eso el peso individual de la actividad es 0.
 --
--- Las notas son deterministas: cada estudiante tiene un nivel de
--- rendimiento (bajo, medio, alto) para que haya casos de riesgo, y
--- algunas notas quedan sin registrar para ver periodos incompletos.
+-- Las notas son deterministas y salen del perfil de cada estudiante (tabla
+-- seed_student_archetypes de 05_people_enrollment.sql): destacados, en riesgo,
+-- en recuperación o en declive. El estudiante en riesgo crítico no rindió la
+-- prueba del trimestre, para ver un periodo incompleto.
 -- =====================================================
 
 INSERT INTO evaluations (
@@ -61,21 +62,27 @@ FROM (
         sj.teacher_id,
         ev.due_date,
         md5('grade:' || en.student_id::text || ':' || ev.id::text) AS h,
-        -- Nivel del estudiante (por número) + efecto de la asignatura + ruido.
+        -- Nota = media del perfil + tendencia a lo largo de las 4 evaluaciones
+        -- + un pequeño efecto de la asignatura + ruido repetible.
         ROUND(
             LEAST(10, GREATEST(0,
-                CASE (right(en.student_id::text, 3)::int) % 5
-                    WHEN 0 THEN 4.2
-                    WHEN 1 THEN 6.8
-                    WHEN 2 THEN 7.4
-                    ELSE 8.7
-                END
-                + ((('x' || substr(md5(en.subject_id::text), 1, 4))::bit(16)::int % 10) - 5) / 10.0
-                + ((('x' || substr(md5('grade:' || en.student_id::text || ':' || ev.id::text), 1, 4))::bit(16)::int % 21) - 10) / 10.0
+                a.grade_mean
+                + a.grade_trend * (
+                    CASE ev.name
+                        WHEN 'Tarea 1' THEN 1
+                        WHEN 'Lección oral' THEN 2
+                        WHEN 'Trabajo en clase' THEN 3
+                        ELSE 4
+                    END - 2.5)
+                + ((('x' || substr(md5(en.subject_id::text), 1, 4))::bit(16)::int % 7) - 3) / 10.0
+                + ((('x' || substr(md5('grade:' || en.student_id::text || ':' || ev.id::text), 1, 4))::bit(16)::int % 9) - 4) / 10.0
             ))::numeric,
             2
-        ) AS value
+        ) AS value,
+        (ev.name = 'Prueba del trimestre' AND a.skips_summative) AS skipped
     FROM enrollments en
+    JOIN seed_student_profile_map pm ON pm.student_no = right(en.student_id::text, 3)::int
+    JOIN seed_student_archetypes a ON a.code = pm.archetype
     JOIN subjects sj ON sj.id = en.subject_id AND sj.section_id IS NOT NULL
     JOIN evaluations ev ON ev.subject_id = en.subject_id
                        AND ev.period_id = 'a0000000-2026-4000-8000-0000000000b1'
@@ -83,8 +90,8 @@ FROM (
       AND en.period_id = 'a0000000-2026-4000-8000-0000000000b1'
 ) g
 WHERE teacher_id IS NOT NULL
-  -- ~4 % de notas pendientes de registrar.
-  AND (('x' || substr(h, 5, 4))::bit(16)::int % 25) <> 0
+  -- El estudiante en riesgo crítico no rindió la prueba del trimestre.
+  AND NOT skipped
 ON CONFLICT (id) DO UPDATE SET
     value = EXCLUDED.value,
     registered_by = EXCLUDED.registered_by,

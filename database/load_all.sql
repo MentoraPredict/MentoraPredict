@@ -8,3 +8,4 @@
 \i /seeds/postgres/07_attendance.sql
 \i /seeds/postgres/08_subject_period_references.sql
 \i /seeds/postgres/09_student_analytics.sql
+\i /seeds/postgres/10_activity_and_alerts.sql

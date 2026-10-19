@@ -57,3 +57,20 @@ ON CONFLICT (id) DO UPDATE SET
     period_number = EXCLUDED.period_number,
     grades_due_date = EXCLUDED.grades_due_date,
     updated_at = NOW();
+
+-- Datos de la institución (la fila la crea la migración InstitutionConfig) -----
+-- Ficticios: sirven para la libreta y los reportes. Se editan desde el panel.
+
+UPDATE institutions SET
+    amie = '17H00000',
+    name = 'Unidad Educativa MentoraPredict',
+    sustentation = 'FISCAL',
+    regime = 'SIERRA_AMAZONIA',
+    zone = 'Zona 9',
+    district = 'Quito - Distrito 17D03',
+    address = 'Av. Universitaria y Av. América, Quito',
+    phone = '022550100',
+    email = 'secretaria@mentorapredict.edu.ec',
+    rector_name = 'Mgs. Elena Cevallos',
+    updated_at = NOW()
+WHERE id = '00000000-0000-4000-8000-000000000001';

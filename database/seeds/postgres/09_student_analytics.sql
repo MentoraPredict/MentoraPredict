@@ -4,9 +4,11 @@
 --
 -- Escala de notas 0-10 (aprobar con 7). Los check-ins se generan por cada
 -- matrícula activa desde el inicio del periodo activo hasta hoy (nunca
--- fechas futuras). La asistencia autorreportada refleja el mismo perfil
--- que la asistencia del docente de 07_attendance.sql. average_grade lleva
--- una pendiente ascendente deliberada para que la tendencia sea clara.
+-- fechas futuras). Todo sale del perfil del estudiante (tabla
+-- seed_student_archetypes de 05_people_enrollment.sql): asistencia,
+-- cumplimiento, horas de estudio, ánimo y comprensión coinciden con sus notas
+-- y faltas reales. average_grade parte del promedio real de la libreta y
+-- sigue la tendencia del perfil (recuperación sube, declive baja).
 --
 -- Necesita los temas del temario (04_structure.sql) y las tablas de
 -- referencia (02_user_references.sql, 08_subject_period_references.sql).
@@ -79,11 +81,15 @@ BEGIN
         ae.student_id,
         ae.subject_id,
         ae.period_id,
+        a.absent_pct, a.compliance, a.study_hours AS base_hours, a.emotional,
+        a.comprehension AS base_comprehension, a.grade_trend,
         w.week_offset,
         md5(ae.student_id::text || ':' || ae.subject_id::text || ':check-in:' || w.week_offset::text) AS seed_hash,
         (ae.period_start_date + (w.week_offset * interval '7 days'))::date AS check_in_date
       FROM active_enrollments ae
       CROSS JOIN weeks w
+      JOIN seed_student_profile_map pm ON pm.student_no = right(ae.student_id::text, 3)::int
+      JOIN seed_student_archetypes a ON a.code = pm.archetype
       WHERE (ae.period_start_date + (w.week_offset * interval '7 days'))::date <= current_date
     ),
 
@@ -102,22 +108,16 @@ BEGIN
         EXTRACT(WEEK FROM check_in_date)::int AS academic_week,
         EXTRACT(YEAR FROM check_in_date)::int AS academic_year,
         check_in_date,
-        (CASE
-           WHEN (right(student_id::text, 3)::int) % 7 = 0 THEN 70 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 11)
-           WHEN (right(student_id::text, 3)::int) % 11 = 0 THEN 82 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9)
-           ELSE 92 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 9)
-         END)::int AS attendance,
-        (55 + (('x' || substr(seed_hash, 3, 2))::bit(8)::int % 46))::int AS task_completion,
-        (1 + (('x' || substr(seed_hash, 5, 2))::bit(8)::int % 10))::numeric(5,2) AS study_hours,
-        CASE (('x' || substr(seed_hash, 7, 2))::bit(8)::int % 5)
-          WHEN 0 THEN 'CRITICAL'
-          WHEN 1 THEN 'BAD'
-          WHEN 2 THEN 'NEUTRAL'
-          WHEN 3 THEN 'GOOD'
-          ELSE 'GREAT'
-        END AS emotional_state,
-        (45 + (('x' || substr(seed_hash, 9, 2))::bit(8)::int % 56))::int AS general_comprehension,
-        seed_hash
+        LEAST(100, GREATEST(0, 100 - absent_pct + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 7) - 3))::int AS attendance,
+        LEAST(100, GREATEST(0, compliance + (('x' || substr(seed_hash, 3, 2))::bit(8)::int % 15) - 7))::int AS task_completion,
+        GREATEST(0.5, base_hours + ((('x' || substr(seed_hash, 5, 2))::bit(8)::int % 5) - 2) * 0.3)::numeric(5,2) AS study_hours,
+        (ARRAY['CRITICAL','BAD','NEUTRAL','GOOD','GREAT'])[
+            LEAST(5, GREATEST(1, emotional + CASE (('x' || substr(seed_hash, 7, 2))::bit(8)::int % 6)
+                WHEN 0 THEN -1 WHEN 1 THEN 1 ELSE 0 END))
+        ] AS emotional_state,
+        LEAST(100, GREATEST(0, base_comprehension
+            + (('x' || substr(seed_hash, 9, 2))::bit(8)::int % 13) - 6
+            + ROUND(grade_trend * (week_offset - 3) * 3)))::int AS general_comprehension,        seed_hash
       FROM seed_data
     )
 
@@ -247,8 +247,12 @@ BEGIN
           PARTITION BY wc.student_id, wc.subject_id
           ORDER BY wc.academic_year, wc.academic_week
         ) - 1 AS week_index,
+        COUNT(*) OVER (PARTITION BY wc.student_id, wc.subject_id) - 1 AS last_week_index,
+        a.grade_trend,
         md5(wc.student_id::text || ':' || wc.subject_id::text || ':metric:' || wc.academic_week::text) AS seed_hash
       FROM weekly_check_ins wc
+      JOIN seed_student_profile_map pm ON pm.student_no = right(wc.student_id::text, 3)::int
+      JOIN seed_student_archetypes a ON a.code = pm.archetype
     ),
 
     metric_rows AS (
@@ -274,11 +278,11 @@ BEGIN
                 ga.average_grade,
                 (5 + (('x' || substr(seed_hash, 1, 2))::bit(8)::int % 4))::numeric
               )
-              -- Pendiente ascendente deliberada (de -1,1 en la primera semana a
-              -- +1,1 en la última) para que la regresión lineal de "Evolución de
-              -- mi promedio" muestre una tendencia ASCENDING clara.
-              + ((lc.week_index - 5.5) * 0.2)
-              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 7) - 3)::numeric / 10)
+              -- La última semana coincide con el promedio real; hacia atrás se
+              -- aplica la tendencia del perfil (recuperación: antes más bajo;
+              -- declive: antes más alto).
+              + (lc.grade_trend * 0.4 * (lc.week_index - lc.last_week_index))
+              + (((('x' || substr(seed_hash, 11, 2))::bit(8)::int % 5) - 2)::numeric / 10)
             )
           ),
           2
@@ -287,7 +291,7 @@ BEGIN
         lc.attendance AS attendance_rate,
         lc.study_hours,
         lc.general_comprehension AS comprehension_avg,
-        ((('x' || substr(seed_hash, 3, 2))::bit(8)::int % 9) - 4)::numeric(6,2) / 10 AS trend_slope
+        ROUND(lc.grade_trend * 0.4, 2)::numeric(6,2) AS trend_slope
       FROM latest_check_ins lc
       LEFT JOIN grade_average ga
         ON ga.student_id = lc.student_id

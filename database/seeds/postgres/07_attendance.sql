@@ -4,9 +4,10 @@
 -- clases se generan para todo el año lectivo; las anteriores a hoy quedan
 -- HELD con la asistencia registrada por el docente, las demás PLANNED.
 --
--- Hay estudiantes con ausencias frecuentes (n múltiplo de 7: ~25 %;
--- múltiplo de 11: ~12 %; resto: ~3 %) para probar los avisos de
--- Configuración → Asistencia, y algunas faltas con justificación
+-- El porcentaje de faltas de cada estudiante sale de su perfil (tabla
+-- seed_student_archetypes de 05_people_enrollment.sql): del 2 % de los
+-- destacados al 30 % del estudiante en riesgo crítico. Con eso se prueban los
+-- avisos de Configuración → Asistencia. Algunas faltas tienen justificación
 -- pendiente, aprobada o rechazada. Los festivos no se descuentan.
 -- =====================================================
 
@@ -86,14 +87,12 @@ FROM (
         en.student_id,
         md5('attendance:' || ses.id::text || ':' || en.student_id::text) AS h,
         (('x' || substr(md5('roll:' || ses.id::text || ':' || en.student_id::text), 1, 4))::bit(16)::int % 100) AS roll,
-        CASE
-            WHEN (right(en.student_id::text, 3)::int) % 7 = 0 THEN 25
-            WHEN (right(en.student_id::text, 3)::int) % 11 = 0 THEN 12
-            ELSE 3
-        END AS absent_pct
+        a.absent_pct
     FROM class_sessions ses
     JOIN class_schedules cs ON cs.id = ses.schedule_id
     JOIN enrollments en ON en.subject_id = ses.subject_id AND en.status = 'ACTIVE'
+    JOIN seed_student_profile_map pm ON pm.student_no = right(en.student_id::text, 3)::int
+    JOIN seed_student_archetypes a ON a.code = pm.archetype
     WHERE ses.status = 'HELD'
 ) s
 ON CONFLICT (session_id, student_id) DO UPDATE SET
@@ -127,8 +126,7 @@ FROM (
         sa.session_id,
         sa.student_id,
         ses.session_date,
-        ('dddddddd-0000-4000-8000-0000000000'
-            || lpad((((right(sa.student_id::text, 3)::int) + 1) / 2)::text, 2, '0'))::uuid AS guardian_id,
+        gs.guardian_id,
         md5('justification:' || sa.session_id::text || ':' || sa.student_id::text) AS h,
         CASE (('x' || substr(md5('status:' || sa.session_id::text || ':' || sa.student_id::text), 1, 4))::bit(16)::int % 3)
             WHEN 0 THEN 'PENDING'
@@ -137,6 +135,7 @@ FROM (
         END AS status
     FROM session_attendances sa
     JOIN class_sessions ses ON ses.id = sa.session_id
+    JOIN guardian_students gs ON gs.student_id = sa.student_id AND gs.is_primary
     WHERE sa.present = FALSE
       AND (('x' || substr(md5('wants:' || sa.session_id::text || ':' || sa.student_id::text), 1, 4))::bit(16)::int % 5) = 0
 ) j

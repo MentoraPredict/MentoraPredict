@@ -4,7 +4,8 @@
 -- (una asignatura de un paralelo es una fila de `subjects` con section_id).
 --
 -- Los grados (`grade_levels`) los crea la migración; aquí solo se usan
--- 8.º y 9.º EGB y 1.º BGU. Las horas semanales son valores de ejemplo:
+-- 8.º EGB y 1.º BGU (la malla de 9.º queda definida para crear paralelos desde
+-- el panel). Las horas semanales son valores de ejemplo:
 -- la malla oficial se edita desde Grados y paralelos.
 -- Debe correr después de 02_user_references.sql (tutores y docentes) y de
 -- 03_school_year.sql.
@@ -60,13 +61,11 @@ INSERT INTO curriculum_subjects (grade_level_code, subject_catalog_id, weekly_ho
 ON CONFLICT (grade_level_code, subject_catalog_id) DO UPDATE SET
     weekly_hours = EXCLUDED.weekly_hours;
 
--- Paralelos (tutor = primeros cuatro docentes) -------------------------------
+-- Paralelos (tutores: Fernando Paredes en 8.º A, Verónica Cárdenas en 1.º BGU A) --
 
 INSERT INTO sections (id, school_year_id, grade_level_code, name, shift, capacity, tutor_id, is_active, created_at, updated_at) VALUES
-    ('e0000000-2026-4000-8000-000000000001', 'a0000000-2026-4000-8000-000000000001', 'EGB_8', 'A', 'MATUTINA', 35, 'bbbbbbbb-0000-4000-8000-000000000001', TRUE, NOW(), NOW()),
-    ('e0000000-2026-4000-8000-000000000002', 'a0000000-2026-4000-8000-000000000001', 'EGB_8', 'B', 'MATUTINA', 35, 'bbbbbbbb-0000-4000-8000-000000000002', TRUE, NOW(), NOW()),
-    ('e0000000-2026-4000-8000-000000000003', 'a0000000-2026-4000-8000-000000000001', 'EGB_9', 'A', 'MATUTINA', 35, 'bbbbbbbb-0000-4000-8000-000000000003', TRUE, NOW(), NOW()),
-    ('e0000000-2026-4000-8000-000000000004', 'a0000000-2026-4000-8000-000000000001', 'BGU_1', 'A', 'MATUTINA', 40, 'bbbbbbbb-0000-4000-8000-000000000004', TRUE, NOW(), NOW())
+    ('e0000000-2026-4000-8000-000000000001', 'a0000000-2026-4000-8000-000000000001', 'EGB_8', 'A', 'MATUTINA', 35, 'bbbbbbbb-0000-4000-8000-000000000002', TRUE, NOW(), NOW()),
+    ('e0000000-2026-4000-8000-000000000002', 'a0000000-2026-4000-8000-000000000001', 'BGU_1', 'A', 'MATUTINA', 40, 'bbbbbbbb-0000-4000-8000-000000000005', TRUE, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
     school_year_id = EXCLUDED.school_year_id,
     grade_level_code = EXCLUDED.grade_level_code,
@@ -79,19 +78,26 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- Cursos: cada asignatura de la malla en cada paralelo -------------------------
 -- El periodo "ancla" del curso es el trimestre en el que se crea (el primero).
--- Docente: rota entre los docentes 1..12 según la asignatura y el paralelo.
+-- Cada asignatura la dicta el mismo docente en los dos paralelos:
+--   1 Matemática · 2 Lengua · 3 Ciencias Naturales y Física · 4 Química
+--   5 Estudios Sociales e Historia · 6 Inglés · 7 Educación Física · 8 Arte
 
-WITH offerings AS (
+WITH teacher_by_subject (code, teacher_no) AS (
+    VALUES ('MAT', 1), ('LEN', 2), ('CNA', 3), ('FIS', 3), ('QUI', 4),
+           ('ESO', 5), ('HIS', 5), ('ING', 6), ('EFI', 7), ('ECA', 8)
+),
+offerings AS (
     SELECT
         s.id AS section_id,
         s.capacity,
         cs.subject_catalog_id,
         cs.weekly_hours,
-        md5(s.id::text || ':' || cs.subject_catalog_id::text) AS h,
-        (dense_rank() OVER (ORDER BY cs.subject_catalog_id) - 1)::int AS catalog_ord,
-        (dense_rank() OVER (ORDER BY s.id) - 1)::int AS section_ord
+        tbs.teacher_no,
+        md5(s.id::text || ':' || cs.subject_catalog_id::text) AS h
     FROM sections s
     JOIN curriculum_subjects cs ON cs.grade_level_code = s.grade_level_code
+    JOIN subject_catalog sc ON sc.id = cs.subject_catalog_id
+    JOIN teacher_by_subject tbs ON tbs.code = sc.code
     WHERE s.school_year_id = 'a0000000-2026-4000-8000-000000000001'
 )
 INSERT INTO subjects (
@@ -103,7 +109,7 @@ SELECT
     subject_catalog_id,
     'a0000000-2026-4000-8000-0000000000b1',
     capacity,
-    ('bbbbbbbb-0000-4000-8000-0000000000' || lpad((1 + ((catalog_ord + section_ord) % 12))::text, 2, '0'))::uuid,
+    ('bbbbbbbb-0000-4000-8000-0000000000' || lpad(teacher_no::text, 2, '0'))::uuid,
     TRUE,
     section_id,
     weekly_hours,
@@ -124,7 +130,6 @@ FROM subjects sj
 WHERE sj.section_id IS NOT NULL
   AND sj.teacher_id IS NOT NULL
 ON CONFLICT (subject_id, teacher_id, period_id) DO NOTHING;
-
 -- Temario (3 unidades por asignatura) --------------------------------------
 
 WITH topic_catalog (code, rn, title, description) AS (
