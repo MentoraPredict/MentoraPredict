@@ -57,11 +57,8 @@ export class CalculateAverageUseCase {
 
     // Compute per-subject weighted averages
     const subjectAverages: Record<string, number> = {};
-    const creditsBySubject: Record<string, number> = {};
 
     for (const [subjectId, sg] of gradesBySubject.entries()) {
-      creditsBySubject[subjectId] = (sg[0]?.subjectCredits ?? 0) > 0 ? sg[0].subjectCredits : 1;
-
       const evals = evalsBySubject.get(subjectId) ?? [];
       const weightMap = new Map(evals.filter((e) => e.isActive).map((e) => [e.id, e.weight]));
 
@@ -85,16 +82,12 @@ export class CalculateAverageUseCase {
       }
     }
 
-    // Global average: weighted by subject credits
-    let weighted = 0;
-    let totalCredits = 0;
-    for (const [subjectId, avg] of Object.entries(subjectAverages)) {
-      const credits = creditsBySubject[subjectId] ?? 1;
-      weighted += avg * credits;
-      totalCredits += credits;
-    }
+    // Promedio general: media simple de los promedios por asignatura.
+    const averages = Object.values(subjectAverages);
     const globalAverage =
-      totalCredits > 0 ? Math.round((weighted / totalCredits) * 100) / 100 : 0;
+      averages.length > 0
+        ? Math.round((averages.reduce((sum, avg) => sum + avg, 0) / averages.length) * 100) / 100
+        : 0;
 
     const previous = await this.metricsRepo.findByStudentAndPeriod(studentId, periodId);
     const version = (previous?.version ?? 0) + 1;

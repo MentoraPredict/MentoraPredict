@@ -1,24 +1,17 @@
 import CourseAnalyticsLayout from "@/features/courses/components/CourseAnalyticsLayout";
-import CourseSidebar from "@/features/courses/components/CourseSidebar";
 import StudentCoursesManagement from "@/features/students/components/StudentCoursesManagement";
+import StudentMainSidebar from "@/features/students/components/StudentMainSidebar";
 import useStudentCourses from "@/hooks/queries/useStudentCourses";
 
 export default function StudentCoursesPage() {
   const { courses, isLoading, error, reload } = useStudentCourses();
-  const activeCourseId = courses[0]?.id ?? "";
 
   const reloadCourses = async () => (await reload()).data ?? [];
 
   return (
     <CourseAnalyticsLayout
-      title="Panel academico del estudiante"
-      sidebar={
-        <CourseSidebar
-          mode="student"
-          courses={courses}
-          activeCourseId={activeCourseId}
-        />
-      }
+      title="Panel académico del estudiante"
+      sidebar={<StudentMainSidebar courses={courses} />}
     >
       <StudentCoursesManagement
         courses={courses}

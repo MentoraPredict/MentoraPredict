@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  FiActivity,
-  FiAlertTriangle,
-  FiAward,
   FiBookOpen,
-  FiChevronLeft,
-  FiChevronRight,
+  FiGrid,
+  FiList,
   FiRefreshCw,
-  FiZap,
+  FiTrendingUp,
+  FiUserCheck,
 } from "react-icons/fi";
-import type { IconType } from "react-icons";
 import { AxiosError } from "axios";
 
 import Badge from "@/components/atoms/Badge";
@@ -18,20 +15,31 @@ import Button from "@/components/atoms/Button";
 import Container from "@/components/atoms/Container";
 import FeedbackMessage from "@/components/atoms/FeedbackMessage";
 import Heading from "@/components/atoms/Heading";
-import MotionCard from "@/components/atoms/MotionCard";
 import Text from "@/components/atoms/Text";
+import UserAvatar from "@/components/atoms/UserAvatar";
+import ListToolbar from "@/components/molecules/ListToolbar";
 
 import AiRecommendationPanel from "@/features/courses/components/AiRecommendationPanel";
 import CourseGrid from "@/features/courses/components/CourseGrid";
+import StudentAttendanceReport from "@/features/students/components/StudentAttendanceReport";
 import StudentCoursesEmptyState from "@/features/students/components/StudentCoursesEmptyState";
+import StudentCoursesTable from "@/features/students/components/StudentCoursesTable";
+import StudentResultsReport from "@/features/students/components/StudentResultsReport";
 
+import DashboardMetricCard, {
+  type DashboardMetric,
+} from "@/features/dashboard/components/DashboardMetricCard";
+import useStudentAttendance from "@/features/students/hooks/useStudentAttendance";
+import { getAverageTone, getCountTone } from "@/features/dashboard/utils/metricTone";
 import {
-  getStudentCoursePerformancePath,
-  getStudentCourseUploadDataPath,
-} from "@/routes/paths";
+  courseRiskRank,
+  getRiskPresentation,
+  isAtRiskLevel,
+} from "@/features/dashboard/utils/riskLevelPresentation";
+
+import { getStudentCoursePerformancePath } from "@/routes/paths";
 import {
   getLatestAiPrediction,
-  getStudentSubjectPrediction,
   getStudentSubjectsOverview,
   requestAiPrediction,
   type AiPrediction,
@@ -39,63 +47,12 @@ import {
 } from "@/services/course-analytics.service";
 import { getActiveAcademicPeriod } from "@/services/student-performance.service";
 import { useAuthStore } from "@/store/auth.store";
-import type { Course, CourseAlert, CourseRecommendation } from "@/types/course";
-import { mapWithConcurrency } from "@/utils/mapWithConcurrency";
-
-// Predictions still need one request per subject (they live in
-// prediction-service) — metrics/risk/alerts/progress no longer do, they all
-// come from one call to getStudentSubjectsOverview(). Capping how many
-// prediction calls run at once still bounds that remaining burst.
-const PREDICTION_CONCURRENCY = 3;
-
-const RECOMMENDATIONS_PAGE_SIZE = 3;
-
-const riskLabels = {
-  HIGH: "Alta prioridad",
-  MEDIUM: "Seguimiento",
-  LOW: "Estable",
-  UNKNOWN: "Sin datos",
-};
-
-const riskStyles = {
-  HIGH: "border-red-200 bg-red-50 text-red-800",
-  MEDIUM: "border-amber-200 bg-amber-50 text-amber-800",
-  LOW: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  UNKNOWN: "border-gray-200 bg-gray-50 text-gray-700",
-};
-
-const metricToneStyles = {
-  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
-  danger: "border-red-200 bg-red-50 text-red-800",
-  neutral: "border-gray-200 bg-gray-50 text-gray-700",
-};
-
-type MetricTone = keyof typeof metricToneStyles;
-
-interface SubjectPrediction {
-  subjectId: string;
-  recommendation: string | null;
-  predictionId: string | null;
-}
+import type { Course, CourseAlert } from "@/types/course";
+import { MAX_GRADE } from "@/utils/gradeScale";
 
 interface DashboardAlert extends CourseAlert {
   courseId: string;
   courseName: string;
-}
-
-interface DashboardRecommendation extends CourseRecommendation {
-  courseId: string;
-  courseName: string;
-}
-
-interface DashboardMetric {
-  label: string;
-  value: string;
-  hint: string;
-  icon: IconType;
-  tone: MetricTone;
-  onClick?: () => void;
 }
 
 interface StudentCoursesManagementProps {
@@ -105,56 +62,28 @@ interface StudentCoursesManagementProps {
   reload: () => Promise<Course[]>;
 }
 
-function getAcademicStatus(coursesAtRisk: number, globalAverage: number | null) {
-  if (coursesAtRisk > 0) {
-    return {
-      label: "Seguimiento requerido",
-      description:
-        "Hay materias que necesitan revision temprana para evitar acumulacion de riesgo.",
-      className: "border-amber-200 bg-amber-50 text-amber-800",
-    };
-  }
+type DashboardTab = "courses" | "grades" | "attendance" | "overview";
 
-  if (globalAverage !== null && globalAverage >= 8.5) {
-    return {
-      label: "Rendimiento destacado",
-      description:
-        "Tu desempeno general se mantiene en un rango solido para el periodo actual.",
-      className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    };
-  }
+const DASHBOARD_TABS: { id: DashboardTab; label: string; icon: typeof FiGrid }[] = [
+  { id: "courses", label: "Materias matriculadas", icon: FiBookOpen },
+  { id: "grades", label: "Mis calificaciones", icon: FiTrendingUp },
+  { id: "attendance", label: "Mi asistencia", icon: FiUserCheck },
+  { id: "overview", label: "Panel principal", icon: FiGrid },
+];
 
-  return {
-    label: "Progreso estable",
-    description:
-      "Continua registrando tus avances para que el sistema detecte cambios a tiempo.",
-    className: "border-blue-200 bg-blue-50 text-blue-800",
-  };
-}
+const RISK_FILTER_LEVELS = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"] as const;
 
-function getAverageTone(average: number | null): MetricTone {
-  if (average === null) return "neutral";
-  if (average >= 16) return "success";
-  if (average >= 14) return "warning";
-  return "danger";
-}
-
-function getAlertTone(alertCount: number): MetricTone {
-  if (alertCount === 0) return "success";
-  if (alertCount <= 2) return "warning";
-  return "danger";
-}
+const normalizeText = (value: string) =>
+  value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 function getRiskDerivedAlerts(courses: Course[]): DashboardAlert[] {
-  return courses
-    .filter((course) => ["HIGH", "MEDIUM"].includes(course.riskLevel))
-    .map((course) => ({
-      id: `risk-${course.id}`,
-      courseId: course.id,
-      courseName: course.name,
-      severity: course.riskLevel === "HIGH" ? "HIGH" : "MEDIUM",
-      message: `${course.name}: ${riskLabels[course.riskLevel]}. Revisa el rendimiento y registra tu avance semanal.`,
-    }));
+  return courses.filter((course) => isAtRiskLevel(course.riskLevel)).map((course) => ({
+    id: `risk-${course.id}`,
+    courseId: course.id,
+    courseName: course.name,
+    severity: course.riskLevel as "HIGH" | "MEDIUM" | "CRITICAL",
+    message: `${course.name}: ${getRiskPresentation(course.riskLevel).label}. Revisa el rendimiento y registra tu avance semanal.`,
+  }));
 }
 
 export default function StudentCoursesManagement({
@@ -165,12 +94,20 @@ export default function StudentCoursesManagement({
 }: StudentCoursesManagementProps) {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const dashboardTab: DashboardTab =
+    DASHBOARD_TABS.find((tab) => tab.id === tabParam)?.id ?? "courses";
+  const setDashboardTab = (tab: DashboardTab) =>
+    setSearchParams(tab === "courses" ? {} : { tab }, { replace: true });
+  const [coursesView, setCoursesView] = useState<"cards" | "list">("cards");
+  const [courseSearch, setCourseSearch] = useState("");
+  const [courseRiskFilter, setCourseRiskFilter] = useState("");
+  const [coursePeriodFilter, setCoursePeriodFilter] = useState("");
   const [overview, setOverview] = useState<StudentSubjectOverview[]>([]);
-  const [predictions, setPredictions] = useState<SubjectPrediction[]>([]);
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [showAlerts, setShowAlerts] = useState(false);
-  const [recommendationsPage, setRecommendationsPage] = useState(0);
   const [aiPrediction, setAiPrediction] = useState<AiPrediction | null>(null);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
@@ -179,7 +116,6 @@ export default function StudentCoursesManagement({
   const loadInsights = useCallback(async (studentCourses: Course[]) => {
     if (studentCourses.length === 0) {
       setOverview([]);
-      setPredictions([]);
       setInsightsError(null);
       return;
     }
@@ -188,26 +124,10 @@ export default function StudentCoursesManagement({
     setInsightsError(null);
 
     try {
-      const [loadedOverview, loadedPredictions] = await Promise.all([
-        getStudentSubjectsOverview(),
-        mapWithConcurrency(
-          studentCourses,
-          PREDICTION_CONCURRENCY,
-          async (course): Promise<SubjectPrediction> => {
-            const prediction = await getStudentSubjectPrediction(course.id);
-            return {
-              subjectId: course.id,
-              recommendation: prediction?.recommendation ?? null,
-              predictionId: prediction?.id ?? null,
-            };
-          },
-        ),
-      ]);
-      setOverview(loadedOverview);
-      setPredictions(loadedPredictions);
+      setOverview(await getStudentSubjectsOverview());
     } catch {
       setInsightsError(
-        "No se pudo actualizar la analitica predictiva de tus materias."
+        "No se pudo actualizar la analítica predictiva de tus materias."
       );
     } finally {
       setIsLoadingInsights(false);
@@ -263,11 +183,11 @@ export default function StudentCoursesManagement({
       ) {
         setAiError(
           (requestError.response.data as { message?: string })?.message ??
-            "Ya generaste una recomendacion recientemente. Intenta mas tarde."
+            "Ya generaste una recomendación recientemente. Inténtalo más tarde."
         );
       } else {
         setAiError(
-          "No se pudo generar la recomendacion con IA. Intenta nuevamente."
+          "No se pudo generar la recomendación con IA. Inténtalo nuevamente."
         );
       }
     } finally {
@@ -281,31 +201,19 @@ export default function StudentCoursesManagement({
       .filter((average): average is number => typeof average === "number");
 
     const contextCourse = courses.find(
-      (course) => course.facultyName || course.careerName || course.semester
+      (course) => course.semester
     );
 
     return {
       activeCourses: courses.length,
-      totalCredits: courses.reduce(
-        (total, course) => total + (course.credits ?? 0),
-        0
-      ),
       globalAverage:
         averages.length > 0
           ? averages.reduce((total, average) => total + average, 0) /
             averages.length
           : null,
-      coursesAtRisk: courses.filter((course) =>
-        ["HIGH", "MEDIUM"].includes(course.riskLevel)
-      ).length,
-      facultyName: contextCourse?.facultyName ?? "Facultad no registrada",
-      careerName: contextCourse?.careerName ?? "Carrera no registrada",
+      coursesAtRisk: courses.filter((course) => isAtRiskLevel(course.riskLevel))
+        .length,
       periodName: contextCourse?.semester ?? "Periodo no registrado",
-      nextCourse:
-        courses.find((course) => course.riskLevel === "HIGH") ??
-        courses.find((course) => course.riskLevel === "MEDIUM") ??
-        courses[0] ??
-        null,
     };
   }, [courses]);
 
@@ -313,6 +221,51 @@ export default function StudentCoursesManagement({
     () => new Map(courses.map((course) => [course.id, course])),
     [courses]
   );
+
+  const sortedCourses = useMemo(
+    () =>
+      [...courses].sort(
+        (a, b) => courseRiskRank(b.riskLevel) - courseRiskRank(a.riskLevel)
+      ),
+    [courses]
+  );
+
+  const periodOptions = useMemo(
+    () =>
+      [...new Set(courses.map((course) => course.semester).filter(Boolean))]
+        .sort()
+        .map((period) => ({ value: period, label: period })),
+    [courses]
+  );
+
+  const visibleCourses = useMemo(() => {
+    const terms = normalizeText(courseSearch).split(/\s+/).filter(Boolean);
+
+    return sortedCourses.filter((course) => {
+      if (courseRiskFilter && course.riskLevel !== courseRiskFilter) return false;
+      if (coursePeriodFilter && course.semester !== coursePeriodFilter) return false;
+
+      const haystack = normalizeText(
+        [course.name, course.code, course.teacherName, course.description]
+          .filter(Boolean)
+          .join(" ")
+      );
+      return terms.every((term) => haystack.includes(term));
+    });
+  }, [sortedCourses, courseSearch, courseRiskFilter, coursePeriodFilter]);
+
+
+  const attendanceReport = useStudentAttendance(user?.id);
+  const attendanceTotals = useMemo(() => {
+    const courseRows = attendanceReport.data?.courses ?? [];
+    const held = courseRows.reduce((sum, row) => sum + row.summary.held, 0);
+    const absences = courseRows.reduce((sum, row) => sum + row.summary.absences, 0);
+
+    return {
+      held,
+      rate: held > 0 ? Math.round(((held - absences) / held) * 100) : null,
+    };
+  }, [attendanceReport.data]);
 
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
     const backendAlerts = overview.flatMap((subject): DashboardAlert[] => {
@@ -333,107 +286,54 @@ export default function StudentCoursesManagement({
       : getRiskDerivedAlerts(courses);
   }, [courses, coursesById, overview]);
 
-  const dashboardRecommendations = useMemo<DashboardRecommendation[]>(
-    () =>
-      predictions.flatMap((prediction) => {
-        const course = coursesById.get(prediction.subjectId);
-        if (!course || !prediction.recommendation || !prediction.predictionId) {
-          return [];
-        }
-
-        return [
-          {
-            id: prediction.predictionId,
-            title: "Recomendacion",
-            description: prediction.recommendation,
-            courseId: course.id,
-            courseName: course.name,
-          },
-        ];
-      }),
-    [coursesById, predictions]
-  );
-
-  const recommendationsPageCount = Math.max(
-    1,
-    Math.ceil(dashboardRecommendations.length / RECOMMENDATIONS_PAGE_SIZE)
-  );
-  const currentRecommendationsPage = Math.min(
-    recommendationsPage,
-    recommendationsPageCount - 1
-  );
-  const paginatedRecommendations = dashboardRecommendations.slice(
-    currentRecommendationsPage * RECOMMENDATIONS_PAGE_SIZE,
-    currentRecommendationsPage * RECOMMENDATIONS_PAGE_SIZE + RECOMMENDATIONS_PAGE_SIZE
-  );
-
-  const weeklyProgress = useMemo(() => {
-    const latestPoints = overview
-      .map((subject) => {
-        const course = coursesById.get(subject.subjectId);
-        // recentProgress is newest-first (index 0 = latest week).
-        const [latest, previous] = subject.recentProgress;
-
-        return {
-          course,
-          latest: latest?.averageGrade ?? null,
-          previous: previous?.averageGrade ?? null,
-          weeks: subject.recentProgress.length,
-        };
-      })
-      .filter(
-        (item): item is typeof item & { course: Course; latest: number } =>
-          !!item.course && item.latest !== null
-      );
-
-    return latestPoints.slice(0, 4);
-  }, [coursesById, overview]);
-
-  const academicStatus = getAcademicStatus(
-    dashboard.coursesAtRisk,
-    dashboard.globalAverage
-  );
   const studentName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
     user?.email ||
     "Estudiante";
 
-  const dashboardMetrics: DashboardMetric[] = [
-    {
-      label: "Materias activas",
-      value: dashboard.activeCourses.toString(),
-      hint: "Cursos matriculados en el periodo",
-      icon: FiBookOpen,
-      tone: dashboard.activeCourses > 0 ? "success" : "neutral",
+  const globalAverageMetric: DashboardMetric = {
+    label: "Promedio general",
+    value:
+      dashboard.globalAverage === null ? "--" : `${dashboard.globalAverage.toFixed(2)} / ${MAX_GRADE}`,
+    tone: getAverageTone(dashboard.globalAverage),
+  };
+
+  const attendanceMetric: DashboardMetric = {
+    label: "Asistencia",
+    value: attendanceTotals.rate === null ? "--" : `${attendanceTotals.rate}%`,
+    tone: getAverageTone(
+      attendanceTotals.rate === null ? null : attendanceTotals.rate / 10
+    ),
+    isLoading: attendanceReport.isLoading,
+  };
+  const comprehensionValues = overview
+    .map((subject) => subject.comprehensionAvg)
+    .filter((value): value is number => typeof value === "number");
+  const comprehensionAverage =
+    comprehensionValues.length > 0
+      ? Math.round(
+          comprehensionValues.reduce((sum, value) => sum + value, 0) /
+            comprehensionValues.length,
+        )
+      : null;
+
+  const comprehensionMetric: DashboardMetric = {
+    label: "Comprensión",
+    value: comprehensionAverage === null ? "--" : `${comprehensionAverage}%`,
+    tone: getAverageTone(
+      comprehensionAverage === null ? null : comprehensionAverage / 10,
+    ),
+    isLoading: isLoadingInsights,
+  };
+  const alertsMetric: DashboardMetric = {
+    label: "Alertas académicas",
+    value: dashboardAlerts.length.toString(),
+
+    tone: getCountTone(dashboardAlerts.length),
+    onClick: () => {
+      setShowAlerts((current) => !current);
     },
-    {
-      label: "Promedio general",
-      value:
-        dashboard.globalAverage === null
-          ? "--"
-          : dashboard.globalAverage.toFixed(2),
-      hint: "Escala 0-20, calculado con materias que reportan notas",
-      icon: FiAward,
-      tone: getAverageTone(dashboard.globalAverage),
-    },
-    {
-      label: "Alertas academicas",
-      value: dashboardAlerts.length.toString(),
-      hint: "Presiona para ver detalle por materia",
-      icon: FiAlertTriangle,
-      tone: getAlertTone(dashboardAlerts.length),
-      onClick: () => {
-        setShowAlerts((current) => !current);
-      },
-    },
-    {
-      label: "Creditos activos",
-      value: dashboard.totalCredits > 0 ? dashboard.totalCredits.toString() : "--",
-      hint: "Carga academica registrada",
-      icon: FiActivity,
-      tone: "neutral" as MetricTone,
-    },
-  ];
+  };
 
   const handleRefresh = async () => {
     const loadedCourses = await reload();
@@ -445,68 +345,186 @@ export default function StudentCoursesManagement({
       <Container>
         <div className="space-y-8">
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="grid gap-0 lg:grid-cols-[1.5fr_1fr]">
+            <div>
               <div className="space-y-5 p-6 md:p-8">
-                <Badge className="bg-blue-100 text-blue-700">
-                  Panel academico del estudiante
-                </Badge>
-
-                <div>
-                  <Heading as="h3" className="text-gray-900">
-                    Hola, {studentName}
-                  </Heading>
-
-                  <Text
-                    variant="small"
-                    className="mt-2 max-w-2xl text-gray-600"
-                  >
-                    Revisa tus materias, rendimiento disponible y senales de
-                    riesgo para actuar antes de que el periodo avance.
-                  </Text>
+                <div className="flex items-center gap-4">
+                  <UserAvatar
+                    imageUrl={user?.avatarUrl ?? undefined}
+                    firstName={user?.firstName}
+                    lastName={user?.lastName}
+                    className="h-14 w-14"
+                  />
+                  <div>
+                    <Heading as="h3" className="text-gray-900">
+                      Hola, {studentName}
+                    </Heading>
+                    {user?.email ? (
+                      <Text variant="small" className="mt-1 text-gray-500">
+                        {user.email}
+                      </Text>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
-                  <Badge className="bg-gray-100 text-gray-700">
-                    {dashboard.facultyName}
-                  </Badge>
-                  <Badge className="bg-gray-100 text-gray-700">
-                    {dashboard.careerName}
-                  </Badge>
-                  <Badge className="bg-gray-100 text-gray-700">
+                <div className="flex flex-col gap-2">
+                  <Badge className="w-fit bg-gray-100 text-gray-700">
                     {dashboard.periodName}
                   </Badge>
                 </div>
+              </div>
 
-                {dashboard.nextCourse ? (
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        navigate(
-                          getStudentCoursePerformancePath(
-                            dashboard.nextCourse!.id
-                          )
-                        );
-                      }}
-                      className="px-5 py-2 text-sm"
-                    >
-                      Ver materia prioritaria
-                    </Button>
+            </div>
+          </div>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        navigate(
-                          getStudentCourseUploadDataPath(
-                            dashboard.nextCourse!.id
-                          )
-                        );
+          <div className="overflow-x-auto border-b border-gray-200">
+            <div className="flex min-w-max gap-2">
+              {DASHBOARD_TABS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setDashboardTab(id)}
+                  className={`inline-flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition ${
+                    dashboardTab === id
+                      ? "border-blue-700 text-blue-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {dashboardTab === "grades" ? (
+            <StudentResultsReport studentId={user?.id} showStudentName={false} />
+          ) : null}
+
+          {dashboardTab === "attendance" ? (
+            <StudentAttendanceReport studentId={user?.id} showStudentName={false} />
+          ) : null}
+          {dashboardTab === "courses" ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              {isLoading ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {[0, 1, 2].map((item) => (
+                    <div
+                      key={item}
+                      className="h-72 animate-pulse rounded-2xl border border-gray-200 bg-gray-50"
+                    />
+                  ))}
+                </div>
+              ) : courses.length > 0 ? (
+                <div className="space-y-5">
+                  <ListToolbar
+                    search={courseSearch}
+                    searchPlaceholder="Buscar por materia, código o docente"
+                    onSearchChange={setCourseSearch}
+                    filters={[
+                      {
+                        id: "course-risk",
+                        label: "Nivel de riesgo",
+                        value: courseRiskFilter,
+                        allLabel: "Todos los niveles",
+                        options: RISK_FILTER_LEVELS.map((level) => ({
+                          value: level,
+                          label: getRiskPresentation(level).label,
+                        })),
+                        onChange: setCourseRiskFilter,
+                      },
+                      {
+                        id: "course-period",
+                        label: "Periodo",
+                        value: coursePeriodFilter,
+                        allLabel: "Todos los periodos",
+                        options: periodOptions,
+                        onChange: setCoursePeriodFilter,
+                      },
+                    ]}
+                    onClear={() => {
+                      setCourseSearch("");
+                      setCourseRiskFilter("");
+                      setCoursePeriodFilter("");
+                    }}
+                    actions={
+                      <div
+                        role="group"
+                        aria-label="Tipo de vista"
+                        className="inline-flex h-12 overflow-hidden rounded-xl border border-gray-200 bg-white"
+                      >
+                        {(
+                          [
+                            { value: "cards", label: "Tarjetas", icon: FiGrid },
+                            { value: "list", label: "Lista", icon: FiList },
+                          ] as const
+                        ).map(({ value, label, icon: Icon }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={coursesView === value}
+                            title={label}
+                            onClick={() => setCoursesView(value)}
+                            className={`inline-flex items-center gap-2 px-4 text-sm font-medium transition ${
+                              coursesView === value
+                                ? "bg-blue-700 text-white"
+                                : "text-gray-600 hover:bg-gray-50"
+                            }`}
+                          >
+                            <Icon size={16} aria-hidden="true" />
+                            <span className="hidden sm:inline">{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    }
+                  />
+
+                  {visibleCourses.length === 0 ? (
+                    <Text variant="small" className="text-gray-600">
+                      Ninguna materia coincide con la búsqueda o los filtros.
+                    </Text>
+                  ) : coursesView === "cards" ? (
+                    <CourseGrid
+                      courses={visibleCourses}
+                      onCourseClick={(courseId) => {
+                        navigate(getStudentCoursePerformancePath(courseId));
                       }}
-                      className="px-5 py-2 text-sm"
-                    >
-                      Registrar avance semanal
-                    </Button>
+
+                    />
+                  ) : (
+                    <StudentCoursesTable
+                      courses={visibleCourses}
+                      onCourseClick={(courseId) => {
+                        navigate(getStudentCoursePerformancePath(courseId));
+                      }}
+
+                    />
+                  )}
+                </div>              ) : (
+                <StudentCoursesEmptyState />
+              )}
+            </div>
+          ) : null}
+
+          {dashboardTab === "overview" ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <DashboardMetricCard {...globalAverageMetric} />
+                <DashboardMetricCard {...attendanceMetric} />
+                <DashboardMetricCard {...comprehensionMetric} />
+                <DashboardMetricCard {...alertsMetric} />
+              </div>
+
+              {showAlerts ? (
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <Heading as="h4" className="text-gray-900">
+                        Alertas y señales de riesgo
+                      </Heading>
+                      <Text variant="small" className="mt-2 text-gray-600">
+                        Detalle por materia a partir de tus notas y asistencia.
+                      </Text>
+                    </div>
 
                     <Button
                       type="button"
@@ -514,375 +532,68 @@ export default function StudentCoursesManagement({
                       onClick={() => {
                         void handleRefresh();
                       }}
-                      disabled={isLoading || isLoadingInsights}
-                      className="px-5 py-2 text-sm"
+                      disabled={isLoadingInsights}
+                      className="gap-2 px-5 py-2 text-sm"
                     >
                       <FiRefreshCw size={16} />
-                      {isLoadingInsights ? "Actualizando" : "Recargar analitica"}
+                      Recargar
                     </Button>
                   </div>
-                ) : null}
-              </div>
 
-              <div className="border-t border-gray-200 bg-gray-50 p-6 md:p-8 lg:border-l lg:border-t-0">
-                <Text
-                  variant="caption"
-                  className="font-bold uppercase text-gray-500"
-                >
-                  Estado academico
-                </Text>
-
-                <div
-                  className={`mt-4 rounded-2xl border px-5 py-4 ${academicStatus.className}`}
-                >
-                  <Text variant="small" className="font-bold">
-                    {academicStatus.label}
-                  </Text>
-
-                  <Text variant="small" className="mt-2">
-                    {academicStatus.description}
-                  </Text>
-                </div>
-
-                {dashboard.nextCourse ? (
-                  <div className="mt-5 rounded-2xl border border-gray-200 bg-white px-5 py-4">
-                    <Text
-                      variant="caption"
-                      className="font-bold uppercase text-gray-500"
-                    >
-                      Materia sugerida
+                  {dashboardAlerts.length > 0 ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {dashboardAlerts.map((alert) => (
+                        <button
+                          key={alert.id}
+                          type="button"
+                          onClick={() => {
+                            navigate(getStudentCoursePerformancePath(alert.courseId));
+                          }}
+                          className={`rounded-xl border p-4 text-left transition hover:shadow-sm ${
+                            alert.severity === "CRITICAL" || alert.severity === "HIGH"
+                              ? "border-red-200 bg-red-50 text-red-800"
+                              : alert.severity === "MEDIUM"
+                                ? "border-amber-200 bg-amber-50 text-amber-800"
+                                : "border-gray-200 bg-gray-50 text-gray-700"
+                          }`}
+                        >
+                          <Text variant="caption" className="font-bold uppercase">
+                            {alert.courseName}
+                          </Text>
+                          <Text variant="small" className="mt-2 text-current">
+                            {alert.message}
+                          </Text>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <Text variant="small" className="text-gray-600">
+                      No hay alertas activas con la información disponible.
                     </Text>
-                    <Text
-                      variant="small"
-                      className="mt-1 font-semibold text-gray-900"
-                    >
-                      {dashboard.nextCourse.name}
-                    </Text>
-                    <Text
-                      variant="caption"
-                      className={`mt-2 inline-flex rounded-full border px-3 py-1 font-semibold ${riskStyles[dashboard.nextCourse.riskLevel]}`}
-                    >
-                      {riskLabels[dashboard.nextCourse.riskLevel]}
-                    </Text>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {dashboardMetrics.map((metric) => (
-              <MotionCard
-                key={metric.label}
-                as="article"
-                role={metric.onClick ? "button" : undefined}
-                tabIndex={metric.onClick ? 0 : undefined}
-                onClick={metric.onClick}
-                onKeyDown={(event) => {
-                  if (
-                    metric.onClick &&
-                    (event.key === "Enter" || event.key === " ")
-                  ) {
-                    event.preventDefault();
-                    metric.onClick();
-                  }
-                }}
-                className={`w-full rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md ${metricToneStyles[metric.tone]}`}
-              >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-current">
-                  <metric.icon size={20} />
-                </div>
-
-                <Text
-                  variant="caption"
-                  className="font-bold uppercase text-current opacity-75"
-                >
-                  {metric.label}
-                </Text>
-
-                <Heading as="h4" className="mt-2 text-current">
-                  {metric.value}
-                </Heading>
-
-                <Text variant="small" className="mt-2 text-current opacity-80">
-                  {metric.hint}
-                </Text>
-              </MotionCard>
-            ))}
-          </div>
-
-          {showAlerts ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <Heading as="h4" className="text-gray-900">
-                    Alertas y senales de riesgo
-                  </Heading>
-                  <Text variant="small" className="mt-2 text-gray-600">
-                    Detalle generado desde alertas del backend o desde el nivel
-                    de riesgo disponible por materia.
-                  </Text>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    void handleRefresh();
-                  }}
-                  disabled={isLoadingInsights}
-                  className="gap-2 px-5 py-2 text-sm"
-                >
-                  <FiRefreshCw size={16} />
-                  Recargar
-                </Button>
-              </div>
-
-              {dashboardAlerts.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {dashboardAlerts.map((alert) => (
-                    <button
-                      key={alert.id}
-                      type="button"
-                      onClick={() => {
-                        navigate(getStudentCoursePerformancePath(alert.courseId));
-                      }}
-                      className={`rounded-xl border p-4 text-left transition hover:shadow-sm ${
-                        alert.severity === "CRITICAL" || alert.severity === "HIGH"
-                          ? "border-red-200 bg-red-50 text-red-800"
-                          : alert.severity === "MEDIUM"
-                            ? "border-amber-200 bg-amber-50 text-amber-800"
-                            : "border-gray-200 bg-gray-50 text-gray-700"
-                      }`}
-                    >
-                      <Text variant="caption" className="font-bold uppercase">
-                        {alert.courseName}
-                      </Text>
-                      <Text variant="small" className="mt-2 text-current">
-                        {alert.message}
-                      </Text>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <Text variant="small" className="text-gray-600">
-                  No hay alertas activas con la informacion disponible.
-                </Text>
-              )}
-            </div>
-          ) : null}
-
-          <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <Heading as="h4" className="text-gray-900">
-                    Progreso semanal reciente
-                  </Heading>
-                  <Text variant="small" className="mt-2 text-gray-600">
-                    Ultima nota promedio disponible por materia y comparacion
-                    con la semana anterior.
-                  </Text>
-                </div>
-                {isLoadingInsights ? (
-                  <Badge className="bg-blue-100 text-blue-700">
-                    Actualizando
-                  </Badge>
-                ) : null}
-              </div>
-
-              {weeklyProgress.length > 0 ? (
-                <div className="space-y-3">
-                  {weeklyProgress.map(({ course, latest, previous, weeks }) => {
-                    const delta =
-                      latest !== null && previous !== null
-                        ? latest - previous
-                        : null;
-                    const tone =
-                      latest === null
-                        ? metricToneStyles.neutral
-                        : latest >= 16
-                          ? metricToneStyles.success
-                          : latest >= 14
-                            ? metricToneStyles.warning
-                            : metricToneStyles.danger;
-
-                    return (
-                      <button
-                        key={course.id}
-                        type="button"
-                        onClick={() => {
-                          navigate(getStudentCoursePerformancePath(course.id));
-                        }}
-                        className={`grid w-full gap-3 rounded-xl border p-4 text-left md:grid-cols-[1fr_auto] md:items-center ${tone}`}
-                      >
-                        <div>
-                          <Text variant="small" className="font-semibold">
-                            {course.name}
-                          </Text>
-                          <Text variant="caption" className="mt-1">
-                            {weeks} semanas de historial disponible
-                          </Text>
-                        </div>
-                        <div className="text-left md:text-right">
-                          <Text variant="small" className="font-bold">
-                            {latest?.toFixed(2)} / 20
-                          </Text>
-                          <Text variant="caption">
-                            {delta === null
-                              ? "Sin comparacion previa"
-                              : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)} vs semana anterior`}
-                          </Text>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <Text variant="small" className="text-gray-600">
-                  Todavia no hay historial semanal suficiente. Registra tu
-                  avance semanal para alimentar la analitica.
-                </Text>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-cyan-200 bg-blue-50 p-6 shadow-sm">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-700 text-white">
-                  <FiZap size={20} />
-                </div>
-                <div>
-                  <Heading as="h4" className="text-blue-900">
-                    Recomendaciones predictivas
-                  </Heading>
-                  <Text variant="caption" className="text-blue-800">
-                    Desde prediction-service
-                  </Text>
-                </div>
-              </div>
-
-              {paginatedRecommendations.length > 0 ? (
-                <div className="space-y-3">
-                  {paginatedRecommendations.map((recommendation) => (
-                    <button
-                      key={recommendation.id}
-                      type="button"
-                      onClick={() => {
-                        navigate(
-                          getStudentCoursePerformancePath(recommendation.courseId)
-                        );
-                      }}
-                      className="w-full rounded-xl border-l-4 border-blue-700 bg-white p-4 text-left shadow-sm transition hover:shadow-md"
-                    >
-                      <Badge className="bg-blue-100 text-xs text-blue-700">
-                        {recommendation.courseName}
-                      </Badge>
-                      <Text variant="small" className="mt-3 text-gray-700">
-                        {recommendation.description}
-                      </Text>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <Text variant="small" className="text-blue-900">
-                  Aun no hay recomendaciones calculadas. Guarda tu avance
-                  semanal o recarga la analitica despues del recalculo.
-                </Text>
-              )}
-
-              {dashboardRecommendations.length > RECOMMENDATIONS_PAGE_SIZE ? (
-                <div className="mt-5 flex items-center justify-between gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setRecommendationsPage((current) => Math.max(0, current - 1));
-                    }}
-                    disabled={currentRecommendationsPage === 0}
-                    className="gap-2 bg-white px-4 py-2 text-sm"
-                  >
-                    <FiChevronLeft size={16} />
-                    Anterior
-                  </Button>
-
-                  <Text variant="caption" className="text-blue-800">
-                    Pagina {currentRecommendationsPage + 1} de {recommendationsPageCount}
-                  </Text>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setRecommendationsPage((current) =>
-                        Math.min(recommendationsPageCount - 1, current + 1)
-                      );
-                    }}
-                    disabled={currentRecommendationsPage >= recommendationsPageCount - 1}
-                    className="gap-2 bg-white px-4 py-2 text-sm"
-                  >
-                    Siguiente
-                    <FiChevronRight size={16} />
-                  </Button>
+                  )}
                 </div>
               ) : null}
-            </div>
-          </div>
 
-          <AiRecommendationPanel
-            title="Recomendacion con IA"
-            description="Generada con OpenAI a partir de tu informacion academica actual"
-            prediction={aiPrediction}
-            isLoading={isLoadingAi}
-            isGenerating={isGeneratingAi}
-            error={aiError}
-            emptyMessage="Aun no has generado una recomendacion con IA. Presiona el boton para generar una basada en tu informacion academica actual."
-            onGenerate={() => {
-              void handleGenerateAiPrediction();
-            }}
-          />
+              <AiRecommendationPanel
+                title="Recomendación con IA"
+                description="Generada a partir de tu información académica actual"
+                prediction={aiPrediction}
+                isLoading={isLoadingAi}
+                isGenerating={isGeneratingAi}
+                error={aiError}
+                emptyMessage="Aún no has generado una recomendación con IA. Presiona el botón para generar una basada en tu información académica actual."
+                onGenerate={() => {
+                  void handleGenerateAiPrediction();
+                }}
+              />
+            </>
+          ) : null}
 
           {error || insightsError ? (
             <div className="rounded-xl border border-red-100 bg-red-50 px-5 py-4">
               <FeedbackMessage message={error ?? insightsError ?? ""} tone="error" />
             </div>
           ) : null}
-
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-6">
-              <Heading as="h4" className="text-gray-900">
-                Materias matriculadas
-              </Heading>
-
-              <Text variant="small" className="mt-2 text-gray-600">
-                Ingresa a una materia para revisar rendimiento, riesgo y
-                recomendaciones.
-              </Text>
-            </div>
-
-            {isLoading ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                {[0, 1, 2].map((item) => (
-                  <div
-                    key={item}
-                    className="h-72 animate-pulse rounded-2xl border border-gray-200 bg-gray-50"
-                  />
-                ))}
-              </div>
-            ) : courses.length > 0 ? (
-              <CourseGrid
-                courses={courses}
-                onCourseClick={(courseId) => {
-                  navigate(getStudentCoursePerformancePath(courseId));
-                }}
-                onSecondaryCourseAction={(courseId) => {
-                  navigate(getStudentCourseUploadDataPath(courseId));
-                }}
-                secondaryCourseActionLabel="Registrar avance"
-              />
-            ) : (
-              <StudentCoursesEmptyState />
-            )}
-          </div>
         </div>
       </Container>
     </section>

@@ -13,12 +13,6 @@ export class UpdateSubjectDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 4 })
-  @IsInt()
-  @IsOptional()
-  @Min(1)
-  credits?: number;
-
   @ApiPropertyOptional({ example: 30 })
   @IsInt()
   @IsOptional()

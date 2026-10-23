@@ -122,21 +122,18 @@ export class EnrollmentRepository implements IEnrollmentRepository {
         e.status,
         e.enrolled_at AS "enrolledAt",
         s.id AS "subjectId",
-        s.name AS "subjectName",
-        s.code AS "subjectCode",
-        s.description AS "subjectDescription",
+        sc.name AS "subjectName",
+        sc.code AS "subjectCode",
+        sc.description AS "subjectDescription",
         s.image_url AS "subjectImageUrl",
-        s.credits,
         s.max_capacity AS "maxCapacity",
         s.teacher_id AS "teacherId",
-        c.id AS "careerId",
-        c.name AS "careerName",
         p.id AS "periodId",
         p.name AS "periodName",
         p.status AS "periodStatus"
       FROM enrollments e
       INNER JOIN subjects s ON s.id = e.subject_id
-      INNER JOIN careers c ON c.id = s.career_id
+      INNER JOIN subject_catalog sc ON sc.id = s.subject_catalog_id
       INNER JOIN academic_periods p ON p.id = e.period_id
       WHERE ${where}
       ORDER BY e.enrolled_at DESC

@@ -25,10 +25,10 @@ export default function StudentStudyHabitsPanel({
     <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="mb-6">
         <Heading as="h5" className="text-blue-700">
-          Habitos de estudio
+          Hábitos de estudio
         </Heading>
         <Text variant="small" className="mt-2 text-gray-600">
-          Comparte senales de esfuerzo, comprension y habilidades para mejorar
+          Comparte señales de esfuerzo, comprensión y habilidades para mejorar
           las recomendaciones.
         </Text>
       </div>
@@ -59,7 +59,7 @@ export default function StudentStudyHabitsPanel({
 
         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
           <Text variant="small" className="mb-4 font-semibold text-gray-900">
-            Nivel de comprension de la materia
+            Nivel de comprensión de la materia
           </Text>
 
           <RatingScale

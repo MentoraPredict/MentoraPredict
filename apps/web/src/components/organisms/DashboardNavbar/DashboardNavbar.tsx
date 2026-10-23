@@ -26,6 +26,9 @@ interface DashboardNavbarProps {
   navItems?: DashboardNavItem[];
   leadingAction?: ReactNode;
   showLogo?: boolean;
+  /** Con barra lateral el logo ya está allí: en pantallas anchas se oculta del
+   * encabezado y solo se muestra donde la barra lateral no existe (móvil). */
+  logoOnlyOnMobile?: boolean;
   title?: string;
   showWelcomeMessage?: boolean;
 }
@@ -34,6 +37,7 @@ export default function DashboardNavbar({
   navItems = [],
   leadingAction,
   showLogo = true,
+  logoOnlyOnMobile = false,
   title,
   showWelcomeMessage = true,
 }: DashboardNavbarProps) {
@@ -47,9 +51,14 @@ export default function DashboardNavbar({
       ? APP_PATHS.teacher.profile
       : user?.role === "STUDENT"
         ? APP_PATHS.student.profile
-        : user?.role === "ADMIN"
+        : user?.role === "ADMIN" ||
+          user?.role === "SECRETARY" ||
+          user?.role === "INSPECTOR" ||
+          user?.role === "DECE"
           ? APP_PATHS.admin.profile
-          : undefined;
+          : user?.role === "GUARDIAN"
+            ? APP_PATHS.guardian.profile
+            : undefined;
 
   return (
     <>
@@ -80,9 +89,13 @@ export default function DashboardNavbar({
                 <div className="shrink-0">{leadingAction}</div>
               ) : null}
 
-              {showLogo ? <LogoLink /> : null}
+              {showLogo ? (
+                <div className={logoOnlyOnMobile ? "md:hidden" : undefined}>
+                  <LogoLink />
+                </div>
+              ) : null}
 
-              {showLogo && showWelcomeMessage ? (
+              {showLogo && showWelcomeMessage && !logoOnlyOnMobile ? (
                 <div className="hidden h-8 w-px bg-[var(--color-border-soft)] sm:block" />
               ) : null}
 

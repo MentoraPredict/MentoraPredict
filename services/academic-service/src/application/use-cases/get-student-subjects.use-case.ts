@@ -52,7 +52,6 @@ export class GetStudentSubjectsUseCase {
         code: row.subjectCode,
         description: row.subjectDescription,
         imageUrl: row.subjectImageUrl,
-        credits: row.credits,
         maxCapacity: row.maxCapacity,
         teacherId: row.teacherId,
         teacherName: teacher
@@ -60,8 +59,6 @@ export class GetStudentSubjectsUseCase {
           : null,
         periodId: row.periodId,
         periodName: row.periodName,
-        careerId: row.careerId,
-        careerName: row.careerName,
         status: row.status,
         enrolledAt: row.enrolledAt,
         currentAverage: metric?.averageGrade ?? null,

@@ -1,10 +1,12 @@
 import { Inject, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { randomUUID as uuidv4 } from "crypto";
-import { UserEntity, UserRole } from "../../domain/entities/user.entity";
+import { UserEntity, UserRole, AuthProvider } from "../../domain/entities/user.entity";
 import { IUserRepository } from "../ports/output/i-user.repository";
 import { ITokenGenerator } from "../ports/output/i-token.generator";
 import { ITokenCache } from "../ports/output/i-token.cache";
 import { IUserProfileClient } from "../ports/output/i-user-profile.client";
+import { ILoginEventRepository } from "../ports/output/i-login-event.repository";
+import { LoginEventEntity } from "../../domain/entities/login-event.entity";
 import { MicrosoftOAuthProfile } from "../../infrastructure/adapters/microsoft-oauth.client";
 import { REDIS_TTL } from "../../shared-types-local";
 
@@ -17,9 +19,10 @@ export class OAuthLoginUseCase {
     @Inject("ITokenGenerator") private readonly tokenGen: ITokenGenerator,
     @Inject("ITokenCache") private readonly cache: ITokenCache,
     @Inject("IUserProfileClient") private readonly userProfileClient: IUserProfileClient,
+    @Inject("ILoginEventRepository") private readonly loginEventRepo: ILoginEventRepository,
   ) {}
 
-  async execute(profile: MicrosoftOAuthProfile) {
+  async execute(profile: MicrosoftOAuthProfile, ip?: string, userAgent?: string) {
     let user = await this.userRepo.findByEmail(profile.email);
 
     if (!user) {
@@ -36,7 +39,7 @@ export class OAuthLoginUseCase {
           now,
           profile.firstName,
           profile.lastName,
-          "MICROSOFT",
+          AuthProvider.MICROSOFT,
         ),
       );
 
@@ -57,6 +60,12 @@ export class OAuthLoginUseCase {
 
     const tokens = this.tokenGen.generatePair(user.id, user.email, user.role);
     await this.cache.setRefreshToken(user.id, tokens.refreshToken, REDIS_TTL.REFRESH_TOKEN);
+
+    // Fase E (docs/database/database-update-plan.md §5.5) — fire-and-forget,
+    // un fallo acá nunca debe bloquear el login real.
+    this.loginEventRepo
+      .save(new LoginEventEntity(uuidv4(), user.id, new Date(), "MICROSOFT", ip ?? null, userAgent ?? null))
+      .catch((err) => this.logger.error(`Failed to record login event for ${user.id}`, err));
 
     return { ...tokens, tokenType: "Bearer" as const };
   }

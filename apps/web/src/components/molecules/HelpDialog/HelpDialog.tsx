@@ -36,6 +36,46 @@ const HELP_BY_ROLE: Record<
       "Revisar notificaciones y actualizar la información de tu perfil.",
     ],
   },
+  GUARDIAN: {
+    title: "Ayuda para representantes",
+    description:
+      "Como representante puedes consultar la matrícula de tus representados y gestionar tus consentimientos.",
+    capabilities: [
+      "Ver el grado y paralelo en que están matriculados tus representados.",
+      "Otorgar o retirar los consentimientos de tratamiento de datos, uso de imagen y análisis con IA.",
+      "Actualizar la información de tu perfil.",
+    ],
+  },
+  SECRETARY: {
+    title: "Ayuda para secretaría",
+    description:
+      "Como secretaría gestionas la matrícula de los estudiantes y la información de sus representantes.",
+    capabilities: [
+      "Matricular estudiantes en un paralelo y registrar retiros o traslados.",
+      "Completar la ficha del estudiante y vincular a sus representantes.",
+      "Consultar los consentimientos otorgados por los representantes.",
+    ],
+  },
+  DECE: {
+    title: "Ayuda para el DECE",
+    description:
+      "Como DECE das seguimiento a los estudiantes que necesitan acompañamiento. Las alertas son una ayuda para tu criterio, no un diagnóstico.",
+    capabilities: [
+      "Recibir avisos cuando el riesgo de un estudiante sube a alto o crítico.",
+      "Revisar la asistencia de cada paralelo y los casos que superan el límite.",
+      "Consultar las justificaciones de faltas.",
+    ],
+  },
+  INSPECTOR: {
+    title: "Ayuda para inspección",
+    description:
+      "Como inspección controlas la asistencia y resuelves las justificaciones de faltas.",
+    capabilities: [
+      "Revisar la asistencia de cada paralelo y los estudiantes cerca del límite.",
+      "Aprobar o rechazar las justificaciones enviadas por los representantes.",
+      "Recibir avisos cuando un estudiante supera el límite de faltas.",
+    ],
+  },
   STUDENT: {
     title: "Ayuda para estudiantes",
     description:

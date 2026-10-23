@@ -1,5 +1,7 @@
 # Role Dashboards And API Integration Audit
 
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](erp-escolar/10-estado-de-implementacion.md).
+
 ## Scope
 
 This audit reviews the current Admin, Teacher, and Student dashboard flows, the frontend components already available, and the API integrations that can support a more professional academic dashboard experience.

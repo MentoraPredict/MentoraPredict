@@ -6,6 +6,8 @@ export interface ActiveAcademicPeriod {
   name: string;
   code: string;
   status: "ACTIVE";
+  startDate: string;
+  endDate: string;
 }
 
 export interface StudentPerformanceMetrics {

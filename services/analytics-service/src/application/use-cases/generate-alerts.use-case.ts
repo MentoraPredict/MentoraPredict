@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { IAlertRepository } from '../../domain/ports/i-alert.repository';
 import { AlertEntity, AlertSeverity, AlertType } from '../../domain/entities/alert.entity';
 import { GenerateAlertsDto } from '../dtos/generate-alerts.dto';
+import { MAX_GRADE, PASSING_GRADE } from '../../domain/grade-scale';
 
 const UNREAD_LOOKUP_LIMIT = 50;
 
@@ -61,7 +62,7 @@ export class GenerateAlertsUseCase {
         input.subjectId,
         'FAILED_EVALUATIONS',
         'HIGH',
-        `Tiene ${input.failedEvaluations} evaluaciones con una nota inferior a 14/20.`,
+        `Tiene ${input.failedEvaluations} evaluaciones con una nota inferior a ${PASSING_GRADE}/${MAX_GRADE}.`,
         { failedEvaluations: input.failedEvaluations },
       ));
     }

@@ -3,7 +3,6 @@ export interface Grade {
   studentId: string;
   subjectId: string;
   subjectName?: string;
-  subjectCredits: number;
   value: number;
   periodId: string;
   evaluationId: string | null;

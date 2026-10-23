@@ -13,8 +13,10 @@ import { INotificationRepository } from '../../notifications/domain/ports/i-noti
 import { NotificationEntity } from '../../notifications/domain/entities/notification.entity';
 import { NotificationDeliveryService } from '../../notifications/application/services/notification-delivery.service';
 import { getAcademicWeek } from '../../infrastructure/utils/academic-week.util';
+import { PASSING_GRADE } from '../../domain/grade-scale';
+import { CreateNotificationUseCase } from '../../notifications/application/use-cases/create-notification.use-case';
+import { IUserServiceClient } from '../../notifications/domain/ports/i-user-service.client';
 
-const PASSING_GRADE = 14;
 const TREND_LOOKBACK = 4;
 const RISK_RANK: Record<SubjectRiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 
@@ -66,6 +68,8 @@ export class RecalculateStudentMetricsUseCase {
     @Inject('IPredictionClientPort') private readonly predictionClient: IPredictionClientPort,
     @Inject('INotificationRepository') private readonly notificationRepo: INotificationRepository,
     private readonly deliveryService: NotificationDeliveryService,
+    private readonly createNotificationUC: CreateNotificationUseCase,
+    @Inject('IUserServiceClient') private readonly userService: IUserServiceClient,
   ) {}
 
   async execute(
@@ -80,9 +84,10 @@ export class RecalculateStudentMetricsUseCase {
       try {
         // CalculateAverageUseCase also persists the pre-existing global
         // StudentMetricsEntity as a side effect (Fase 4 behavior, unchanged).
-        const [metrics, checkIn, grades, recentRows] = await Promise.all([
+        const [metrics, checkIn, teacherAttendance, grades, recentRows] = await Promise.all([
           this.calculateAverageUC.execute(studentId, periodId),
           this.academic.getLatestCheckIn(studentId, subjectId, periodId),
+          this.academic.getAttendanceRate(studentId, subjectId).catch(() => null),
           this.academic.getGradesByStudent(studentId, periodId),
           this.subjectMetricsRepo.findRecentByStudentSubject(studentId, subjectId, TREND_LOOKBACK),
         ]);
@@ -96,7 +101,8 @@ export class RecalculateStudentMetricsUseCase {
         // honestly null — never a fabricated neutral value (those only
         // exist for Fase 5's global risk-snapshot fallback).
         const complianceIndex = checkIn?.taskCompletion ?? null;
-        const attendanceRate = checkIn?.attendance ?? null;
+        // La asistencia la registra el docente; el autorreporte solo se usa si aún no hay registro.
+        const attendanceRate = teacherAttendance?.attendance ?? checkIn?.attendance ?? null;
         const studyHours = checkIn?.studyHours ?? null;
         const comprehensionAvg = checkIn?.topicComprehensionAvg ?? checkIn?.generalComprehension ?? null;
 
@@ -331,6 +337,29 @@ export class RecalculateStudentMetricsUseCase {
     );
     await this.notificationRepo.save(studentNotification);
     await this.deliveryService.deliver(studentNotification);
+
+    // Las alertas graves van al DECE para su revisión humana (no son un
+    // diagnóstico). Un fallo aquí no debe impedir avisar al docente.
+    if (riskLevel === 'HIGH' || riskLevel === 'CRITICAL') {
+      try {
+        const profile = await this.userService.getProfile(studentId);
+        const studentLabel = profile ? `${profile.firstName} ${profile.lastName}`.trim() : 'Un estudiante';
+        await this.createNotificationUC.execute({
+          broadcastToRole: 'DECE',
+          type: 'EARLY_ALERT',
+          title: `Alerta temprana: ${studentLabel} en riesgo ${riskLevel}`,
+          message: `${studentLabel} escaló a riesgo ${riskLevel} en ${subjectName}. Revisa el caso con el docente y la familia.`,
+          relatedAlertId: alertId,
+          subjectId,
+          studentId,
+          periodId,
+        });
+      } catch (err) {
+        this.logger.error(
+          `DECE notification failed for student ${studentId}/${subjectId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
 
     const teacherId = subject?.teacherId ?? null;
     if (!teacherId) return; // no teacher assigned — skip without failing

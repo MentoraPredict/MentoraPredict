@@ -10,7 +10,7 @@ export interface AiRecommendationRequest {
     failedEvaluations: number;
     trendSlope: number;
   };
-  subjects: Array<{ name: string; currentGrade: number | null; credits: number }>;
+  subjects: Array<{ name: string; currentGrade: number | null }>;
   // Present only for a subject-scoped request — the syllabus unit titles for
   // the ONE subject in focus (subjects will contain a single entry too).
   topics?: string[];

@@ -1,10 +1,11 @@
 import {
-  Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn,
+  Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Check,
 } from 'typeorm';
-
-export type OrmUserRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
+import { Role, AuthProvider } from '@mentorapredict/shared-types';
 
 @Entity('users')
+@Check('CHK_users_role', `"role" IN ('STUDENT','TEACHER','ADMIN','GUARDIAN','SECRETARY','DECE','INSPECTOR')`)
+@Check('CHK_users_auth_provider', `"auth_provider" IN ('LOCAL','MICROSOFT')`)
 export class UserOrmEntity {
   @PrimaryColumn('uuid')
   id!: string;
@@ -16,10 +17,10 @@ export class UserOrmEntity {
   passwordHash!: string | null;
 
   @Column({ type: 'varchar', default: 'STUDENT' })
-  role!: OrmUserRole;
+  role!: Role;
 
   @Column({ name: 'auth_provider', type: 'varchar', default: 'LOCAL' })
-  authProvider!: 'LOCAL' | 'MICROSOFT';
+  authProvider!: AuthProvider;
 
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;

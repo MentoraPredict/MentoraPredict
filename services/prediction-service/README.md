@@ -14,7 +14,7 @@ NestJS service for AI-backed academic predictions and recommendations.
 2. Fetch the student's current grades per subject from `academic-service`.
 3. Send both to OpenAI to get a natural-language `summary` plus a structured
    `recommendations[]` plan.
-4. Log every prediction to MongoDB (`prediction_logs`) for history/audit.
+4. Log every prediction to PostgreSQL (`prediction_logs`) for history/audit.
 
 ## Endpoints
 
@@ -32,7 +32,7 @@ services behind Kong.
 | `OPENAI_MODEL`                       | Defaults to `gpt-4o-mini`.                                                                                              |
 | `ANALYTICS_SERVICE_URL`              | Defaults to `http://analytics-service:3004`.                                                                            |
 | `ACADEMIC_SERVICE_URL`               | Defaults to `http://academic-service:3003`.                                                                             |
-| `MONGO_*`                            | Standard Mongo connection vars, same convention as analytics-service.                                                   |
+| `POSTGRES_*`                         | Standard Postgres connection vars, same convention as the other services.                                               |
 | `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | RS256 keys, same shared pair used across the platform.                                                                  |
 
 ## Port

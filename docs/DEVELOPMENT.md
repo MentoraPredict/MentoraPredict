@@ -2,8 +2,8 @@
 
 ## 📝 Antes de Comenzar
 
-1. Leer [ARCHITECTURE.md](./ARCHITECTURE.md) - Entender el diseño
-2. Leer [SERVICES.md](./SERVICES.md) - Conocer los servicios
+1. Leer [architecture/high-level-architecture.md](./architecture/high-level-architecture.md) - Entender el diseño
+2. Leer [backend/README.md](./backend/README.md) - Conocer los servicios
 3. Completar [SETUP.md](./SETUP.md) - Configurar tu ambiente
 
 ---

@@ -47,7 +47,11 @@ components:
 
     RiskLevel:
       type: string
-      enum: [LOW, MEDIUM, HIGH]
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+
+    EnrollmentStatus:
+      type: string
+      enum: [ACTIVE, WITHDRAWN, COMPLETED, SUSPENDED]
 
     ServiceStatus:
       type: string

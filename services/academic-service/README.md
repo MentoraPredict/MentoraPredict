@@ -8,7 +8,7 @@ RF-006–013
 
 ## Description
 
-Academic hierarchy: faculties, careers, periods, subjects, enrollments, evaluations, grades, bulk ingestion.
+Academic domain: school years and grading periods, grade levels, sections and curriculum, subjects, people and enrollment, grading and promotion, attendance and justifications, bulk ingestion.
 
 ## Hexagonal Architecture
 
@@ -26,7 +26,7 @@ src/
 │       └── output/          # Secondary ports — interfaces that adapters implement
 └── infrastructure/          # Adapters — framework, DB, HTTP, cache, external APIs
     ├── controllers/         # REST controllers (primary adapters)
-    ├── persistence/         # TypeORM/Mongo repositories (secondary adapters)
+    ├── persistence/         # TypeORM repositories (secondary adapters)
     ├── cache/               # Redis adapter (if applicable)
     ├── external/            # Third-party API clients (OpenAI, etc.)
     └── config/              # Environment config & NestJS module setup

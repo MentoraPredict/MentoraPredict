@@ -7,7 +7,6 @@ export interface StudentEnrollmentView {
   studentId: string;
   subjectId: string;
   subjectName: string;
-  subjectCredits: number;
   periodId: string;
   status: string;
 }
@@ -30,7 +29,6 @@ export class GetStudentEnrollmentsUseCase {
         studentId,
         subjectId: e.subjectId,
         subjectName: subject?.name ?? '',
-        subjectCredits: subject?.credits ?? 1,
         periodId: e.periodId,
         status: e.status,
       });

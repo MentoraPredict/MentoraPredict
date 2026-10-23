@@ -28,7 +28,7 @@ export default function StudentCourseMetricsPanel({
         </Heading>
         <Text variant="small" className="mt-2 text-gray-600">
           Registra indicadores semanales para mejorar el seguimiento de riesgo
-          academico.
+          académico.
         </Text>
       </div>
 

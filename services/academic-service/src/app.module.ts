@@ -1,7 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
 import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
@@ -12,9 +11,31 @@ import { UploadsController } from "./infrastructure/controllers/uploads.controll
 import { HealthController } from "./infrastructure/controllers/health.controller";
 import { RootController } from "./infrastructure/controllers/root.controller";
 
-import { FacultyOrmEntity } from "./infrastructure/persistence/faculty.orm-entity";
-import { CareerOrmEntity } from "./infrastructure/persistence/career.orm-entity";
 import { AcademicPeriodOrmEntity } from "./infrastructure/persistence/academic-period.orm-entity";
+import {
+  InstitutionOrmEntity,
+  EducationLevelOrmEntity,
+  InstitutionLevelOrmEntity,
+  GradingScaleOrmEntity,
+  GradingScaleBandOrmEntity,
+  AttendanceRuleOrmEntity,
+  PromotionRuleOrmEntity,
+} from "./infrastructure/persistence/institution-config.orm-entities";
+import {
+  GradeLevelOrmEntity,
+  SectionOrmEntity,
+  CurriculumSubjectOrmEntity,
+} from "./infrastructure/persistence/academic-structure.orm-entities";
+import {
+  StudentProfileOrmEntity,
+  StudentSocioeconomicSurveyOrmEntity,
+  UserContactDetailOrmEntity,
+  GuardianStudentOrmEntity,
+  ConsentOrmEntity,
+  StudentEnrollmentOrmEntity,
+} from "./infrastructure/persistence/people.orm-entities";
+import { SchoolYearOrmEntity } from "./infrastructure/persistence/school-year.orm-entity";
+import { SubjectCatalogOrmEntity } from "./infrastructure/persistence/subject-catalog.orm-entity";
 import { SubjectOrmEntity } from "./infrastructure/persistence/subject.orm-entity";
 import { EvaluationOrmEntity } from "./infrastructure/persistence/evaluation.orm-entity";
 import { EnrollmentOrmEntity } from "./infrastructure/persistence/enrollment.orm-entity";
@@ -23,29 +44,126 @@ import { GradeHistoryOrmEntity } from "./infrastructure/persistence/grade-histor
 import { SubjectTeacherOrmEntity } from "./infrastructure/persistence/subject-teacher.orm-entity";
 import { GradeImportOrmEntity } from "./infrastructure/persistence/grade-import.orm-entity";
 import { WeeklyCheckInOrmEntity } from "./infrastructure/persistence/weekly-check-in.orm-entity";
+import { WeeklyCheckInTopicResponseOrmEntity } from "./infrastructure/persistence/weekly-check-in-topic-response.orm-entity";
+import { SurveyQuestionOrmEntity } from "./infrastructure/persistence/survey-question.orm-entity";
+import { SurveyResponseOrmEntity } from "./infrastructure/persistence/survey-response.orm-entity";
+import { SurveyAnswerOrmEntity } from "./infrastructure/persistence/survey-answer.orm-entity";
+import { ClassScheduleOrmEntity } from "./infrastructure/persistence/class-schedule.orm-entity";
+import { ClassSessionOrmEntity } from "./infrastructure/persistence/class-session.orm-entity";
+import { SessionAttendanceOrmEntity } from "./infrastructure/persistence/session-attendance.orm-entity";
 import { TopicOrmEntity } from "./infrastructure/persistence/topic.orm-entity";
 import {
-  TeacherObservationDoc,
-  TeacherObservationSchema,
-} from "./infrastructure/persistence/teacher-observation.schema";
+  GradingComponentOrmEntity,
+  PeriodClosureOrmEntity,
+  PeriodResultOrmEntity,
+  SupplementaryGradeOrmEntity,
+  PromotionDecisionOrmEntity,
+} from "./infrastructure/persistence/grading.orm-entities";
+import { GradingRepository } from "./infrastructure/persistence/grading.repository";
+import { GradingCalculator } from "./application/services/grading-calculator";
+import { GradingController } from "./infrastructure/controllers/grading.controller";
+import { ListSectionCoursesUseCase } from "./application/use-cases/section-courses.use-cases";
+import { AbsenceJustificationOrmEntity } from "./infrastructure/persistence/absence-justification.orm-entity";
+import { AttendanceRepository } from "./infrastructure/persistence/attendance.repository";
+import { AttendanceCalculator } from "./application/services/attendance-calculator";
+import { AttendanceNotifier } from "./application/services/attendance-notifier";
+import { AttendanceController } from "./infrastructure/controllers/attendance.controller";
+import {
+  GetCourseAttendanceUseCase,
+  GetSectionAttendanceUseCase,
+  GetSessionAttendanceUseCase,
+  GetStudentAttendanceUseCase,
+  RequestJustificationUseCase,
+  ListJustificationsUseCase,
+  ResolveJustificationUseCase,
+  GetAttendanceRateUseCase,
+} from "./application/use-cases/attendance.use-cases";
+import {
+  GetGradingComponentsUseCase,
+  UpdateGradingComponentsUseCase,
+  GetGradebookUseCase,
+  GetMyGradeBreakdownUseCase,
+  CreateActivityUseCase,
+  UpdateActivityUseCase,
+  ToggleActivityUseCase,
+  SaveGradesUseCase,
+  GetPeriodClosureUseCase,
+  ClosePeriodUseCase,
+  ReopenPeriodUseCase,
+  GetStudentResultsUseCase,
+  ListSupplementaryCandidatesUseCase,
+  RegisterSupplementaryUseCase,
+  GetSectionPromotionUseCase,
+  ConfirmPromotionUseCase,
+} from "./application/use-cases/grading.use-cases";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
+import { TeacherObservationOrmEntity } from "./infrastructure/persistence/teacher-observation.orm-entity";
 
+import { SubjectCatalogRepository } from "./infrastructure/persistence/subject-catalog.repository";
 import { SubjectRepository } from "./infrastructure/persistence/subject.repository";
-import { FacultyRepository } from "./infrastructure/persistence/faculty.repository";
-import { CareerRepository } from "./infrastructure/persistence/career.repository";
 import { EvaluationRepository } from "./infrastructure/persistence/evaluation.repository";
 import { EnrollmentRepository } from "./infrastructure/persistence/enrollment.repository";
 import { GradeRepository } from "./infrastructure/persistence/grade.repository";
 import { AcademicPeriodRepository } from "./infrastructure/persistence/academic-period.repository";
+import { PeopleEnrollmentController } from "./infrastructure/controllers/people-enrollment.controller";
+import {
+  GetStudentProfileUseCase,
+  UpsertStudentProfileUseCase,
+  ListStudentGuardiansUseCase,
+  ListMyStudentsUseCase,
+  LinkGuardianUseCase,
+  UnlinkGuardianUseCase,
+  ListStudentConsentsUseCase,
+  GrantConsentUseCase,
+  RevokeConsentUseCase,
+  EnrollStudentsInSectionUseCase,
+  EndStudentEnrollmentUseCase,
+  ListSectionEnrollmentsUseCase,
+  ListStudentEnrollmentsUseCase,
+} from "./application/use-cases/people-enrollment.use-cases";
+import { AcademicStructureController } from "./infrastructure/controllers/academic-structure.controller";
+import {
+  ListGradeLevelsUseCase,
+  ListSectionsUseCase,
+  CreateSectionUseCase,
+  UpdateSectionUseCase,
+  DeleteSectionUseCase,
+  GetCurriculumUseCase,
+  SetCurriculumUseCase,
+  GenerateSectionCoursesUseCase,
+  CreateSectionCourseUseCase,
+  AssignCourseTeacherUseCase,
+  UpdateSubjectCatalogUseCase,
+} from "./application/use-cases/academic-structure.use-cases";
+import { InstitutionConfigController } from "./infrastructure/controllers/institution-config.controller";
+import {
+  GetInstitutionConfigUseCase,
+  UpdateInstitutionUseCase,
+  UpdateInstitutionLevelsUseCase,
+  UpdateGradingScaleUseCase,
+  UpdateAttendanceRuleUseCase,
+  UpdatePromotionRulesUseCase,
+} from "./application/use-cases/institution-config.use-cases";
+import { SchoolYearRepository } from "./infrastructure/persistence/school-year.repository";
+import { PeopleRepository } from "./infrastructure/persistence/people.repository";
+import { StudentEnrollmentRepository } from "./infrastructure/persistence/student-enrollment.repository";
+import { AcademicStructureRepository } from "./infrastructure/persistence/academic-structure.repository";
+import { InstitutionConfigRepository } from "./infrastructure/persistence/institution-config.repository";
 import { SubjectTeacherRepository } from "./infrastructure/persistence/subject-teacher.repository";
 import { GradeHistoryRepository } from "./infrastructure/persistence/grade-history.repository";
 import { GradeImportRepository } from "./infrastructure/persistence/grade-import.repository";
 import { WeeklyCheckInRepository } from "./infrastructure/persistence/weekly-check-in.repository";
+import { SurveyQuestionRepository } from "./infrastructure/persistence/survey-question.repository";
+import { SurveyResponseRepository } from "./infrastructure/persistence/survey-response.repository";
+import { ClassScheduleRepository } from "./infrastructure/persistence/class-schedule.repository";
+import { ClassSessionRepository } from "./infrastructure/persistence/class-session.repository";
+import { SessionAttendanceRepository } from "./infrastructure/persistence/session-attendance.repository";
 import { TopicRepository } from "./infrastructure/persistence/topic.repository";
 import { TeacherObservationRepository } from "./infrastructure/persistence/teacher-observation.repository";
 import { UserRoleHttpAdapter } from "./infrastructure/adapters/user-role-http.adapter";
 import { AnalyticsHttpClient } from "./infrastructure/adapters/analytics-http.client";
 import { NotificationHttpClient } from "./infrastructure/adapters/notification-http.client";
-import { SupabaseImageStorageAdapter } from "./infrastructure/storage/supabase-image-storage.adapter";
+import { imageStorageProvider } from "./infrastructure/storage/image-storage.provider";
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { InternalServiceGuard } from "./infrastructure/guards/internal-service.guard";
 import { TeacherRoleGuard } from "./infrastructure/guards/teacher-role.guard";
@@ -66,13 +184,6 @@ import { GetStudentEnrollmentsUseCase } from "./application/use-cases/get-studen
 import { CreateObservationUseCase } from "./application/use-cases/create-observation.use-case";
 import { GetObservationsByStudentUseCase } from "./application/use-cases/get-observations-by-student.use-case";
 
-// Faculty use-cases
-import { CreateFacultyUseCase } from "./application/use-cases/create-faculty.use-case";
-import { GetFacultyUseCase } from "./application/use-cases/get-faculty.use-case";
-import { ListFacultiesUseCase } from "./application/use-cases/list-faculties.use-case";
-import { UpdateFacultyUseCase } from "./application/use-cases/update-faculty.use-case";
-import { ChangeFacultyStatusUseCase } from "./application/use-cases/change-faculty-status.use-case";
-import { DeleteFacultyUseCase } from "./application/use-cases/delete-faculty.use-case";
 
 // Academic Period use-cases
 import { CreateAcademicPeriodUseCase } from "./application/use-cases/create-academic-period.use-case";
@@ -82,16 +193,14 @@ import { GetActivePeriodUseCase } from "./application/use-cases/get-active-perio
 import { UpdateAcademicPeriodUseCase } from "./application/use-cases/update-academic-period.use-case";
 import { ChangeAcademicPeriodStatusUseCase } from "./application/use-cases/change-academic-period-status.use-case";
 import { DeleteAcademicPeriodUseCase } from "./application/use-cases/delete-academic-period.use-case";
+import { CreateSchoolYearUseCase } from "./application/use-cases/create-school-year.use-case";
+import { ListSchoolYearsUseCase, GetSchoolYearUseCase, GetCurrentSchoolYearUseCase } from "./application/use-cases/list-school-years.use-case";
+import { UpdateSchoolYearUseCase, ChangeSchoolYearStatusUseCase, DeleteSchoolYearUseCase } from "./application/use-cases/manage-school-year.use-case";
 
-// Career use-cases
-import { CreateCareerUseCase } from "./application/use-cases/create-career.use-case";
-import { GetCareerUseCase } from "./application/use-cases/get-career.use-case";
-import { ListCareersUseCase } from "./application/use-cases/list-careers.use-case";
-import { UpdateCareerUseCase } from "./application/use-cases/update-career.use-case";
-import { ChangeCareerStatusUseCase } from "./application/use-cases/change-career-status.use-case";
-import { DeleteCareerUseCase } from "./application/use-cases/delete-career.use-case";
 
 // Subject use-cases
+import { CreateSubjectCatalogUseCase } from "./application/use-cases/create-subject-catalog.use-case";
+import { ListSubjectCatalogUseCase } from "./application/use-cases/list-subject-catalog.use-case";
 import { CreateSubjectUseCase } from "./application/use-cases/create-subject.use-case";
 import { GetSubjectUseCase } from "./application/use-cases/get-subject.use-case";
 import { ListSubjectsUseCase } from "./application/use-cases/list-subjects.use-case";
@@ -122,7 +231,15 @@ import { UpsertCheckInUseCase } from "./application/use-cases/upsert-check-in.us
 import { UpdateCheckInUseCase } from "./application/use-cases/update-check-in.use-case";
 import { ListCheckInsUseCase } from "./application/use-cases/list-check-ins.use-case";
 import { GetCheckInsSummaryUseCase } from "./application/use-cases/get-check-ins-summary.use-case";
+import { ListClassSessionsUseCase } from "./application/use-cases/list-class-sessions.use-case";
+import { RegisterSessionAttendanceUseCase } from "./application/use-cases/register-session-attendance.use-case";
+import { DefineSubjectScheduleUseCase } from "./application/use-cases/define-subject-schedule.use-case";
+import { CreateSurveyQuestionUseCase } from "./application/use-cases/create-survey-question.use-case";
+import { ListSurveyQuestionsUseCase } from "./application/use-cases/list-survey-questions.use-case";
+import { SubmitSurveyResponseUseCase } from "./application/use-cases/submit-survey-response.use-case";
+import { GetSurveyResponseHistoryUseCase } from "./application/use-cases/get-survey-response-history.use-case";
 import { GetLatestCheckInUseCase } from "./application/use-cases/get-latest-check-in.use-case";
+import { GetLatestEmotionalStateUseCase } from "./application/use-cases/get-latest-emotional-state.use-case";
 import { CheckSubjectOwnershipUseCase } from "./application/use-cases/check-subject-ownership.use-case";
 // File storage (Phase 10)
 import { UploadSubjectImageUseCase } from "./application/use-cases/upload-subject-image.use-case";
@@ -150,9 +267,25 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
         password: cfg.get("POSTGRES_PASSWORD", ""),
         database: cfg.get("POSTGRES_DB", "mentorapredict"),
         entities: [
-          FacultyOrmEntity,
-          CareerOrmEntity,
           AcademicPeriodOrmEntity,
+          SchoolYearOrmEntity,
+          StudentProfileOrmEntity,
+          StudentSocioeconomicSurveyOrmEntity,
+          UserContactDetailOrmEntity,
+          GuardianStudentOrmEntity,
+          ConsentOrmEntity,
+          StudentEnrollmentOrmEntity,
+          GradeLevelOrmEntity,
+          SectionOrmEntity,
+          CurriculumSubjectOrmEntity,
+          InstitutionOrmEntity,
+          EducationLevelOrmEntity,
+          InstitutionLevelOrmEntity,
+          GradingScaleOrmEntity,
+          GradingScaleBandOrmEntity,
+          AttendanceRuleOrmEntity,
+          PromotionRuleOrmEntity,
+          SubjectCatalogOrmEntity,
           SubjectOrmEntity,
           EvaluationOrmEntity,
           EnrollmentOrmEntity,
@@ -161,17 +294,34 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
           SubjectTeacherOrmEntity,
           GradeImportOrmEntity,
           WeeklyCheckInOrmEntity,
+          WeeklyCheckInTopicResponseOrmEntity,
+          SurveyQuestionOrmEntity,
+          SurveyResponseOrmEntity,
+          SurveyAnswerOrmEntity,
+          ClassScheduleOrmEntity,
+          ClassSessionOrmEntity,
+          SessionAttendanceOrmEntity,
           TopicOrmEntity,
+          TeacherObservationOrmEntity,
+          UserReferenceOrmEntity,
+          GradingComponentOrmEntity,
+          PeriodClosureOrmEntity,
+          PeriodResultOrmEntity,
+          SupplementaryGradeOrmEntity,
+          PromotionDecisionOrmEntity,
+          AbsenceJustificationOrmEntity,
         ],
-        synchronize: cfg.get("NODE_ENV") !== "production",
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
+        // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
+        synchronize: false,
         logging: cfg.get("NODE_ENV") === "development",
       }),
     }),
 
     TypeOrmModule.forFeature([
-      FacultyOrmEntity,
-      CareerOrmEntity,
       AcademicPeriodOrmEntity,
+      SchoolYearOrmEntity,
+      SubjectCatalogOrmEntity,
       SubjectOrmEntity,
       EvaluationOrmEntity,
       EnrollmentOrmEntity,
@@ -180,26 +330,16 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       SubjectTeacherOrmEntity,
       GradeImportOrmEntity,
       WeeklyCheckInOrmEntity,
+      WeeklyCheckInTopicResponseOrmEntity,
+      SurveyQuestionOrmEntity,
+      SurveyResponseOrmEntity,
+      SurveyAnswerOrmEntity,
+      ClassScheduleOrmEntity,
+      ClassSessionOrmEntity,
+      SessionAttendanceOrmEntity,
       TopicOrmEntity,
-    ]),
-
-    MongooseModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ({
-        uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
-        serverSelectionTimeoutMS: 5000,
-        // Connects in the background instead of blocking Nest's bootstrap:
-        // without this, an unreachable MongoDB crashes the whole service
-        // (NestFactory.create() awaits the connection and rethrows once
-        // retries are exhausted).
-        lazyConnection: true,
-        // Default is 10s per buffered query — too slow for a request path;
-        // fail faster so callers hit the try/catch sooner.
-        bufferTimeoutMS: 3000,
-      }),
-    }),
-    MongooseModule.forFeature([
-      { name: TeacherObservationDoc.name, schema: TeacherObservationSchema },
+      TeacherObservationOrmEntity,
+      UserReferenceOrmEntity,
     ]),
 
     JwtModule.registerAsync({
@@ -226,6 +366,11 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
   ],
   controllers: [
     AcademicController,
+    InstitutionConfigController,
+    AcademicStructureController,
+    PeopleEnrollmentController,
+    GradingController,
+    AttendanceController,
     InternalAcademicController,
     ObservationsController,
     UploadsController,
@@ -239,8 +384,7 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     TeacherRoleGuard,
     RolesGuard,
     JwtAuthGuard,
-    { provide: "IFacultyRepository", useClass: FacultyRepository },
-    { provide: "ICareerRepository", useClass: CareerRepository },
+    { provide: "ISubjectCatalogRepository", useClass: SubjectCatalogRepository },
     { provide: "ISubjectRepository", useClass: SubjectRepository },
     { provide: "IEvaluationRepository", useClass: EvaluationRepository },
     { provide: "IEnrollmentRepository", useClass: EnrollmentRepository },
@@ -250,22 +394,53 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
       useClass: AcademicPeriodRepository,
     },
     {
+      provide: "ISchoolYearRepository",
+      useClass: SchoolYearRepository,
+    },
+    {
+      provide: "IInstitutionConfigRepository",
+      useClass: InstitutionConfigRepository,
+    },
+    {
+      provide: "IAcademicStructureRepository",
+      useClass: AcademicStructureRepository,
+    },
+    {
+      provide: "IPeopleRepository",
+      useClass: PeopleRepository,
+    },
+    {
+      provide: "IStudentEnrollmentRepository",
+      useClass: StudentEnrollmentRepository,
+    },
+    { provide: "IGradingRepository", useClass: GradingRepository },
+    { provide: "IAttendanceRepository", useClass: AttendanceRepository },
+    GradingCalculator,
+    AttendanceCalculator,
+    AttendanceNotifier,
+    {
       provide: "ISubjectTeacherRepository",
       useClass: SubjectTeacherRepository,
     },
     { provide: "IGradeHistoryRepository", useClass: GradeHistoryRepository },
     { provide: "IGradeImportRepository", useClass: GradeImportRepository },
     { provide: "IWeeklyCheckInRepository", useClass: WeeklyCheckInRepository },
+    { provide: "ISurveyQuestionRepository", useClass: SurveyQuestionRepository },
+    { provide: "ISurveyResponseRepository", useClass: SurveyResponseRepository },
+    { provide: "IClassScheduleRepository", useClass: ClassScheduleRepository },
+    { provide: "IClassSessionRepository", useClass: ClassSessionRepository },
+    { provide: "ISessionAttendanceRepository", useClass: SessionAttendanceRepository },
     { provide: "ITopicRepository", useClass: TopicRepository },
     {
       provide: "ITeacherObservationRepository",
       useClass: TeacherObservationRepository,
     },
     { provide: "ITeacherRolePort", useClass: UserRoleHttpAdapter },
+    { provide: "IUserRolePort", useClass: UserRoleHttpAdapter },
     { provide: "IUserProfilePort", useClass: UserProfileAdapter },
     { provide: "IAnalyticsClientPort", useClass: AnalyticsHttpClient },
     { provide: "INotificationClientPort", useClass: NotificationHttpClient },
-    { provide: "IImageStoragePort", useClass: SupabaseImageStorageAdapter },
+    imageStorageProvider,
     RecordGradeUseCase,
     RegisterGradeUseCase,
     UpdateGradeUseCase,
@@ -278,13 +453,6 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     GetSubjectEnrollmentsUseCase,
     CreateObservationUseCase,
     GetObservationsByStudentUseCase,
-    // Faculty use-cases
-    CreateFacultyUseCase,
-    GetFacultyUseCase,
-    ListFacultiesUseCase,
-    UpdateFacultyUseCase,
-    ChangeFacultyStatusUseCase,
-    DeleteFacultyUseCase,
     // Academic Period use-cases
     CreateAcademicPeriodUseCase,
     GetAcademicPeriodUseCase,
@@ -293,13 +461,71 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateAcademicPeriodUseCase,
     ChangeAcademicPeriodStatusUseCase,
     DeleteAcademicPeriodUseCase,
-    // Career use-cases
-    CreateCareerUseCase,
-    GetCareerUseCase,
-    ListCareersUseCase,
-    UpdateCareerUseCase,
-    ChangeCareerStatusUseCase,
-    DeleteCareerUseCase,
+    CreateSchoolYearUseCase,
+    ListSchoolYearsUseCase,
+    GetSchoolYearUseCase,
+    GetCurrentSchoolYearUseCase,
+    UpdateSchoolYearUseCase,
+    ChangeSchoolYearStatusUseCase,
+    DeleteSchoolYearUseCase,
+    GetInstitutionConfigUseCase,
+    UpdateInstitutionUseCase,
+    UpdateInstitutionLevelsUseCase,
+    UpdateGradingScaleUseCase,
+    UpdateAttendanceRuleUseCase,
+    UpdatePromotionRulesUseCase,
+    ListGradeLevelsUseCase,
+    ListSectionsUseCase,
+    CreateSectionUseCase,
+    UpdateSectionUseCase,
+    DeleteSectionUseCase,
+    GetCurriculumUseCase,
+    SetCurriculumUseCase,
+    GenerateSectionCoursesUseCase,
+    CreateSectionCourseUseCase,
+    AssignCourseTeacherUseCase,
+    UpdateSubjectCatalogUseCase,
+    GetStudentProfileUseCase,
+    UpsertStudentProfileUseCase,
+    ListStudentGuardiansUseCase,
+    ListMyStudentsUseCase,
+    LinkGuardianUseCase,
+    UnlinkGuardianUseCase,
+    ListStudentConsentsUseCase,
+    GrantConsentUseCase,
+    RevokeConsentUseCase,
+    EnrollStudentsInSectionUseCase,
+    EndStudentEnrollmentUseCase,
+    ListSectionEnrollmentsUseCase,
+    ListStudentEnrollmentsUseCase,
+    ListSectionCoursesUseCase,
+    GetCourseAttendanceUseCase,
+    GetSectionAttendanceUseCase,
+    GetSessionAttendanceUseCase,
+    GetStudentAttendanceUseCase,
+    RequestJustificationUseCase,
+    ListJustificationsUseCase,
+    ResolveJustificationUseCase,
+    GetAttendanceRateUseCase,
+    GetGradingComponentsUseCase,
+    UpdateGradingComponentsUseCase,
+    GetGradebookUseCase,
+  GetMyGradeBreakdownUseCase,
+    CreateActivityUseCase,
+    UpdateActivityUseCase,
+    ToggleActivityUseCase,
+    SaveGradesUseCase,
+    GetPeriodClosureUseCase,
+    ClosePeriodUseCase,
+    ReopenPeriodUseCase,
+    GetStudentResultsUseCase,
+    ListSupplementaryCandidatesUseCase,
+    RegisterSupplementaryUseCase,
+    GetSectionPromotionUseCase,
+    ConfirmPromotionUseCase,
+    // Subject catalog use-cases
+    CreateSubjectCatalogUseCase,
+    ListSubjectCatalogUseCase,
     // Subject use-cases
     CreateSubjectUseCase,
     GetSubjectUseCase,
@@ -331,7 +557,15 @@ import { DeleteTopicFileUseCase } from "./application/use-cases/delete-topic-fil
     UpdateCheckInUseCase,
     ListCheckInsUseCase,
     GetCheckInsSummaryUseCase,
+    ListClassSessionsUseCase,
+    RegisterSessionAttendanceUseCase,
+    DefineSubjectScheduleUseCase,
+    CreateSurveyQuestionUseCase,
+    ListSurveyQuestionsUseCase,
+    SubmitSurveyResponseUseCase,
+    GetSurveyResponseHistoryUseCase,
     GetLatestCheckInUseCase,
+    GetLatestEmotionalStateUseCase,
     CheckSubjectOwnershipUseCase,
     // File storage (Phase 10)
     UploadSubjectImageUseCase,
@@ -349,13 +583,4 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(correlationContextMiddleware).forRoutes("*");
   }
-}
-
-function buildMongoUri(cfg: ConfigService): string {
-  const user = cfg.get("MONGO_USER", "mp_mongo_user");
-  const pass = cfg.get("MONGO_PASSWORD", "");
-  const host = cfg.get("MONGO_HOST", "localhost");
-  const port = cfg.get("MONGO_PORT", 27017);
-  const db = cfg.get("MONGO_DB", "mentorapredict_nosql");
-  return `mongodb://${user}:${pass}@${host}:${port}/${db}?authSource=admin`;
 }

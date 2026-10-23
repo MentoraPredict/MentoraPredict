@@ -342,10 +342,10 @@ npm run build
 
 ## 📚 Próximos Pasos
 
-1. Leer [ARCHITECTURE.md](./ARCHITECTURE.md)
-2. Explorar [SERVICES.md](./SERVICES.md)
+1. Leer [architecture/high-level-architecture.md](./architecture/high-level-architecture.md)
+2. Explorar [backend/README.md](./backend/README.md)
 3. Revisar documentación específica de servicios
-4. Ejecutar los ejemplos en [API.md](./API.md)
+4. Ejecutar los ejemplos en [api/api-contracts.md](./api/api-contracts.md)
 5. Empezar a desarrollar con [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 ---

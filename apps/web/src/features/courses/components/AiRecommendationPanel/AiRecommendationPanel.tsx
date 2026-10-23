@@ -7,7 +7,7 @@ import Text from "@/components/atoms/Text";
 import type { AiPrediction } from "@/services/course-analytics.service";
 
 const aiRecommendationLabels = {
-  STUDY_HABIT: "Habitos de estudio",
+  STUDY_HABIT: "Hábitos de estudio",
   TUTORING: "Tutoria",
   TIME_MANAGEMENT: "Gestion del tiempo",
   ATTENDANCE: "Asistencia",
@@ -41,7 +41,7 @@ export default function AiRecommendationPanel({
   isGenerating,
   error,
   emptyMessage,
-  generateLabel = "Generar nueva recomendacion",
+  generateLabel = "Generar nueva recomendación",
   onGenerate,
 }: AiRecommendationPanelProps) {
   return (
@@ -82,7 +82,7 @@ export default function AiRecommendationPanel({
 
       {isLoading ? (
         <Text variant="small" className="text-violet-900">
-          Cargando tu ultima recomendacion...
+          Cargando tu última recomendación...
         </Text>
       ) : prediction ? (
         <div className="space-y-4">

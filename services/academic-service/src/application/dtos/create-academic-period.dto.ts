@@ -36,7 +36,7 @@ export class CreateAcademicPeriodDto {
   @IsNotEmpty()
   endDate!: string;
 
-  @ApiProperty({ enum: ['SEMESTER', 'QUARTER'] })
-  @IsIn(['SEMESTER', 'QUARTER'])
-  type!: 'SEMESTER' | 'QUARTER';
+  @ApiProperty({ enum: ['SEMESTER', 'QUARTER', 'TRIMESTER', 'QUIMESTER'] })
+  @IsIn(['SEMESTER', 'QUARTER', 'TRIMESTER', 'QUIMESTER'])
+  type!: 'SEMESTER' | 'QUARTER' | 'TRIMESTER' | 'QUIMESTER';
 }

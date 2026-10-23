@@ -6,10 +6,11 @@ import { GetAuthUsersByIdsUseCase } from '../../application/use-cases/get-auth-u
 import { SyncAuthUserUseCase } from '../../application/use-cases/sync-auth-user.use-case';
 import { UpdateAuthUserUseCase } from '../../application/use-cases/update-user.use-case';
 import { SearchAuthUsersUseCase } from '../../application/use-cases/search-auth-users.use-case';
+import { GetLoginActivityUseCase } from '../../application/use-cases/get-login-activity.use-case';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 class SyncRoleDto {
-  @IsIn(['ADMIN', 'TEACHER', 'STUDENT'])
+  @IsIn(['ADMIN', 'TEACHER', 'STUDENT', 'GUARDIAN', 'SECRETARY', 'DECE', 'INSPECTOR'])
   role!: string;
 }
 class SyncStatusDto {
@@ -45,6 +46,7 @@ export class InternalUsersController {
     private readonly searchAuthUsersUC: SearchAuthUsersUseCase,
     private readonly syncAuthUserUC: SyncAuthUserUseCase,
     private readonly updateAuthUserUC: UpdateAuthUserUseCase,
+    private readonly getLoginActivityUC: GetLoginActivityUseCase,
   ) {}
 
   @Post('batch')
@@ -61,6 +63,11 @@ export class InternalUsersController {
       query,
       Number.parseInt(limit ?? '200', 10),
     );
+  }
+
+  @Get(':id/login-activity')
+  async loginActivity(@Param('id') id: string) {
+    return this.getLoginActivityUC.execute(id);
   }
 
   @Get(':id')

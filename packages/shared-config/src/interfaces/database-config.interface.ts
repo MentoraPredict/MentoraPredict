@@ -6,11 +6,6 @@ export interface PostgresConfig {
   database: string;
 }
 
-export interface MongoConfig {
-  url: string;
-  database: string;
-}
-
 export interface RedisConfig {
   host: string;
   port: number;

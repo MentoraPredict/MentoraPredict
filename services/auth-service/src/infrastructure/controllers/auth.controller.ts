@@ -70,7 +70,8 @@ export class AuthController {
   @ApiResponse({ status: 401, description: "Invalid credentials" })
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const ip = req.ip ?? "unknown";
-    return this.loginUC.execute(dto, ip);
+    const userAgent = req.headers["user-agent"];
+    return this.loginUC.execute(dto, ip, userAgent);
   }
 
   @Post("refresh")
@@ -122,6 +123,7 @@ export class AuthController {
   @Redirect()
   @ApiOperation({ summary: "Microsoft OAuth callback — issues app JWTs and redirects to the SPA" })
   async microsoftCallback(
+    @Req() req: Request,
     @Query("code") code?: string,
     @Query("state") state?: string,
     @Query("error") error?: string,
@@ -134,7 +136,9 @@ export class AuthController {
 
     try {
       const profile = await this.microsoftOAuth.exchangeCodeForProfile(code);
-      const tokens = await this.oauthLoginUC.execute(profile);
+      const ip = req.ip ?? "unknown";
+      const userAgent = req.headers["user-agent"];
+      const tokens = await this.oauthLoginUC.execute(profile, ip, userAgent);
 
       const params = new URLSearchParams({
         accessToken: tokens.accessToken,

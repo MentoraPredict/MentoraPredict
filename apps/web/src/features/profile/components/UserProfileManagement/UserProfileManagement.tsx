@@ -26,14 +26,11 @@ interface ProfileCourse {
   id: string;
   name: string;
   semester?: string;
-  careerName?: string;
-  facultyName?: string;
-  credits?: number;
   currentAverage?: number | null;
 }
 
 interface UserProfileManagementProps {
-  role: Extract<UserRole, "TEACHER" | "STUDENT" | "ADMIN">;
+  role: UserRole;
   courses: ProfileCourse[];
   isCoursesLoading?: boolean;
   coursesError?: string | null;
@@ -53,28 +50,24 @@ export default function UserProfileManagement({
   const [message, setMessage] = useState<string | null>(null);
   const [imageResetToken, setImageResetToken] = useState(0);
 
+  // Solo estudiantes y docentes tienen cursos que mostrar en su perfil.
+  const hasCourses = role === "STUDENT" || role === "TEACHER";
+
   const courseTitle = useMemo(() => {
     return role === "TEACHER" ? "Cursos creados" : "Cursos matriculados";
   }, [role]);
 
   const academicSummary = useMemo(() => {
     const contextCourse = courses.find(
-      (course) => course.facultyName || course.careerName || course.semester
-    );
-    const totalCredits = courses.reduce(
-      (total, course) => total + (course.credits ?? 0),
-      0
+      (course) => course.semester
     );
     const averages = courses
       .map((course) => course.currentAverage)
       .filter((average): average is number => typeof average === "number");
 
     return {
-      facultyName: contextCourse?.facultyName ?? "Facultad no registrada",
-      careerName: contextCourse?.careerName ?? "Carrera no registrada",
       periodName: contextCourse?.semester ?? "Periodo no registrado",
       totalCourses: courses.length,
-      totalCredits,
       average:
         averages.length > 0
           ? averages.reduce((total, average) => total + average, 0) /
@@ -88,7 +81,13 @@ export default function UserProfileManagement({
       ? APP_PATHS.student.dashboard
       : role === "TEACHER"
         ? APP_PATHS.teacher.dashboard
-        : APP_PATHS.admin.users;
+        : role === "GUARDIAN"
+          ? APP_PATHS.guardian.students
+          : role === "SECRETARY"
+            ? APP_PATHS.admin.enrollments
+            : role === "INSPECTOR" || role === "DECE"
+              ? APP_PATHS.admin.alerts
+              : APP_PATHS.admin.users;
 
   const handleChangeImage = (file: File) => {
     setSelectedImage(file);
@@ -179,10 +178,10 @@ export default function UserProfileManagement({
             resetToken={imageResetToken}
           />
 
-          <div className={`grid gap-6 ${role === "ADMIN" ? "" : "lg:grid-cols-2"}`}>
+          <div className={`grid gap-6 ${hasCourses ? "lg:grid-cols-2" : ""}`}>
             <UserProfileDetailsCard email={user.email} role={user.role} />
 
-            {role === "ADMIN" ? null : (
+            {!hasCourses ? null : (
               <UserProfileCoursesCard
                 title={courseTitle}
                 courses={courses}
@@ -207,18 +206,10 @@ export default function UserProfileManagement({
                 </Text>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
                 {[
-                  ["Facultad", academicSummary.facultyName],
-                  ["Carrera", academicSummary.careerName],
                   ["Periodo", academicSummary.periodName],
-                  ["Materias", academicSummary.totalCourses.toString()],
-                  [
-                    "Creditos",
-                    academicSummary.totalCredits > 0
-                      ? academicSummary.totalCredits.toString()
-                      : "--",
-                  ],
+                  ["Asignaturas", academicSummary.totalCourses.toString()],
                 ].map(([label, value]) => (
                   <div
                     key={label}

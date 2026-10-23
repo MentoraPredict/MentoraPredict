@@ -18,6 +18,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { UserProfilePagination } from "../../domain/ports/i-user-profile.repository";
 import {
   ApiTags,
   ApiOperation,
@@ -71,7 +72,7 @@ export class UsersController {
   ) {}
 
   @Get()
-  @Roles("ADMIN", "TEACHER")
+  @Roles("ADMIN", "TEACHER", "SECRETARY")
   @ApiOperation({ summary: "List users with optional filters" })
   @ApiQuery({ name: "role", required: false })
   @ApiQuery({ name: "status", required: false })
@@ -82,13 +83,33 @@ export class UsersController {
     @Query("search") search?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("groupBy") groupBy?: string,
   ) {
     const callerRole = req.user?.role;
     const shouldPaginate = page !== undefined || limit !== undefined;
-    const pagination = {
+    const pagination: UserProfilePagination = {
       page: Number.parseInt(page ?? "1", 10),
       limit: Number.parseInt(limit ?? "20", 10),
+      groupBy: groupBy === "role" || groupBy === "status" ? groupBy : undefined,
     };
+
+    // Secretaría gestiona matrículas: solo ve estudiantes y representantes.
+    if (callerRole === "SECRETARY") {
+      const allowed = ["STUDENT", "GUARDIAN"];
+      const effectiveRole = role ?? "STUDENT";
+
+      if (!allowed.includes(effectiveRole)) {
+        throw new ForbiddenException("Secretary can only list students and guardians");
+      }
+
+      return shouldPaginate
+        ? this.listUsersUC.executePaginated(
+            { role: effectiveRole, status: status ?? "ACTIVE" },
+            pagination,
+            search,
+          )
+        : this.listUsersUC.execute({ role: effectiveRole, status: status ?? "ACTIVE" });
+    }
 
     if (callerRole === "TEACHER") {
       if (role && role !== "STUDENT") {

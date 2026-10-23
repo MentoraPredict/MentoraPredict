@@ -1,21 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import {
   TeacherObservationEntity, ObservationType,
 } from '../../domain/entities/teacher-observation.entity';
 import { ITeacherObservationRepository } from '../../application/ports/output/i-teacher-observation.repository';
-import { TeacherObservationDoc } from './teacher-observation.schema';
+import { TeacherObservationOrmEntity } from './teacher-observation.orm-entity';
 
 @Injectable()
 export class TeacherObservationRepository implements ITeacherObservationRepository {
   constructor(
-    @InjectModel(TeacherObservationDoc.name) private readonly model: Model<TeacherObservationDoc>,
+    @InjectRepository(TeacherObservationOrmEntity)
+    private readonly repo: Repository<TeacherObservationOrmEntity>,
   ) {}
 
   async save(observation: TeacherObservationEntity): Promise<TeacherObservationEntity> {
-    await this.model.create({
-      _id: observation.id,
+    await this.repo.insert({
+      id: observation.id,
       studentId: observation.studentId,
       teacherId: observation.teacherId,
       subjectId: observation.subjectId,
@@ -26,15 +27,18 @@ export class TeacherObservationRepository implements ITeacherObservationReposito
   }
 
   async findByStudentId(studentId: string): Promise<TeacherObservationEntity[]> {
-    const docs = await this.model.find({ studentId }).sort({ createdAt: -1 }).exec();
-    return docs.map((d) => new TeacherObservationEntity(
-      d._id,
-      d.studentId,
-      d.teacherId,
-      d.subjectId,
-      d.type as ObservationType,
-      d.content,
-      (d as unknown as { createdAt: Date }).createdAt ?? new Date(),
+    const rows = await this.repo.find({
+      where: { studentId },
+      order: { createdAt: 'DESC' },
+    });
+    return rows.map((r) => new TeacherObservationEntity(
+      r.id,
+      r.studentId,
+      r.teacherId,
+      r.subjectId,
+      r.type as ObservationType,
+      r.content,
+      r.createdAt,
     ));
   }
 }

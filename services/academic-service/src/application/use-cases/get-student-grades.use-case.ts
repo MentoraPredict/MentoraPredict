@@ -8,7 +8,6 @@ export interface StudentGradeView {
   studentId: string;
   subjectId: string;
   subjectName: string;
-  subjectCredits: number;
   value: number;
   periodId: string;
   evaluationId: string | null;
@@ -38,7 +37,6 @@ export class GetStudentGradesUseCase {
           studentId,
           subjectId: enrollment.subjectId,
           subjectName: subject?.name ?? '',
-          subjectCredits: subject?.credits ?? 1,
           value: grade.value,
           periodId,
           evaluationId: grade.evaluationId,

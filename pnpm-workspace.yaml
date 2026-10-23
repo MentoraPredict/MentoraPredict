@@ -2,6 +2,11 @@ packages:
   - "apps/*"
   - "packages/*"
   - "services/*"
+# Transitive deprecations we can safely fix. `xcode` (via expo) only calls
+# uuid.v4(), which is identical in uuid@11 (last CommonJS-compatible line).
+overrides:
+  "xcode>uuid": "^11.1.0"
+
 allowBuilds:
   "@nestjs/core": true
   "@scarf/scarf": true

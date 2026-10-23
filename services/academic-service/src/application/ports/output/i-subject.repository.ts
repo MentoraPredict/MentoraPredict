@@ -5,9 +5,10 @@ export const SUBJECT_REPOSITORY_TOKEN = 'ISubjectRepository';
 export interface ISubjectRepository {
   findById(id: string): Promise<SubjectEntity | null>;
   findByAcademicPeriodId(periodId: string): Promise<SubjectEntity[]>;
-  findAll(filters?: { careerId?: string; periodId?: string }): Promise<SubjectEntity[]>;
-  findByCode(code: string): Promise<SubjectEntity | null>;
-  findByNameAndPeriod(name: string, periodId: string): Promise<SubjectEntity | null>;
+  findAll(filters?: { periodId?: string }): Promise<SubjectEntity[]>;
+  // Único por (subjectCatalogId, periodId) — reemplaza el viejo
+  // findByNameAndPeriod ahora que el nombre vive en subject_catalog.
+  findByCatalogAndPeriod(subjectCatalogId: string, periodId: string): Promise<SubjectEntity | null>;
   hasAcademicRecords(subjectId: string): Promise<boolean>;
   save(subject: SubjectEntity): Promise<SubjectEntity>;
   update(subject: SubjectEntity): Promise<SubjectEntity>;

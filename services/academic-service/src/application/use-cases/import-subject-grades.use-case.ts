@@ -27,6 +27,7 @@ import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.rep
 import { IEnrollmentRepository } from '../ports/output/i-enrollment.repository';
 import { IEvaluationRepository } from '../ports/output/i-evaluation.repository';
 import { IAnalyticsClientPort } from '../ports/output/i-analytics-client.port';
+import { assertLegacyCourse } from './school-course.guard';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set([
@@ -99,6 +100,7 @@ export class ImportSubjectGradesUseCase {
     if (!subject || !subject.isActive) {
       throw new NotFoundException('Materia no encontrada o inactiva');
     }
+    assertLegacyCourse(subject);
 
     const assignment = await this.subjectTeacherRepo.findBySubjectTeacherAndPeriod(
       subjectId,

@@ -1,8 +1,6 @@
-export enum AuthProvider {
-  LOCAL = "LOCAL",
-  GOOGLE = "GOOGLE",
-  MICROSOFT = "MICROSOFT",
-}
+import { AuthProvider } from "@mentorapredict/shared-types";
+
+export { AuthProvider };
 
 export const UserProfileStatus = {
   ACTIVE: "ACTIVE",

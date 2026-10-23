@@ -31,7 +31,7 @@ import type { Course } from "@/types/course";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
-    return `No se pudieron cargar tus cursos. Codigo HTTP: ${
+    return `No se pudieron cargar tus cursos. Código HTTP: ${
       error.response?.status ?? "desconocido"
     }.`;
   }
@@ -48,7 +48,7 @@ function getDeleteErrorMessage(error: unknown) {
   const responseMessage = error.response?.data?.message;
 
   if (status === 400) {
-    return "No se puede eliminar el curso porque tiene estudiantes o registros academicos asociados.";
+    return "No se puede eliminar el curso porque tiene estudiantes o registros académicos asociados.";
   }
 
   if (status === 404) {
@@ -59,7 +59,7 @@ function getDeleteErrorMessage(error: unknown) {
     return responseMessage;
   }
 
-  return `No se pudo eliminar el curso. Codigo HTTP: ${status ?? "desconocido"}.`;
+  return `No se pudo eliminar el curso. Código HTTP: ${status ?? "desconocido"}.`;
 }
 
 function getCreateCourseErrorMessage(error: unknown) {
@@ -78,12 +78,12 @@ function getCreateCourseErrorMessage(error: unknown) {
     return responseMessage;
   }
 
-  return `No se pudo crear el curso. Codigo HTTP: ${status ?? "desconocido"}.`;
+  return `No se pudo crear el curso. Código HTTP: ${status ?? "desconocido"}.`;
 }
 
 function getCreationDataErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
-    return `Los cursos se cargaron, pero no se pudieron cargar los datos para crear cursos. Codigo HTTP: ${
+    return `Los cursos se cargaron, pero no se pudieron cargar los datos para crear cursos. Código HTTP: ${
       error.response?.status ?? "desconocido"
     }.`;
   }
@@ -307,8 +307,6 @@ export default function useTeacherCourses(
 
   return {
     courses: coursesQuery.data ?? [],
-    faculties: creationOptionsQuery.data?.faculties ?? [],
-    careers: creationOptionsQuery.data?.careers ?? [],
     periods: creationOptionsQuery.data?.periods ?? [],
     students: studentsQuery.data ?? [],
     isLoading: teacherIdValid ? coursesQuery.isLoading : false,

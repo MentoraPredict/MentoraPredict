@@ -17,11 +17,12 @@ Inputs:
 Outputs:
 
 - `PredictionResult` JSON: `{ studentId, periodId, risk, summary, recommendations[], modelVersion, generatedAt }`.
-- Persistencia de cada prediccion en MongoDB (`prediction_logs`) para trazabilidad/auditoria.
+- Persistencia de cada prediccion en PostgreSQL (`prediction_logs`) para trazabilidad/auditoria.
 
 Datos que gestiona (ownership):
 
-- Coleccion MongoDB: `prediction_logs`.
+- Tabla PostgreSQL: `prediction_logs` (columnas `risk` y `recommendations` en `jsonb`).
+- Tabla PostgreSQL: `student_subject_predictions`.
 - Plan de recomendaciones generado dentro de cada resultado de prediccion.
 
 Dependencias:
@@ -37,8 +38,8 @@ API surface (resumen):
 
 Persistencia:
 
-- MongoDB (`prediction_logs`), sin Postgres ni Redis. El servicio es stateless respecto
-  a calculos y solo registra resultados.
+- PostgreSQL (`prediction_logs`, `student_subject_predictions`), sin Redis. El servicio es
+  stateless respecto a calculos y solo registra resultados.
 
 Stack:
 

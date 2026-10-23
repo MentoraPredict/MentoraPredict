@@ -21,6 +21,7 @@ export class WeeklyCheckInEntity {
     public generalComprehension: number,
     public topicResponses: TopicResponse[],
     public notes: string | null,
+    public explainBetter: string | null,
     public readonly createdAt: Date,
     public updatedAt: Date,
   ) {}
@@ -33,6 +34,7 @@ export class WeeklyCheckInEntity {
     generalComprehension?: number;
     topicResponses?: TopicResponse[];
     notes?: string | null;
+    explainBetter?: string | null;
   }): void {
     if (data.attendance !== undefined) this.attendance = data.attendance;
     if (data.taskCompletion !== undefined) this.taskCompletion = data.taskCompletion;
@@ -41,6 +43,7 @@ export class WeeklyCheckInEntity {
     if (data.generalComprehension !== undefined) this.generalComprehension = data.generalComprehension;
     if (data.topicResponses !== undefined) this.topicResponses = data.topicResponses;
     if (data.notes !== undefined) this.notes = data.notes;
+    if (data.explainBetter !== undefined) this.explainBetter = data.explainBetter;
     this.updatedAt = new Date();
   }
 }

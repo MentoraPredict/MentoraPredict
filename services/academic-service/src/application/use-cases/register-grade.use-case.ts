@@ -14,6 +14,7 @@ import { ISubjectRepository } from "../ports/output/i-subject.repository";
 import { IAcademicPeriodRepository } from "../ports/output/i-academic-period.repository";
 import { IAnalyticsClientPort } from "../ports/output/i-analytics-client.port";
 import { RegisterGradeDto } from "../dtos/register-grade.dto";
+import { assertLegacyCourse } from "./school-course.guard";
 
 @Injectable()
 export class RegisterGradeUseCase {
@@ -53,6 +54,7 @@ export class RegisterGradeUseCase {
     if (!subject) {
       throw new NotFoundException("Subject not found");
     }
+    assertLegacyCourse(subject);
 
     const period = await this.periodRepo.findById(subject.academicPeriodId);
     if (!period || !period.isActive) {

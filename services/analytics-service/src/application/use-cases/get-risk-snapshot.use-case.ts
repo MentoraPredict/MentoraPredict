@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CalculateAverageUseCase } from './calculate-average.use-case';
 import { ClassifyRiskUseCase, RiskLevel } from './classify-risk.use-case';
 import { IAcademicServiceClient } from '../../domain/ports/i-academic-service.client';
+import { PASSING_GRADE } from '../../domain/grade-scale';
 
 export interface RiskSnapshotResult {
   riskLevel: RiskLevel;
@@ -27,7 +28,6 @@ const NEUTRAL_COMPLIANCE = 50;
 const NEUTRAL_ATTENDANCE = 50;
 const NEUTRAL_TREND_SLOPE = 0;
 const NEUTRAL_STUDY_HOURS = 0;
-const PASSING_GRADE = 14;
 
 @Injectable()
 export class GetRiskSnapshotUseCase {

@@ -24,6 +24,10 @@ const roleLabels: Record<UserRole, string> = {
   STUDENT: "Estudiante",
   TEACHER: "Docente",
   ADMIN: "Administrador",
+  GUARDIAN: "Representante",
+  SECRETARY: "Secretaría",
+  DECE: "DECE (consejería estudiantil)",
+  INSPECTOR: "Inspección",
 };
 
 export interface CreateUserPayload {

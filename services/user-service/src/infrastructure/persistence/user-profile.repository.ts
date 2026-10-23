@@ -7,7 +7,8 @@ import {
   UserProfileStatus,
 } from "../../domain/entities/user-profile.entity";
 import {
-  IUserProfileRepository, UserProfileFilters, UserProfilePagination,
+  IUserProfileRepository, UserProfileFilters, UserProfileGroupBy,
+  UserProfileGroupCount, UserProfilePagination,
 } from '../../domain/ports/i-user-profile.repository';
 import { UserProfileOrmEntity } from './user-profile.orm-entity';
 
@@ -33,7 +34,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       bio: null,
       cedula: profile.cedula ?? null,
       avatarUrl: null,
-      authProvider: "LOCAL",
+      authProvider: AuthProvider.LOCAL,
       status: "ACTIVE",
     });
     const saved = await this.repo.save(orm);
@@ -81,8 +82,21 @@ export class UserProfileRepository implements IUserProfileRepository {
   ): Promise<{ items: UserProfileEntity[]; total: number }> {
     const page = Math.max(1, pagination.page);
     const limit = Math.min(Math.max(1, pagination.limit), 100);
-    const qb = this.createFilteredQuery(filters)
-      .orderBy('u.createdAt', 'DESC')
+    const qb = this.createFilteredQuery(filters);
+
+    // Agrupar = ordenar primero por el campo elegido, para que cada grupo
+    // quede contiguo también entre páginas; dentro del grupo, lo más nuevo primero.
+    if (pagination.groupBy === 'role') {
+      qb.orderBy('u.role', 'ASC').addOrderBy('u.createdAt', 'DESC');
+    } else if (pagination.groupBy === 'status') {
+      qb.orderBy('u.status', 'ASC').addOrderBy('u.createdAt', 'DESC');
+    } else {
+      qb.orderBy('u.createdAt', 'DESC');
+    }
+
+    // Desempate por id: sin él, filas con la misma fecha (p. ej. cargadas en
+    // bloque) pueden repetirse o saltarse al cambiar de página.
+    qb.addOrderBy('u.id', 'ASC')
       .skip((page - 1) * limit)
       .take(limit);
 
@@ -92,6 +106,21 @@ export class UserProfileRepository implements IUserProfileRepository {
       items: items.map((o) => this.toDomain(o)),
       total,
     };
+  }
+
+  async countByGroup(
+    filters: UserProfileFilters,
+    groupBy: UserProfileGroupBy,
+  ): Promise<UserProfileGroupCount[]> {
+    const column = groupBy === 'role' ? 'u.role' : 'u.status';
+    const rows = await this.createFilteredQuery(filters)
+      .select(column, 'key')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy(column)
+      .orderBy(column, 'ASC')
+      .getRawMany<{ key: string; count: string }>();
+
+    return rows.map((row) => ({ key: row.key, count: Number(row.count) }));
   }
 
   private createFilteredQuery(filters: UserProfileFilters) {
@@ -120,7 +149,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       orm.photo,
       orm.bio,
       orm.cedula,
-      orm.authProvider as AuthProvider,
+      orm.authProvider,
       orm.role,
       orm.status as UserProfileStatus,
       orm.deletedAt,

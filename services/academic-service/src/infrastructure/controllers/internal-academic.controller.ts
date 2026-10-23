@@ -4,11 +4,14 @@ import { GetStudentGradesUseCase } from '../../application/use-cases/get-student
 import { GetStudentEnrollmentsUseCase } from '../../application/use-cases/get-student-enrollments.use-case';
 import { GetSubjectEvaluationWeightsUseCase } from '../../application/use-cases/get-subject-evaluation-weights.use-case';
 import { GetLatestCheckInUseCase } from '../../application/use-cases/get-latest-check-in.use-case';
+import { GetLatestEmotionalStateUseCase } from '../../application/use-cases/get-latest-emotional-state.use-case';
 import { CheckSubjectOwnershipUseCase } from '../../application/use-cases/check-subject-ownership.use-case';
 import { GetSubjectUseCase } from '../../application/use-cases/get-subject.use-case';
+import { GetAcademicPeriodUseCase } from '../../application/use-cases/get-academic-period.use-case';
 import { GetTeacherStudentsUseCase } from '../../application/use-cases/get-teacher-students.use-case';
 import { GetSubjectTopicsInternalUseCase } from '../../application/use-cases/get-subject-topics-internal.use-case';
 import { CheckUserDeactivationEligibilityUseCase } from '../../application/use-cases/check-user-deactivation-eligibility.use-case';
+import { GetAttendanceRateUseCase } from '../../application/use-cases/attendance.use-cases';
 import { InternalServiceGuard } from '../guards/internal-service.guard';
 
 @ApiTags('academic-internal')
@@ -22,9 +25,12 @@ export class InternalAcademicController {
     private readonly getLatestCheckInUC: GetLatestCheckInUseCase,
     private readonly checkOwnershipUC: CheckSubjectOwnershipUseCase,
     private readonly getSubjectUC: GetSubjectUseCase,
+    private readonly getAcademicPeriodUC: GetAcademicPeriodUseCase,
     private readonly getTeacherStudentsUC: GetTeacherStudentsUseCase,
     private readonly getSubjectTopicsUC: GetSubjectTopicsInternalUseCase,
     private readonly checkUserDeactivationUC: CheckUserDeactivationEligibilityUseCase,
+    private readonly getAttendanceRateUC: GetAttendanceRateUseCase,
+    private readonly getLatestEmotionalStateUC: GetLatestEmotionalStateUseCase,
   ) {}
 
   @Get('students/:studentId/grades')
@@ -55,6 +61,18 @@ export class InternalAcademicController {
     return this.getLatestCheckInUC.execute(studentId, subjectId, periodId);
   }
 
+  @Get('students/:studentId/subjects/:subjectId/emotional-state')
+  @ApiOperation({ summary: 'Internal: emotional state of the latest weekly check-in (null if none)' })
+  emotionalState(@Param('studentId') studentId: string, @Param('subjectId') subjectId: string) {
+    return this.getLatestEmotionalStateUC.execute(studentId, subjectId);
+  }
+
+  @Get('students/:studentId/attendance-rate')
+  @ApiOperation({ summary: 'Internal: attendance recorded by the teacher for a student in a subject (null if none)' })
+  attendanceRate(@Param('studentId') studentId: string, @Query('subjectId') subjectId: string) {
+    return this.getAttendanceRateUC.execute(studentId, subjectId);
+  }
+
   @Get('subjects/:subjectId/teachers/:teacherId/is-owner')
   @ApiOperation({ summary: 'Internal: check whether a teacher owns a subject in its current academic period' })
   isOwner(@Param('subjectId') subjectId: string, @Param('teacherId') teacherId: string) {
@@ -65,6 +83,12 @@ export class InternalAcademicController {
   @ApiOperation({ summary: 'Internal: subject details (name, assigned teacherId) for cross-service lookups' })
   subjectDetails(@Param('subjectId') subjectId: string) {
     return this.getSubjectUC.execute(subjectId);
+  }
+
+  @Get('periods/:periodId')
+  @ApiOperation({ summary: 'Internal: academic period details (status, dates) for cross-service reference tables' })
+  periodDetails(@Param('periodId') periodId: string) {
+    return this.getAcademicPeriodUC.execute(periodId);
   }
 
   @Get('teachers/:teacherId/students')
