@@ -18,10 +18,86 @@ export const endpoints = {
     academic: {
         subjects: "/v1/academic/subjects",
         subject: (id: string) => `/v1/academic/subjects/${id}`,
-        faculties: "/v1/academic/faculties",
         periods: "/v1/academic/periods",
+        period: (id: string) => `/v1/academic/periods/${id}`,
+        institutionConfig: "/v1/academic/institution/config",
+        institution: "/v1/academic/institution",
+        institutionLevels: "/v1/academic/institution/levels",
+        gradingScale: "/v1/academic/institution/grading-scale",
+        attendanceRule: "/v1/academic/institution/attendance-rule",
+        promotionRules: "/v1/academic/institution/promotion-rules",
+        gradeLevels: "/v1/academic/grade-levels",
+        gradeLevelCurriculum: (code: string) =>
+            `/v1/academic/grade-levels/${code}/curriculum`,
+        sections: "/v1/academic/sections",
+        section: (id: string) => `/v1/academic/sections/${id}`,
+        sectionGenerateCourses: (id: string) =>
+            `/v1/academic/sections/${id}/generate-courses`,
+        sectionCourses: (id: string) => `/v1/academic/sections/${id}/courses`,
+        subjectTeacher: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/teacher`,
+        subjectCatalog: "/v1/academic/subject-catalog",
+        subjectCatalogItem: (id: string) =>
+            `/v1/academic/subject-catalog/${id}`,
+        studentProfile: (id: string) => `/v1/academic/students/${id}/profile`,
+        studentGuardians: (id: string) =>
+            `/v1/academic/students/${id}/guardians`,
+        studentGuardian: (id: string, guardianId: string) =>
+            `/v1/academic/students/${id}/guardians/${guardianId}`,
+        studentConsents: (id: string) =>
+            `/v1/academic/students/${id}/consents`,
+        studentConsent: (id: string, purpose: string) =>
+            `/v1/academic/students/${id}/consents/${purpose}`,
+        myStudents: "/v1/academic/guardians/me/students",
+        sectionEnrollments: (sectionId: string) =>
+            `/v1/academic/sections/${sectionId}/enrollments`,
+        endStudentEnrollment: (id: string) =>
+            `/v1/academic/student-enrollments/${id}/end`,
+        subjectSchedule: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/schedule`,
+        subjectSessions: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/sessions`,
+        sessionAttendance: (subjectId: string, sessionId: string) =>
+            `/v1/academic/subjects/${subjectId}/sessions/${sessionId}/attendance`,
+        courseAttendance: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/attendance`,
+        sectionAttendance: (sectionId: string) =>
+            `/v1/academic/sections/${sectionId}/attendance`,
+        studentAttendance: (studentId: string) =>
+            `/v1/academic/students/${studentId}/attendance`,
+        studentJustifications: (studentId: string) =>
+            `/v1/academic/students/${studentId}/absence-justifications`,
+        justifications: "/v1/academic/absence-justifications",
+        justification: (id: string) =>
+            `/v1/academic/absence-justifications/${id}`,
+        gradingComponents: "/v1/academic/grading/components",
+        subjectGradebook: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/gradebook`,
+        gradebookGrades: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/gradebook/grades`,
+        subjectActivities: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/activities`,
+        activity: (id: string) => `/v1/academic/activities/${id}`,
+        activityStatus: (id: string) => `/v1/academic/activities/${id}/status`,
+        subjectSupplementary: (subjectId: string) =>
+            `/v1/academic/subjects/${subjectId}/supplementary`,
+        periodClosure: (periodId: string) =>
+            `/v1/academic/periods/${periodId}/closure`,
+        closePeriod: (periodId: string) =>
+            `/v1/academic/periods/${periodId}/close`,
+        reopenPeriod: (periodId: string) =>
+            `/v1/academic/periods/${periodId}/reopen`,
+        myGradeBreakdown: (subjectId: string) =>
+            `/v1/academic/students/me/subjects/${subjectId}/grade-breakdown`,
+        studentResults: (studentId: string) =>
+            `/v1/academic/students/${studentId}/results`,
+        sectionPromotion: (sectionId: string) =>
+            `/v1/academic/sections/${sectionId}/promotion`,
+        schoolYears: "/v1/academic/school-years",
+        schoolYear: (id: string) => `/v1/academic/school-years/${id}`,
+        schoolYearStatus: (id: string) =>
+            `/v1/academic/school-years/${id}/status`,
         activePeriod: "/v1/academic/periods/active",
-        careers: "/v1/academic/careers",
         enrollments: "/v1/academic/enrollments",
         studentEnrollments: (studentId: string) =>
             `/v1/academic/enrollments?studentId=${studentId}`,
@@ -48,6 +124,9 @@ export const endpoints = {
             `/v1/academic/topics/${topicId}`,
         topicFile: (topicId: string) =>
             `/v1/academic/topics/${topicId}/file`,
+        surveyQuestions: (surveyCode: string) =>
+            `/v1/academic/surveys/${surveyCode}/questions`,
+        studentSurveyResponses: "/v1/academic/students/me/survey-responses",
     },
     analytics: {
         studentDashboard: (studentId: string) =>
@@ -62,6 +141,8 @@ export const endpoints = {
             `/v1/analytics/subjects/${subjectId}/metrics/summary`,
         subjectProgress: (subjectId: string) =>
             `/v1/analytics/subjects/${subjectId}/metrics/progress`,
+        studentRiskSignals: (subjectId: string, studentId: string) =>
+            `/v1/analytics/subjects/${subjectId}/students/${studentId}/risk-signals`,
         subjectAlerts: (subjectId: string) =>
             `/v1/analytics/subjects/${subjectId}/alerts`,
     },
@@ -78,6 +159,9 @@ export const endpoints = {
             `/v1/prediction/students/me/subjects/${subjectId}/generate`,
         history: (studentId: string) =>
             `/v1/prediction/students/${studentId}/history`,
+        aiSettings: "/v1/prediction/ai-settings",
+        aiSettingsTest: "/v1/prediction/ai-settings/test",
+        aiUsage: "/v1/prediction/ai-settings/usage",
     },
     notifications: {
         mine: "/v1/notifications/me",

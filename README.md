@@ -22,13 +22,13 @@ The system solves three core problems:
 
 | Layer | Technology |
 |---|---|
-| Backend | NestJS 10/11, TypeScript, TypeORM (PostgreSQL), Mongoose (MongoDB Atlas), ioredis (Redis) |
+| Backend | NestJS 10/11, TypeScript, TypeORM (PostgreSQL), ioredis (Redis) |
 | Frontend (web) | React 19, Vite 8, React Router 7, TanStack Query 5, Zustand 5, Tailwind 4 |
 | Landing | Astro 5, Contentful CMS, Tailwind 4 |
 | Mobile | Expo SDK 54, React Native 0.81, Expo Router 6 |
 | Desktop | Electron 37, wraps the web application |
 | API Gateway | Kong 3.6 -- JWT (RS256), CORS, per-consumer rate limiting |
-| Databases | PostgreSQL 16, MongoDB Atlas, Redis 7 |
+| Databases | PostgreSQL 16, Redis 7 |
 | AI | OpenAI API (prediction-service only) |
 | Infra | Docker Compose, nginx, Cloudflare |
 | CI/CD | GitHub Actions |
@@ -51,7 +51,7 @@ The system solves three core problems:
 |---|---|
 | **auth-service** |  Credentials, JWT (RS256), OAuth (Microsoft) |
 | **user-service** |  User profiles, avatars |
-| **academic-service** |  Faculties, careers, periods, subjects, enrollments, grades, check-ins |
+| **academic-service** | School years and periods, grade levels and sections, subjects, people and enrollments, grades and promotion, attendance and justifications, check-ins |
 | **analytics-service** |  Risk classification, alerts, dashboards, WebSocket notifications |
 | **prediction-service** |  AI-generated summaries and recommendations via OpenAI |
 
@@ -82,7 +82,7 @@ auth-svc  user-svc  academic-svc analytics-svc prediction-svc
    |         |          |            |            |
    +---------+----+-----+-----+-----+------------+
                     v           v
-              PostgreSQL   MongoDB Atlas   Redis
+              PostgreSQL     Redis
 ```
 
 Five independent NestJS microservices in hexagonal architecture, no message broker (synchronous internal HTTP only, authenticated via a `service:internal`-scoped JWT), behind a single Kong gateway. See [docs/architecture/](./docs/architecture/) for details.
@@ -113,7 +113,7 @@ pnpm install
 
 # Configure environment
 cp infra/.env.example infra/.env
-# Edit infra/.env and fill in the required values (JWT keys, OPENAI_API_KEY, MONGO_URL, etc.)
+# Edit infra/.env and fill in the required values (JWT keys, OPENAI_API_KEY, etc.)
 bash infra/kong/generate-kong-keys.sh
 
 # Start the full stack (builds every service, seeds the database)
@@ -135,7 +135,7 @@ Full technical documentation lives in [`docs/`](./docs/), organized by topic:
 | [`docs/architecture/`](./docs/architecture/) | System context, request flow, hexagonal pattern explanation |
 | [`docs/backend/`](./docs/backend/) | The 5 NestJS microservices -- tech stack, entities, use cases, endpoints |
 | [`docs/frontend/`](./docs/frontend/) | The 4 client apps -- tech stack, structure, routing |
-| [`docs/database/`](./docs/database/) | PostgreSQL/MongoDB/Redis split, entity mapping, seed data |
+| [`docs/database/`](./docs/database/) | PostgreSQL/Redis split, entity mapping, seed data |
 | [`docs/api/`](./docs/api/) | Full endpoint reference per service |
 | [`docs/infrastructure/`](./docs/infrastructure/) | Docker Compose topology, Kong API Gateway, monitoring |
 | [`docs/deployment/`](./docs/deployment/) | CI/CD pipeline detail and deployment procedures |

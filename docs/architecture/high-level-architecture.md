@@ -28,8 +28,8 @@
               │          │          │          │          │
               └──────────┴────┬─────┴────┬─────┴──────────┘
                                ▼          ▼
-                         PostgreSQL   MongoDB Atlas   Redis
-                        (mentorapredict) (mentorapredict_nosql)
+                         PostgreSQL     Redis
+                        (mentorapredict)
 ```
 
 Client applications — the React web app, the Astro landing page, the Expo mobile app, and the Electron desktop app — all talk to the **same** public API surface behind Kong. There is no client-specific backend; the desktop and mobile apps hit the exact same REST endpoints as the web app (desktop via a custom `mentorapredict://` protocol wrapping the same web bundle, mobile via its own thin service layer calling the identical routes).
@@ -40,7 +40,7 @@ Client applications — the React web app, the Astro landing page, the Expo mobi
 - **Kong as the single entry point**: centralizes JWT verification, CORS, and rate limiting so individual services don't reimplement them — each service still re-validates roles (`RolesGuard`) since Kong only proves *authentication*, not *authorization*.
 - **Synchronous HTTP for service-to-service calls, no message broker**: every cross-service call (e.g. academic-service → analytics-service after a grade change) is a direct authenticated HTTP request (`scope: service:internal` JWT), not an event published to a queue. This is simple and traceable (single correlation ID threads the whole call chain) but means a downstream service outage can propagate as a synchronous failure — there's no buffering/retry-queue layer. Acceptable at current scale; worth revisiting if inter-service call volume grows.
 - **WebSocket only for one thing**: Socket.IO exists solely to push `notification:new` events to already-authenticated browser/desktop sessions in real time. It is not used for any other realtime feature, and mobile bypasses it entirely in favor of Expo push notifications.
-- **Postgres for records, MongoDB for logs/free-form data, Redis for ephemeral state**: relational academic data (grades, enrollments, evaluations) lives in Postgres because it's inherently structured and relationally constrained; MongoDB holds append-mostly, schema-loose data (teacher observations, AI prediction audit logs, dataset versioning); Redis holds short-lived state (refresh tokens, login throttling counters, a narrow metrics cache) that's fine to lose on restart.
+- **Postgres for records and logs, Redis for ephemeral state**: relational academic data (grades, enrollments, evaluations) lives in Postgres because it's inherently structured and relationally constrained; append-mostly, schema-loose data (teacher observations, AI prediction audit logs, dataset versioning) lives in Postgres too, using `jsonb` columns for the flexible parts so a single engine, backup strategy and migration history cover everything; Redis holds short-lived state (refresh tokens, login throttling counters, a narrow metrics cache) that's fine to lose on restart.
 
 ## 3. Request flow (typical authenticated GET)
 
@@ -64,6 +64,6 @@ Full detail: [../deployment/environments.md](../deployment/environments.md).
 ## 5. Known architectural gaps (audit findings)
 
 - **No schema-per-service in Postgres**: all 5 services connect to the same `mentorapredict` database and default `public` schema — logical separation only, not enforced at the DB level. `docs/adr/0001-database-strategy.md` originally recommended schema-per-service; this was never implemented.
-- **No migration system**: schema is created via TypeORM `synchronize`, disabled in production with nothing replacing it — see [../database/database-architecture.md](../database/database-architecture.md).
+- **Migrations are a single baseline per service**: `synchronize` is disabled everywhere and the schema is versioned through TypeORM migrations, currently squashed into one `Baseline` per service while the project is in development — see [../database/database-architecture.md](../database/database-architecture.md) §7.
 - **Monitoring stack incomplete**: Grafana + cAdvisor + Node Exporter are deployed, but Grafana has **zero datasources configured** and there is no Prometheus (or equivalent) scraping/storing the exporters' metrics — the provisioned dashboards currently have no data source. See [../infrastructure/monitoring.md](../infrastructure/monitoring.md).
 - **`packages/shared-types` / `shared-utils` / `shared-config` are scaffolded but unused** — every service currently hand-rolls its own types/pagination/config instead of consuming these packages, and where they diverge (e.g. `RiskLevel`), the shared package is the stale one. See [../backend/shared-packages.md](../backend/shared-packages.md).

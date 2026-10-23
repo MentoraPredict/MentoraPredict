@@ -1,6 +1,8 @@
 # ADR 0001 — Database Strategy
 
-Status: Proposed
+Status: Proposed — partially superseded
+
+> **Update:** MongoDB was dropped from the stack. Teacher observations, prediction audit logs and dataset versions now live in PostgreSQL tables (using `jsonb` for the schema-loose parts), so the only data stores in use are PostgreSQL and Redis. The text below is kept as the original historical record; see [../database/database-architecture.md](../database/database-architecture.md) for the current state.
 
 Context
 

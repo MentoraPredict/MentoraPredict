@@ -1,7 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from "@nestjs/jwt";
 import { createLoggerModule, correlationContextMiddleware } from "@mentorapredict/shared-logger";
 
@@ -14,24 +13,26 @@ import { RootController } from "./infrastructure/controllers/root.controller";
 import { StudentMetricsOrmEntity } from "./infrastructure/persistence/student-metrics.orm-entity";
 import { AlertOrmEntity } from "./infrastructure/persistence/alert.orm-entity";
 import { StudentSubjectMetricsOrmEntity } from "./infrastructure/persistence/student-subject-metrics.orm-entity";
+import { UserReferenceOrmEntity } from "./infrastructure/persistence/user-reference.orm-entity";
+import { SubjectReferenceOrmEntity } from "./infrastructure/persistence/subject-reference.orm-entity";
+import { PeriodReferenceOrmEntity } from "./infrastructure/persistence/period-reference.orm-entity";
 import { StudentMetricsRepository } from "./infrastructure/persistence/student-metrics.repository";
 import { AlertRepository } from "./infrastructure/persistence/alert.repository";
 import { StudentSubjectMetricsRepository } from "./infrastructure/persistence/student-subject-metrics.repository";
-import {
-  DatasetVersion,
-  DatasetVersionSchema,
-} from "./infrastructure/persistence/dataset-version.schema";
+import { DatasetVersionOrmEntity } from "./infrastructure/persistence/dataset-version.orm-entity";
 import { DatasetVersionRepository } from "./infrastructure/persistence/dataset-version.repository";
 
 import { RedisClient } from "./infrastructure/cache/redis.client";
 import { MetricsCacheAdapter } from "./infrastructure/cache/metrics-cache.adapter";
 import { AcademicHttpClient } from "./infrastructure/adapters/academic-http.client";
+import { StudentSignalsHttpClient } from "./infrastructure/adapters/student-signals-http.client";
+import { GetStudentRiskSignalsUseCase } from "./application/use-cases/get-student-risk-signals.use-case";
 import { PredictionHttpClient } from "./infrastructure/adapters/prediction-http.client";
 import { InternalJwtService } from "./infrastructure/auth/internal-jwt.service";
 import { decodeJwtKey } from "./infrastructure/config/jwt-key.util";
 import { RolesGuard } from "./infrastructure/guards/roles.guard";
 
-// Notifications — self-contained module (domain/application/infrastructure),
+// Notifications â€” self-contained module (domain/application/infrastructure),
 // kept inside analytics-service to avoid standing up a new deployable
 // service, but isolated so its logic never mixes with analytics' own
 // risk/metrics domain. See docs/adr/0003-messaging-and-notifications.md.
@@ -93,8 +94,14 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
           StudentSubjectMetricsOrmEntity,
           NotificationOrmEntity,
           DeviceTokenOrmEntity,
+          DatasetVersionOrmEntity,
+          UserReferenceOrmEntity,
+          SubjectReferenceOrmEntity,
+          PeriodReferenceOrmEntity,
         ],
-        synchronize: cfg.get("NODE_ENV") !== "production",
+        // Schema changes go through TypeORM migrations (see src/data-source.ts) â€”
+        // never auto-sync, in any environment. See docs/database/entity-relationship-diagram.md.
+        synchronize: false,
       }),
     }),
     TypeOrmModule.forFeature([
@@ -103,26 +110,10 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
       StudentSubjectMetricsOrmEntity,
       NotificationOrmEntity,
       DeviceTokenOrmEntity,
-    ]),
-
-    MongooseModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ({
-        uri: cfg.get("MONGO_URL") ?? buildMongoUri(cfg),
-        serverSelectionTimeoutMS: 5000,
-        // Connects in the background instead of blocking Nest's bootstrap:
-        // without this, an unreachable MongoDB crashes the whole service
-        // (NestFactory.create() awaits the connection and rethrows once
-        // retries are exhausted). Queries just buffer/timeout individually
-        // while disconnected — handled by the try/catch in DatasetVersionRepository.
-        lazyConnection: true,
-        // Default is 10s per buffered query — too slow for a request path;
-        // fail faster so callers hit the try/catch sooner.
-        bufferTimeoutMS: 3000,
-      }),
-    }),
-    MongooseModule.forFeature([
-      { name: DatasetVersion.name, schema: DatasetVersionSchema },
+      DatasetVersionOrmEntity,
+      UserReferenceOrmEntity,
+      SubjectReferenceOrmEntity,
+      PeriodReferenceOrmEntity,
     ]),
 
     JwtModule.registerAsync({
@@ -161,6 +152,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     InternalJwtService,
     RolesGuard,
     { provide: "IAcademicServiceClient", useClass: AcademicHttpClient },
+  { provide: "IStudentSignalsClient", useClass: StudentSignalsHttpClient },
     { provide: "IPredictionClientPort", useClass: PredictionHttpClient },
     { provide: "IUserServiceClient", useClass: UserHttpClient },
     {
@@ -208,6 +200,7 @@ import { GetAggregatedMetricsUseCase } from "./application/use-cases/get-aggrega
     GetStudentSubjectMetricsUseCase,
     GetSubjectMetricsSummaryUseCase,
     GetSubjectWeeklyProgressUseCase,
+  GetStudentRiskSignalsUseCase,
     GetLatestSubjectMetricUseCase,
     GetSubjectRiskUseCase,
     GetStudentSubjectsOverviewUseCase,
@@ -226,13 +219,4 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(correlationContextMiddleware).forRoutes("*");
   }
-}
-
-function buildMongoUri(cfg: ConfigService): string {
-  const user = cfg.get("MONGO_USER", "mp_mongo_user");
-  const pass = cfg.get("MONGO_PASSWORD", "");
-  const host = cfg.get("MONGO_HOST", "localhost");
-  const port = cfg.get("MONGO_PORT", 27017);
-  const db = cfg.get("MONGO_DB", "mentorapredict_nosql");
-  return `mongodb://${user}:${pass}@${host}:${port}/${db}?authSource=admin`;
 }

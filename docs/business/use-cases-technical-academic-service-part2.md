@@ -1,5 +1,7 @@
 # Use Case Specification — academic-service (Part 2 of 2)
 
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
+
 Continuation of [use-cases-technical-academic-service-part1.md](./use-cases-technical-academic-service-part1.md).
 Covers Faculties, Academic Periods, Careers, Subjects, Topics, Observations, User
 Lifecycle, and Misc (UC-ACAD-30 through UC-ACAD-68).
@@ -857,7 +859,7 @@ AI-generated recommendation (UC-PRED-01/02).
 **Main Flow:**
 1. The teacher submits observation content, a type tag, a student ID, and a subject ID.
 2. `RolesGuard`/ownership checks authorize the request.
-3. The system persists a new `TeacherObservationEntity` document in MongoDB
+3. The system persists a new `TeacherObservationEntity` row in PostgreSQL
    (`teacher_observations`).
 4. The system returns the created observation.
 
@@ -865,7 +867,7 @@ AI-generated recommendation (UC-PRED-01/02).
 - **A1 — Teacher does not own the subject, or the student is not enrolled in it:** the
   request is rejected.
 
-**Postconditions:** A new `TeacherObservationEntity` document exists, listable per student
+**Postconditions:** A new `TeacherObservationEntity` row exists, listable per student
 (UC-ACAD-66) and informally usable as AI prediction context.
 
 --------------------------------------------------------------------
@@ -883,7 +885,7 @@ student.
 1. The caller requests observations for a specific student, optionally scoped to a
    subject.
 2. Ownership/role checks authorize the request.
-3. The system queries MongoDB for matching `TeacherObservationEntity` documents, ordered
+3. The system queries PostgreSQL for matching `TeacherObservationEntity` rows, ordered
    most recent first.
 4. The system returns the list.
 

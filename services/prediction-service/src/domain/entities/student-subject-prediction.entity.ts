@@ -1,5 +1,7 @@
+import { RiskLevel as SharedRiskLevel } from '@mentorapredict/shared-types';
+
 export type PredictionStatus = 'COMPUTED' | 'INSUFFICIENT_DATA';
-export type PredictedRiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type PredictedRiskLevel = `${SharedRiskLevel}`;
 
 export class StudentSubjectPredictionEntity {
   constructor(

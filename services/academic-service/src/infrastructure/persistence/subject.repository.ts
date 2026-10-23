@@ -1,9 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import { SubjectEntity } from "../../domain/entities/subject.entity";
 import { ISubjectRepository } from "../../application/ports/output/i-subject.repository";
 import { SubjectOrmEntity } from "./subject.orm-entity";
+
+const WITH_CATALOG = { subjectCatalog: true } as const;
 
 @Injectable()
 export class SubjectRepository implements ISubjectRepository {
@@ -13,22 +15,22 @@ export class SubjectRepository implements ISubjectRepository {
   ) {}
 
   async findById(id: string): Promise<SubjectEntity | null> {
-    const o = await this.repo.findOne({ where: { id } });
+    const o = await this.repo.findOne({ where: { id }, relations: WITH_CATALOG });
     return o ? this.toDomain(o) : null;
   }
 
   async findByAcademicPeriodId(periodId: string): Promise<SubjectEntity[]> {
     const list = await this.repo.find({
       where: { academicPeriodId: periodId },
+      relations: WITH_CATALOG,
     });
     return list.map((o) => this.toDomain(o));
   }
 
-  async findAll(filters?: { careerId?: string; periodId?: string }): Promise<SubjectEntity[]> {
-    const qb = this.repo.createQueryBuilder("s");
-    if (filters?.careerId) {
-      qb.andWhere("s.careerId = :careerId", { careerId: filters.careerId });
-    }
+  async findAll(filters?: { periodId?: string }): Promise<SubjectEntity[]> {
+    const qb = this.repo
+      .createQueryBuilder("s")
+      .leftJoinAndSelect("s.subjectCatalog", "sc");
     if (filters?.periodId) {
       qb.andWhere("s.academicPeriodId = :periodId", { periodId: filters.periodId });
     }
@@ -37,14 +39,10 @@ export class SubjectRepository implements ISubjectRepository {
     return list.map((o) => this.toDomain(o));
   }
 
-  async findByCode(code: string): Promise<SubjectEntity | null> {
-    const o = await this.repo.findOne({ where: { code } });
-    return o ? this.toDomain(o) : null;
-  }
-
-  async findByNameAndPeriod(name: string, periodId: string): Promise<SubjectEntity | null> {
+  async findByCatalogAndPeriod(subjectCatalogId: string, periodId: string): Promise<SubjectEntity | null> {
     const o = await this.repo.findOne({
-      where: { name, academicPeriodId: periodId },
+      where: { subjectCatalogId, academicPeriodId: periodId, sectionId: IsNull() },
+      relations: WITH_CATALOG,
     });
     return o ? this.toDomain(o) : null;
   }
@@ -60,7 +58,7 @@ export class SubjectRepository implements ISubjectRepository {
 
   async save(s: SubjectEntity): Promise<SubjectEntity> {
     const saved = await this.repo.save(this.toOrm(s));
-    return this.toDomain(saved);
+    return this.toDomain(saved, s);
   }
 
   async update(s: SubjectEntity): Promise<SubjectEntity> {
@@ -72,14 +70,17 @@ export class SubjectRepository implements ISubjectRepository {
     await this.repo.delete(id);
   }
 
-  private toDomain = (o: SubjectOrmEntity): SubjectEntity =>
+  // `fallback` cubre el instante justo después de `save()`: TypeORM's
+  // `.save()` no re-hidrata la relación `subjectCatalog` en el objeto que
+  // devuelve, así que se usa la entidad de dominio ya en memoria (que trae
+  // los campos del catálogo recién resueltos en el use-case) en vez de
+  // volver a golpear la base.
+  private toDomain = (o: SubjectOrmEntity, fallback?: SubjectEntity): SubjectEntity =>
     new SubjectEntity(
       o.id,
-      o.name,
-      o.description,
-      o.code,
-      o.credits,
-      o.careerId,
+      o.subjectCatalog?.name ?? fallback?.name ?? '',
+      o.subjectCatalog?.description ?? fallback?.description ?? '',
+      o.subjectCatalog?.code ?? fallback?.code ?? '',
       o.academicPeriodId,
       o.maxCapacity,
       o.teacherId,
@@ -87,16 +88,15 @@ export class SubjectRepository implements ISubjectRepository {
       o.createdAt,
       o.updatedAt,
       o.imageUrl,
+      o.subjectCatalogId,
+      o.sectionId,
+      o.weeklyHours,
     );
 
   private toOrm(d: SubjectEntity): SubjectOrmEntity {
     const o = new SubjectOrmEntity();
     o.id = d.id;
-    o.name = d.name;
-    o.description = d.description;
-    o.code = d.code;
-    o.credits = d.credits;
-    o.careerId = d.careerId;
+    o.subjectCatalogId = d.subjectCatalogId;
     o.academicPeriodId = d.academicPeriodId;
     o.maxCapacity = d.maxCapacity;
     o.teacherId = d.teacherId;
@@ -104,6 +104,8 @@ export class SubjectRepository implements ISubjectRepository {
     o.createdAt = d.createdAt;
     o.updatedAt = d.updatedAt;
     o.imageUrl = d.imageUrl;
+    o.sectionId = d.sectionId;
+    o.weeklyHours = d.weeklyHours;
     return o;
   }
 }

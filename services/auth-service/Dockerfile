@@ -8,6 +8,7 @@ ENV NODE_OPTIONS="--max-http-header-size=16000 --max-old-space-size=4096" \
 RUN corepack enable
 COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/shared-logger/package.json ./packages/shared-logger/package.json
+COPY packages/shared-types/package.json ./packages/shared-types/package.json
 COPY services/auth-service/package.json ./services/auth-service/package.json
 RUN pnpm install --frozen-lockfile
 
@@ -20,14 +21,18 @@ ENV CI=true \
     PNPM_CONFIG_CONFIRM_MODULES_PURGE=false \
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 COPY packages/shared-logger ./packages/shared-logger
+COPY packages/shared-types ./packages/shared-types
 COPY services/auth-service ./services/auth-service
 RUN pnpm --filter @mentorapredict/shared-logger build \
+    && pnpm --filter @mentorapredict/shared-types build \
     && pnpm --filter @mentorapredict/auth-service build
 
 FROM prod-deps AS runner
 WORKDIR /app/services/auth-service
 COPY --from=builder /app/packages/shared-logger/dist /app/packages/shared-logger/dist
 COPY --from=builder /app/packages/shared-logger/package.json /app/packages/shared-logger/package.json
+COPY --from=builder /app/packages/shared-types/dist /app/packages/shared-types/dist
+COPY --from=builder /app/packages/shared-types/package.json /app/packages/shared-types/package.json
 COPY --from=builder /app/services/auth-service/dist ./dist
 COPY --from=builder /app/services/auth-service/package.json ./
 USER node

@@ -2,13 +2,12 @@ import { AxiosError } from "axios";
 
 import api from "@/services/api";
 import { endpoints } from "@/services/api/endpoints";
-import { getStudentAcademicContext } from "@/services/academic.service";
 import { register } from "@/services/auth.service";
 import type { AuthSessionUser } from "@/types/auth/auth.types";
 import type { AppUser } from "@/types/user/user.types";
-import type { UserRole } from "@/types/user/role.types";
+import { USER_ROLES, type UserRole } from "@/types/user/role.types";
 
-type UserStatus = "ACTIVE" | "INACTIVE";
+export type UserStatus = "ACTIVE" | "INACTIVE";
 
 interface UserApiResponse {
   id: string;
@@ -28,15 +27,22 @@ interface UserApiResponse {
   created_at?: string;
   updatedAt?: string;
   updated_at?: string;
+  cedula?: string | null;
+  bio?: string | null;
+  deletedAt?: string | null;
 }
 
-interface UpdateUserPayload {
+export interface UpdateUserPayload {
   email?: string;
   firstName?: string;
   lastName?: string;
   role?: UserRole;
   status?: UserStatus;
+  cedula?: string | null;
+  bio?: string | null;
 }
+
+export type UsersGroupBy = "role" | "status";
 
 export interface UsersQuery {
     page?: number;
@@ -44,6 +50,12 @@ export interface UsersQuery {
     search?: string;
     role?: UserRole | "";
     status?: UserStatus;
+    groupBy?: UsersGroupBy;
+}
+
+export interface UsersGroupCount {
+    key: string;
+    count: number;
 }
 
 export interface PaginatedUsersResult {
@@ -52,6 +64,8 @@ export interface PaginatedUsersResult {
     limit: number;
     total: number;
     totalPages: number;
+    /** Solo viene con `groupBy`: cantidad de usuarios por grupo. */
+    groups?: UsersGroupCount[];
 }
 
 interface PaginatedUsersApiResponse {
@@ -60,6 +74,7 @@ interface PaginatedUsersApiResponse {
     limit: number;
     total: number;
     totalPages: number;
+    groups?: UsersGroupCount[];
 }
 
 const fallbackUserRole: UserRole = "STUDENT";
@@ -69,7 +84,7 @@ let studentsCache: { value: AppUser[]; expiresAt: number } | undefined;
 let studentsRequest: Promise<AppUser[]> | undefined;
 
 function isUserRole(role?: string): role is UserRole {
-  return role === "STUDENT" || role === "TEACHER" || role === "ADMIN";
+  return USER_ROLES.some((value) => value === role);
 }
 
 function toAppUser(user: UserApiResponse): AppUser {
@@ -85,30 +100,10 @@ function toAppUser(user: UserApiResponse): AppUser {
     createdAt: user.createdAt ?? user.created_at,
     updatedAt: user.updatedAt ?? user.updated_at,
     avatarUrl: user.avatarUrl ?? user.avatar_url ?? user.photo,
+    cedula: user.cedula ?? null,
+    bio: user.bio ?? null,
+    deletedAt: user.deletedAt ?? null,
   };
-}
-
-async function enrichStudentContext(user: AppUser): Promise<AppUser> {
-    if (user.role !== "STUDENT") {
-        return user;
-    }
-
-    try {
-        const context = await getStudentAcademicContext(user.id);
-
-        if (!context) {
-            return user;
-        }
-
-        return {
-            ...user,
-            facultyName: context.facultyName,
-            careerName: context.careerName,
-            semester: context.semester,
-        };
-    } catch {
-        return user;
-    }
 }
 
 export async function getCurrentUser() {
@@ -138,6 +133,7 @@ export async function getUsers(
                 search: query?.search?.trim() || undefined,
                 role: query?.role || undefined,
                 status: query?.status,
+                groupBy: query?.groupBy,
             },
         }
     );
@@ -146,20 +142,18 @@ export async function getUsers(
         ? response.data.data
         : response.data;
     const loadedUsers = rawUsers.map(toAppUser);
-    const enrichedUsers = await Promise.all(
-        loadedUsers.map((user) => enrichStudentContext(user))
-    );
 
     if (!shouldPaginate || !isPaginatedUsersResponse(response.data)) {
-        return enrichedUsers;
+        return loadedUsers;
     }
 
     return {
-        data: enrichedUsers,
+        data: loadedUsers,
         page: response.data.page,
         limit: response.data.limit,
         total: response.data.total,
         totalPages: response.data.totalPages,
+        groups: response.data.groups,
     };
 }
 
@@ -231,6 +225,11 @@ export async function getStudents(): Promise<AppUser[]> {
     });
 
   return studentsRequest;
+}
+
+export async function getUserById(userId: string): Promise<AppUser> {
+  const response = await api.get<UserApiResponse>(endpoints.users.detail(userId));
+  return toAppUser(response.data);
 }
 
 export async function updateUser(

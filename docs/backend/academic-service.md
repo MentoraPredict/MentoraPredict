@@ -1,6 +1,6 @@
 # academic-service
 
-Owns the entire academic domain: faculties, careers, academic periods, subjects, enrollments, evaluations, grades and their import/audit trail, teacher assignments and observations, topics/materials, and student weekly check-ins. It is the largest and most fully-implemented service in the monorepo, with 69 use cases across roughly 50 endpoints.
+Owns the entire academic domain: school years and grading periods, grade levels, sections, subjects, enrollments, evaluations, grades and their import/audit trail, teacher assignments and observations, topics/materials, and student weekly check-ins. It is the largest and most fully-implemented service in the monorepo, with 69 use cases across roughly 50 endpoints.
 
 ## Tech stack
 
@@ -9,8 +9,6 @@ Owns the entire academic domain: faculties, careers, academic periods, subjects,
 | NestJS | **11.1.24** | Application framework — a newer major version than the other 4 services (10.3.0) |
 | @nestjs/typeorm | 11.0.1 | ORM integration for PostgreSQL |
 | pg | 8.21.0 | PostgreSQL driver |
-| @nestjs/mongoose | 11.0.0 | MongoDB integration |
-| mongoose | 8.3.0 | MongoDB ODM — used for `teacher-observation.schema.ts` |
 | ioredis | 5.3.2 | Redis client (present, see Known issues — functionally dormant) |
 | @supabase/supabase-js | — | Supabase Storage for subject images / topic files |
 | multer | — | File upload handling |
@@ -42,18 +40,18 @@ Standard hexagonal structure per [../architecture/low-level-architecture.md](../
 |---|---|
 | `AcademicEntity` | Unused skeleton placeholder — dead code, not wired into any use case. |
 | `AcademicPeriodEntity` | name, code, dates, status, type. |
-| `CareerEntity` | name, code, facultyId, durationSemesters, status. |
 | `EnrollmentEntity` | status, enrolledAt. |
 | `EvaluationEntity` | name, weight (0-100), dueDate, isActive. |
-| `FacultyEntity` | name, code, status. |
-| `GradeEntity` | grade value tied to student + subject + evaluation, 0-20 scale. |
+| `GradeEntity` | grade value tied to student + subject + evaluation, 0-10 scale (the range is configurable per institution). |
 | `GradeHistoryEntity` | audit trail: previousValue/newValue/changedBy. |
 | `GradeImportEntity` | bulk import job: file, row counts, status, errors[]. |
-| `SubjectEntity` | name, code, credits, careerId, academicPeriodId, maxCapacity, teacherId, imageUrl. |
+| `SubjectEntity` | name, code, academicPeriodId, sectionId, weeklyHours, maxCapacity, teacherId, imageUrl. A course is the subject of one section. |
 | `SubjectTeacherEntity` | subject-teacher-period assignment, composite key. |
-| `TeacherObservationEntity` | type, content — persisted in MongoDB. |
+| `TeacherObservationEntity` | type, content — persisted in the Postgres table `teacher_observations`. |
 | `TopicEntity` | title, order, fileUrl. |
 | `WeeklyCheckInEntity` | attendance, taskCompletion, studyHours, emotionalState, generalComprehension, topicResponses[]. |
+
+> **Nota (Fase 6)**: este documento describe el servicio antes de la conversión escolar. Las facultades, carreras y créditos se retiraron; el modelo vigente (año lectivo, grados, paralelos, calificación, promoción y asistencia) está en [../erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
 
 ## Use cases
 
@@ -64,9 +62,7 @@ Standard hexagonal structure per [../architecture/low-level-architecture.md](../
 - **Evaluations**: create-evaluation, update-evaluation, archive-evaluation, list-evaluations, get-subject-evaluation-weights, get-weight-summary.
 - **Grades**: record-grade, register-grade, update-grade, get-student-grades, import-grades, import-subject-grades, get-grade-import, list-grade-imports.
 - **Teachers/ownership**: assign-teacher, check-subject-ownership, get-teacher-students, get-teacher-subjects.
-- **Faculties**: create-faculty, update-faculty, delete-faculty, get-faculty, list-faculties, change-faculty-status.
 - **Academic periods**: create-academic-period, update-academic-period, delete-academic-period, get-academic-period, get-active-academic-period, list-academic-periods, change-academic-period-status.
-- **Careers**: create-career, update-career, delete-career, get-career, list-careers, change-career-status.
 - **Subjects**: create-subject, update-subject, delete-subject, get-subject, list-subjects, change-subject-status, get-student-subjects, upload-subject-image, delete-subject-image.
 - **Topics**: create-topic, update-topic, delete-topic, list-topics, upload-topic-file, delete-topic-file, get-subject-topics-internal.
 - **Observations**: create-observation, get-observations-by-student.
@@ -79,8 +75,7 @@ Full endpoint reference with roles lives in [../api/api-contracts.md](../api/api
 
 ## External integrations
 
-- **PostgreSQL** — 12 entities: subjects, enrollments, evaluations, grades, faculties, periods, careers, topics, grade imports/history, subject-teacher assignments.
-- **MongoDB** — `teacher-observation.schema.ts` only.
+- **PostgreSQL** — subjects, enrollments, evaluations, grades, school years, periods, grade levels, sections, topics, grade imports/history, subject-teacher assignments, and `teacher_observations`. See [../database/database-architecture.md](../database/database-architecture.md) §2 for the complete table list.
 - **Redis (ioredis)** — present but dormant; see Known issues.
 - **Supabase Storage** — subject images and topic files, alongside local disk storage.
 - **AnalyticsHttpClient**, **NotificationHttpClient** — call analytics-service.
@@ -88,7 +83,7 @@ Full endpoint reference with roles lives in [../api/api-contracts.md](../api/api
 
 ## Environment variables
 
-`ANALYTICS_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `MONGO_DB`/`HOST`/`PASSWORD`/`PORT`/`URL`/`USER`, `NODE_ENV`, `POSTGRES_*`, `REDIS_*`, `SUPABASE_*`, `SWAGGER_SERVER_URL`, `UPLOADS_DIR`, `USER_SERVICE_URL`.
+`ANALYTICS_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `NODE_ENV`, `POSTGRES_*`, `REDIS_*`, `SUPABASE_*`, `SWAGGER_SERVER_URL`, `UPLOADS_DIR`, `USER_SERVICE_URL`.
 
 ## Known issues / audit findings
 

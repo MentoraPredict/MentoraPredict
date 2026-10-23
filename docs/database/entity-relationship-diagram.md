@@ -1,0 +1,1124 @@
+# Diagrama Entidad-Relación
+
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
+
+> **Estado: implementado y verificado.** Todas las relaciones, políticas `onDelete`, tablas de referencia y restricciones (`CHECK`/`UNIQUE`) descritas en este documento están aplicadas en la base de datos real vía migraciones TypeORM versionadas — Fase 4 de la restructuración original del modelo de datos, más las Fases A-E de `docs/database/database-update-plan.md` (catálogo de materias, asistencia por sesión, encuesta de comprensión normalizada, encuesta socioeconómica repetible, registro de acceso a la plataforma) — y cada una fue confirmada con `migration:generate` reportando "No changes in database schema were found" (diff cero) contra las entidades `*.orm-entity.ts` correspondientes. Este documento reemplaza a la versión anterior, que describía este mismo diseño como propuesta (`[PROPUESTO]`) antes de implementarlo.
+>
+> Inspirado en el formato de `docs/backend/database-model.md` de `SIGLA-Backend` (un proyecto externo, sin relación con MentoraPredict, usado acá solo como referencia de formato de documentación) — un único `mermaid erDiagram` con anotaciones inline de `PK`/`FK`/`UK`, listas de valores de enum, y política `onDelete` explícita por relación. La versión de MentoraPredict difiere en un punto estructural que SIGLA no necesitaba resolver: SIGLA es un monolito de un solo servicio, así que cada relación podía ser una FK física. MentoraPredict son 5 microservicios compartiendo una única Postgres física — así que este documento tiene que trazar una línea que SIGLA nunca tuvo que trazar.
+>
+> **Estructura de este documento**: §2 tiene el diagrama completo (los 5 servicios juntos, para tener la vista de conjunto). §4 tiene el mismo contenido desglosado servicio por servicio, cada uno con su propio diagrama autocontenido y sus restricciones — pensado para trabajar en un solo servicio sin tener que cruzar todo el documento.
+
+## 1. La regla que sigue este diagrama
+
+**Una foreign key física solo se propone entre dos tablas que pertenecen al *mismo* servicio.** Las referencias cross-servicio (ej. `enrollments.student_id` apuntando a `users.id` de `auth-service`) se quedan como columnas `uuid` simples, sin restricción — reforzadas solo por código de aplicación, nunca por Postgres — aunque hoy los 5 servicios comparten una base de datos física y técnicamente sería posible poner una FK cross-servicio.
+
+Esto es deliberado, no un descuido: la arquitectura hexagonal del proyecto trata a cada servicio como dueño de su propio contexto delimitado (bounded context). Una FK física desde las tablas de `academic-service` hacia la tabla `users` de `auth-service` dejaría que Postgres mismo acople dos servicios que se supone solo se comunican por HTTP — rompiendo el único límite arquitectónico que el esquema de TypeORM no puede ver.
+
+## 2. Diagrama completo — los 5 servicios juntos
+
+```mermaid
+erDiagram
+    %% ── auth-service ──────────────────────────────────────
+    USERS {
+        uuid id PK
+        varchar email UK "NOT NULL"
+        text password_hash "nullable — null para usuarios OAuth"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        varchar auth_provider "LOCAL | MICROSOFT"
+        boolean is_active
+        boolean is_verified
+        varchar first_name
+        varchar last_name
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    LOGIN_EVENTS {
+        uuid id PK
+        uuid user_id FK
+        timestamptz occurred_at
+        varchar login_method "LOCAL | MICROSOFT"
+        varchar ip_address "nullable"
+        text user_agent "nullable"
+        varchar device_type "nullable — reservada, sin poblar todavía"
+    }
+
+    %% ── user-service ──────────────────────────────────────
+    USER_PROFILES {
+        uuid id PK "comparte valor con USERS.id por convención — cross-servicio, sin FK física"
+        varchar photo "nullable, deprecado"
+        text bio "nullable"
+        varchar cedula UK "nullable"
+        varchar avatar_url "nullable"
+        varchar auth_provider "LOCAL | MICROSOFT"
+        varchar role "string suelto, no tipado como FK"
+        varchar status "ACTIVE | INACTIVE"
+        timestamptz deleted_at "nullable — soft delete"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    %% ── academic-service (12 tablas + 1 de referencia) ──────
+    FACULTIES {
+        uuid id PK
+        varchar name UK
+        varchar code UK
+        text description
+        varchar status "ACTIVE | INACTIVE"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CAREERS {
+        uuid id PK
+        varchar name
+        varchar code UK
+        text description
+        varchar status "ACTIVE | INACTIVE"
+        uuid faculty_id FK
+        int duration_semesters
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ACADEMIC_PERIODS {
+        uuid id PK
+        varchar name UK
+        varchar code UK
+        text description
+        date start_date
+        date end_date
+        varchar status "PLANNED | ACTIVE | FINISHED | CANCELLED"
+        varchar type "SEMESTER | QUARTER"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SUBJECT_CATALOG {
+        uuid id PK
+        varchar name
+        text description
+        varchar code UK
+        int credits
+        uuid career_id FK
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SUBJECTS {
+        uuid id PK
+        uuid subject_catalog_id FK "UK junto con academic_period_id"
+        uuid academic_period_id FK "UK junto con subject_catalog_id"
+        int max_capacity "default 30"
+        uuid teacher_id FK "nullable"
+        boolean is_active
+        varchar image_url "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    EVALUATIONS {
+        uuid id PK
+        varchar name
+        decimal weight "0-100, validado en app"
+        uuid subject_id FK
+        timestamptz due_date "nullable"
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ENROLLMENTS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        varchar status "ACTIVE | WITHDRAWN | COMPLETED | SUSPENDED"
+        timestamptz enrolled_at
+        timestamptz created_at
+    }
+
+    GRADES {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid evaluation_id FK "nullable"
+        decimal value "0-20"
+        uuid registered_by FK
+        timestamptz registered_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    GRADE_HISTORY {
+        uuid id PK
+        uuid grade_id FK
+        decimal previous_value
+        decimal new_value
+        uuid changed_by FK
+        timestamptz changed_at
+    }
+
+    SUBJECT_TEACHERS {
+        uuid subject_id PK, FK
+        uuid teacher_id PK, FK
+        uuid period_id PK, FK
+    }
+
+    GRADE_IMPORTS {
+        uuid id PK
+        uuid subject_id FK
+        uuid imported_by FK
+        varchar file_name
+        int file_size
+        int total_rows
+        int created_rows
+        int updated_rows
+        int unchanged_rows
+        int failed_rows
+        varchar status "COMPLETED | COMPLETED_WITH_ERRORS | FAILED"
+        jsonb errors
+        timestamptz created_at
+    }
+
+    TOPICS {
+        uuid id PK
+        uuid subject_id FK
+        varchar title
+        text description "nullable"
+        int order
+        varchar file_url "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLASS_SCHEDULES {
+        uuid id PK
+        uuid subject_id FK
+        varchar day_of_week "MONDAY..SUNDAY, UK junto con subject_id"
+        time start_time
+        time end_time "CHECK end_time > start_time"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLASS_SESSIONS {
+        uuid id PK
+        uuid subject_id FK
+        uuid schedule_id FK
+        date session_date "UK junto con subject_id"
+        int academic_week
+        int academic_year
+        varchar status "PLANNED | HELD | CANCELLED"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SESSION_ATTENDANCES {
+        uuid id PK
+        uuid session_id FK
+        uuid student_id FK
+        boolean present
+        varchar recorded_by "STUDENT_SELF_REPORT | TEACHER"
+        timestamptz recorded_at
+    }
+
+    WEEKLY_CHECK_INS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        int academic_week
+        int academic_year
+        date check_in_date
+        int attendance
+        int task_completion
+        decimal study_hours
+        varchar emotional_state "GREAT | GOOD | NEUTRAL | BAD | CRITICAL"
+        int general_comprehension
+        text notes "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    WEEKLY_CHECK_IN_TOPIC_RESPONSES {
+        uuid id PK
+        uuid check_in_id FK
+        uuid topic_id FK "UK junto con check_in_id"
+        int comprehension "CHECK 0-100"
+    }
+
+    SURVEY_QUESTIONS {
+        uuid id PK
+        varchar code UK
+        varchar category
+        text question_text
+        varchar question_type "SINGLE_CHOICE | MULTI_CHOICE | NUMBER | TEXT | BOOLEAN"
+        jsonb options "nullable"
+        boolean is_active
+        int order
+    }
+
+    SURVEY_RESPONSES {
+        uuid id PK
+        uuid student_id FK
+        uuid period_id FK
+        varchar survey_code "sin UK — una encuesta se puede repetir"
+        timestamptz submitted_at
+    }
+
+    SURVEY_ANSWERS {
+        uuid id PK
+        uuid response_id FK
+        uuid question_id FK "UK junto con response_id"
+        jsonb answer_value
+    }
+
+    ACADEMIC_USER_REF {
+        uuid id PK "= auth-service.users.id"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    %% ── analytics-service (5 tablas + 3 de referencia) ──────
+    STUDENT_METRICS {
+        uuid id PK
+        uuid student_id FK
+        uuid period_id FK
+        jsonb subject_averages
+        decimal global_average
+        timestamptz calculated_at
+        int version "legacy, a nivel de estudiante — reemplazada por STUDENT_SUBJECT_METRICS"
+    }
+
+    STUDENT_SUBJECT_METRICS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        int academic_week
+        int academic_year
+        decimal average_grade "nullable = sin evaluaciones aún"
+        int compliance_index "nullable"
+        int attendance_rate "nullable"
+        decimal study_hours "nullable"
+        int comprehension_avg "nullable"
+        varchar risk_level "nullable — LOW | MEDIUM | HIGH | CRITICAL"
+        decimal trend_slope "nullable"
+        timestamptz computed_at
+    }
+
+    ALERTS {
+        uuid id PK
+        uuid student_id FK
+        varchar type "RISK_HIGH | RISK_CRITICAL | AVERAGE_DROP | FAILED_EVALUATIONS | LOW_ATTENDANCE | RISK_ESCALATION"
+        text message
+        varchar status "UNREAD | READ | ACTIVE | RESOLVED"
+        jsonb metadata
+        uuid subject_id FK "nullable"
+        uuid period_id FK "nullable"
+        varchar severity "nullable — MEDIUM | HIGH | CRITICAL"
+        timestamptz triggered_at "nullable"
+        timestamptz resolved_at "nullable"
+        uuid resolved_by FK "nullable"
+        timestamptz created_at
+    }
+
+    DEVICE_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        varchar expo_push_token UK
+        varchar platform "ios | android | web"
+        timestamptz created_at
+    }
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid recipient_id FK
+        varchar recipient_role "STUDENT | TEACHER | ADMIN"
+        varchar type
+        uuid related_alert_id FK "nullable"
+        uuid subject_id FK "nullable"
+        uuid student_id FK "nullable"
+        uuid period_id FK "nullable"
+        varchar title
+        text message
+        varchar status "UNREAD | READ"
+        timestamptz created_at
+        timestamptz read_at "nullable"
+    }
+
+    ANALYTICS_USER_REF {
+        uuid id PK "= auth-service.users.id"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    ANALYTICS_SUBJECT_REF {
+        uuid id PK "= academic-service.subjects.id"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    ANALYTICS_PERIOD_REF {
+        uuid id PK "= academic-service.academic_periods.id"
+        varchar status "PLANNED | ACTIVE | FINISHED | CANCELLED"
+        timestamptz synced_at
+    }
+
+    %% ── prediction-service (1 tabla + 3 de referencia) ──────
+    STUDENT_SUBJECT_PREDICTIONS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        int academic_week
+        int academic_year
+        varchar status "COMPUTED | INSUFFICIENT_DATA"
+        varchar predicted_risk_level "nullable — LOW | MEDIUM | HIGH | CRITICAL"
+        decimal trend_slope "nullable"
+        text recommendation "nullable"
+        timestamptz computed_at
+    }
+
+    PREDICTION_USER_REF {
+        uuid id PK "= auth-service.users.id"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    PREDICTION_SUBJECT_REF {
+        uuid id PK "= academic-service.subjects.id"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    PREDICTION_PERIOD_REF {
+        uuid id PK "= academic-service.academic_periods.id"
+        varchar status "PLANNED | ACTIVE | FINISHED | CANCELLED"
+        timestamptz synced_at
+    }
+
+    %% ── Relaciones físicas academic-service ─────────────────
+    CAREERS ||--o{ SUBJECT_CATALOG : "ofrece RESTRICT"
+    FACULTIES ||--o{ CAREERS : "posee RESTRICT"
+    SUBJECT_CATALOG ||--o{ SUBJECTS : "se oferta como RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ EVALUATIONS : "define CASCADE"
+    SUBJECTS ||--o{ ENROLLMENTS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ ENROLLMENTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADES : "registra RESTRICT"
+    EVALUATIONS |o--o{ GRADES : "respalda SET NULL"
+    GRADES ||--o{ GRADE_HISTORY : "audita CASCADE"
+    SUBJECTS ||--o{ SUBJECT_TEACHERS : "asigna CASCADE"
+    ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADE_IMPORTS : "recibe RESTRICT"
+    SUBJECTS ||--o{ TOPICS : "contiene CASCADE"
+    SUBJECTS ||--o{ CLASS_SCHEDULES : "define horario CASCADE"
+    SUBJECTS ||--o{ CLASS_SESSIONS : "programa CASCADE"
+    CLASS_SCHEDULES ||--o{ CLASS_SESSIONS : "genera RESTRICT"
+    CLASS_SESSIONS ||--o{ SESSION_ATTENDANCES : "registra asistencia CASCADE"
+    ACADEMIC_USER_REF ||--o{ SESSION_ATTENDANCES : "asiste RESTRICT"
+    SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita RESTRICT"
+    WEEKLY_CHECK_INS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "detalla CASCADE"
+    TOPICS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "es evaluado en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SURVEY_RESPONSES : "responde RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SURVEY_RESPONSES : "delimita RESTRICT"
+    SURVEY_RESPONSES ||--o{ SURVEY_ANSWERS : "contiene CASCADE"
+    SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "es respondida en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de RESTRICT"
+    ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "es calificado RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "registra RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_HISTORY : "modifica RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECT_TEACHERS : "es docente en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_IMPORTS : "importa RESTRICT"
+    ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta RESTRICT"
+
+    %% ── Relaciones físicas auth-service ──────────────────────
+    USERS ||--o{ LOGIN_EVENTS : "accede CASCADE"
+
+    %% ── Relaciones físicas analytics-service ────────────────
+    ALERTS |o--o{ NOTIFICATIONS : "dispara SET NULL"
+    ANALYTICS_USER_REF ||--o{ STUDENT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "recibe alerta RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "resuelve RESTRICT"
+    ANALYTICS_USER_REF ||--o{ DEVICE_TOKENS : "posee RESTRICT"
+    ANALYTICS_USER_REF ||--o{ NOTIFICATIONS : "recibe RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medida RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ ALERTS : "es objeto de RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ NOTIFICATIONS : "es objeto de RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_SUBJECT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ ALERTS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ NOTIFICATIONS : "delimita RESTRICT"
+
+    %% ── Relaciones físicas prediction-service ───────────────
+    PREDICTION_USER_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "recibe predicción RESTRICT"
+    PREDICTION_SUBJECT_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "es objeto de RESTRICT"
+    PREDICTION_PERIOD_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "delimita RESTRICT"
+```
+
+## 3. Patrón de tablas de referencia local (concepto general)
+
+Todas las referencias cross-servicio (§5) hoy dependen 100% de la disciplina de la aplicación — nada en la base de datos las verifica. Se propone que cada servicio consumidor mantenga una **tabla de referencia local**: una copia mínima, de solo los campos que ese servicio realmente usa en su lógica de negocio, de la entidad externa que más referencia. Esto no reemplaza la fuente de verdad (sigue siendo el servicio dueño), pero habilita dos cosas que hoy no existen:
+
+1. Una FK física real desde las tablas propias del servicio hacia esta tabla de referencia — Postgres puede rechazar un `student_id` que no exista localmente, en vez de confiar ciegamente en la aplicación.
+2. Evitar una llamada HTTP repetida al servicio dueño para cada operación que solo necesita saber "¿existe esto, y en qué estado básico está?".
+
+**Cómo se llena, dado que no existe ningún message broker en el sistema** (confirmado en [../architecture/high-level-architecture.md](../architecture/high-level-architecture.md)): vía *upsert* en el mismo punto donde cada servicio ya hace la llamada HTTP real — no se agrega ningún endpoint nuevo del lado del servicio dueño. Los detalles concretos (qué adaptador, qué campos) están en la sub-sección de cada servicio en §4.
+
+**Límite importante, para no sobre-vender el beneficio**: esto es un caché de mejor esfuerzo, no una réplica sincronizada. Un usuario desactivado en `auth-service` puede seguir figurando como activo en la tabla de referencia local hasta la próxima vez que ese servicio lo consulte. Para decisiones de autorización (¿puede este usuario hacer esta acción?) sigue haciendo falta la llamada en vivo — la tabla de referencia es para integridad estructural y para evitar llamadas redundantes, no para seguridad.
+
+## 4. Por microservicio
+
+### 4.1 auth-service
+
+```mermaid
+erDiagram
+    USERS {
+        uuid id PK
+        varchar email UK "NOT NULL"
+        text password_hash "nullable — null para usuarios OAuth"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        varchar auth_provider "LOCAL | MICROSOFT"
+        boolean is_active
+        boolean is_verified
+        varchar first_name
+        varchar last_name
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    LOGIN_EVENTS {
+        uuid id PK
+        uuid user_id FK
+        timestamptz occurred_at
+        varchar login_method "LOCAL | MICROSOFT"
+        varchar ip_address "nullable"
+        text user_agent "nullable"
+        varchar device_type "nullable — reservada, sin poblar todavía"
+    }
+
+    USERS ||--o{ LOGIN_EVENTS : "accede CASCADE"
+```
+
+`USERS` no tiene ninguna FK, física ni cross-servicio — no referencia nada de otro servicio. Es la fuente de identidad a la que todos los demás apuntan (§5). No necesita tabla de referencia (no consume datos de nadie más). `role` y `auth_provider` ya están centralizados en `@mentorapredict/shared-types` (`Role`, `AuthProvider`) desde la Fase 1 — candidatos directos a `CHECK`/enum nativo de Postgres, sin necesidad de rediseño adicional.
+
+`LOGIN_EVENTS` (Fase E, `docs/database/database-update-plan.md` §5.5) registra cada acceso exitoso a la plataforma — objetivo: dejar base para análisis de patrones de acceso (frecuencia, franjas horarias) y, a futuro, detección de dispositivo. Es la única tabla de todo el proyecto con una **FK física directa a una tabla cross-servicio "conceptual"** que en realidad es intra-servicio: `user_id` apunta a `users.id`, pero como ambas tablas viven en `auth-service`, esto no rompe la regla de §1 (la FK sigue siendo entre dos tablas del mismo servicio) — no aplica el patrón de tabla de referencia de §3 porque no hace falta, `users` ya es la fuente real acá. Se escribe de forma *fire-and-forget* (no bloqueante) desde `LoginUserUseCase` (login local, `login_method = 'LOCAL'`) y `OAuthLoginUseCase` (login Microsoft, `login_method = 'MICROSOFT'`) — un fallo al registrar el evento nunca hace fallar el login. `device_type` queda `NULL` en todas las filas hasta que se implemente detección real de dispositivo (columna reservada a propósito, pedido explícito del usuario: "a futuro, pero dejarlo listo").
+
+| Restricción | Detalle |
+|---|---|
+| `CHECK` implementado | `role IN ('STUDENT','TEACHER','ADMIN')`, `auth_provider IN ('LOCAL','MICROSOFT')` (`users`); `login_method IN ('LOCAL','MICROSOFT')` (`login_events`) |
+| Único ya existente | `email` (`UNIQUE`) |
+| FK física nueva (Fase E) | `login_events.user_id` → `users.id`, `CASCADE` — si se borra un usuario, su historial de accesos se borra con él (no es un registro de auditoría permanente como `grade_history`, es telemetría operacional). |
+
+### 4.2 user-service
+
+```mermaid
+erDiagram
+    USER_PROFILES {
+        uuid id PK "= auth-service.users.id"
+        varchar photo "nullable, deprecado"
+        text bio "nullable"
+        varchar cedula UK "nullable"
+        varchar avatar_url "nullable"
+        varchar auth_provider "LOCAL | MICROSOFT"
+        varchar role "string suelto, no tipado como FK"
+        varchar status "ACTIVE | INACTIVE"
+        timestamptz deleted_at "nullable — soft delete"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+Caso especial: `id` **es** el mismo valor que `auth-service.users.id` por convención, no una FK — es una extensión 1:1 de la misma entidad (el perfil vive en otra tabla/servicio, pero conceptualmente es "más columnas del mismo usuario"). No encaja en el patrón de tabla de referencia de §3 (ese patrón es para relaciones "muchos referencian a uno", acá es "uno extiende a uno"), y no se propone ninguna acá. `auth_provider` ya viene de `@mentorapredict/shared-types` desde la Fase 1; `role` se dejó deliberadamente como `string` suelto (ver Fase 1 — no había divergencia de valores que justificara tipar).
+
+| Restricción | Detalle |
+|---|---|
+| `CHECK` implementado | `auth_provider IN ('LOCAL','MICROSOFT')`, `status IN ('ACTIVE','INACTIVE')` |
+| Único ya existente | `cedula` (`UNIQUE`, nullable) |
+
+### 4.3 academic-service
+
+El servicio más grande (20 tablas propias, tras las Fases A-D) y el que más referencia usuarios (9 columnas distintas).
+
+```mermaid
+erDiagram
+    FACULTIES {
+        uuid id PK
+        varchar name UK
+        varchar code UK
+        text description
+        varchar status "ACTIVE | INACTIVE"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CAREERS {
+        uuid id PK
+        varchar name
+        varchar code UK
+        text description
+        varchar status "ACTIVE | INACTIVE"
+        uuid faculty_id FK
+        int duration_semesters
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ACADEMIC_PERIODS {
+        uuid id PK
+        varchar name UK
+        varchar code UK
+        text description
+        date start_date
+        date end_date
+        varchar status "PLANNED | ACTIVE | FINISHED | CANCELLED"
+        varchar type "SEMESTER | QUARTER"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SUBJECT_CATALOG {
+        uuid id PK
+        varchar name
+        text description
+        varchar code UK
+        int credits
+        uuid career_id FK
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SUBJECTS {
+        uuid id PK
+        uuid subject_catalog_id FK "UK junto con academic_period_id"
+        uuid academic_period_id FK "UK junto con subject_catalog_id"
+        int max_capacity "default 30"
+        uuid teacher_id FK "nullable"
+        boolean is_active
+        varchar image_url "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    EVALUATIONS {
+        uuid id PK
+        varchar name
+        decimal weight "0-100, validado en app"
+        uuid subject_id FK
+        timestamptz due_date "nullable"
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ENROLLMENTS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        varchar status "ACTIVE | WITHDRAWN | COMPLETED | SUSPENDED"
+        timestamptz enrolled_at
+        timestamptz created_at
+    }
+
+    GRADES {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid evaluation_id FK "nullable"
+        decimal value "0-20"
+        uuid registered_by FK
+        timestamptz registered_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    GRADE_HISTORY {
+        uuid id PK
+        uuid grade_id FK
+        decimal previous_value
+        decimal new_value
+        uuid changed_by FK
+        timestamptz changed_at
+    }
+
+    SUBJECT_TEACHERS {
+        uuid subject_id PK, FK
+        uuid teacher_id PK, FK
+        uuid period_id PK, FK
+    }
+
+    GRADE_IMPORTS {
+        uuid id PK
+        uuid subject_id FK
+        uuid imported_by FK
+        varchar file_name
+        int file_size
+        int total_rows
+        int created_rows
+        int updated_rows
+        int unchanged_rows
+        int failed_rows
+        varchar status "COMPLETED | COMPLETED_WITH_ERRORS | FAILED"
+        jsonb errors
+        timestamptz created_at
+    }
+
+    TOPICS {
+        uuid id PK
+        uuid subject_id FK
+        varchar title
+        text description "nullable"
+        int order
+        varchar file_url "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLASS_SCHEDULES {
+        uuid id PK
+        uuid subject_id FK
+        varchar day_of_week "MONDAY..SUNDAY, UK junto con subject_id"
+        time start_time
+        time end_time "CHECK end_time > start_time"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CLASS_SESSIONS {
+        uuid id PK
+        uuid subject_id FK
+        uuid schedule_id FK
+        date session_date "UK junto con subject_id"
+        int academic_week
+        int academic_year
+        varchar status "PLANNED | HELD | CANCELLED"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SESSION_ATTENDANCES {
+        uuid id PK
+        uuid session_id FK
+        uuid student_id FK
+        boolean present
+        varchar recorded_by "STUDENT_SELF_REPORT | TEACHER"
+        timestamptz recorded_at
+    }
+
+    WEEKLY_CHECK_INS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        int academic_week
+        int academic_year
+        date check_in_date
+        int attendance
+        int task_completion
+        decimal study_hours
+        varchar emotional_state "GREAT | GOOD | NEUTRAL | BAD | CRITICAL"
+        int general_comprehension
+        text notes "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    WEEKLY_CHECK_IN_TOPIC_RESPONSES {
+        uuid id PK
+        uuid check_in_id FK
+        uuid topic_id FK "UK junto con check_in_id"
+        int comprehension "CHECK 0-100"
+    }
+
+    SURVEY_QUESTIONS {
+        uuid id PK
+        varchar code UK
+        varchar category
+        text question_text
+        varchar question_type "SINGLE_CHOICE | MULTI_CHOICE | NUMBER | TEXT | BOOLEAN"
+        jsonb options "nullable"
+        boolean is_active
+        int order
+    }
+
+    SURVEY_RESPONSES {
+        uuid id PK
+        uuid student_id FK
+        uuid period_id FK
+        varchar survey_code "sin UK — una encuesta se puede repetir"
+        timestamptz submitted_at
+    }
+
+    SURVEY_ANSWERS {
+        uuid id PK
+        uuid response_id FK
+        uuid question_id FK "UK junto con response_id"
+        jsonb answer_value
+    }
+
+    ACADEMIC_USER_REF {
+        uuid id PK "= auth-service.users.id"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    CAREERS ||--o{ SUBJECT_CATALOG : "ofrece RESTRICT"
+    FACULTIES ||--o{ CAREERS : "posee RESTRICT"
+    SUBJECT_CATALOG ||--o{ SUBJECTS : "se oferta como RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SUBJECTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ EVALUATIONS : "define CASCADE"
+    SUBJECTS ||--o{ ENROLLMENTS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ ENROLLMENTS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADES : "registra RESTRICT"
+    EVALUATIONS |o--o{ GRADES : "respalda SET NULL"
+    GRADES ||--o{ GRADE_HISTORY : "audita CASCADE"
+    SUBJECTS ||--o{ SUBJECT_TEACHERS : "asigna CASCADE"
+    ACADEMIC_PERIODS ||--o{ SUBJECT_TEACHERS : "delimita RESTRICT"
+    SUBJECTS ||--o{ GRADE_IMPORTS : "recibe RESTRICT"
+    SUBJECTS ||--o{ TOPICS : "contiene CASCADE"
+    SUBJECTS ||--o{ CLASS_SCHEDULES : "define horario CASCADE"
+    SUBJECTS ||--o{ CLASS_SESSIONS : "programa CASCADE"
+    CLASS_SCHEDULES ||--o{ CLASS_SESSIONS : "genera RESTRICT"
+    CLASS_SESSIONS ||--o{ SESSION_ATTENDANCES : "registra asistencia CASCADE"
+    ACADEMIC_USER_REF ||--o{ SESSION_ATTENDANCES : "asiste RESTRICT"
+    SUBJECTS ||--o{ WEEKLY_CHECK_INS : "recibe RESTRICT"
+    ACADEMIC_PERIODS ||--o{ WEEKLY_CHECK_INS : "delimita RESTRICT"
+    WEEKLY_CHECK_INS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "detalla CASCADE"
+    TOPICS ||--o{ WEEKLY_CHECK_IN_TOPIC_RESPONSES : "es evaluado en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SURVEY_RESPONSES : "responde RESTRICT"
+    ACADEMIC_PERIODS ||--o{ SURVEY_RESPONSES : "delimita RESTRICT"
+    SURVEY_RESPONSES ||--o{ SURVEY_ANSWERS : "contiene CASCADE"
+    SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "es respondida en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECTS : "es docente de RESTRICT"
+    ACADEMIC_USER_REF ||--o{ ENROLLMENTS : "se matricula RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "es calificado RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADES : "registra RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_HISTORY : "modifica RESTRICT"
+    ACADEMIC_USER_REF ||--o{ SUBJECT_TEACHERS : "es docente en RESTRICT"
+    ACADEMIC_USER_REF ||--o{ GRADE_IMPORTS : "importa RESTRICT"
+    ACADEMIC_USER_REF ||--o{ WEEKLY_CHECK_INS : "autorreporta RESTRICT"
+```
+
+**FK físicas (35, todas intra-servicio):**
+
+| Desde | Hacia | `onDelete` | Por qué |
+|---|---|---|---|
+| `careers.faculty_id` | `faculties.id` | `RESTRICT` | Una facultad con carreras activas no debería desaparecer silenciosamente. |
+| `subject_catalog.career_id` | `careers.id` | `RESTRICT` | Misma razón — desde la Fase A, `career_id` vive en el catálogo, no en la oferta. |
+| `subjects.subject_catalog_id` | `subject_catalog.id` | `RESTRICT` | Una materia del catálogo con ofertas activas no debería desaparecer silenciosamente (Fase A). |
+| `subjects.academic_period_id` | `academic_periods.id` | `RESTRICT` | Un período con materias programadas no es eliminable. |
+| `subjects.teacher_id` | `academic_user_ref.id` | `RESTRICT` | Preserva la asignación docente en el registro histórico. |
+| `evaluations.subject_id` | `subjects.id` | `CASCADE` | Una evaluación no tiene sentido sin su materia. |
+| `enrollments.subject_id` | `subjects.id` | `RESTRICT` | Preservar el historial de matrículas aunque una materia se desactive en otro lugar. |
+| `enrollments.period_id` | `academic_periods.id` | `RESTRICT` | Igual. |
+| `enrollments.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de matrícula del estudiante. |
+| `grades.subject_id` | `subjects.id` | `RESTRICT` | Las calificaciones son registros académicos permanentes. |
+| `grades.evaluation_id` | `evaluations.id` | `SET NULL` | Ya es nullable hoy — borrar la evaluación desvincula la calificación en vez de borrar un registro permanente. |
+| `grades.student_id`, `grades.registered_by` | `academic_user_ref.id` | `RESTRICT` | Registro académico permanente. |
+| `grade_history.grade_id` | `grades.id` | `CASCADE` | Una fila de historial no tiene sentido sin su calificación padre. |
+| `grade_history.changed_by` | `academic_user_ref.id` | `RESTRICT` | Rastro de auditoría. |
+| `subject_teachers.subject_id` | `subjects.id` | `CASCADE` | Registro puro de asignación — sin significado independiente. |
+| `subject_teachers.period_id` | `academic_periods.id` | `RESTRICT` | Preservar la integridad del período. |
+| `subject_teachers.teacher_id` | `academic_user_ref.id` | `CASCADE` | Igual que `subject_id` — registro de asignación. |
+| `grade_imports.subject_id` | `subjects.id` | `RESTRICT` | Rastro de auditoría de una operación masiva — se conserva. |
+| `grade_imports.imported_by` | `academic_user_ref.id` | `RESTRICT` | Rastro de auditoría. |
+| `topics.subject_id` | `subjects.id` | `CASCADE` | El contenido del sílabo no tiene sentido fuera de su materia. |
+| `class_schedules.subject_id` | `subjects.id` | `CASCADE` | El horario no tiene sentido fuera de la oferta a la que pertenece — se borra con ella (Fase B). |
+| `class_sessions.subject_id` | `subjects.id` | `CASCADE` | Igual. |
+| `class_sessions.schedule_id` | `class_schedules.id` | `RESTRICT` | Una franja horaria con sesiones ya generadas no debería poder borrarse silenciosamente. |
+| `session_attendances.session_id` | `class_sessions.id` | `CASCADE` | Un registro de asistencia no tiene sentido fuera de su sesión. |
+| `session_attendances.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de asistencia del estudiante. |
+| `weekly_check_ins.subject_id` | `subjects.id` | `RESTRICT` | Preservar el historial de autorreporte. |
+| `weekly_check_ins.period_id` | `academic_periods.id` | `RESTRICT` | Igual. |
+| `weekly_check_ins.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de autorreporte. |
+| `weekly_check_in_topic_responses.check_in_id` | `weekly_check_ins.id` | `CASCADE` | Una respuesta por tema no tiene sentido fuera de su check-in (Fase C). |
+| `weekly_check_in_topic_responses.topic_id` | `topics.id` | `RESTRICT` | Un tema del sílabo con respuestas ya registradas no debería poder borrarse silenciosamente. |
+| `survey_responses.student_id` | `academic_user_ref.id` | `RESTRICT` | Preservar el historial de encuestas del estudiante (Fase D). |
+| `survey_responses.period_id` | `academic_periods.id` | `RESTRICT` | Igual. |
+| `survey_answers.response_id` | `survey_responses.id` | `CASCADE` | Una respuesta individual no tiene sentido fuera del envío que la contiene. |
+| `survey_answers.question_id` | `survey_questions.id` | `RESTRICT` | Una pregunta del catálogo con respuestas ya registradas no debería poder borrarse silenciosamente — se desactiva (`is_active = false`), no se borra. |
+
+**Tabla de referencia local — `academic_user_references`:**
+
+| Columna | Tipo | Por qué |
+|---|---|---|
+| `id` | `uuid` PK | mismo valor que `auth-service.users.id` |
+| `role` | `varchar` | varios use cases filtran/validan por rol (ej. solo un `teacher_id` con rol `TEACHER` puede asignarse a una materia) |
+| `is_active` | `boolean` | `check-user-deactivation-eligibility.use-case.ts` y las validaciones de matrícula ya dependen de esto |
+| `synced_at` | `timestamptz` | qué tan vieja es la copia local |
+
+Se llena vía *upsert* en `UserProfileAdapter.getProfile()` (`services/academic-service/src/infrastructure/adapters/user-profile.adapter.ts`), que ya hace esta llamada HTTP a `user-service` hoy. Campos tomados de `UserProfileData`, recortados: `firstName`/`lastName`/`email` **no se replican** — son datos de presentación, se siguen pidiendo en vivo cuando hace falta mostrarlos.
+
+Nombrada `academic_user_references` (con prefijo) y no `user_references` a secas — las 3 tablas de referencia de usuario del monorepo (academic/analytics/prediction) comparten la misma Postgres física, y un nombre sin prefijo colisiona entre servicios. Detectado y corregido durante la implementación (migración `RenameUserReferencesTable`); el prefijo se aplicó preventivamente en analytics-service y prediction-service desde el principio.
+
+**Objetivo de cada tabla nueva (Fases A-D):**
+
+- **`subject_catalog`** — la materia como concepto, independiente del período (ej. "Bases de Datos I" existe una vez en el catálogo). Resuelve el problema estructural que motivó la Fase A: antes de este cambio, `subjects.code` era `UNIQUE` global y `academic_period_id` era `NOT NULL`, así que una materia solo podía existir en un único período *para siempre* — reofertarla en un semestre nuevo era imposible sin inventar un código distinto, y rompía la tendencia multi-período que `analytics-service`/`prediction-service` ya calculan.
+- **`subjects`** — desde la Fase A, ya no es "la materia": es la **oferta** de una fila de `subject_catalog` en un `academic_period_id` concreto (`UNIQUE(subject_catalog_id, academic_period_id)` — la misma materia puede ofertarse una vez por período, nunca dos veces en el mismo). `max_capacity`, `teacher_id` y `is_active` siguen viviendo acá porque son propiedades de la oferta, no de la materia (un mismo curso puede tener cupo/docente distinto cada semestre).
+- **`class_schedules`** — la franja horaria semanal real de una oferta (día + hora de inicio/fin), definida una vez por `DefineSubjectScheduleUseCase` al momento de crear/configurar la oferta. Existe porque el horario cambia cada semestre (una oferta nueva = un horario nuevo), a diferencia de un contador de semana relativo que no distingue entre semestres.
+- **`class_sessions`** — la ocurrencia concreta de una franja horaria en una fecha real dentro del rango del período (ej. "miércoles 12 de marzo de 2026"), generada automáticamente para todo el rango `start_date`-`end_date` del período al definir el horario. Es el ancla real de la asistencia: cada sesión "pasada" es una oportunidad de asistencia, con o sin registro.
+- **`session_attendances`** — el registro de asistencia de un estudiante a una sesión concreta, con dos orígenes posibles (`recorded_by`): `STUDENT_SELF_REPORT` (autorreporte del propio check-in semanal) o `TEACHER` (registro directo del docente). **Regla de precedencia**: si ambos existen para la misma sesión/estudiante, el registro `TEACHER` es la fuente de verdad — el `attendance` (0-100) que ve `analytics-service` en `weekly_check_ins` se recalcula como el porcentaje de sesiones "presentes" de la semana, priorizando siempre el dato del docente sobre el autorreporte del estudiante.
+- **`weekly_check_in_topic_responses`** — la comprensión autorreportada por el estudiante, tema por tema del sílabo, para un check-in semanal dado. Reemplaza la columna `jsonb topic_responses` que existía antes: ahora cada respuesta es una fila con FK real a `topics`, así Postgres (no solo el use-case) rechaza un `topic_id` que no exista o no pertenezca a la materia del check-in.
+- **`survey_questions`** — catálogo de preguntas de encuesta, hoy usado para la encuesta socioeconómica (`survey_code = 'SOCIOECONOMIC'`), pero genérico por diseño: agregar una pregunta nueva es una fila nueva en esta tabla, no una migración. `question_type` determina cómo se interpreta `options`/`answer_value` en el frontend.
+- **`survey_responses`** — un envío completo de una encuesta por un estudiante. Deliberadamente **sin ningún `UNIQUE`** sobre `(student_id, period_id, survey_code)` — un estudiante puede responder la misma encuesta más de una vez, incluso dentro del mismo período, para que MentoraPredict vaya refinando su entendimiento de la situación socioeconómica del estudiante con el tiempo (decisión explícita del usuario).
+- **`survey_answers`** — cada respuesta individual (una por pregunta) dentro de un envío. `answer_value` es `jsonb` porque el tipo de dato depende de `question_type` (texto, número, booleano, o un array de opciones elegidas).
+
+**Otras restricciones:**
+
+| Restricción | Detalle |
+|---|---|
+| Único implementado | `enrollments(student_id, subject_id, period_id)` — evita matrícula duplicada; `subjects(subject_catalog_id, academic_period_id)` — evita reofertar la misma materia dos veces en el mismo período (Fase A); `class_schedules(subject_id, day_of_week)` — un solo bloque horario por día por oferta (Fase B); `class_sessions(subject_id, session_date)` — una sesión por materia por fecha (Fase B); `session_attendances(session_id, student_id)` — un solo registro de asistencia por estudiante por sesión (Fase B); `weekly_check_in_topic_responses(check_in_id, topic_id)` — una respuesta por tema por check-in (Fase C); `survey_answers(response_id, question_id)` — una respuesta por pregunta por envío (Fase D); `subject_catalog.code`, `survey_questions.code` (Fase A/D). |
+| Índice único ya existente | `academic_periods` — parcial, `status = 'ACTIVE'` (un solo período activo) |
+| Índice único ya existente | `weekly_check_ins(student_id, subject_id, academic_week, academic_year)` |
+| `CHECK` implementado | `enrollments.status IN (...)` (4 valores, ya centralizado en shared-types desde Fase 1), `faculties.status`/`careers.status IN ('ACTIVE','INACTIVE')`, `academic_periods.status IN ('PLANNED','ACTIVE','FINISHED','CANCELLED')`, `academic_periods.type IN ('SEMESTER','QUARTER')`, `grade_imports.status IN ('COMPLETED','COMPLETED_WITH_ERRORS','FAILED')`, `weekly_check_ins.emotional_state IN ('GREAT','GOOD','NEUTRAL','BAD','CRITICAL')`; `class_schedules.day_of_week IN ('MONDAY'..'SUNDAY')` + `end_time > start_time` (Fase B); `class_sessions.status IN ('PLANNED','HELD','CANCELLED')` (Fase B); `session_attendances.recorded_by IN ('STUDENT_SELF_REPORT','TEACHER')` (Fase B); `weekly_check_in_topic_responses.comprehension BETWEEN 0 AND 100` (Fase C); `survey_questions.question_type IN ('SINGLE_CHOICE','MULTI_CHOICE','NUMBER','TEXT','BOOLEAN')` (Fase D) |
+
+### 4.4 analytics-service
+
+```mermaid
+erDiagram
+    STUDENT_METRICS {
+        uuid id PK
+        uuid student_id FK
+        uuid period_id FK
+        jsonb subject_averages
+        decimal global_average
+        timestamptz calculated_at
+        int version "legacy — reemplazada por STUDENT_SUBJECT_METRICS"
+    }
+
+    STUDENT_SUBJECT_METRICS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        int academic_week
+        int academic_year
+        decimal average_grade "nullable = sin evaluaciones aún"
+        int compliance_index "nullable"
+        int attendance_rate "nullable"
+        decimal study_hours "nullable"
+        int comprehension_avg "nullable"
+        varchar risk_level "nullable — LOW | MEDIUM | HIGH | CRITICAL"
+        decimal trend_slope "nullable"
+        timestamptz computed_at
+    }
+
+    ALERTS {
+        uuid id PK
+        uuid student_id FK
+        varchar type "RISK_HIGH | RISK_CRITICAL | AVERAGE_DROP | FAILED_EVALUATIONS | LOW_ATTENDANCE | RISK_ESCALATION"
+        text message
+        varchar status "UNREAD | READ | ACTIVE | RESOLVED"
+        jsonb metadata
+        uuid subject_id FK "nullable"
+        uuid period_id FK "nullable"
+        varchar severity "nullable — MEDIUM | HIGH | CRITICAL"
+        timestamptz triggered_at "nullable"
+        timestamptz resolved_at "nullable"
+        uuid resolved_by FK "nullable"
+        timestamptz created_at
+    }
+
+    DEVICE_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        varchar expo_push_token UK
+        varchar platform "ios | android | web"
+        timestamptz created_at
+    }
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid recipient_id FK
+        varchar recipient_role "STUDENT | TEACHER | ADMIN"
+        varchar type
+        uuid related_alert_id FK "nullable"
+        uuid subject_id FK "nullable"
+        uuid student_id FK "nullable"
+        uuid period_id FK "nullable"
+        varchar title
+        text message
+        varchar status "UNREAD | READ"
+        timestamptz created_at
+        timestamptz read_at "nullable"
+    }
+
+    ANALYTICS_USER_REF {
+        uuid id PK "= auth-service.users.id"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    ANALYTICS_SUBJECT_REF {
+        uuid id PK "= academic-service.subjects.id"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    ANALYTICS_PERIOD_REF {
+        uuid id PK "= academic-service.academic_periods.id"
+        varchar status "PLANNED | ACTIVE | FINISHED | CANCELLED"
+        timestamptz synced_at
+    }
+
+    ALERTS |o--o{ NOTIFICATIONS : "dispara SET NULL"
+    ANALYTICS_USER_REF ||--o{ STUDENT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medido RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "recibe alerta RESTRICT"
+    ANALYTICS_USER_REF ||--o{ ALERTS : "resuelve RESTRICT"
+    ANALYTICS_USER_REF ||--o{ DEVICE_TOKENS : "posee RESTRICT"
+    ANALYTICS_USER_REF ||--o{ NOTIFICATIONS : "recibe RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ STUDENT_SUBJECT_METRICS : "es medida RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ ALERTS : "es objeto de RESTRICT"
+    ANALYTICS_SUBJECT_REF ||--o{ NOTIFICATIONS : "es objeto de RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ STUDENT_SUBJECT_METRICS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ ALERTS : "delimita RESTRICT"
+    ANALYTICS_PERIOD_REF ||--o{ NOTIFICATIONS : "delimita RESTRICT"
+```
+
+**FK físicas:**
+
+| Desde | Hacia | `onDelete` | Por qué |
+|---|---|---|---|
+| `notifications.related_alert_id` | `alerts.id` | `SET NULL` | Ya es nullable — una notificación debería sobrevivir a que su alerta disparadora se resuelva/elimine. |
+| `student_metrics.student_id`, `student_subject_metrics.student_id`, `alerts.student_id`, `alerts.resolved_by`, `device_tokens.user_id`, `notifications.recipient_id`, `notifications.student_id` | `analytics_user_ref.id` | `RESTRICT` | Registros de métricas/alertas permanentes. |
+| `student_subject_metrics.subject_id`, `alerts.subject_id`, `notifications.subject_id` | `analytics_subject_ref.id` | `RESTRICT` | Igual. |
+| `student_metrics.period_id`, `student_subject_metrics.period_id`, `alerts.period_id`, `notifications.period_id` | `analytics_period_ref.id` | `RESTRICT` | Igual. |
+
+**Tablas de referencia local** (nombradas con prefijo `analytics_` — ver nota de colisión en §4.3):
+
+- **`analytics_user_references`**: mismos 4 campos que en `academic-service` (`id`, `role`, `is_active`, `synced_at`). El único consumo real hoy es `getUserIdsByRole()` (`services/analytics-service/src/notifications/domain/ports/i-user-service.client.ts`), que solo necesita `id` + `role` — `is_active` se agrega igual porque no deberían generarse alertas/notificaciones para usuarios desactivados.
+- **`analytics_subject_references`**: `id` (PK), `is_active`, `synced_at`.
+- **`analytics_period_references`**: `id` (PK), `status` (`PLANNED`/`ACTIVE`/`FINISHED`/`CANCELLED`), `synced_at` — `status` es el único campo realmente consultado en lógica (ej. no calcular tendencia sobre un período cancelado).
+
+**Otras restricciones:**
+
+| Restricción | Detalle |
+|---|---|
+| Índice único ya existente | `student_subject_metrics(student_id, subject_id, academic_week, academic_year)`; `alerts` — parcial, `(student_id, subject_id)` donde `status = 'ACTIVE'`; `device_tokens.expo_push_token` |
+| `CHECK` implementado | `student_subject_metrics.risk_level IN (...)` (4 valores, shared-types), `alerts.type`/`.status`/`.severity`, `device_tokens.platform IN ('ios','android','web')`, `notifications.recipient_role IN ('STUDENT','TEACHER','ADMIN')`/`.type`/`.status` |
+
+### 4.5 prediction-service
+
+```mermaid
+erDiagram
+    STUDENT_SUBJECT_PREDICTIONS {
+        uuid id PK
+        uuid student_id FK
+        uuid subject_id FK
+        uuid period_id FK
+        int academic_week
+        int academic_year
+        varchar status "COMPUTED | INSUFFICIENT_DATA"
+        varchar predicted_risk_level "nullable — LOW | MEDIUM | HIGH | CRITICAL"
+        decimal trend_slope "nullable"
+        text recommendation "nullable"
+        timestamptz computed_at
+    }
+
+    PREDICTION_USER_REF {
+        uuid id PK "= auth-service.users.id"
+        varchar role "STUDENT | TEACHER | ADMIN"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    PREDICTION_SUBJECT_REF {
+        uuid id PK "= academic-service.subjects.id"
+        boolean is_active
+        timestamptz synced_at
+    }
+
+    PREDICTION_PERIOD_REF {
+        uuid id PK "= academic-service.academic_periods.id"
+        varchar status "PLANNED | ACTIVE | FINISHED | CANCELLED"
+        timestamptz synced_at
+    }
+
+    PREDICTION_USER_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "recibe predicción RESTRICT"
+    PREDICTION_SUBJECT_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "es objeto de RESTRICT"
+    PREDICTION_PERIOD_REF ||--o{ STUDENT_SUBJECT_PREDICTIONS : "delimita RESTRICT"
+```
+
+**FK físicas:**
+
+| Desde | Hacia | `onDelete` | Por qué |
+|---|---|---|---|
+| `student_subject_predictions.student_id` | `prediction_user_ref.id` | `RESTRICT` | Registro de predicción permanente. |
+| `student_subject_predictions.subject_id` | `prediction_subject_ref.id` | `RESTRICT` | Igual. |
+| `student_subject_predictions.period_id` | `prediction_period_ref.id` | `RESTRICT` | Igual. |
+
+**Tablas de referencia local** (`prediction_user_references`/`prediction_subject_references`/`prediction_period_references`): mismos campos mínimos que en `analytics-service` (§4.4). A diferencia de academic-service y analytics-service, prediction-service no tenía ningún punto de enganche real con `user-service` para sincronizar la referencia de usuario — su único flujo de escritura real hacia `student_subject_predictions` (`RecalculateSubjectPredictionUseCase`) nunca llamaba a `user-service`, y su cliente de `academic-service` no traía `isActive` de materia ni `status` de período. Se agregó un `IUserServiceClient` nuevo y se extendió `IAcademicContextClient` (`services/prediction-service/src/application/ports/output/i-academic-context.client.ts`) con `getSubjectDetails`/`getPeriodDetails`, reutilizando los mismos endpoints internos que ya usa analytics-service — ambos wireados directamente en `RecalculateSubjectPredictionUseCase`, que además usa esos datos para una validación real: si el estudiante está inactivo, la materia inactiva, o el período `CANCELLED`, la predicción se marca `INSUFFICIENT_DATA` en vez de calcularse.
+
+**Otras restricciones:**
+
+| Restricción | Detalle |
+|---|---|
+| Índice único ya existente | `student_subject_predictions(student_id, subject_id, academic_week, academic_year)` |
+| `CHECK` implementado | `status IN ('COMPUTED','INSUFFICIENT_DATA')`, `predicted_risk_level IN (...)` (4 valores, shared-types) |
+
+## 5. Referencias cross-servicio — tabla consolidada
+
+Vista rápida de todas las referencias de §4 en un solo lugar. Cada una es una columna `uuid` que apunta a la tabla real, dueña del dato, en otro servicio — esa relación con la fuente de verdad nunca tendrá FK física, según la regla de §1 (las tablas de referencia local de §3-4 son un espejo, no la relación en sí).
+
+| Columna | Apunta a | Servicio dueño del destino |
+|---|---|---|
+| `user_profiles.id` | `users.id` (1:1, valor compartido por convención) | auth-service |
+| `subjects.teacher_id`, `enrollments.student_id`, `grades.student_id`/`registered_by`, `grade_history.changed_by`, `subject_teachers.teacher_id`, `grade_imports.imported_by`, `weekly_check_ins.student_id`, `session_attendances.student_id`, `survey_responses.student_id` | `users.id` | auth-service |
+| `student_metrics.student_id`, `student_subject_metrics.student_id`, `alerts.student_id`, `alerts.resolved_by`, `device_tokens.user_id`, `notifications.recipient_id`, `notifications.student_id`, `student_subject_predictions.student_id` | `users.id` | auth-service |
+| `student_metrics.period_id`, `student_subject_metrics.period_id`, `alerts.period_id`, `notifications.period_id`, `student_subject_predictions.period_id` | `academic_periods.id` | academic-service |
+| `student_subject_metrics.subject_id`, `alerts.subject_id`, `notifications.subject_id`, `student_subject_predictions.subject_id` | `subjects.id` | academic-service |
+
+## 6. Vacíos de restricciones transversales — resueltos en Fase 4
+
+Ya desglosados por servicio en §4 — acá el resumen de los dos que no eran específicos de un solo servicio. Ambos quedaron cerrados durante la implementación de Fase 4:
+
+- ~~`enrollments` no tiene ningún unique constraint.~~ **Resuelto**: `(student_id, subject_id, period_id)` es único desde la migración `AddCheckConstraintsAndEnrollmentUnique` de academic-service.
+- ~~No existe ningún `CHECK`/enum nativo de Postgres para ninguna columna de estado, en ningún servicio.~~ **Resuelto**: cada columna de estado respaldada por un enum de TypeScript (centralizado en `shared-types` o interno de cada servicio) tiene ahora su `CHECK` correspondiente en Postgres — ver el detalle en cada sub-sección de §4. Los datos semilla de `EnrollmentStatus` habían demostrado que esto no era teórico — ver [database-architecture.md](./database-architecture.md) y [../business/business-logic.md](../business/business-logic.md) §5.
+
+## 7. Entidades por rol (STUDENT / TEACHER / ADMIN)
+
+Una lente sobre el mismo diagrama, no un modelo de datos distinto — qué rol típicamente lee/escribe cada tabla, según los endpoints reales documentados en [../api/api-contracts.md](../api/api-contracts.md) y las reglas de rol en [../business/business-logic.md](../business/business-logic.md) §2.
+
+| Entidad | STUDENT | TEACHER | ADMIN |
+|---|:---:|:---:|:---:|
+| `USERS`, `USER_PROFILES` | solo su propio registro | solo su propio registro | CRUD completo |
+| `LOGIN_EVENTS` | — (nunca expuesta al usuario) | — | — (sin endpoint de lectura todavía — solo escritura interna en el login) |
+| `FACULTIES`, `CAREERS`, `ACADEMIC_PERIODS` | solo lectura | solo lectura | CRUD completo |
+| `SUBJECT_CATALOG` | — (implícito vía `SUBJECTS`) | — (implícito vía `SUBJECTS`) | CRUD completo |
+| `SUBJECTS` | lectura (solo matriculadas) | lectura/escritura (solo propias) | CRUD completo |
+| `EVALUATIONS`, `GRADES`, `GRADE_HISTORY`, `GRADE_IMPORTS` | lectura (sus propias notas) | escritura (materias propias) | lectura completa |
+| `ENROLLMENTS` | lectura (propias) | escritura (materias propias) | CRUD completo |
+| `SUBJECT_TEACHERS` | — | lectura (propias) | CRUD completo |
+| `TOPICS` | lectura | escritura (materias propias) | lectura completa |
+| `CLASS_SCHEDULES` | lectura implícita (vía sesiones) | escritura (define horario, materias propias) | escritura (cualquier materia) |
+| `CLASS_SESSIONS` | — | lectura (materias propias, para marcar asistencia) | lectura (cualquier materia) |
+| `SESSION_ATTENDANCES` | escritura indirecta (autorreporte vía check-in) | escritura (registro directo, materias propias) | — |
+| `WEEKLY_CHECK_INS`, `WEEKLY_CHECK_IN_TOPIC_RESPONSES` | escritura (propio, autorreporte) | lectura (materias propias) | lectura completa |
+| `SURVEY_QUESTIONS` | lectura | lectura | CRUD completo (catálogo) |
+| `SURVEY_RESPONSES`, `SURVEY_ANSWERS` | escritura (propias, repetible) | — | — |
+| `STUDENT_METRICS`, `STUDENT_SUBJECT_METRICS`, `ALERTS` | lectura (propias) | lectura (estudiantes de materias propias) | lectura (institución completa) |
+| `DEVICE_TOKENS`, `NOTIFICATIONS` | solo propias | solo propias | solo propias |
+| `STUDENT_SUBJECT_PREDICTIONS` | lectura (propias, disparo con límite de tasa) | — | — |
+
+## 8. Fuentes
+
+Inventario de entidades/columnas: auditoría dedicada de los 34 archivos `*.orm-entity.ts` de los 5 servicios (relaciones, `onDelete`, índices, columnas respaldadas por enum), cruzado contra la lista de tablas verificada por seeds de [database-architecture.md](./database-architecture.md). Diseño de relaciones/restricciones: tomando como referencia de formato `docs/backend/database-model.md` de `SIGLA-Backend` (proyecto externo de referencia, solo en formato — su dominio no tiene relación). Tablas de referencia local (§3-4): campos verificados contra los adaptadores HTTP reales existentes al momento de implementar (`i-user-profile.port.ts`/`user-profile.adapter.ts` en `academic-service`, `i-user-service.client.ts` en `analytics-service`; `i-user-service.client.ts` se construyó de cero en `prediction-service`, que no tenía ningún cliente HTTP hacia `user-service` antes de la Fase 4). Tabla de propiedad por rol: cruzada contra [../api/api-contracts.md](../api/api-contracts.md) y [../business/business-logic.md](../business/business-logic.md) §2-3.
+
+**Verificación de la implementación (Fase 4):** cada migración se corrió contra la base de datos local de desarrollo y se confirmó con `migration:generate` reportando "No changes in database schema were found" (diff cero) contra las entidades `*.orm-entity.ts`; las políticas `RESTRICT` se verificaron en vivo con un `DELETE` bloqueado sobre una fila de referencia en uso, en los 3 servicios con tablas de referencia (`academic-service`, `analytics-service`, `prediction-service`). Las suites de tests existentes de los 5 servicios pasan sin cambios tras la migración.
+
+**Verificación de la implementación (Fases A-E, `docs/database/database-update-plan.md`):** mismo criterio — cada una de las 8 migraciones nuevas (`AddSubjectCatalog`, `AddClassScheduleAndSessionDate`, `AddWeeklyCheckInTopicResponses`, `AddSurveyTables`, `AddLoginEvents`, entre otras de soporte) se corrió contra la base local y se confirmó con `migration:generate` reportando diff cero. Las Fases A y C incluyeron backfill de datos reales preexistentes (19 filas de `subjects` migradas a `subject_catalog` en Fase A; 1586 filas de `weekly_check_ins.topic_responses` migradas a `weekly_check_in_topic_responses` en Fase C, verificando primero el formato real de los datos — una mezcla de `topicId` como `order` numérico y como UUID real — antes de escribir el `INSERT ... SELECT`). Cada FK `RESTRICT`/`CASCADE` nueva se verificó en vivo (`DELETE` bloqueado o cascada confirmada con filas de prueba desechables). Las suites de tests de `academic-service` y `auth-service` pasan tras cada fase, incluyendo los tests nuevos agregados para cada caso de uso nuevo.

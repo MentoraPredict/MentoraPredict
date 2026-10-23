@@ -9,7 +9,7 @@ All 5 backend services (`auth-service`, `user-service`, `academic-service`, `ana
 ```
 src/
 ├── domain/            # Enterprise business rules — no framework/library dependencies
-│   ├── entities/       # Plain domain entities (not the TypeORM/Mongoose classes)
+│   ├── entities/       # Plain domain entities (not the TypeORM classes)
 │   ├── value-objects/   # (where present) immutable domain concepts
 │   └── ports/           # (where present) domain-level interfaces
 ├── application/        # Application business rules — orchestrates domain + ports
@@ -56,7 +56,7 @@ Every service exposes at least two controller groups, distinguished by guard:
 ## 4. Cross-cutting infrastructure every service shares
 
 - **`@mentorapredict/shared-logger`**: the only shared package with real consumers (all 5 services) — `nestjs-pino` wrapper providing JSON logging, secret redaction, and the `AsyncLocalStorage` correlation context that lets an outbound HTTP adapter read the *inbound* request's correlation ID without it being threaded through every function signature.
-- **Health checks**: every service exposes `GET /health`, checking whatever it actually depends on (Postgres always; +Redis for auth-service/analytics-service; +MongoDB for academic/analytics/prediction-service). One inconsistency found: prediction-service's health check only reports MongoDB status despite also using Postgres.
+- **Health checks**: every service exposes `GET /health`, checking whatever it actually depends on (Postgres always; +Redis for auth-service/academic-service/analytics-service).
 - **Swagger**: every service self-documents at `/api/v1/<domain>/docs` via `@nestjs/swagger`, generated from the same decorators that define the routes — this is the most trustworthy live API reference, more so than any static doc (including this one, which should be cross-checked against it periodically).
 
 ## 5. Frontend architecture pattern (for comparison)

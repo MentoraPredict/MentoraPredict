@@ -15,6 +15,7 @@ import { GetSubjectRiskUseCase } from '../../application/use-cases/get-subject-r
 import { GetAlertsUseCase } from '../../application/use-cases/get-alerts.use-case';
 import { GetSubjectAlertsUseCase } from '../../application/use-cases/get-subject-alerts.use-case';
 import { GetStudentSubjectsOverviewUseCase } from '../../application/use-cases/get-student-subjects-overview.use-case';
+import { GetStudentRiskSignalsUseCase } from '../../application/use-cases/get-student-risk-signals.use-case';
 import { ComplianceInputDto } from '../../application/dtos/compliance-input.dto';
 import { RiskInputDto } from '../../application/dtos/risk-input.dto';
 import { GenerateAlertsDto } from '../../application/dtos/generate-alerts.dto';
@@ -46,6 +47,7 @@ export class AnalyticsController {
     private readonly getAlertsUC: GetAlertsUseCase,
     private readonly getSubjectAlertsUC: GetSubjectAlertsUseCase,
     private readonly getStudentSubjectsOverviewUC: GetStudentSubjectsOverviewUseCase,
+    private readonly getStudentRiskSignalsUC: GetStudentRiskSignalsUseCase,
   ) {}
 
   // ─── Per-subject metrics (Fase 6) ────────────────────────────────────────
@@ -100,14 +102,44 @@ export class AnalyticsController {
 
   @Get('subjects/:subjectId/metrics/progress')
   @Roles('TEACHER', 'ADMIN')
-  @ApiOperation({ summary: 'Weekly course average across all students (TEACHER owner or ADMIN)' })
+  @ApiOperation({
+    summary:
+      'Weekly course average across all students, or the weekly evolution of one student ' +
+      'when studentId is given (TEACHER owner or ADMIN)',
+  })
+  @ApiQuery({ name: 'studentId', required: false })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: 'Teacher does not own this course' })
-  async getSubjectWeeklyProgress(@Param('subjectId') subjectId: string, @Req() req: JwtRequest) {
+  async getSubjectWeeklyProgress(
+    @Param('subjectId') subjectId: string,
+    @Req() req: JwtRequest,
+    @Query('studentId') studentId?: string,
+  ) {
     const callerId = req.user?.sub;
     const callerRole = req.user?.role;
     if (!callerId || !callerRole) throw new UnauthorizedException('Missing caller identity');
-    return this.getSubjectWeeklyProgressUC.execute(subjectId, callerId, callerRole);
+    return this.getSubjectWeeklyProgressUC.execute(subjectId, callerId, callerRole, studentId);
+  }
+
+  @Get('subjects/:subjectId/students/:studentId/risk-signals')
+  @Roles('TEACHER', 'ADMIN')
+  @ApiOperation({
+    summary:
+      'Support signals for a student dropout risk estimate: latest self-reported emotional state ' +
+      'and platform login activity (TEACHER owner or ADMIN)',
+  })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: 'Teacher does not own this course' })
+  async getStudentRiskSignals(
+    @Param('subjectId') subjectId: string,
+    @Param('studentId') studentId: string,
+    @Req() req: JwtRequest,
+    @Headers('x-correlation-id') correlationId?: string,
+  ) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException('Missing caller identity');
+    return this.getStudentRiskSignalsUC.execute(subjectId, studentId, callerId, callerRole, correlationId);
   }
 
   // ─── Riesgo consolidado + alertas (Fase 7) ───────────────────────────────

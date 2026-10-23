@@ -9,11 +9,8 @@ export interface TeacherSubjectItem {
   name: string;
   code: string;
   description: string;
-  credits: number;
   maxCapacity: number;
   isActive: boolean;
-  career: { id: string; name: string; code: string };
-  faculty: { id: string; name: string; code: string };
   period: {
     id: string;
     name: string;
@@ -55,11 +52,8 @@ export class GetTeacherSubjectsUseCase {
       name: row.name,
       code: row.code,
       description: row.description,
-      credits: row.credits,
       maxCapacity: row.maxCapacity,
       isActive: row.isActive,
-      career: { id: row.careerId, name: row.careerName, code: row.careerCode },
-      faculty: { id: row.facultyId, name: row.facultyName, code: row.facultyCode },
       period: {
         id: row.periodId,
         name: row.periodName,

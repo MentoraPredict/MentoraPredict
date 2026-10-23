@@ -324,6 +324,7 @@ services:
       ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
       ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://analytics-service:3004}
       UPLOADS_DIR: /app/services/user-service/uploads
+      IMAGE_STORAGE_DRIVER: ${IMAGE_STORAGE_DRIVER:-local}
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mentorapredict-images}
@@ -378,7 +379,6 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
-      MONGO_URL: ${MONGO_URL}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:3002}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
@@ -389,6 +389,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       UPLOADS_DIR: /app/services/academic-service/uploads
+      IMAGE_STORAGE_DRIVER: ${IMAGE_STORAGE_DRIVER:-local}
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mentorapredict-images}
@@ -443,7 +444,6 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-mp_redis_secret_change_in_prod}
-      MONGO_URL: ${MONGO_URL}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
@@ -502,7 +502,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mp_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mp_secret_change_in_prod}
       POSTGRES_DB: ${POSTGRES_DB:-mentorapredict}
-      MONGO_URL: ${MONGO_URL}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/private.pem}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
@@ -512,6 +511,7 @@ services:
       ACADEMIC_SERVICE_URL: ${ACADEMIC_SERVICE_URL:-http://academic-service:3003}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      AI_SETTINGS_ENCRYPTION_KEY: ${AI_SETTINGS_ENCRYPTION_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:8000}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost:8000}
     volumes:

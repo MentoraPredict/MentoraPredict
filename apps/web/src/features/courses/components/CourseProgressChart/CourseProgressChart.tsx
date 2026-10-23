@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   CartesianGrid,
   Line,
@@ -23,6 +23,8 @@ interface CourseProgressChartProps {
   subtitle?: string;
   /** When provided, shows a trend badge and the WASM-powered confetti trigger. */
   classification?: SubjectTrendClassification;
+  /** Contenido extra junto a la leyenda, por ejemplo un filtro. */
+  headerAction?: ReactNode;
 }
 
 const classificationStyles: Record<
@@ -39,6 +41,7 @@ export default function CourseProgressChart({
   title = "Progreso",
   subtitle = "Promedio general del curso por semana",
   classification,
+  headerAction,
 }: CourseProgressChartProps) {
   const hasProjection = data.some((point) => point.projection !== undefined);
   const [burstKey, setBurstKey] = useState(0);
@@ -78,6 +81,7 @@ export default function CourseProgressChart({
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
+          {headerAction}
           {tone ? (
             <div className="flex items-center gap-2">
               <Badge tone={tone.tone}>{tone.label}</Badge>
@@ -104,7 +108,13 @@ export default function CourseProgressChart({
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
 
-            <XAxis dataKey="week" tickLine={false} axisLine={false} />
+            <XAxis
+              dataKey="week"
+              tickLine={false}
+              axisLine={false}
+              interval={data.length > 10 ? Math.ceil(data.length / 8) - 1 : 0}
+              tick={{ fontSize: 11 }}
+            />
 
             <YAxis domain={[0, 20]} tickLine={false} axisLine={false} />
 

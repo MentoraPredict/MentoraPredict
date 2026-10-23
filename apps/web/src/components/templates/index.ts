@@ -6,3 +6,4 @@ export { default as AdminTemplate } from "./AdminTemplate";
 export { default as TeacherTemplate } from "./TeacherTemplate";
 
 export { default as StudentTemplate } from "./StudentTemplate";
+export { default as GuardianTemplate } from "./GuardianTemplate";

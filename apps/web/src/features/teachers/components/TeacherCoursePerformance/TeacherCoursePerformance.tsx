@@ -1,87 +1,99 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
-import Heading from "@/components/atoms/Heading";
+import { FiChevronDown } from "react-icons/fi";
+
 import Text from "@/components/atoms/Text";
 import CourseAlertsPanel from "@/features/courses/components/CourseAlertsPanel";
-import CourseAverageChart from "@/features/courses/components/CourseAverageChart";
 import CourseProgressChart from "@/features/courses/components/CourseProgressChart";
-import CourseRecommendationsPanel from "@/features/courses/components/CourseRecommendationsPanel";
+import DashboardMetricCard from "@/features/dashboard/components/DashboardMetricCard";
+import { getAverageTone } from "@/features/dashboard/utils/metricTone";
 import StudentPerformanceUnavailableCard from "@/features/students/components/StudentPerformanceUnavailableCard";
+import StudentPickerModal from "@/features/teachers/components/StudentPickerModal";
 import useTeacherCourseAnalytics from "@/features/teachers/hooks/useTeacherCourseAnalytics";
+import { getTeacherCourseStudentsPath } from "@/routes/paths";
+import { getTeacherStudentProgress } from "@/services/course-analytics.service";
+import { getActiveAcademicPeriod } from "@/services/student-performance.service";
+import { buildPeriodProgress } from "@/utils/buildPeriodProgress";
+import { MAX_GRADE } from "@/utils/gradeScale";
 
 interface TeacherCoursePerformanceProps {
   courseId: string;
 }
 
-const riskLabels = {
-  high: "Alto",
-  medium: "Medio",
-  low: "Bajo",
-};
+type RiskGroup = "high" | "medium" | "low";
 
-const riskStyles = {
-  high: {
-    button: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
-    active: "border-red-700 bg-red-700 text-white",
+const RISK_GROUPS: {
+  id: RiskGroup;
+  label: string;
+  /** Valor del filtro «Riesgo esperado» de la pestaña Estudiantes. */
+  filter: string;
+  className: string;
+}[] = [
+  {
+    id: "high",
+    label: "Riesgo alto",
+    filter: "HIGH,CRITICAL",
+    className: "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
   },
-  medium: {
-    button: "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100",
-    active: "border-amber-600 bg-amber-600 text-white",
+  {
+    id: "medium",
+    label: "Riesgo medio",
+    filter: "MEDIUM",
+    className: "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100",
   },
-  low: {
-    button: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-    active: "border-emerald-700 bg-emerald-700 text-white",
+  {
+    id: "low",
+    label: "Riesgo bajo",
+    filter: "LOW",
+    className:
+      "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
   },
-};
-
-type RiskGroup = keyof typeof riskLabels;
+];
 
 export default function TeacherCoursePerformance({
   courseId,
 }: TeacherCoursePerformanceProps) {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useTeacherCourseAnalytics(courseId);
-  const [selectedRiskGroup, setSelectedRiskGroup] =
-    useState<RiskGroup>("high");
+  const { data: activePeriod } = useQuery({
+    queryKey: ["academic-period", "active"],
+    queryFn: getActiveAcademicPeriod,
+  });
+  const [progressStudentId, setProgressStudentId] = useState("");
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const studentProgress = useQuery({
+    queryKey: ["teacher-student-progress", courseId, progressStudentId],
+    queryFn: () => getTeacherStudentProgress(courseId, progressStudentId),
+    enabled: Boolean(progressStudentId),
+  });
 
-  const predictionsByStudentId = useMemo(
-    () =>
-      new Map(
-        data?.predictions.map((prediction) => [
-          prediction.studentId,
-          prediction,
-        ]) ?? [],
-      ),
-    [data?.predictions],
-  );
-
-  const studentsByRisk = useMemo(() => {
-    const groups: Record<RiskGroup, NonNullable<typeof data>["students"]> = {
-      high: [],
-      medium: [],
-      low: [],
-    };
+  const riskCounts = useMemo(() => {
+    const counts: Record<RiskGroup, number> = { high: 0, medium: 0, low: 0 };
+    const levelByStudentId = new Map(
+      data?.predictions.map((prediction) => [
+        prediction.studentId,
+        prediction.predictedRiskLevel,
+      ]) ?? [],
+    );
 
     data?.students.forEach((student) => {
-      const prediction = predictionsByStudentId.get(student.user.id);
-      const riskLevel = prediction?.predictedRiskLevel;
+      const level = levelByStudentId.get(student.user.id);
 
-      if (riskLevel === "CRITICAL" || riskLevel === "HIGH") {
-        groups.high.push(student);
-      } else if (riskLevel === "MEDIUM") {
-        groups.medium.push(student);
-      } else if (riskLevel === "LOW") {
-        groups.low.push(student);
-      }
+      if (level === "CRITICAL" || level === "HIGH") counts.high += 1;
+      else if (level === "MEDIUM") counts.medium += 1;
+      else if (level === "LOW") counts.low += 1;
     });
 
-    return groups;
-  }, [data?.students, predictionsByStudentId]);
+    return counts;
+  }, [data?.students, data?.predictions]);
 
   if (isLoading) {
     return (
       <StudentPerformanceUnavailableCard
-        title="Cargando metricas"
-        description="Estamos consultando la informacion real del curso."
+        title="Cargando métricas"
+        description="Estamos consultando la información del curso."
       />
     );
   }
@@ -89,138 +101,123 @@ export default function TeacherCoursePerformance({
   if (error || !data) {
     return (
       <StudentPerformanceUnavailableCard
-        title="No se pudieron cargar las metricas"
+        title="No se pudieron cargar las métricas"
         description={error ?? "No existen datos disponibles."}
       />
     );
   }
 
-  const selectedStudents = studentsByRisk[selectedRiskGroup];
+  const selectedStudent = data.students.find(
+    (student) => student.user.id === progressStudentId,
+  );
+  const selectedStudentName = selectedStudent
+    ? [selectedStudent.user.firstName, selectedStudent.user.lastName]
+        .filter(Boolean)
+        .join(" ") || selectedStudent.user.email
+    : "Todos los estudiantes";
+  const periodProgress = buildPeriodProgress(
+    progressStudentId ? (studentProgress.data?.progress ?? []) : data.progress,
+    activePeriod?.startDate ?? null,
+    activePeriod?.endDate ?? null,
+  );
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-5">
-            <Heading as="h4" className="text-gray-900">
-              Riesgo del curso
-            </Heading>
-            <Text variant="small" className="mt-2 text-gray-600">
-              Selecciona un nivel para ver que estudiantes estan clasificados
-              por prediction-service en esta materia.
-            </Text>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            {(["high", "medium", "low"] as RiskGroup[]).map((riskGroup) => {
-              const isSelected = selectedRiskGroup === riskGroup;
-
-              return (
-                <button
-                  key={riskGroup}
-                  type="button"
-                  onClick={() => {
-                    setSelectedRiskGroup(riskGroup);
-                  }}
-                  className={`
-                    rounded-xl
-                    border
-                    px-4
-                    py-3
-                    text-left
-                    font-semibold
-                    transition
-                    ${
-                      isSelected
-                        ? riskStyles[riskGroup].active
-                        : riskStyles[riskGroup].button
-                    }
-                  `}
-                >
-                  <span className="block text-xs uppercase opacity-80">
-                    Riesgo {riskLabels[riskGroup]}
-                  </span>
-                  <span className="mt-1 block text-2xl">
-                    {studentsByRisk[riskGroup].length}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <Text
-              variant="caption"
-              className="font-bold uppercase text-gray-500"
-            >
-              Estudiantes en riesgo{" "}
-              {riskLabels[selectedRiskGroup].toLowerCase()}
-            </Text>
-
-            {selectedStudents.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {selectedStudents.map((student) => {
-                  const prediction = predictionsByStudentId.get(
-                    student.user.id,
-                  );
-
-                  return (
-                    <div
-                      key={student.id}
-                      className="rounded-lg border border-white bg-white px-4 py-3"
-                    >
-                      <Text
-                        variant="small"
-                        className="font-semibold text-gray-900"
-                      >
-                        {[student.user.firstName, student.user.lastName]
-                          .filter(Boolean)
-                          .join(" ") || student.user.email}
-                      </Text>
-                      <Text variant="caption" className="mt-1 text-gray-600">
-                        {student.user.email}
-                      </Text>
-                      {prediction?.recommendation ? (
-                        <Text variant="caption" className="mt-2 text-blue-700">
-                          {prediction.recommendation}
-                        </Text>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <Text variant="small" className="mt-3 text-gray-600">
-                No hay estudiantes clasificados en este nivel.
-              </Text>
-            )}
-          </div>
-        </section>
-
-        <CourseAverageChart
-          average={Number(data.average.toFixed(2))}
-          title="Promedio del curso"
+      <div className="grid gap-4 lg:grid-cols-2">
+        <DashboardMetricCard
+          label="Promedio del curso"
+          value={`${data.average.toFixed(2)} / ${MAX_GRADE}`}
+          tone={getAverageTone(data.average)}
         />
+
+        <article className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white py-5 pl-7 pr-5 shadow-sm">
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-0 left-0 w-1.5 bg-blue-600"
+          />
+          <Text
+            variant="caption"
+            className="font-semibold uppercase tracking-wide text-gray-500"
+          >
+            Total de estudiantes
+          </Text>
+          <p className="mt-2 text-3xl font-bold leading-tight text-gray-900">
+            {data.students.length}
+          </p>
+
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {RISK_GROUPS.map((group) => (
+              <button
+                key={group.id}
+                type="button"
+                title="Ver estos estudiantes en la pestaña Estudiantes"
+                onClick={() =>
+                  navigate(
+                    `${getTeacherCourseStudentsPath(courseId)}?risk=${encodeURIComponent(group.filter)}`,
+                  )
+                }
+                className={`
+                  cursor-pointer
+                  rounded-xl
+                  border-2
+                  px-2
+                  py-2
+                  text-center
+                  font-semibold
+                  shadow-sm
+                  transition
+                  hover:-translate-y-0.5
+                  hover:shadow-md
+                  active:translate-y-0
+                  active:shadow-sm
+                  ${group.className}
+                `}
+              >
+                <span className="block text-xs uppercase opacity-80">
+                  {group.label}
+                </span>
+                <span className="block text-xl">{riskCounts[group.id]}</span>
+              </button>
+            ))}
+          </div>
+        </article>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <CourseAlertsPanel
-          alerts={data.alerts}
-          title="Advertencias del curso"
-        />
-        <CourseRecommendationsPanel
-          recommendations={data.recommendations}
-          showDescription={false}
-        />
-      </div>
+      <CourseAlertsPanel alerts={data.alerts} title="Advertencias del curso" />
 
       <div className="w-full">
         <CourseProgressChart
-          data={data.progress}
-          title="Progreso del curso"
-          subtitle="Promedio general de todos los estudiantes por semana"
-        />
+          data={periodProgress}
+          title={progressStudentId ? "Progreso del estudiante" : "Progreso del curso"}
+          subtitle={
+            progressStudentId
+              ? "Promedio semanal del estudiante seleccionado"
+              : "Promedio general de todos los estudiantes por semana"
+          }
+          classification={
+            progressStudentId
+              ? (studentProgress.data?.trend?.classification ?? undefined)
+              : data.trend?.classification
+          }
+          headerAction={
+            <button
+              type="button"
+              onClick={() => setIsPickerOpen(true)}
+              className="inline-flex h-11 min-w-56 items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 text-sm font-medium text-gray-800 transition hover:border-blue-400 hover:bg-blue-50"
+            >
+              <span className="truncate">{selectedStudentName}</span>
+              <FiChevronDown size={16} aria-hidden="true" />
+            </button>
+          }        />
       </div>
+
+      <StudentPickerModal
+        isOpen={isPickerOpen}
+        students={data.students}
+        selectedId={progressStudentId}
+        onSelect={setProgressStudentId}
+        onClose={() => setIsPickerOpen(false)}
+      />
     </div>
   );
 }

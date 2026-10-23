@@ -1,27 +1,24 @@
 // ── DOMAIN LAYER ── NO framework imports ──────────────────
 // Pure TypeScript entity — zero NestJS / TypeORM decorators here
 
-export enum UserRole {
-  STUDENT = "STUDENT",
-  TEACHER = "TEACHER",
-  ADMIN = "ADMIN",
-}
+import { Role, AuthProvider } from "@mentorapredict/shared-types";
 
-export type AuthProvider = "LOCAL" | "MICROSOFT";
+export { AuthProvider };
+export { Role as UserRole };
 
 export class UserEntity {
   constructor(
     public readonly id: string,
     public email: string,
     public passwordHash: string | null,
-    public role: UserRole,
+    public role: Role,
     public isActive: boolean,
     public isVerified: boolean,
     public readonly createdAt: Date,
     public updatedAt: Date,
     public firstName: string = "",
     public lastName: string = "",
-    public authProvider: AuthProvider = "LOCAL",
+    public authProvider: AuthProvider = AuthProvider.LOCAL,
   ) {}
 
   get fullName(): string {
@@ -41,7 +38,7 @@ export class UserEntity {
     this.updatedAt = new Date();
   }
 
-  changeRole(newRole: UserRole): void {
+  changeRole(newRole: Role): void {
     this.role = newRole;
     this.updatedAt = new Date();
   }
@@ -52,9 +49,9 @@ export class UserEntity {
   }
 
   isAdmin(): boolean {
-    return this.role === UserRole.ADMIN;
+    return this.role === Role.ADMIN;
   }
   isTeacher(): boolean {
-    return this.role === UserRole.TEACHER;
+    return this.role === Role.TEACHER;
   }
 }

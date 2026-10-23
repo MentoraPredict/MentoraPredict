@@ -28,6 +28,7 @@ export class UpdateCheckInUseCase {
       generalComprehension: dto.generalComprehension,
       topicResponses: dto.topicResponses,
       notes: dto.notes,
+      explainBetter: dto.explainBetter,
     });
 
     return this.checkInRepo.update(checkIn);

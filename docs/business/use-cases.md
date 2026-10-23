@@ -1,5 +1,7 @@
 # Use Cases
 
+> **Documento histórico.** Describe MentoraPredict cuando era un sistema universitario (facultades, carreras, créditos, escala 0–20). Esa estructura se retiró en la conversión a sistema de gestión escolar; el estado vigente está en [docs/erp-escolar/10-estado-de-implementacion.md](../erp-escolar/10-estado-de-implementacion.md).
+
 > Functional/narrative use cases by role and by cross-cutting flow. For the technical inventory of backend use-case classes (application layer), see each service's doc under [../backend/](../backend/), or the fully formalized IEEE-style specification of all 123 of them in [use-cases-technical-index.md](./use-cases-technical-index.md). For requirement IDs, see [functional-requirements.md](./functional-requirements.md).
 
 ## Actors
@@ -49,7 +51,7 @@
 ## UC-6: Teacher writes a qualitative observation
 
 **Actor**: TEACHER
-**Flow**: Teacher adds a free-text observation about a specific student (e.g. "shows improved participation this week"), tagged with a type. Observations are stored in MongoDB (`teacher_observations`) and can be listed per student — visible to the teacher and, transitively, usable as context by the AI prediction (informally referenced, not a strict dependency).
+**Flow**: Teacher adds a free-text observation about a specific student (e.g. "shows improved participation this week"), tagged with a type. Observations are stored in PostgreSQL (`teacher_observations`) and can be listed per student — visible to the teacher and, transitively, usable as context by the AI prediction (informally referenced, not a strict dependency).
 **Related**: RF-022.
 
 ## UC-7: Automatic risk recalculation after a grade or check-in change (system-driven)
@@ -66,7 +68,7 @@
 ## UC-8: Student requests an AI-generated prediction on demand
 
 **Actor**: STUDENT
-**Flow**: Student clicks "generate prediction" for a subject (or for the whole period). Backend checks a 1-hour cooldown (per student, and separately per student+subject); if allowed, fetches the current deterministic risk snapshot from analytics-service + academic context from academic-service, sends both to OpenAI, persists the result (Postgres for the rule-based prediction, MongoDB `prediction_logs` for the full audit record), and returns a natural-language summary + recommendation list.
+**Flow**: Student clicks "generate prediction" for a subject (or for the whole period). Backend checks a 1-hour cooldown (per student, and separately per student+subject); if allowed, fetches the current deterministic risk snapshot from analytics-service + academic context from academic-service, sends both to OpenAI, persists the result (Postgres `student_subject_predictions` for the rule-based prediction, Postgres `prediction_logs` for the full audit record), and returns a natural-language summary + recommendation list.
 **Alternate flow**: Cooldown not yet elapsed → request rejected, frontend shows time remaining.
 **Related**: RF-019, RF-020.
 

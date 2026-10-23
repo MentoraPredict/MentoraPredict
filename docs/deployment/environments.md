@@ -21,7 +21,7 @@ pnpm install
 # 2. Copy and fill environment templates
 cp infra/.env.example infra/.env
 # edit infra/.env — fill in at minimum: JWT keys (or generate below), OPENAI_API_KEY if testing predictions,
-# MONGO_URL (Atlas), SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY if testing image uploads
+# SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY if testing image uploads
 
 # 3. Generate a local JWT RS256 keypair (writes into infra/keys/)
 bash infra/kong/generate-kong-keys.sh
@@ -121,7 +121,7 @@ Names only — values are scoped per environment (`"QA enviroment"` / `"Prod Env
 |---|---|
 | DockerHub | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
 | EC2 access | `EC2_HOST`, `EC2_SSH_KEY` |
-| Database | `POSTGRES_*`, `REDIS_PASSWORD`, `MONGO_URL` |
+| Database | `POSTGRES_*`, `REDIS_PASSWORD` |
 | Auth | `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY` |
 | OAuth | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` |
 | AI | `OPENAI_API_KEY` |

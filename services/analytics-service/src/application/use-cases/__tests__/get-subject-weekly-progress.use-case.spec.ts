@@ -23,18 +23,23 @@ const mockAcademicClient = (): jest.Mocked<IAcademicServiceClient> => ({
   getEnrollmentsByStudent: jest.fn(),
   getEvaluationsBySubject: jest.fn(),
   getLatestCheckIn: jest.fn(),
+  getAttendanceRate: jest.fn(),
   getSubjectOwnership: jest.fn().mockResolvedValue({ isOwner: true }),
   getSubjectDetails: jest.fn(),
   getStudentsByTeacher: jest.fn(),
+  getPeriodDetails: jest.fn(),
 });
 
 describe('GetSubjectWeeklyProgressUseCase', () => {
-  it('returns weekly course averages for the owning teacher', async () => {
+  it('returns weekly course averages for the owning teacher, with no trend under 3 weeks', async () => {
     const metricsRepo = mockMetricsRepo();
     const academicClient = mockAcademicClient();
     const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
 
-    await expect(useCase.execute('subj-1', 'teacher-1', 'TEACHER')).resolves.toEqual(progress);
+    await expect(useCase.execute('subj-1', 'teacher-1', 'TEACHER')).resolves.toEqual({
+      data: progress,
+      trend: null,
+    });
     expect(academicClient.getSubjectOwnership).toHaveBeenCalledWith('teacher-1', 'subj-1');
     expect(metricsRepo.getWeeklyProgressBySubject).toHaveBeenCalledWith('subj-1');
   });
@@ -56,7 +61,51 @@ describe('GetSubjectWeeklyProgressUseCase', () => {
     const academicClient = mockAcademicClient();
     const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
 
-    await expect(useCase.execute('subj-1', 'admin-1', 'ADMIN')).resolves.toEqual(progress);
+    await expect(useCase.execute('subj-1', 'admin-1', 'ADMIN')).resolves.toEqual({
+      data: progress,
+      trend: null,
+    });
     expect(academicClient.getSubjectOwnership).not.toHaveBeenCalled();
+  });
+
+  it('returns one student\'s weekly evolution, oldest first, when studentId is given', async () => {
+    const metricsRepo = mockMetricsRepo();
+    metricsRepo.findByStudentSubjectPaginated.mockResolvedValue({
+      items: [
+        { academicYear: 2026, academicWeek: 2, averageGrade: 8 },
+        { academicYear: 2026, academicWeek: 1, averageGrade: null },
+      ] as never,
+      total: 2,
+    });
+    const academicClient = mockAcademicClient();
+    const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
+
+    const result = await useCase.execute('subj-1', 'teacher-1', 'TEACHER', 'student-1');
+
+    expect(result.data).toEqual([
+      { academicYear: 2026, academicWeek: 1, averageGrade: 0 },
+      { academicYear: 2026, academicWeek: 2, averageGrade: 8 },
+    ]);
+    expect(academicClient.getSubjectOwnership).toHaveBeenCalledWith('teacher-1', 'subj-1');
+    expect(metricsRepo.getWeeklyProgressBySubject).not.toHaveBeenCalled();
+  });
+
+  it('computes an ASCENDING trend once at least 3 weeks are available', async () => {
+    const metricsRepo = mockMetricsRepo();
+    const risingProgress = [
+      { academicYear: 2026, academicWeek: 1, averageGrade: 10 },
+      { academicYear: 2026, academicWeek: 2, averageGrade: 12 },
+      { academicYear: 2026, academicWeek: 3, averageGrade: 14 },
+    ];
+    metricsRepo.getWeeklyProgressBySubject.mockResolvedValue(risingProgress);
+    const academicClient = mockAcademicClient();
+    const useCase = new GetSubjectWeeklyProgressUseCase(metricsRepo, academicClient);
+
+    const result = await useCase.execute('subj-1', 'teacher-1', 'TEACHER');
+
+    expect(result.data).toEqual(risingProgress);
+    expect(result.trend).not.toBeNull();
+    expect(result.trend?.classification).toBe('ASCENDING');
+    expect(result.trend?.weeksAnalyzed).toBe(3);
   });
 });

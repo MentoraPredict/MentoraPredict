@@ -83,7 +83,7 @@ function getStudentMeta(student: AppUser | CourseStudent) {
     return `Promedio ${formatAverage(student.average)}`;
   }
 
-  return [student.facultyName, student.careerName, student.semester].filter(Boolean).join(' - ') || 'Activo';
+  return [student.semester].filter(Boolean).join(' - ') || 'Activo';
 }
 
 function getRiskLabel(riskLevel?: string | null) {
@@ -308,8 +308,7 @@ function AdminDashboard({ data }: { data: AdminDashboardData }) {
             <View key={course.id} style={styles.courseCard}>
               <CourseHeader course={course} />
               <Text style={styles.itemMeta}>
-                {[course.facultyName, course.careerName].filter(Boolean).join(' - ') ||
-                  'Contexto academico pendiente'}
+                {course.semester || 'Periodo pendiente'}
               </Text>
             </View>
           )}

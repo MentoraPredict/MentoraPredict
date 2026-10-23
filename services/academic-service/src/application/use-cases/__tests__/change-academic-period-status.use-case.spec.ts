@@ -9,6 +9,7 @@ const mockRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
   findAll: jest.fn(),
   findByCode: jest.fn(),
   findByName: jest.fn(),
+  findBySchoolYear: jest.fn(),
   countActive: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),

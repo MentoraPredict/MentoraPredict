@@ -30,8 +30,6 @@ interface UserResponse {
   isActive?: boolean;
   is_active?: boolean;
   status?: 'ACTIVE' | 'INACTIVE';
-  careerName?: string;
-  facultyName?: string;
   semester?: string;
 }
 
@@ -51,14 +49,8 @@ interface SubjectResponse {
   enrolled_count?: number;
   teacherName?: string | null;
   teacher_name?: string | null;
-  careerName?: string | null;
-  career_name?: string | null;
-  facultyName?: string | null;
-  faculty_name?: string | null;
   periodName?: string;
   period?: { name?: string; code?: string };
-  career?: { name?: string };
-  faculty?: { name?: string };
   enrolledAt?: string;
 }
 
@@ -114,8 +106,6 @@ function toUser(user: UserResponse): AppUser {
     lastName: user.lastName ?? user.last_name,
     role: user.role ?? 'STUDENT',
     isActive: user.isActive ?? user.is_active ?? user.status !== 'INACTIVE',
-    careerName: user.careerName,
-    facultyName: user.facultyName,
     semester: user.semester,
   };
 }
@@ -131,8 +121,6 @@ function toCourse(subject: SubjectResponse): CourseSummary {
     status: subject.status,
     semester: subject.periodName ?? subject.period?.name ?? subject.period?.code,
     teacherName: subject.teacherName ?? subject.teacher_name,
-    careerName: subject.careerName ?? subject.career_name ?? subject.career?.name,
-    facultyName: subject.facultyName ?? subject.faculty_name ?? subject.faculty?.name,
     enrolledCount: subject.enrolledCount ?? subject.enrolled_count,
     currentAverage: subject.currentAverage ?? subject.current_average ?? null,
     riskLevel: subject.riskLevel ?? subject.risk_level ?? 'UNKNOWN',

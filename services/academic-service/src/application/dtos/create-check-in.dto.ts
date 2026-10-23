@@ -9,6 +9,7 @@ import {
   Max,
   Min,
   ValidateNested,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EmotionalState } from '../../domain/entities/weekly-check-in.entity';
@@ -53,4 +54,10 @@ export class CreateCheckInDto {
   topicResponses?: TopicResponseDto[];
 
   @ApiProperty({ required: false }) @IsOptional() @IsString() notes?: string;
+
+  @ApiProperty({ required: false, description: "Qué parte de la materia le gustaría que se explique mejor" })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  explainBetter?: string;
 }

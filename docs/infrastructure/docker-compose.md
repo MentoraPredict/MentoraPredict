@@ -32,9 +32,9 @@ Volumes: `postgres_data` (mp_dev_postgres_data), `redis_data` (mp_dev_redis_data
 | konga (profile `tools`) | pantsel/konga:0.14.9 | 0.25 / 256M | 1337 | admin UI, `depends_on: kong` (healthy) |
 | auth-service | build | 0.5 / 384M | 3001:3001 | Microsoft OAuth env vars, JWT keys, healthcheck `wget /health`, start_period 90s |
 | user-service | build | 0.25 / 384M | 3002:3002 | Supabase storage envs, uploads volume |
-| academic-service | build | 0.35 / 512M | 3003:3003 | Mongo, `INTERNAL_API_KEY`, uploads volume |
-| analytics-service | build | 0.35 / 640M | 3004:3004 | Mongo, `RISK_HIGH/CRITICAL_THRESHOLD`, `INTERNAL_API_KEY` |
-| prediction-service | build | 0.35 / 512M | 3006:3006 | OpenAI keys; only Postgres+Mongo, no Redis |
+| academic-service | build | 0.35 / 512M | 3003:3003 | `INTERNAL_API_KEY`, uploads volume |
+| analytics-service | build | 0.35 / 640M | 3004:3004 | `RISK_HIGH/CRITICAL_THRESHOLD`, `INTERNAL_API_KEY` |
+| prediction-service | build | 0.35 / 512M | 3006:3006 | OpenAI keys; only Postgres, no Redis |
 | web | build (apps/web/Dockerfile) | 0.20 / 192M | `${WEB_PORT:-3000}:80` | |
 | landing | build (apps/landing/Dockerfile) | 0.25 / 128M | `${LANDING_PORT:-4321}:80` | |
 | seed-loader | build (database/Dockerfile.seed) | 0.25 / 256M | — | `restart: "no"`, `depends_on`: all 4 core services healthy + postgres |

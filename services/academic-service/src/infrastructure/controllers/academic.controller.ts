@@ -60,16 +60,6 @@ import { EnrollStudentDto } from "../../application/dtos/enroll-student.dto";
 import { CreateEvaluationDto } from "../../application/dtos/create-evaluation.dto";
 import { AssignTeacherDto } from "../../application/dtos/assign-teacher.dto";
 
-// Faculty use-cases
-import { CreateFacultyUseCase } from "../../application/use-cases/create-faculty.use-case";
-import { GetFacultyUseCase } from "../../application/use-cases/get-faculty.use-case";
-import { ListFacultiesUseCase } from "../../application/use-cases/list-faculties.use-case";
-import { UpdateFacultyUseCase } from "../../application/use-cases/update-faculty.use-case";
-import { ChangeFacultyStatusUseCase } from "../../application/use-cases/change-faculty-status.use-case";
-import { DeleteFacultyUseCase } from "../../application/use-cases/delete-faculty.use-case";
-import { CreateFacultyDto } from "../../application/dtos/create-faculty.dto";
-import { UpdateFacultyDto } from "../../application/dtos/update-faculty.dto";
-import { ChangeFacultyStatusDto } from "../../application/dtos/change-faculty-status.dto";
 
 // Academic Period use-cases
 import { CreateAcademicPeriodUseCase } from "../../application/use-cases/create-academic-period.use-case";
@@ -79,20 +69,31 @@ import { GetActivePeriodUseCase } from "../../application/use-cases/get-active-p
 import { UpdateAcademicPeriodUseCase } from "../../application/use-cases/update-academic-period.use-case";
 import { ChangeAcademicPeriodStatusUseCase } from "../../application/use-cases/change-academic-period-status.use-case";
 import { DeleteAcademicPeriodUseCase } from "../../application/use-cases/delete-academic-period.use-case";
+import { CreateSchoolYearUseCase } from "../../application/use-cases/create-school-year.use-case";
+import {
+  ListSchoolYearsUseCase,
+  GetSchoolYearUseCase,
+  GetCurrentSchoolYearUseCase,
+} from "../../application/use-cases/list-school-years.use-case";
+import {
+  UpdateSchoolYearUseCase,
+  ChangeSchoolYearStatusUseCase,
+  DeleteSchoolYearUseCase,
+} from "../../application/use-cases/manage-school-year.use-case";
+import {
+  CreateSchoolYearDto,
+  UpdateSchoolYearDto,
+  ChangeSchoolYearStatusDto,
+} from "../../application/dtos/create-school-year.dto";
 import { CreateAcademicPeriodDto } from "../../application/dtos/create-academic-period.dto";
 import { UpdateAcademicPeriodDto } from "../../application/dtos/update-academic-period.dto";
 import { ChangeAcademicPeriodStatusDto } from "../../application/dtos/change-academic-period-status.dto";
 
-// Career use-cases
-import { CreateCareerUseCase } from "../../application/use-cases/create-career.use-case";
-import { GetCareerUseCase } from "../../application/use-cases/get-career.use-case";
-import { ListCareersUseCase } from "../../application/use-cases/list-careers.use-case";
-import { UpdateCareerUseCase } from "../../application/use-cases/update-career.use-case";
-import { ChangeCareerStatusUseCase } from "../../application/use-cases/change-career-status.use-case";
-import { DeleteCareerUseCase } from "../../application/use-cases/delete-career.use-case";
-import { CreateCareerDto } from "../../application/dtos/create-career.dto";
-import { UpdateCareerDto } from "../../application/dtos/update-career.dto";
-import { ChangeCareerStatusDto } from "../../application/dtos/change-career-status.dto";
+
+// Subject catalog use-cases
+import { CreateSubjectCatalogUseCase } from "../../application/use-cases/create-subject-catalog.use-case";
+import { ListSubjectCatalogUseCase } from "../../application/use-cases/list-subject-catalog.use-case";
+import { CreateSubjectCatalogDto } from "../../application/dtos/create-subject-catalog.dto";
 
 // Subject use-cases
 import { CreateSubjectUseCase } from "../../application/use-cases/create-subject.use-case";
@@ -138,7 +139,18 @@ import { UpsertCheckInUseCase } from "../../application/use-cases/upsert-check-i
 import { UpdateCheckInUseCase } from "../../application/use-cases/update-check-in.use-case";
 import { ListCheckInsUseCase } from "../../application/use-cases/list-check-ins.use-case";
 import { GetCheckInsSummaryUseCase } from "../../application/use-cases/get-check-ins-summary.use-case";
+import { ListClassSessionsUseCase } from "../../application/use-cases/list-class-sessions.use-case";
+import { RegisterSessionAttendanceUseCase } from "../../application/use-cases/register-session-attendance.use-case";
+import { DefineSubjectScheduleUseCase } from "../../application/use-cases/define-subject-schedule.use-case";
+import { CreateSurveyQuestionUseCase } from "../../application/use-cases/create-survey-question.use-case";
+import { ListSurveyQuestionsUseCase } from "../../application/use-cases/list-survey-questions.use-case";
+import { SubmitSurveyResponseUseCase } from "../../application/use-cases/submit-survey-response.use-case";
+import { GetSurveyResponseHistoryUseCase } from "../../application/use-cases/get-survey-response-history.use-case";
 import { CreateCheckInDto } from "../../application/dtos/create-check-in.dto";
+import { RegisterSessionAttendanceDto } from "../../application/dtos/register-session-attendance.dto";
+import { DefineSubjectScheduleDto } from "../../application/dtos/define-subject-schedule.dto";
+import { CreateSurveyQuestionDto } from "../../application/dtos/create-survey-question.dto";
+import { SubmitSurveyResponseDto } from "../../application/dtos/submit-survey-response.dto";
 import { UpdateCheckInDto } from "../../application/dtos/update-check-in.dto";
 
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
@@ -158,13 +170,6 @@ export class AcademicController {
     private readonly createEvaluationUC: CreateEvaluationUseCase,
     private readonly assignTeacherUC: AssignTeacherUseCase,
     private readonly importGradesUC: ImportGradesUseCase,
-    // Faculty use-cases
-    private readonly createFacultyUC: CreateFacultyUseCase,
-    private readonly getFacultyUC: GetFacultyUseCase,
-    private readonly listFacultiesUC: ListFacultiesUseCase,
-    private readonly updateFacultyUC: UpdateFacultyUseCase,
-    private readonly changeFacultyStatusUC: ChangeFacultyStatusUseCase,
-    private readonly deleteFacultyUC: DeleteFacultyUseCase,
     // Academic Period use-cases
     private readonly createAcademicPeriodUC: CreateAcademicPeriodUseCase,
     private readonly getAcademicPeriodUC: GetAcademicPeriodUseCase,
@@ -173,13 +178,17 @@ export class AcademicController {
     private readonly updateAcademicPeriodUC: UpdateAcademicPeriodUseCase,
     private readonly changeAcademicPeriodStatusUC: ChangeAcademicPeriodStatusUseCase,
     private readonly deleteAcademicPeriodUC: DeleteAcademicPeriodUseCase,
-    // Career use-cases
-    private readonly createCareerUC: CreateCareerUseCase,
-    private readonly getCareerUC: GetCareerUseCase,
-    private readonly listCareersUC: ListCareersUseCase,
-    private readonly updateCareerUC: UpdateCareerUseCase,
-    private readonly changeCareerStatusUC: ChangeCareerStatusUseCase,
-    private readonly deleteCareerUC: DeleteCareerUseCase,
+    // School year use-cases
+    private readonly createSchoolYearUC: CreateSchoolYearUseCase,
+    private readonly listSchoolYearsUC: ListSchoolYearsUseCase,
+    private readonly getSchoolYearUC: GetSchoolYearUseCase,
+    private readonly getCurrentSchoolYearUC: GetCurrentSchoolYearUseCase,
+    private readonly updateSchoolYearUC: UpdateSchoolYearUseCase,
+    private readonly changeSchoolYearStatusUC: ChangeSchoolYearStatusUseCase,
+    private readonly deleteSchoolYearUC: DeleteSchoolYearUseCase,
+    // Subject catalog use-cases
+    private readonly createSubjectCatalogUC: CreateSubjectCatalogUseCase,
+    private readonly listSubjectCatalogUC: ListSubjectCatalogUseCase,
     // Subject use-cases
     private readonly createSubjectUC: CreateSubjectUseCase,
     private readonly getSubjectUC: GetSubjectUseCase,
@@ -207,6 +216,13 @@ export class AcademicController {
     private readonly updateCheckInUC: UpdateCheckInUseCase,
     private readonly listCheckInsUC: ListCheckInsUseCase,
     private readonly getCheckInsSummaryUC: GetCheckInsSummaryUseCase,
+    private readonly listClassSessionsUC: ListClassSessionsUseCase,
+    private readonly registerSessionAttendanceUC: RegisterSessionAttendanceUseCase,
+    private readonly defineSubjectScheduleUC: DefineSubjectScheduleUseCase,
+    private readonly createSurveyQuestionUC: CreateSurveyQuestionUseCase,
+    private readonly listSurveyQuestionsUC: ListSurveyQuestionsUseCase,
+    private readonly submitSurveyResponseUC: SubmitSurveyResponseUseCase,
+    private readonly getSurveyResponseHistoryUC: GetSurveyResponseHistoryUseCase,
     // File storage (Phase 10)
     private readonly uploadSubjectImageUC: UploadSubjectImageUseCase,
     private readonly deleteSubjectImageUC: DeleteSubjectImageUseCase,
@@ -222,8 +238,8 @@ export class AcademicController {
   // ─── Enrollments ──────────────────────────────────────────────────────────────
 
   @Post("enrollments")
-  @Roles("TEACHER", "ADMIN")
-  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (TEACHER: own courses only; ADMIN: any course)" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "RF-007: Enroll a student in a subject (ADMIN only; teachers no longer manage enrollment)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 409, description: "Already enrolled or no capacity" })
@@ -259,9 +275,9 @@ export class AcademicController {
   }
 
   @Post("subjects/:subjectId/enrollments/batch")
-  @Roles("TEACHER", "ADMIN")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Batch enroll multiple students in a subject (TEACHER: own courses only; ADMIN: any course)" })
+  @ApiOperation({ summary: "Batch enroll multiple students in a subject (ADMIN only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403, description: "Teacher does not own this course" })
   @ApiResponse({ status: 404 })
@@ -277,8 +293,8 @@ export class AcademicController {
   }
 
   @Patch("enrollments/:enrollmentId/status")
-  @Roles("TEACHER", "ADMIN")
-  @ApiOperation({ summary: "Change enrollment status (TEACHER: own courses only)" })
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Change enrollment status (ADMIN only)" })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 403 })
   @ApiResponse({ status: 404 })
@@ -392,6 +408,58 @@ export class AcademicController {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
     return this.getCheckInsSummaryUC.execute(subjectId, teacherId);
+  }
+
+  // ─── Class schedule / sessions / attendance (Fase B — docs/database/database-update-plan.md §5.2) ─
+
+  @Post("subjects/:subjectId/schedule")
+  @Roles("TEACHER", "ADMIN")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Define a subject's weekly schedule (day+time slots) and generate its class sessions for the active period" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409, description: "Schedule already defined for this subject" })
+  async defineSubjectSchedule(
+    @Param("subjectId") subjectId: string,
+    @Body() dto: DefineSubjectScheduleDto,
+    @Req() req: JwtRequest,
+  ) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    await this.defineSubjectScheduleUC.execute(subjectId, dto.slots, callerId, callerRole);
+  }
+
+  @Get("subjects/:subjectId/sessions")
+  @Roles("TEACHER", "ADMIN")
+  @ApiOperation({ summary: "List a subject's class sessions (one per scheduled day, per week, of the active period)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  async listClassSessions(@Param("subjectId") subjectId: string, @Req() req: JwtRequest) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    return this.listClassSessionsUC.execute(subjectId, callerId, callerRole);
+  }
+
+  @Post("subjects/:subjectId/sessions/:sessionId/attendance")
+  @Roles("TEACHER", "ADMIN")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Teacher registers/corrects attendance for a session (prevails over student self-report)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 403, description: "Teacher does not own this course" })
+  @ApiResponse({ status: 404 })
+  async registerSessionAttendance(
+    @Param("subjectId") subjectId: string,
+    @Param("sessionId") sessionId: string,
+    @Body() dto: RegisterSessionAttendanceDto,
+    @Req() req: JwtRequest,
+  ) {
+    const callerId = req.user?.sub;
+    const callerRole = req.user?.role;
+    if (!callerId || !callerRole) throw new UnauthorizedException("Missing caller identity");
+    await this.registerSessionAttendanceUC.execute(subjectId, sessionId, dto.records, callerId, callerRole);
   }
 
   @Get("enrollments")
@@ -660,63 +728,81 @@ export class AcademicController {
     return this.importGradesUC.execute(file.buffer, registeredBy);
   }
 
-  // ─── Faculties ───────────────────────────────────────────────────────────────
+  // ─── School years (año lectivo + periodos de calificación) ───────────────────
 
-  @Get("faculties")
-  @ApiOperation({ summary: "List all faculties" })
+  @Get("school-years")
+  @ApiOperation({ summary: "List school years with their grading periods" })
   @ApiResponse({ status: 200 })
-  async listFaculties() {
-    return this.listFacultiesUC.execute();
+  async listSchoolYears() {
+    return this.listSchoolYearsUC.execute();
   }
 
-  @Get("faculties/:id")
-  @ApiOperation({ summary: "Get faculty by ID" })
+  @Get("school-years/current")
+  @ApiOperation({
+    summary: "Active school year; current period is derived from today's date",
+  })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 404 })
-  async getFaculty(@Param("id") id: string) {
-    return this.getFacultyUC.execute(id);
+  async getCurrentSchoolYear() {
+    return this.getCurrentSchoolYearUC.execute();
   }
 
-  @Post("faculties")
+  @Get("school-years/:id")
+  @ApiOperation({ summary: "Get a school year with its grading periods" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404 })
+  async getSchoolYear(@Param("id") id: string) {
+    return this.getSchoolYearUC.execute(id);
+  }
+
+  @Post("school-years")
   @Roles("ADMIN")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new faculty (ADMIN only)" })
+  @ApiOperation({
+    summary:
+      "Create a school year and generate its grading periods (ADMIN only)",
+  })
   @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400 })
   @ApiResponse({ status: 409 })
-  async createFaculty(@Body() dto: CreateFacultyDto) {
-    return this.createFacultyUC.execute(dto);
+  async createSchoolYear(@Body() dto: CreateSchoolYearDto) {
+    return this.createSchoolYearUC.execute(dto);
   }
 
-  @Put("faculties/:id")
+  @Put("school-years/:id")
   @Roles("ADMIN")
-  @ApiOperation({ summary: "Update faculty data (ADMIN only)" })
+  @ApiOperation({ summary: "Update school year dates and settings (ADMIN only)" })
   @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async updateFaculty(@Param("id") id: string, @Body() dto: UpdateFacultyDto) {
-    return this.updateFacultyUC.execute(id, dto);
-  }
-
-  @Patch("faculties/:id/status")
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "Change faculty status (ADMIN only)" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async changeFacultyStatus(
-    @Param("id") id: string,
-    @Body() dto: ChangeFacultyStatusDto,
-  ) {
-    return this.changeFacultyStatusUC.execute(id, dto.status);
-  }
-
-  @Delete("faculties/:id")
-  @Roles("ADMIN")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a faculty (ADMIN only)" })
-  @ApiResponse({ status: 204 })
   @ApiResponse({ status: 400 })
   @ApiResponse({ status: 404 })
-  async deleteFaculty(@Param("id") id: string) {
-    return this.deleteFacultyUC.execute(id);
+  async updateSchoolYear(
+    @Param("id") id: string,
+    @Body() dto: UpdateSchoolYearDto,
+  ) {
+    return this.updateSchoolYearUC.execute(id, dto);
+  }
+
+  @Patch("school-years/:id/status")
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "Change school year status (ADMIN only)" })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 409 })
+  async changeSchoolYearStatus(
+    @Param("id") id: string,
+    @Body() dto: ChangeSchoolYearStatusDto,
+  ) {
+    return this.changeSchoolYearStatusUC.execute(id, dto.status);
+  }
+
+  @Delete("school-years/:id")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete a planned school year (ADMIN only)" })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 404 })
+  @ApiResponse({ status: 409 })
+  async deleteSchoolYear(@Param("id") id: string) {
+    return this.deleteSchoolYearUC.execute(id);
   }
 
   // ─── Academic Periods ────────────────────────────────────────────────────────
@@ -790,64 +876,24 @@ export class AcademicController {
     return this.deleteAcademicPeriodUC.execute(id);
   }
 
-  // ─── Careers ─────────────────────────────────────────────────────────────────
+  // ─── Subject catalog (Fase A — docs/database/database-update-plan.md §5.1) ─
 
-  @Get("careers")
-  @ApiOperation({ summary: "List all careers" })
+  @Get("subject-catalog")
+  @ApiOperation({ summary: "List subject catalog entries (materias, independientes del período)" })
   @ApiResponse({ status: 200 })
-  async listCareers(@Query("facultyId") facultyId?: string) {
-    return this.listCareersUC.execute(facultyId);
+  async listSubjectCatalog() {
+    return this.listSubjectCatalogUC.execute();
   }
 
-  @Get("careers/:id")
-  @ApiOperation({ summary: "Get career by ID" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async getCareer(@Param("id") id: string) {
-    return this.getCareerUC.execute(id);
-  }
-
-  @Post("careers")
+  @Post("subject-catalog")
   @Roles("ADMIN")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create a new career (ADMIN only)" })
+  @ApiOperation({ summary: "Create a new subject catalog entry (ADMIN only)" })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
-  async createCareer(@Body() dto: CreateCareerDto) {
-    return this.createCareerUC.execute(dto);
-  }
-
-  @Put("careers/:id")
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "Update career data (ADMIN only)" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async updateCareer(@Param("id") id: string, @Body() dto: UpdateCareerDto) {
-    return this.updateCareerUC.execute(id, dto);
-  }
-
-  @Patch("careers/:id/status")
-  @Roles("ADMIN")
-  @ApiOperation({ summary: "Change career status (ADMIN only)" })
-  @ApiResponse({ status: 200 })
-  @ApiResponse({ status: 404 })
-  async changeCareerStatus(
-    @Param("id") id: string,
-    @Body() dto: ChangeCareerStatusDto,
-  ) {
-    return this.changeCareerStatusUC.execute(id, dto.status);
-  }
-
-  @Delete("careers/:id")
-  @Roles("ADMIN")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete a career (ADMIN only)" })
-  @ApiResponse({ status: 204 })
-  @ApiResponse({ status: 400 })
-  @ApiResponse({ status: 404 })
-  async deleteCareer(@Param("id") id: string) {
-    return this.deleteCareerUC.execute(id);
+  async createSubjectCatalog(@Body() dto: CreateSubjectCatalogDto) {
+    return this.createSubjectCatalogUC.execute(dto);
   }
 
   // ─── Subjects ─────────────────────────────────────────────────────────────
@@ -855,11 +901,8 @@ export class AcademicController {
   @Get("subjects")
   @ApiOperation({ summary: "List subjects" })
   @ApiResponse({ status: 200 })
-  async listSubjects(
-    @Query("careerId") careerId?: string,
-    @Query("periodId") periodId?: string,
-  ) {
-    return this.listSubjectsUC.execute({ careerId, periodId });
+  async listSubjects(@Query("periodId") periodId?: string) {
+    return this.listSubjectsUC.execute({ periodId });
   }
 
   @Get("subjects/:id")
@@ -871,11 +914,11 @@ export class AcademicController {
   }
 
   @Post("subjects")
-  @Roles("TEACHER", "ADMIN")
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary:
-      "Create a new subject (TEACHER creates their own; ADMIN must assign a teacherId)",
+      "Create a new subject (ADMIN only; the admin assigns the teacherId)",
   })
   @ApiResponse({ status: 201 })
   @ApiResponse({ status: 400 })
@@ -1069,5 +1112,50 @@ export class AcademicController {
     const teacherId = req.user?.sub;
     if (!teacherId) throw new UnauthorizedException("Missing teacher identity");
     return this.deleteTopicFileUC.execute(topicId, teacherId);
+  }
+
+  // ─── Surveys (Fase D — docs/database/database-update-plan.md §5.4) ────────
+
+  @Get("surveys/:surveyCode/questions")
+  @ApiOperation({ summary: "List a survey's active question catalog (any authenticated user)" })
+  @ApiResponse({ status: 200 })
+  async listSurveyQuestions(@Param("surveyCode") surveyCode: string) {
+    return this.listSurveyQuestionsUC.execute(surveyCode);
+  }
+
+  @Post("surveys/questions")
+  @Roles("ADMIN")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Add a question to the survey catalog (ADMIN only)" })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 409 })
+  async createSurveyQuestion(@Body() dto: CreateSurveyQuestionDto) {
+    return this.createSurveyQuestionUC.execute(dto);
+  }
+
+  @Post("students/me/survey-responses")
+  @Roles("STUDENT")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary:
+      "Submit a survey response (STUDENT) — repeatable, every submission is a new row, never overwrites a previous one",
+  })
+  @ApiResponse({ status: 201 })
+  @ApiResponse({ status: 400 })
+  @ApiResponse({ status: 404 })
+  async submitSurveyResponse(@Body() dto: SubmitSurveyResponseDto, @Req() req: JwtRequest) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.submitSurveyResponseUC.execute(studentId, dto);
+  }
+
+  @Get("students/me/survey-responses")
+  @Roles("STUDENT")
+  @ApiOperation({ summary: "Get the authenticated student's own survey response history" })
+  @ApiResponse({ status: 200 })
+  async getMySurveyResponses(@Req() req: JwtRequest) {
+    const studentId = req.user?.sub;
+    if (!studentId) throw new UnauthorizedException("Missing student identity");
+    return this.getSurveyResponseHistoryUC.execute(studentId);
   }
 }

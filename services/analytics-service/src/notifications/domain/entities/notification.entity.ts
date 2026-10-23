@@ -1,11 +1,23 @@
-export type NotificationRecipientRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
+export type NotificationRecipientRole =
+  | 'STUDENT'
+  | 'TEACHER'
+  | 'ADMIN'
+  | 'GUARDIAN'
+  | 'SECRETARY'
+  | 'DECE'
+  | 'INSPECTOR';
 // Open enum — extend as new notification-worthy events are wired up.
 export type NotificationType =
   | 'RISK_ESCALATION'
   | 'ENROLLMENT_CREATED'
   | 'ENROLLMENT_WITHDRAWN'
   | 'COURSE_CREATED'
-  | 'ROLE_CHANGED';
+  | 'ROLE_CHANGED'
+  | 'ATTENDANCE_WARNING'
+  | 'ATTENDANCE_EXCEEDED'
+  | 'JUSTIFICATION_REQUESTED'
+  | 'JUSTIFICATION_RESOLVED'
+  | 'EARLY_ALERT';
 export type NotificationStatus = 'UNREAD' | 'READ';
 
 export class NotificationEntity {

@@ -39,8 +39,7 @@ const mockSubjectRepo = (): jest.Mocked<ISubjectRepository> => ({
   findById: jest.fn(),
   findByAcademicPeriodId: jest.fn(),
   findAll: jest.fn(),
-  findByCode: jest.fn(),
-  findByNameAndPeriod: jest.fn(),
+  findByCatalogAndPeriod: jest.fn(),
   hasAcademicRecords: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),
@@ -53,6 +52,7 @@ const mockPeriodRepo = (): jest.Mocked<IAcademicPeriodRepository> => ({
   findAll: jest.fn(),
   findByCode: jest.fn(),
   findByName: jest.fn(),
+  findBySchoolYear: jest.fn(),
   countActive: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),
@@ -66,7 +66,7 @@ const mockAnalyticsClient = (): jest.Mocked<IAnalyticsClientPort> => ({
 });
 
 const makeSubject = () =>
-  new SubjectEntity('subj-1', 'Math', '', 'MAT101', 3, 'career-1', 'period-1', 30, 'teacher-1', true, new Date(), new Date());
+  new SubjectEntity('subj-1', 'Math', '', 'MAT101', 'period-1', 30, 'teacher-1', true, new Date(), new Date());
 
 const makePeriod = () =>
   new AcademicPeriodEntity('period-1', '2025-1', '2025-1', '', new Date(), new Date(), 'ACTIVE', 'SEMESTER', new Date(), new Date());

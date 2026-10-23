@@ -10,7 +10,8 @@ export interface AppUser {
     createdAt?: string;
     updatedAt?: string;
     avatarUrl?: string | null;
-    facultyName?: string;
-    careerName?: string;
+    cedula?: string | null;
+    bio?: string | null;
+    deletedAt?: string | null;
     semester?: string;
 }

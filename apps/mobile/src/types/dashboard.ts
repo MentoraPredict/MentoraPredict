@@ -4,8 +4,6 @@ export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
 export type NotificationStatus = 'UNREAD' | 'READ';
 
 export interface AppUser extends SessionUser {
-  careerName?: string;
-  facultyName?: string;
   semester?: string;
 }
 
@@ -16,8 +14,6 @@ export interface CourseSummary {
   description?: string | null;
   semester?: string;
   teacherName?: string | null;
-  careerName?: string | null;
-  facultyName?: string | null;
   enrolledCount?: number;
   currentAverage?: number | null;
   riskLevel?: RiskLevel | null;

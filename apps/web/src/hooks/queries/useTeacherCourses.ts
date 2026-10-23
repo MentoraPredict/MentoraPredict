@@ -10,8 +10,6 @@ import {
   updateTeacherCourse,
   uploadTeacherCourseImage,
   deleteTeacherCourseImage,
-  type CourseCareerOption,
-  type CourseFacultyOption,
   type CoursePeriodOption,
   type CreateTeacherCoursePayload,
   type UpdateTeacherCoursePayload,
@@ -143,8 +141,6 @@ export default function useTeacherCourses(
   });
 
   const courses = coursesQuery.data ?? [];
-  const faculties = creationOptionsQuery.data?.faculties ?? [];
-  const careers = creationOptionsQuery.data?.careers ?? [];
   const periods = creationOptionsQuery.data?.periods ?? [];
   const students = studentsQuery.data ?? [];
 
@@ -158,8 +154,6 @@ export default function useTeacherCourses(
 
   return {
     courses,
-    faculties,
-    careers,
     periods,
     students,
     isLoading: coursesQuery.isLoading,

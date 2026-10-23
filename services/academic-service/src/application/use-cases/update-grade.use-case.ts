@@ -4,18 +4,24 @@ import { GradeEntity } from '../../domain/entities/grade.entity';
 import { GradeHistoryEntity } from '../../domain/entities/grade-history.entity';
 import { IGradeRepository } from '../ports/output/i-grade.repository';
 import { IGradeHistoryRepository } from '../ports/output/i-grade-history.repository';
+import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { UpdateGradeDto } from '../dtos/update-grade.dto';
+import { assertLegacyCourse } from './school-course.guard';
 
 @Injectable()
 export class UpdateGradeUseCase {
   constructor(
     @Inject('IGradeRepository')        private readonly gradeRepo: IGradeRepository,
     @Inject('IGradeHistoryRepository') private readonly historyRepo: IGradeHistoryRepository,
+    @Inject('ISubjectRepository')      private readonly subjectRepo: ISubjectRepository,
   ) {}
 
   async execute(gradeId: string, dto: UpdateGradeDto, changedBy: string): Promise<GradeEntity> {
     const grade = await this.gradeRepo.findById(gradeId);
     if (!grade) throw new NotFoundException('Grade not found');
+
+    const subject = await this.subjectRepo.findById(grade.subjectId);
+    if (subject) assertLegacyCourse(subject);
 
     if (dto.grade < 0 || dto.grade > 10) {
       throw new BadRequestException('Grade must be between 0 and 10');

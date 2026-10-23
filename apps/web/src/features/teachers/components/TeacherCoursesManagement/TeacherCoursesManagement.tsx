@@ -1,52 +1,63 @@
 import { useEffect, useMemo, useState } from "react";
+import { FiGrid, FiList } from "react-icons/fi";
 
 import Container from "@/components/atoms/Container";
-import Modal from "@/components/molecules/Modal";
+import Heading from "@/components/atoms/Heading";
+import CollapsibleGroup from "@/components/molecules/CollapsibleGroup";
+import ListToolbar from "@/components/molecules/ListToolbar";
 
 import CourseGrid from "@/features/courses/components/CourseGrid";
-import CreateCourseForm from "@/features/teachers/components/CreateCourseForm";
-import TeacherCoursesEmptyState from "@/features/teachers/components/TeacherCoursesEmptyState";
-import TeacherCoursesHeader from "@/features/teachers/components/TeacherCoursesHeader/TeacherCoursesHeader";
+import TeacherCoursesTable from "@/features/teachers/components/TeacherCoursesTable";
 import useTeacherCourses from "@/features/teachers/hooks/useTeacherCourses";
 import useOnlineStatus from "@/hooks/useOnlineStatus";
 import { getSubjectMetricsSummary } from "@/services/course-analytics.service";
+
+import DashboardMetricCard, {
+  type DashboardMetric,
+} from "@/features/dashboard/components/DashboardMetricCard";
+import { computeTeacherRealMetrics } from "@/features/dashboard/utils/computeTeacherRealMetrics";
+import { getAverageTone, getCountTone } from "@/features/dashboard/utils/metricTone";
+import {
+  courseRiskRank,
+  getRiskPresentation,
+} from "@/features/dashboard/utils/riskLevelPresentation";
 
 import Text from "@/components/atoms/Text";
 
 import { useNavigate } from "react-router-dom";
 import { getTeacherCoursePerformancePath } from "@/routes/paths";
+import { MAX_GRADE } from "@/utils/gradeScale";
+import type { Course } from "@/types/course";
+import type { RiskLevelOrUnknown } from "@/types/risk";
+
+type CoursesView = "cards" | "list";
+type CoursesGroupBy = "" | "risk" | "period";
+
+const RISK_FILTER_LEVELS: RiskLevelOrUnknown[] = [
+  "CRITICAL",
+  "HIGH",
+  "MEDIUM",
+  "LOW",
+  "UNKNOWN",
+];
+
+const VIEW_OPTIONS: { value: CoursesView; label: string; icon: typeof FiGrid }[] = [
+  { value: "cards", label: "Tarjetas", icon: FiGrid },
+  { value: "list", label: "Lista", icon: FiList },
+];
 
 interface TeacherCoursesManagementProps {
-  teacherName: string;
   courseState: ReturnType<typeof useTeacherCourses>;
 }
 
 export default function TeacherCoursesManagement({
-  teacherName,
   courseState,
 }: TeacherCoursesManagementProps) {
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
 
-  const {
-    courses: backendCourses,
-    faculties,
-    careers,
-    periods,
-    students,
-    isLoading,
-    isCreating,
-    deletingCourseId,
-    error,
-    creationDataError,
-    createError,
-    clearCreateError,
-    createCourse,
-    deleteCourse,
-  } = courseState;
+  const { courses: backendCourses, isLoading, error } = courseState;
 
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [courseAnalytics, setCourseAnalytics] = useState<
     Record<
       string,
@@ -56,6 +67,7 @@ export default function TeacherCoursesManagement({
           low: number;
           medium: number;
           high: number;
+          critical: number;
         };
       }
     >
@@ -86,7 +98,8 @@ export default function TeacherCoursesManagement({
                 riskCounts: {
                   low: summary.LOW,
                   medium: summary.MEDIUM,
-                  high: summary.HIGH + summary.CRITICAL,
+                  high: summary.HIGH,
+                  critical: summary.CRITICAL,
                 },
               },
             ] as const;
@@ -95,7 +108,7 @@ export default function TeacherCoursesManagement({
               course.id,
               {
                 average: course.currentAverage ?? 0,
-                riskCounts: { low: 0, medium: 0, high: 0 },
+                riskCounts: { low: 0, medium: 0, high: 0, critical: 0 },
               },
             ] as const;
           }
@@ -118,11 +131,118 @@ export default function TeacherCoursesManagement({
     };
   }, [courses]);
 
-  const handleDeleteCourse = async (courseId: string) => {
-    await deleteCourse(courseId);
-    setIsDeleteMode(false);
+  const realMetrics = useMemo(
+    () => computeTeacherRealMetrics(courses, courseAnalytics),
+    [courses, courseAnalytics]
+  );
+
+  const sortedCourses = useMemo(
+    () =>
+      [...courses].sort(
+        (a, b) => courseRiskRank(b.riskLevel) - courseRiskRank(a.riskLevel)
+      ),
+    [courses]
+  );
+
+  const [view, setView] = useState<CoursesView>("cards");
+  const [search, setSearch] = useState("");
+  const [riskFilter, setRiskFilter] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("");
+  const [groupBy, setGroupBy] = useState<CoursesGroupBy>("");
+
+  const periodOptions = useMemo(
+    () =>
+      [...new Set(courses.map((course) => course.semester).filter(Boolean))]
+        .sort()
+        .map((period) => ({ value: period, label: period })),
+    [courses],
+  );
+
+  const visibleCourses = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return sortedCourses.filter((course) => {
+      if (riskFilter && course.riskLevel !== riskFilter) return false;
+      if (periodFilter && course.semester !== periodFilter) return false;
+      if (!query) return true;
+
+      return [course.name, course.code, course.description]
+        .filter(Boolean)
+        .some((text) => text!.toLowerCase().includes(query));
+    });
+  }, [sortedCourses, search, riskFilter, periodFilter]);
+
+  const courseGroups = useMemo(() => {
+    if (!groupBy) return [];
+
+    const groups = new Map<string, Course[]>();
+    for (const course of visibleCourses) {
+      const label =
+        groupBy === "risk"
+          ? getRiskPresentation(course.riskLevel).label
+          : course.semester || "Sin periodo";
+      groups.set(label, [...(groups.get(label) ?? []), course]);
+    }
+
+    return [...groups.entries()].map(([label, items]) => ({ label, items }));
+  }, [visibleCourses, groupBy]);
+
+  const getCourseMetrics = (course: Course) => {
+    const analytics = courseAnalytics[course.id];
+
+    return {
+      averageLabel: analytics
+        ? `${analytics.average.toFixed(2)} / 10`
+        : "Sin datos",
+      enrolledCount: course.enrolledCount ?? 0,
+    };
   };
 
+  const handleCourseClick = (courseId: string) => {
+    navigate(getTeacherCoursePerformancePath(courseId));
+  };
+
+  const renderCourses = (items: Course[]) =>
+    view === "cards" ? (
+      <CourseGrid
+        courses={items}
+        showTeacherDetails={false}
+        getCourseMetrics={getCourseMetrics}
+        onCourseClick={handleCourseClick}
+      />
+    ) : (
+      <TeacherCoursesTable
+        courses={items}
+        getCourseMetrics={getCourseMetrics}
+        onCourseClick={handleCourseClick}
+      />
+    );
+
+  const dashboardMetrics: DashboardMetric[] = [
+    {
+      label: "Promedio general",
+      value:
+        realMetrics.averageAcrossCourses === null
+          ? "--"
+          : `${realMetrics.averageAcrossCourses.toFixed(2)} / ${MAX_GRADE}`,
+      tone: getAverageTone(realMetrics.averageAcrossCourses),
+    },
+    {
+      label: "Estudiantes a atender",
+      value: realMetrics.studentsAtRisk.toString(),
+      tone: getCountTone(realMetrics.studentsAtRisk),
+    },
+    {
+      label: "Materias a cargo",
+      value: realMetrics.totalCourses.toString(),
+      tone: "neutral",
+    },
+    {
+      label: "Total de estudiantes",
+      value: realMetrics.totalStudents.toString(),
+      tone: "neutral",
+    },
+  ];
   return (
     <>
       <section className="py-8">
@@ -136,19 +256,12 @@ export default function TeacherCoursesManagement({
                             p-6
                         "
           >
-            <TeacherCoursesHeader
-              hasCourses={hasCourses}
-              isDeleteMode={isDeleteMode}
-              onOpenCreateModal={() => {
-                setIsCreateModalOpen(true);
-              }}
-              onEnableDeleteMode={() => {
-                setIsDeleteMode(true);
-              }}
-              onCancelDeleteMode={() => {
-                setIsDeleteMode(false);
-              }}
-            />
+            <div className="mb-8">
+              <Heading as="h3" className="text-gray-900">
+                Mis materias
+              </Heading>
+              <div className="mt-2 h-1 w-14 rounded-full bg-blue-700" />
+            </div>
 
             {!isOnline ? (
               <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4">
@@ -167,79 +280,113 @@ export default function TeacherCoursesManagement({
               </div>
             ) : null}
 
-            {creationDataError ? (
-              <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4">
-                <Text variant="small" className="font-medium text-amber-700">
-                  {creationDataError}
-                </Text>
-              </div>
-            ) : null}
-
             {isLoading ? (
               <div className="rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center">
                 <Text variant="small">Cargando cursos...</Text>
               </div>
             ) : hasCourses ? (
-              <CourseGrid
-                courses={courses}
-                isDeleteMode={isDeleteMode}
-                deletingCourseId={deletingCourseId}
-                showTeacherDetails={false}
-                getCourseMetrics={(course) => {
-                  const analytics = courseAnalytics[course.id];
+              <div className="space-y-5">
+                <ListToolbar
+                  search={search}
+                  searchPlaceholder="Buscar por nombre, código o descripción"
+                  onSearchChange={setSearch}
+                  filters={[
+                    {
+                      id: "risk",
+                      label: "Nivel de riesgo",
+                      value: riskFilter,
+                      allLabel: "Todos los niveles",
+                      options: RISK_FILTER_LEVELS.map((level) => ({
+                        value: level,
+                        label: getRiskPresentation(level).label,
+                      })),
+                      onChange: setRiskFilter,
+                    },
+                    {
+                      id: "period",
+                      label: "Periodo",
+                      value: periodFilter,
+                      allLabel: "Todos los periodos",
+                      options: periodOptions,
+                      onChange: setPeriodFilter,
+                    },
+                  ]}
+                  group={{
+                    value: groupBy,
+                    options: [
+                      { value: "risk", label: "Nivel de riesgo" },
+                      { value: "period", label: "Periodo" },
+                    ],
+                    onChange: (value) => setGroupBy(value as CoursesGroupBy),
+                  }}
+                  onClear={() => {
+                    setSearch("");
+                    setRiskFilter("");
+                    setPeriodFilter("");
+                    setGroupBy("");
+                  }}
+                  actions={
+                    <div
+                      role="group"
+                      aria-label="Tipo de vista"
+                      className="inline-flex h-12 overflow-hidden rounded-xl border border-gray-200 bg-white"
+                    >
+                      {VIEW_OPTIONS.map(({ value, label, icon: Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={view === value}
+                          title={label}
+                          onClick={() => setView(value)}
+                          className={`inline-flex items-center gap-2 px-4 text-sm font-medium transition ${
+                            view === value
+                              ? "bg-blue-700 text-white"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <Icon size={16} aria-hidden="true" />
+                          <span className="hidden sm:inline">{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
 
-                  return {
-                    averageLabel: analytics
-                      ? `${analytics.average.toFixed(2)} / 20`
-                      : "Sin datos",
-                    enrolledCount: course.enrolledCount ?? 0,
-                  };
-                }}
-                onCourseClick={(courseId) => {
-                  navigate(getTeacherCoursePerformancePath(courseId));
-                }}
-                onDeleteCourse={handleDeleteCourse}
-                onCancelDeleteMode={() => {
-                  setIsDeleteMode(false);
-                }}
-              />
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {dashboardMetrics.map((metric) => (
+                    <DashboardMetricCard key={metric.label} {...metric} />
+                  ))}
+                </div>
+
+                {visibleCourses.length === 0 ? (
+                  <Text variant="small" className="text-gray-600">
+                    Ninguna materia coincide con la búsqueda o los filtros.
+                  </Text>
+                ) : groupBy ? (
+                  courseGroups.map((group) => (
+                    <CollapsibleGroup
+                      key={group.label}
+                      label={group.label}
+                      count={group.items.length}
+                    >
+                      <div className={view === "cards" ? "p-4" : ""}>
+                        {renderCourses(group.items)}
+                      </div>
+                    </CollapsibleGroup>
+                  ))
+                ) : (
+                  renderCourses(visibleCourses)
+                )}
+              </div>
             ) : (
-              <TeacherCoursesEmptyState
-                onCreateCourse={() => {
-                  setIsCreateModalOpen(true);
-                }}
-              />
+              <Text variant="small" className="text-gray-600">
+                Aún no tienes materias asignadas. Secretaría o administración
+                las asignan al iniciar el año lectivo.
+              </Text>
             )}
           </div>
         </Container>
       </section>
-
-      <Modal
-        isOpen={isCreateModalOpen}
-        ariaLabel="Crear curso"
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          clearCreateError();
-        }}
-      >
-        <CreateCourseForm
-          availableStudents={students}
-          faculties={faculties}
-          careers={careers}
-          periods={periods}
-          teacherName={teacherName}
-          isSubmitting={isCreating}
-          errorMessage={createError}
-          onCancel={() => {
-            setIsCreateModalOpen(false);
-            clearCreateError();
-          }}
-          onCreateCourse={(coursePayload, studentIds) => {
-            createCourse(coursePayload, studentIds);
-            setIsCreateModalOpen(false);
-          }}
-        />
-      </Modal>
     </>
   );
 }

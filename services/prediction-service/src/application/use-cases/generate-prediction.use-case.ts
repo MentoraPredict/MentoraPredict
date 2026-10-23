@@ -48,7 +48,6 @@ export class GeneratePredictionUseCase implements IGeneratePredictionUseCase {
         subjects: context.subjects.map((s) => ({
           name: s.name,
           currentGrade: s.currentGrade,
-          credits: s.credits,
         })),
       });
     } catch (err) {
@@ -59,7 +58,7 @@ export class GeneratePredictionUseCase implements IGeneratePredictionUseCase {
           title: risk.riskLevel === 'HIGH' || risk.riskLevel === 'CRITICAL'
             ? 'Reforzar hábitos de estudio urgentemente'
             : 'Mantener hábitos de estudio actuales',
-          reason: `Promedio global actual: ${risk.globalAverage}/20.`,
+          reason: `Promedio global actual: ${risk.globalAverage}/10.`,
           priority: risk.riskLevel === 'HIGH' || risk.riskLevel === 'CRITICAL' ? 'HIGH' : 'LOW',
         },
       ];

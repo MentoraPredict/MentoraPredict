@@ -41,12 +41,12 @@ docker logs -f mp_dev_academic_service | jq .
 > ⚠️ En PowerShell, `curl` es un alias de `Invoke-WebRequest` (flags distintos) y `\` **no** continúa línea (eso es de bash). Usá `curl.exe` explícito y todo en una sola línea para evitar sorpresas:
 
 ```powershell
-curl.exe -i http://localhost:3003/api/v1/academic/faculties -H "x-correlation-id: mi-prueba-001"
+curl.exe -i http://localhost:3003/api/v1/academic/school-years -H "x-correlation-id: mi-prueba-001"
 ```
 
 Si necesitás multilínea en PowerShell, la continuación es con backtick, no con `\`:
 ```powershell
-curl.exe -i http://localhost:3003/api/v1/academic/faculties `
+curl.exe -i http://localhost:3003/api/v1/academic/school-years `
   -H "x-correlation-id: mi-prueba-001"
 ```
 
@@ -67,7 +67,7 @@ Log correspondiente (`docker logs mp_dev_academic_service | grep mi-prueba-001`)
   "req": {
     "id": "mi-prueba-001",
     "method": "GET",
-    "url": "/api/v1/academic/faculties",
+    "url": "/api/v1/academic/school-years",
     "headers": { "x-correlation-id": "mi-prueba-001", "...": "..." }
   },
   "service": "academic-service",

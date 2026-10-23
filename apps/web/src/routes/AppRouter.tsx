@@ -9,6 +9,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import AdminUserEditPage from "@/pages/admin/AdminUserEditPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import LandingPage from "@/pages/public/LandingPage";
 import LoginPage from "@/pages/auth/LoginPage";
@@ -23,19 +24,39 @@ import { APP_PATHS } from "./paths";
 import { useAuthStore } from "@/store/auth.store";
 
 import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
+import AdminSchoolYearsPage from "@/pages/admin/AdminSchoolYearsPage";
+import AdminInstitutionConfigPage from "@/pages/admin/AdminInstitutionConfigPage";
+import AdminStructurePage from "@/pages/admin/AdminStructurePage";
+import AdminSubjectsPage from "@/pages/admin/AdminSubjectsPage";
+import AdminEnrollmentsPage from "@/pages/admin/AdminEnrollmentsPage";
+import AdminGradingPeriodsPage from "@/pages/admin/AdminGradingPeriodsPage";
+import AdminPromotionPage from "@/pages/admin/AdminPromotionPage";
+import GuardianStudentsPage from "@/pages/guardian/GuardianStudentsPage";
+import GuardianProfilePage from "@/pages/guardian/GuardianProfilePage";
+import GuardianStudentResultsPage from "@/pages/guardian/GuardianStudentResultsPage";
 import AdminCourseStudentsPage from "@/pages/admin/AdminCourseStudentsPage";
 import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 
 import TeacherCoursesPage from "@/pages/teacher/TeacherCoursesPage";
 
 import StudentCoursesPage from "@/pages/student/StudentCoursesPage";
+import StudentSurveyPage from "@/pages/student/StudentSurveyPage";
+import StudentSurveyWizardPage from "@/pages/student/StudentSurveyWizardPage";
 
 import TeacherCoursePageLayout from "@/features/teachers/components/TeacherCoursePageLayout";
 import TeacherCoursePerformancePage from "@/pages/teacher/TeacherCoursePerformancePage";
 
-import TeacherCourseUploadDataPage from "@/pages/teacher/TeacherCourseUploadDataPage";
+import TeacherCourseActivityPage from "@/pages/teacher/TeacherCourseActivityPage";
+import TeacherCourseStudentPage from "@/pages/teacher/TeacherCourseStudentPage";
+import TeacherCourseGradebookPage from "@/pages/teacher/TeacherCourseGradebookPage";
+import TeacherCourseAttendancePage from "@/pages/teacher/TeacherCourseAttendancePage";
+import GuardianStudentAttendancePage from "@/pages/guardian/GuardianStudentAttendancePage";
+import AdminAlertsPage from "@/pages/admin/AdminAlertsPage";
+import AdminAiSettingsPage from "@/pages/admin/AdminAiSettingsPage";
+import AdminJustificationsPage from "@/pages/admin/AdminJustificationsPage";
 
 import TeacherCourseStudentsPage from "@/pages/teacher/TeacherCourseStudentsPage";
+
 
 import TeacherCourseEditPage from "@/pages/teacher/TeacherCourseEditPage";
 
@@ -44,20 +65,39 @@ import StudentProfilePage from "@/pages/student/StudentProfilePage";
 
 import StudentCoursePageLayout from "@/features/students/components/StudentCoursePageLayout";
 import StudentCoursePerformancePage from "@/pages/student/StudentCoursePerformancePage";
+import StudentCourseComingSoonPage from "@/pages/student/StudentCourseComingSoonPage";
+import StudentCourseMaterialsPage from "@/pages/student/StudentCourseMaterialsPage";
+import StudentNotificationsPage from "@/pages/student/StudentNotificationsPage";
 import StudentCourseUploadDataPage from "@/pages/student/StudentCourseUploadDataPage";
 
 const COURSE_TAB_SEGMENTS = new Set([
   "performance",
   "upload-data",
+  "activities",
+  "evaluations",
+  "materials",
+  "ai-chat",
   "students",
   "edit",
+  "syllabus",
+  "dropout-risk",
+  "gradebook",
+  "attendance",
 ]);
 
 function getAnimationKey(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
   const lastSegment = segments[segments.length - 1];
 
-  if (lastSegment && COURSE_TAB_SEGMENTS.has(lastSegment)) {
+  // /teacher/courses/:id/gradebook/activities/:activityId comparte la animación de la materia.
+  const gradebookIndex = segments.indexOf("gradebook");
+
+  if (gradebookIndex >= 0) {
+    segments.length = gradebookIndex;
+  } else if (segments[segments.length - 2] === "students") {
+    segments.pop();
+    segments.pop();
+  } else if (lastSegment && COURSE_TAB_SEGMENTS.has(lastSegment)) {
     segments.pop();
   }
 
@@ -112,11 +152,35 @@ function AnimatedRoutes() {
               element={<StudentProfilePage />}
             />
             <Route
+              path={APP_PATHS.student.survey}
+              element={<StudentSurveyPage />}
+            />
+            <Route
+              path={APP_PATHS.student.surveyWizard}
+              element={<StudentSurveyWizardPage />}
+            />
+            <Route
+              path={APP_PATHS.student.attendance}
+              element={<Navigate to={`${APP_PATHS.student.dashboard}?tab=attendance`} replace />}
+            />
+            <Route
+              path={APP_PATHS.student.notifications}
+              element={<StudentNotificationsPage />}
+            />
+            <Route
+              path={APP_PATHS.student.progress}
+              element={<Navigate to={`${APP_PATHS.student.dashboard}?tab=grades`} replace />}
+            />
+            <Route
               path={APP_PATHS.student.courseDetail}
               element={<StudentCoursePageLayout />}
             >
               <Route path="performance" element={<StudentCoursePerformancePage />} />
               <Route path="upload-data" element={<StudentCourseUploadDataPage />} />
+              <Route path="activities" element={<StudentCourseComingSoonPage section="activities" />} />
+              <Route path="evaluations" element={<StudentCourseComingSoonPage section="evaluations" />} />
+              <Route path="materials" element={<StudentCourseMaterialsPage />} />
+              <Route path="ai-chat" element={<StudentCourseComingSoonPage section="ai-chat" />} />
             </Route>
           </Route>
 
@@ -134,10 +198,65 @@ function AnimatedRoutes() {
               element={<TeacherCoursePageLayout />}
             >
               <Route path="performance" element={<TeacherCoursePerformancePage />} />
-              <Route path="upload-data" element={<TeacherCourseUploadDataPage />} />
+              <Route path="gradebook" element={<TeacherCourseGradebookPage />} />
+              <Route
+                path="gradebook/activities/:activityId"
+                element={<TeacherCourseActivityPage />}
+              />
+              <Route path="attendance" element={<TeacherCourseAttendancePage />} />
+              {/* Rutas anteriores: se conservan para enlaces guardados. */}
+              <Route path="syllabus" element={<Navigate to="../edit" replace />} />
+              <Route path="upload-data" element={<Navigate to="../gradebook" replace />} />
+              <Route path="dropout-risk" element={<Navigate to="../students" replace />} />
               <Route path="students" element={<TeacherCourseStudentsPage />} />
+              <Route path="students/:studentId" element={<TeacherCourseStudentPage />} />
               <Route path="edit" element={<TeacherCourseEditPage />} />
             </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN", "INSPECTOR", "DECE"]} />}>
+            <Route
+              path={APP_PATHS.admin.alerts}
+              element={<AdminAlertsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.justifications}
+              element={<AdminJustificationsPage />}
+            />
+          </Route>
+
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SECRETARY", "INSPECTOR", "DECE"]} />
+            }
+          >
+            <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN", "SECRETARY"]} />}>
+            <Route
+              path={APP_PATHS.admin.enrollments}
+              element={<AdminEnrollmentsPage />}
+            />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["GUARDIAN"]} />}>
+            <Route
+              path={APP_PATHS.guardian.students}
+              element={<GuardianStudentsPage />}
+            />
+            <Route
+              path={APP_PATHS.guardian.studentAttendance}
+              element={<GuardianStudentAttendancePage />}
+            />
+            <Route
+              path={APP_PATHS.guardian.studentResults}
+              element={<GuardianStudentResultsPage />}
+            />
+            <Route
+              path={APP_PATHS.guardian.profile}
+              element={<GuardianProfilePage />}
+            />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
@@ -146,6 +265,11 @@ function AnimatedRoutes() {
               element={<Navigate to={APP_PATHS.admin.users} replace />}
             />
             <Route path={APP_PATHS.admin.users} element={<AdminUsersPage />} />
+            <Route path={APP_PATHS.admin.ai} element={<AdminAiSettingsPage />} />
+            <Route
+              path={APP_PATHS.admin.userDetail}
+              element={<AdminUserEditPage />}
+            />
             <Route
               path={APP_PATHS.admin.courses}
               element={<AdminCoursesPage />}
@@ -154,7 +278,30 @@ function AnimatedRoutes() {
               path={APP_PATHS.admin.courseStudents}
               element={<AdminCourseStudentsPage />}
             />
-            <Route path={APP_PATHS.admin.profile} element={<AdminProfilePage />} />
+            <Route
+              path={APP_PATHS.admin.schoolYears}
+              element={<AdminSchoolYearsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.institution}
+              element={<AdminInstitutionConfigPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.structure}
+              element={<AdminStructurePage />}
+            />
+            <Route
+              path={APP_PATHS.admin.subjects}
+              element={<AdminSubjectsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.gradingPeriods}
+              element={<AdminGradingPeriodsPage />}
+            />
+            <Route
+              path={APP_PATHS.admin.promotion}
+              element={<AdminPromotionPage />}
+            />
           </Route>
 
           <Route

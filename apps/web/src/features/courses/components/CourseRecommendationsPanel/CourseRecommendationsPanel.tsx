@@ -3,8 +3,12 @@ import { FiFileText, FiZap } from "react-icons/fi";
 import Button from "@/components/atoms/Button";
 import Heading from "@/components/atoms/Heading";
 import Text from "@/components/atoms/Text";
+import Pagination from "@/components/molecules/Pagination";
+import usePagination from "@/hooks/usePagination";
 
 import type { CourseRecommendation } from "@/types/course";
+
+const RECOMMENDATIONS_PER_PAGE = 3;
 
 interface CourseRecommendationsPanelProps {
   recommendations: CourseRecommendation[];
@@ -19,6 +23,14 @@ export default function CourseRecommendationsPanel({
   showReportButton = false,
   onGenerateReport,
 }: CourseRecommendationsPanelProps) {
+  const {
+    currentPage,
+    paginatedItems: paginatedRecommendations,
+    totalItems,
+    totalPages,
+    setCurrentPage,
+  } = usePagination(recommendations, RECOMMENDATIONS_PER_PAGE);
+
   return (
     <section
       className="
@@ -67,7 +79,7 @@ export default function CourseRecommendationsPanel({
       ) : null}
 
       <div className="mt-6 space-y-4">
-        {recommendations.map((recommendation, index) => (
+        {paginatedRecommendations.map((recommendation, index) => (
           <article
             key={recommendation.id}
             className="
@@ -79,7 +91,7 @@ export default function CourseRecommendationsPanel({
           >
             <div className="flex gap-4">
               <Text variant="small" className="font-bold text-blue-700">
-                {String(index + 1).padStart(2, "0")}
+                {String((currentPage - 1) * RECOMMENDATIONS_PER_PAGE + index + 1).padStart(2, "0")}
               </Text>
 
               <div>
@@ -95,6 +107,19 @@ export default function CourseRecommendationsPanel({
           </article>
         ))}
       </div>
+
+      {totalPages > 1 ? (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            pageSize={RECOMMENDATIONS_PER_PAGE}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            itemLabel="recomendaciones"
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      ) : null}
 
       {showReportButton ? (
         <Button

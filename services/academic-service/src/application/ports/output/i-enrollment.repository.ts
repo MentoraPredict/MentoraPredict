@@ -9,11 +9,8 @@ export interface StudentSubjectRawRow {
   subjectName: string;
   subjectCode: string;
   subjectDescription: string;
-  credits: number;
   maxCapacity: number;
   teacherId: string | null;
-  careerId: string;
-  careerName: string;
   periodId: string;
   periodName: string;
   periodStatus: string;
@@ -29,11 +26,8 @@ export interface StudentSubjectRawRow {
   subjectCode: string;
   subjectDescription: string;
   subjectImageUrl: string | null;
-  credits: number;
   maxCapacity: number;
   teacherId: string | null;
-  careerId: string;
-  careerName: string;
   periodId: string;
   periodName: string;
   periodStatus: string;

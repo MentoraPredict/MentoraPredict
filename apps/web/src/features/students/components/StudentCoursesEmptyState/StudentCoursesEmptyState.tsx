@@ -38,8 +38,8 @@ export default function StudentCoursesEmptyState() {
       </Heading>
 
       <Text variant="small" className="mt-2 max-w-md">
-        Cuando un docente te agregue a un curso, aparecerá en esta sección para
-        que puedas revisar tu progreso académico y tus alertas de riesgo.
+        Tus materias aparecen aquí cuando secretaría te matricula en un curso.
+        Si crees que debería haber materias, consulta en secretaría.
       </Text>
     </div>
   );

@@ -31,6 +31,14 @@ export class AcademicPeriodRepository implements IAcademicPeriodRepository {
     return list.map((o) => this.toDomain(o));
   }
 
+  async findBySchoolYear(schoolYearId: string): Promise<AcademicPeriodEntity[]> {
+    const list = await this.repo.find({
+      where: { schoolYearId },
+      order: { number: 'ASC', startDate: 'ASC' },
+    });
+    return list.map((o) => this.toDomain(o));
+  }
+
   async findByCode(code: string): Promise<AcademicPeriodEntity | null> {
     const o = await this.repo.findOne({ where: { code } });
     return o ? this.toDomain(o) : null;
@@ -80,6 +88,11 @@ export class AcademicPeriodRepository implements IAcademicPeriodRepository {
       o.type as PeriodType,
       o.createdAt,
       o.updatedAt,
+      o.schoolYearId,
+      o.number,
+      o.gradesDueDate,
+      o.closedAt,
+      o.closedBy,
     );
   }
 
@@ -95,6 +108,11 @@ export class AcademicPeriodRepository implements IAcademicPeriodRepository {
     o.type = d.type;
     o.createdAt = d.createdAt;
     o.updatedAt = d.updatedAt;
+    o.schoolYearId = d.schoolYearId;
+    o.number = d.number;
+    o.gradesDueDate = d.gradesDueDate;
+    o.closedAt = d.closedAt;
+    o.closedBy = d.closedBy;
     return o;
   }
 }

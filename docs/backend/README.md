@@ -8,9 +8,9 @@ MentoraPredict's backend is composed of 5 NestJS microservices, each built with 
 |---|---|---|---|---|---|
 | auth-service | 3001 | Postgres (users) | Redis | 12 | [auth-service.md](./auth-service.md) |
 | user-service | 3002 | Postgres (user_profiles) | Supabase Storage | 7 | [user-service.md](./user-service.md) |
-| academic-service | 3003 | Postgres (12 entities) | MongoDB, Redis (dormant), Supabase | 69 | [academic-service.md](./academic-service.md) |
-| analytics-service | 3004 | Postgres (5 entities) | MongoDB, Redis, WebSocket | 21 + 6 (notifications submodule) | [analytics-service.md](./analytics-service.md) |
-| prediction-service | 3006 | Postgres (1 entity) | MongoDB, OpenAI API | 9 | [prediction-service.md](./prediction-service.md) |
+| academic-service | 3003 | Postgres (22 entities) | Redis (dormant), Supabase | 69 | [academic-service.md](./academic-service.md) |
+| analytics-service | 3004 | Postgres (6 entities) | Redis, WebSocket | 21 + 6 (notifications submodule) | [analytics-service.md](./analytics-service.md) |
+| prediction-service | 3006 | Postgres (2 entities) | OpenAI API | 9 | [prediction-service.md](./prediction-service.md) |
 
 ## Shared conventions across all 5 services
 

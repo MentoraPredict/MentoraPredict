@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   IUserProfileRepository,
   UserProfileFilters,
+  UserProfileGroupCount,
   UserProfilePagination,
 } from "../../domain/ports/i-user-profile.repository";
 import { IAuthServiceClient } from "../ports/output/i-auth-service.client";
@@ -35,12 +36,20 @@ export class ListUsersUseCase {
     limit: number;
     total: number;
     totalPages: number;
+    groups?: UserProfileGroupCount[];
   }> {
     const page = Math.max(1, pagination.page);
     const limit = Math.min(Math.max(1, pagination.limit), 100);
     const filteredBySearch = await this.applySearchFilter(filters, search);
-    const result = await this.repo.findPaginated(filteredBySearch, { page, limit });
+    const result = await this.repo.findPaginated(filteredBySearch, {
+      page,
+      limit,
+      groupBy: pagination.groupBy,
+    });
     const data = await this.enrichProfiles(result.items);
+    const groups = pagination.groupBy
+      ? await this.repo.countByGroup(filteredBySearch, pagination.groupBy)
+      : undefined;
 
     return {
       data,
@@ -48,6 +57,7 @@ export class ListUsersUseCase {
       limit,
       total: result.total,
       totalPages: Math.max(1, Math.ceil(result.total / limit)),
+      ...(groups ? { groups } : {}),
     };
   }
 

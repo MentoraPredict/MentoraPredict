@@ -13,8 +13,6 @@ The service's own `BOUNDARY.md` states its single responsibility explicitly:
 | NestJS | 10.3.0 | Application framework |
 | TypeORM | 0.3.20 | ORM for PostgreSQL |
 | pg | — | PostgreSQL driver |
-| @nestjs/mongoose | 10.0.4 | MongoDB integration |
-| mongoose | — | MongoDB ODM |
 | class-validator, class-transformer | — | DTO validation |
 | Jest | 29 | Testing |
 
@@ -52,17 +50,15 @@ Full endpoint reference with roles lives in [../api/api-contracts.md](../api/api
 
 ## External integrations
 
-- **PostgreSQL** — `StudentSubjectPredictionEntity` only.
-- **MongoDB** — `prediction-log.schema.ts`, an audit log of AI generations.
+- **PostgreSQL** — `student_subject_predictions` (`StudentSubjectPredictionOrmEntity`) and `prediction_logs` (`PredictionLogOrmEntity`, an audit log of AI generations with `risk`/`recommendations` as `jsonb`).
 - **OpenAI API** — `OpenAiRecommendationProvider` implements `IAiRecommendationProvider` (env `OPENAI_API_KEY`, `OPENAI_MODEL`).
 - **AcademicHttpClient** — calls academic-service for syllabus topics used as AI context.
 - **AnalyticsHttpClient** — calls analytics-service for the deterministic risk snapshot. Risk is never computed by prediction-service itself, only consumed — this is a core architectural boundary, documented in the service's own `BOUNDARY.md`.
 
 ## Environment variables
 
-`ACADEMIC_SERVICE_URL`, `ANALYTICS_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `MONGO_*`, `NODE_ENV`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `POSTGRES_*`, `SWAGGER_SERVER_URL`.
+`ACADEMIC_SERVICE_URL`, `ANALYTICS_SERVICE_URL`, `APP_PORT`, `CORS_ORIGINS`, `JWT_*`, `NODE_ENV`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `POSTGRES_*`, `SWAGGER_SERVER_URL`.
 
 ## Known issues / audit findings
 
 - **Orphaned Python stub files**: two files exist under `src/application/ports/` — `i_predict_use_case.py` and `i_prediction_log_repository.py` — left over from an early design iteration. The service's own `BOUNDARY.md` explicitly states: "Stack: NestJS (TypeScript) puro. Sin Python ni runtime ML local." (pure TypeScript NestJS, no Python or local ML runtime). The actual implementation is 100% TypeScript/NestJS as documented above; these two `.py` files reflect no active functionality and should eventually be deleted as cleanup.
-- **Incomplete health check**: `GET /health` only reports MongoDB status despite this service also using PostgreSQL — an inconsistency worth fixing, since the other 4 services check connectivity to all of their databases.

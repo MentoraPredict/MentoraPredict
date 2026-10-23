@@ -31,6 +31,8 @@ export interface StudentSubjectOverviewProgressPoint {
 export interface StudentSubjectOverview {
   subjectId: string;
   averageGrade: number | null;
+  /** 0-100, promedio de la comprensión que el estudiante reporta; null si no ha respondido. */
+  comprehensionAvg: number | null;
   riskLevel: SubjectRiskLevel | null;
   trendDirection: TrendDirection | null;
   computedAt: string | null;
@@ -111,6 +113,7 @@ export class GetStudentSubjectsOverviewUseCase {
       return {
         subjectId,
         averageGrade: latest?.averageGrade ?? null,
+        comprehensionAvg: latest?.comprehensionAvg ?? null,
         riskLevel: latest?.riskLevel ?? null,
         trendDirection: this.deriveTrendDirection(latest?.trendSlope ?? null),
         computedAt: latest?.computedAt.toISOString() ?? null,

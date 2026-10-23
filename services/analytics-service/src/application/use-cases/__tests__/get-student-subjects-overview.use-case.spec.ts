@@ -31,9 +31,11 @@ const mockAcademicClient = (): jest.Mocked<IAcademicServiceClient> => ({
   getEnrollmentsByStudent: jest.fn(),
   getEvaluationsBySubject: jest.fn(),
   getLatestCheckIn: jest.fn(),
+  getAttendanceRate: jest.fn(),
   getSubjectOwnership: jest.fn(),
   getSubjectDetails: jest.fn(),
   getStudentsByTeacher: jest.fn(),
+  getPeriodDetails: jest.fn(),
 });
 
 function enrollment(subjectId: string, status = 'ACTIVE'): Enrollment {
@@ -41,7 +43,6 @@ function enrollment(subjectId: string, status = 'ACTIVE'): Enrollment {
     id: `enr-${subjectId}`,
     studentId: 's1',
     subjectId,
-    subjectCredits: 3,
     periodId: 'period-1',
     status,
   };
@@ -187,6 +188,7 @@ describe('GetStudentSubjectsOverviewUseCase', () => {
       {
         subjectId: 'subj-1',
         averageGrade: null,
+        comprehensionAvg: null,
         riskLevel: null,
         trendDirection: null,
         computedAt: null,

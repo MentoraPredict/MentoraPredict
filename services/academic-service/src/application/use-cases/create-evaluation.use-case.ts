@@ -5,6 +5,7 @@ import { IEvaluationRepository } from '../ports/output/i-evaluation.repository';
 import { ISubjectRepository } from '../ports/output/i-subject.repository';
 import { IAcademicPeriodRepository } from '../ports/output/i-academic-period.repository';
 import { CreateEvaluationDto } from '../dtos/create-evaluation.dto';
+import { assertLegacyCourse } from './school-course.guard';
 
 @Injectable()
 export class CreateEvaluationUseCase {
@@ -18,6 +19,7 @@ export class CreateEvaluationUseCase {
     const subjectId = subjectIdOverride ?? dto.subjectId;
     const subject = await this.subjectRepo.findById(subjectId);
     if (!subject || !subject.isActive) throw new NotFoundException('Subject not found or inactive');
+    assertLegacyCourse(subject);
 
     const period = await this.periodRepo.findById(subject.academicPeriodId);
     if (!period || !period.isActive) {
